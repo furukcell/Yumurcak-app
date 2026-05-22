@@ -1,28 +1,47 @@
+// ============================================================
+// YUMURCAK — RootNavigator.js
+// ============================================================
+
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { RENKLER, ROLLER } from '../../constants';
 import AuthStack from './AuthStack';
 import AdminStack from './AdminStack';
 import TeacherStack from './TeacherStack';
 import ParentStack from './ParentStack';
 
 export default function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { kullanici, yukleniyor } = useAuth();
 
-  if (loading) {
+  // Splash / yükleme ekranı
+  if (yukleniyor) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+      <View style={s.yuklemeEkrani}>
+        <Text style={s.logo}>🌟</Text>
+        <Text style={s.logoYazi}>YUMURCAK</Text>
+        <ActivityIndicator color="#FFF" size="large" style={{ marginTop: 20 }} />
       </View>
     );
   }
 
-  if (!user) return <AuthStack />;
+  if (!kullanici) return <AuthStack />;
 
-  switch (user.rol) {
-    case 'yonetici': return <AdminStack />;
-    case 'ogretmen': return <TeacherStack />;
-    case 'veli':     return <ParentStack />;
-    default:         return <AuthStack />;
+  switch (kullanici.rol) {
+    case ROLLER.YONETICI: return <AdminStack />;
+    case ROLLER.OGRETMEN: return <TeacherStack />;
+    case ROLLER.VELI:     return <ParentStack />;
+    default:              return <AuthStack />;
   }
 }
+
+const s = StyleSheet.create({
+  yuklemeEkrani: {
+    flex: 1,
+    backgroundColor: '#FF8C42',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo:     { fontSize: 72, marginBottom: 10 },
+  logoYazi: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 4 },
+});
