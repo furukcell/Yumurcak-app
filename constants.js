@@ -30,7 +30,7 @@ export const RENKLER = {
 export const ROLLER = {
   YONETICI:   'yonetici',
   OGRETMEN:   'ogretmen',
-  COCUK:      'cocuk',     // veliler bu hesapla girer
+  VELI:       'veli',     
 };
 
 // ============================================================
