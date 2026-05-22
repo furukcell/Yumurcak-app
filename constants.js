@@ -3,7 +3,7 @@
 // Renkler, Firebase URL ve uygulama sabitleri
 // ============================================================
 
-export const DB_URL = 'https://PROJE-ADINIZ-default-rtdb.firebaseio.com';
+export const DB_URL = 'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app';
 
 // ============================================================
 // RENK PALETİ
