@@ -1,16 +1,28 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import ParentDashboard from '../screens/parent/ParentDashboard';
+import { createStackNavigator } from '@react-navigation/stack';
+import ParentDashboardScreen from '../screens/parent/ParentDashboardScreen';
+import ChildReportScreen from '../screens/parent/ChildReportScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 export default function ParentStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="ParentDashboard"
-        component={ParentDashboard}
-        options={{ title: 'Veli Paneli' }}
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#27500A' }, // Yeşil ton
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: '600' },
+      }}
+    >
+      <Stack.Screen 
+        name="ParentDashboard" 
+        component={ParentDashboardScreen} 
+        options={{ title: 'Çocuklarım' }} 
+      />
+      <Stack.Screen 
+        name="ChildReport" 
+        component={ChildReportScreen} 
+        options={{ title: 'Günlük Raporlar' }} 
       />
     </Stack.Navigator>
   );
