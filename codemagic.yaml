@@ -1,0 +1,17 @@
+workflows:
+  yumurcak-android:
+    name: Yumurcak Android Build
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        EXPO_TOKEN: $EXPO_TOKEN
+    scripts:
+      - name: Setup Expo
+        script: |
+          npm install -g eas-cli
+          echo "$EXPO_TOKEN" | eas login --non-interactive
+      - name: Build with EAS
+        script: |
+          eas build --platform android --profile preview --non-interactive
+    artifacts:
+      - android/*.apk
