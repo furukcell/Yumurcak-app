@@ -1,0 +1,51 @@
+{
+  "rules": {
+    "kresler": {
+      "$kresId": {
+        ".read": "auth != null && root.child('kresler').child($kresId).child('adminIds').hasChild(auth.uid)",
+        ".write": "auth != null && root.child('kresler').child($kresId).child('adminIds').hasChild(auth.uid)"
+      }
+    },
+    "siniflar": {
+      "$sinifId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (
+          root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
+          root.child('siniflar').child($sinifId).child('teacherIds').hasChild(auth.uid)
+        )"
+      }
+    },
+    "cocuklar": {
+      "$cocukId": {
+        ".read": "auth != null && (
+          root.child('cocuklar').child($cocukId).child('parentIds').hasChild(auth.uid) ||
+          root.child('siniflar').child(root.child('cocuklar').child($cocukId).child('sinifId').val()).child('teacherIds').hasChild(auth.uid) ||
+          root.child('kresler').child(root.child('cocuklar').child($cocukId).child('kresId').val()).child('adminIds').hasChild(auth.uid)
+        )",
+        ".write": "auth != null && (
+          root.child('kresler').child(root.child('cocuklar').child($cocukId).child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
+          root.child('siniflar').child(root.child('cocuklar').child($cocukId).child('sinifId').val()).child('teacherIds').hasChild(auth.uid)
+        )"
+      }
+    },
+    "raporlar": {
+      "$raporId": {
+        ".read": "auth != null && (
+          root.child('cocuklar').child(newData.child('cocukId').val()).child('parentIds').hasChild(auth.uid) ||
+          root.child('siniflar').child(newData.child('sinifId').val()).child('teacherIds').hasChild(auth.uid) ||
+          root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid)
+        )",
+        ".write": "auth != null && root.child('siniflar').child(newData.child('sinifId').val()).child('teacherIds').hasChild(auth.uid)"
+      }
+    },
+    "duyurular": {
+      "$duyuruId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (
+          root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
+          newData.child('sentBy').val() == auth.uid
+        )"
+      }
+    }
+  }
+}
