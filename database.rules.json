@@ -31,9 +31,9 @@
     "raporlar": {
       "$raporId": {
         ".read": "auth != null && (
-          root.child('cocuklar').child(newData.child('cocukId').val()).child('parentIds').hasChild(auth.uid) ||
-          root.child('siniflar').child(newData.child('sinifId').val()).child('teacherIds').hasChild(auth.uid) ||
-          root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid)
+          root.child('cocuklar').child(data.child('cocukId').val()).child('parentIds').hasChild(auth.uid) ||
+          root.child('siniflar').child(data.child('sinifId').val()).child('teacherIds').hasChild(auth.uid) ||
+          root.child('kresler').child(data.child('kresId').val()).child('adminIds').hasChild(auth.uid)
         )",
         ".write": "auth != null && root.child('siniflar').child(newData.child('sinifId').val()).child('teacherIds').hasChild(auth.uid)"
       }
@@ -45,6 +45,18 @@
           root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
           newData.child('sentBy').val() == auth.uid
         )"
+      }
+    },
+    "kullanicilar": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
       }
     }
   }
