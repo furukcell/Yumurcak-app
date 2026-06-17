@@ -20,7 +20,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-    "package": "com.furukcell.yumurcakapp"
+      },
+      "package": "com.furukcell.yumurcakapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
