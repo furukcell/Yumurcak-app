@@ -1,7 +1,11 @@
+// ============================================================
+// YUMURCAK — TeacherListScreen.js
+// Öğretmen listesi
+// ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ref, onValue } from 'firebase/database';
-import { db } from '../../config/firebase';
+import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 
 export default function TeacherListScreen() {
@@ -11,27 +15,27 @@ export default function TeacherListScreen() {
 
   useEffect(() => {
     // Şimdilik MVP için sınıfların içinden öğretmenleri çekiyoruz
-    // İleride tekil bir 'users' tablosu yaparsak oradan çekilir.
-    const classesRef = ref(db, 'siniflar');
+    const classesRef = ref(database, 'siniflar');
     const unsubscribe = onValue(classesRef, (snapshot) => {
       const data = snapshot.val();
       let extractedTeachers = [];
 
       if (data) {
         Object.entries(data).forEach(([classId, classData]) => {
-          if (classData.teacherIds) {
-            classData.teacherIds.forEach(tId => {
+          if (classData.ogretmenIds) {
+            classData.ogretmenIds.forEach((tId) => {
               extractedTeachers.push({
                 id: tId,
-                className: classData.name,
-                role: 'Öğretmen'
+                className: classData.ad,
+                role: 'Öğretmen',
               });
             });
           }
         });
+
         // Tekilleştirme (aynı öğretmen 2 sınıfta olabilir)
-        extractedTeachers = [...new Set(extractedTeachers.map(t => t.id))].map(id => {
-            return extractedTeachers.find(t => t.id === id);
+        extractedTeachers = [...new Set(extractedTeachers.map((t) => t.id))].map((id) => {
+          return extractedTeachers.find((t) => t.id === id);
         });
       }
 
@@ -49,14 +53,25 @@ export default function TeacherListScreen() {
     </View>
   );
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#633806" /></View>;
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#633806" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {teachers.length === 0 ? (
         <Text style={styles.empty}>Henüz atanmış öğretmen yok.</Text>
       ) : (
-        <FlatList data={teachers} renderItem={renderItem} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} />
+        <FlatList
+          data={teachers}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+        />
       )}
     </View>
   );
@@ -69,5 +84,5 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12, elevation: 2 },
   name: { fontSize: 16, fontWeight: '600', color: '#333' },
   info: { fontSize: 14, color: '#633806', marginTop: 4 },
-  empty: { textAlign: 'center', marginTop: 40, color: '#888' }
+  empty: { textAlign: 'center', marginTop: 40, color: '#888' },
 });
