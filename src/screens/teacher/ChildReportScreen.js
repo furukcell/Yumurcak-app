@@ -42,7 +42,6 @@ export default function ChildReportScreen() {
 
       // Raporu kaydet
       const reportRef = ref(database, 'gunlukRaporlar');
-      const newReportRef = await push(reportRef);
       await push(reportRef, {
         cocukId: child.id,
         sinifId: child.sinifId,
