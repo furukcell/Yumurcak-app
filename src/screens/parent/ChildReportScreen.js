@@ -1,7 +1,11 @@
+// ============================================================
+// YUMURCAK — ChildReportScreen.js (PARENT)
+// Veli günlük rapor görüntüleme
+// ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { ref, onValue } from 'firebase/database';
-import { db } from '../../config/firebase';
+import { database } from '../../config/firebase';
 import { useRoute } from '@react-navigation/native';
 
 export default function ChildReportScreen() {
@@ -11,7 +15,7 @@ export default function ChildReportScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const reportsRef = ref(db, 'raporlar');
+    const reportsRef = ref(database, 'gunlukRaporlar');
     const unsubscribe = onValue(reportsRef, (snapshot) => {
       const data = snapshot.val();
       const childReports = [];
@@ -23,7 +27,7 @@ export default function ChildReportScreen() {
           }
         });
         // Tarihe göre sırala (en yeni en üstte)
-        childReports.sort((a, b) => b.date.localeCompare(a.date));
+        childReports.sort((a, b) => b.tarih.localeCompare(a.tarih));
       }
 
       setReports(childReports);
@@ -34,25 +38,31 @@ export default function ChildReportScreen() {
   }, [child.id]);
 
   const getMoodIcon = (mood) => {
-    if (mood === 'happy') return '😊';
-    if (mood === 'neutral') return '😐';
-    if (mood === 'sad') return '😢';
+    if (mood === 'Mutlu') return '😊';
+    if (mood === 'Neşeli') return '😄';
+    if (mood === 'Normal') return '😐';
+    if (mood === 'Üzgün') return '😢';
+    if (mood === 'Yorgun') return '😴';
+    if (mood === 'Hasta') return '🤒';
+    if (mood === 'Sinirli') return '😠';
+    if (mood === 'Heyecanlı') return '🥳';
     return '';
   };
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.date}>{item.date}</Text>
+        <Text style={styles.date}>{item.tarih}</Text>
         <Text style={styles.moodIcon}>{getMoodIcon(item.mood)}</Text>
       </View>
-
-      <Text style={styles.section}>️ Yemek: {item.yemek?.breakfast ? '✅' : ''} Kahvaltı, {item.yemek?.lunch ? '✅' : ''} Öğle, {item.yemek?.snack ? '✅' : '❌'} İkindi</Text>
-      <Text style={styles.section}>💤 Uyku: {item.uyku?.duration} Saat</Text>
-      <Text style={styles.section}>🚽 Tuvalet: {item.tuvalet?.count} Kere</Text>
+      <Text style={styles.section}>
+        🍽️ Yemek: {item.yemek?.kahvalti ? '✅' : '❌'} Kahvaltı, {item.yemek?.ogle ? '✅' : '❌'} Öğle, {item.yemek?.araOgun ? '✅' : '❌'} İkindi
+      </Text>
+      <Text style={styles.section}>💤 Uyku: {item.uyku?.sure} Saat</Text>
+      <Text style={styles.section}>🚽 Tuvalet: {item.tuvalet?.sayi} Kere</Text>
       
-      {item.note ? (
-        <Text style={styles.note}>📝 Not: {item.note}</Text>
+      {item.not ? (
+        <Text style={styles.note}>📝 Not: {item.not}</Text>
       ) : null}
     </View>
   );
