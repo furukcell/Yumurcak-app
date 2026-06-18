@@ -1,14 +1,13 @@
 // ============================================================
 // YUMURCAK — LoginScreen.js
 // ============================================================
-
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   SafeAreaView, ScrollView, ActivityIndicator,
   StyleSheet, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
-import { RENKLER, DB_URL } from '../../../constants';
+import { RENKLER, DB_URL } from '../../constants';  // ✅ 2 seviye yukarı
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginScreen() {
