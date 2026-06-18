@@ -2,16 +2,30 @@ workflows:
   yumurcak-android:
     name: Yumurcak Android Build
     instance_type: mac_mini_m1
+    max_build_duration: 60
+
     environment:
       vars:
         EXPO_TOKEN: $EXPO_TOKEN
+
     scripts:
-      - name: Setup Expo
+      - name: Install dependencies
+        script: |
+          npm install --legacy-peer-deps
+
+      - name: Check Expo SDK dependencies
+        script: |
+          npx expo install --fix
+
+      - name: Setup EAS
         script: |
           npm install -g eas-cli
-          echo "$EXPO_TOKEN" | eas login --non-interactive
-      - name: Build with EAS
+          eas whoami || true
+
+      - name: Build Android AAB with EAS
         script: |
-          eas build --platform android --profile preview --non-interactive
+          eas build --platform android --profile production --non-interactive
+
     artifacts:
-      - android/*.apk
+      - "*.aab"
+      - "**/*.aab"
