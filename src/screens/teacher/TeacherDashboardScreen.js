@@ -1,26 +1,32 @@
+// ============================================================
+// YUMURCAK — TeacherDashboardScreen.js
+// Öğretmen ana ekranı — sınıfındaki çocukları gösterir
+// ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ref, onValue } from 'firebase/database';
-import { db, auth } from '../../config/firebase';
+import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
+  const { kullanici } = useAuth();
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
-  const teacherId = auth.currentUser?.uid;
+  const teacherId = kullanici?.uid;
 
   useEffect(() => {
     if (!teacherId) return;
 
-    const classesRef = ref(db, 'siniflar');
+    const classesRef = ref(database, 'siniflar');
     const unsubscribe = onValue(classesRef, (snapshot) => {
       const data = snapshot.val();
       let assignedClassId = null;
 
       if (data) {
         for (const [classId, classData] of Object.entries(data)) {
-          if (classData.teacherIds?.includes(teacherId)) {
+          if (classData.ogretmenIds?.includes(teacherId)) {
             assignedClassId = classId;
             break;
           }
@@ -28,7 +34,7 @@ export default function TeacherDashboardScreen() {
       }
 
       if (assignedClassId) {
-        const childrenRef = ref(db, 'cocuklar');
+        const childrenRef = ref(database, 'cocuklar');
         const childUnsub = onValue(childrenRef, (childSnap) => {
           const childData = childSnap.val();
           const classChildren = childData
@@ -71,8 +77,8 @@ export default function TeacherDashboardScreen() {
               style={styles.card}
               onPress={() => navigation.navigate('ChildReport', { child: item })}
             >
-              <Text style={styles.childName}>{item.name}</Text>
-              <Text style={styles.birthDate}>Doğum: {item.birthDate}</Text>
+              <Text style={styles.childName}>{item.ad}</Text>
+              <Text style={styles.birthDate}>Doğum: {item.dogumTarihi}</Text>
             </TouchableOpacity>
           )}
         />
