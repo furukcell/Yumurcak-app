@@ -1,11 +1,10 @@
 // ============================================================
 // YUMURCAK — RootNavigator.js
 // ============================================================
-
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { RENKLER, ROLLER } from '../../constants';
+import { RENKLER, ROLLER } from '../constants';  // ✅ 1 seviye yukarı
 import AuthStack from './AuthStack';
 import AdminStack from './AdminStack';
 import TeacherStack from './TeacherStack';
