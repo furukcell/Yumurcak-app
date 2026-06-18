@@ -120,7 +120,7 @@ export async function sendNotification(toToken, title, body, data = {}) {
  */
 export async function broadcastNotificationToParents(title, body, data = {}) {
   try {
-    const usersRef = ref(database, 'users');
+    const usersRef = ref(database, 'kullanicilar');
     const snapshot = await get(usersRef);
     
     if (!snapshot.exists()) return;
