@@ -7,6 +7,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { ref, set, get } from 'firebase/database';
 import { database, auth } from '../config/firebase';
+import { ROLLER } from '../../constants';
 
 // Bildirim handler'ı ayarla
 Notifications.setNotificationHandler({
@@ -77,7 +78,7 @@ export async function savePushTokenToDatabase(token, userId) {
     }
 
     const userRef = ref(database, `kullanicilar/${userId}/pushToken`)
-    await set(userRef, {
+    await set(userRef, token);
       pushToken: token,
       updatedAt: Date.now(),
     });
@@ -130,7 +131,7 @@ export async function broadcastNotificationToParents(title, body, data = {}) {
     const tokens = [];
 
     Object.values(users).forEach(user => {
-      if (user.role === 'parent' && user.pushToken) {
+     if (user.rol === ROLLER.VELI && user.pushToken) {
         tokens.push(user.pushToken);
       }
     });
