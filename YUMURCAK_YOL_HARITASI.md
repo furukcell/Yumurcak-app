@@ -1,857 +1,470 @@
-# Yumurcak Kreş Yol Haritası
+# Yumurcak Kreş — Güncel Yol Haritası
 
-Bu doküman, **Yumurcak Kreş** uygulamasının mevcut prototip aşamasından çalışan, güvenli ve pilot kullanıma hazır bir MVP seviyesine taşınması için hazırlanmıştır.
+Bu doküman, **Yumurcak Kreş** uygulamasının mevcut durumunu ve bundan sonra yapılacak işleri gösterir.
 
-Yumurcak Kreş; kreş, öğretmen ve veli arasındaki günlük iletişimi dijitalleştirmeyi hedefleyen mobil bir uygulamadır. İlk hedef; öğretmenin çocuk için günlük rapor girmesi, velinin bu raporu güvenli şekilde görüntülemesi ve kreş yöneticisinin temel kullanıcı/sınıf/çocuk yönetimini yapabilmesidir.
+Durum renkleri:
 
----
-
-## 1. Genel Öncelik
-
-Yumurcak için ilk hedef yeni özellik eklemek değil, mevcut yapıyı sadeleştirip çalışan bir MVP iskeletine dönüştürmektir.
-
-Öncelik sırası:
-
-```txt
-Çalışsın
-↓
-Güvenli olsun
-↓
-Basit olsun
-↓
-Pilot kreşte denensin
-↓
-Sonra büyüsün
-```
+* 🟢 **Yapıldı / temel seviye tamamlandı**
+* ⚪ **Yapılacak / sonraki aşama**
 
 ---
 
-## 2. MVP Tanımı
+## 1. Genel Hedef
 
-Yumurcak'ın ilk MVP hedefi şudur:
+Yumurcak Kreş’in ilk hedefi yeni özellik eklemek değil, çalışan bir MVP oluşturmaktır.
 
-> Bir kreş, çocukların günlük durum raporlarını öğretmenler üzerinden girip velilere uygulama içinde güvenli şekilde ulaştırabiliyor mu?
+Ana MVP cümlesi:
 
-Bu soru net şekilde evet olana kadar ek özelliklere geçilmemelidir.
-
-İlk MVP'de olması gerekenler:
-
-- Giriş sistemi
-- Rol bazlı yönlendirme
-- Yönetici paneli
-- Öğretmen paneli
-- Veli paneli
-- Sınıf yönetimi
-- Çocuk yönetimi
-- Öğretmen / veli bağlantısı
-- Günlük çocuk raporu
-- Duyuru sistemi
-- Push bildirim altyapısı
-- Firebase güvenlik kuralları
-- Uçtan uca test hesapları
+> Bir öğretmen çocuk için günlük rapor girsin, veli kendi telefonundan o raporu görebilsin, yönetici ise sınıf/çocuk/öğretmen/veli bağlantısını yönetebilsin.
 
 ---
 
-## 3. İlk Aşamada Olmayacak Özellikler
+## 2. MVP Ana Akış
 
-Projeyi büyütüp dağıtmamak için ilk MVP dışında tutulacak özellikler:
-
-- Veli-öğretmen mesajlaşması
-- Fotoğraf yükleme
-- Video yükleme
-- Canlı kamera
-- Servis takibi
-- Detaylı yemek menüsü
-- PDF rapor çıktısı
-- Aylık gelişim analizi
-- AI yorum / AI özet
-- Çoklu şube sistemi
-- Ödeme entegrasyonu
-- Gelişmiş istatistik paneli
-
-Bu özellikler pilot kullanım sonrası gerçek ihtiyaçlara göre eklenmelidir.
+| Durum | İş                                                                |
+| ----- | ----------------------------------------------------------------- |
+| 🟢    | Uygulama Expo + React Native + Firebase yapısına oturtuldu        |
+| 🟢    | Rol bazlı yapı belirlendi: `yonetici`, `ogretmen`, `veli`         |
+| 🟢    | Yönetici / öğretmen / veli navigation yapısı kuruldu              |
+| 🟢    | Öğretmen çocuk için günlük rapor girecek ekran yapısına kavuştu   |
+| 🟢    | Veli kendi çocuğunun raporlarını görecek ekran yapısına kavuştu   |
+| 🟢    | Firebase Realtime Database ana veri modeli belirlendi             |
+| 🟢    | README güncel MVP yapısına göre sadeleştirildi                    |
+| ⚪     | Admin panelindeki tüm CRUD işlemleri gerçek cihazda test edilecek |
+| ⚪     | Öğretmen rapor girme akışı uçtan uca test edilecek                |
+| ⚪     | Veli rapor görüntüleme akışı uçtan uca test edilecek              |
+| ⚪     | 3 test hesabıyla gerçek MVP senaryosu denenilecek                 |
 
 ---
 
-## 4. Teknik Toparlama Planı
+## 3. Teknik Toparlama
 
-### 4.1 App.js Düzenlemesi
-
-Öncelikle uygulamanın ana giriş noktası netleştirilmelidir.
-
-Yapılacaklar:
-
-- `App.js` dosyası kontrol edilecek.
-- `NavigationContainer` doğru şekilde bağlanacak.
-- `AuthProvider` doğru şekilde sarmalanacak.
-- `RootNavigator` uygulamanın ana yönlendirme merkezi olacak.
-- Boş veya çalışmayan `return` yapısı varsa düzeltilecek.
-- Uygulama açıldığında oturum kontrolü yapılacak.
-
-Beklenen akış:
-
-```txt
-Uygulama açılır
-↓
-Oturum var mı kontrol edilir
-↓
-Oturum yoksa Login ekranı açılır
-↓
-Oturum varsa kullanıcı rolü okunur
-↓
-Rolüne göre ilgili panele yönlendirilir
-```
+| Durum | İş                                                                         |
+| ----- | -------------------------------------------------------------------------- |
+| 🟢    | `App.js` ana giriş yapısı toparlandı                                       |
+| 🟢    | `AuthProvider`, `NavigationContainer`, `RootNavigator` yapısı kuruldu      |
+| 🟢    | Eski TypeScript karmaşası azaltıldı                                        |
+| 🟢    | `firebase.ts` yerine `firebase.js` kullanılacak yapı oluşturuldu           |
+| 🟢    | `constants.js` yapısı `src/constants.js` standardına çekildi               |
+| 🟢    | `app.json` sadeleştirildi                                                  |
+| 🟢    | Eksik asset dosyaları build patlatmasın diye `app.json` içinden kaldırıldı |
+| 🟢    | Android `versionCode` eklendi                                              |
+| 🟢    | Expo SDK 53’e geçildi                                                      |
+| 🟢    | EAS production profili AAB üretimine ayarlandı                             |
+| 🟢    | Codemagic production build kullanacak şekilde düzenlendi                   |
+| ⚪     | `npm install --legacy-peer-deps` testi yapılacak                           |
+| ⚪     | `npx expo install --fix` çalıştırılacak                                    |
+| ⚪     | `npx expo start --clear` ile Metro testi yapılacak                         |
+| ⚪     | `npx expo-doctor` çıktısı kontrol edilecek                                 |
+| ⚪     | Codemagic üzerinden ilk AAB build alınacak                                 |
+| ⚪     | Build hatası çıkarsa import/runtime hataları temizlenecek                  |
 
 ---
 
-### 4.2 Eski ve Yeni Ekran Yapılarının Ayrılması
+## 4. Expo / Google Play Hazırlığı
 
-Projede eski `screens/` klasörü ile yeni `src/screens/` yapısı birlikte bulunuyorsa bu karışıklık giderilmelidir.
-
-Hedef klasör yapısı:
-
-```txt
-src/
-  components/
-  config/
-  context/
-  hooks/
-  navigation/
-  screens/
-  types/
-  utils/
-```
-
-Yapılacaklar:
-
-- Kullanılacak ana ekran yapısı seçilecek.
-- Eski ekranlar kullanılmıyorsa silinecek veya `legacy/` klasörüne taşınacak.
-- Tüm aktif ekranlar `src/screens/` altında toplanacak.
-- Navigation dosyaları sadece aktif ekranları çağıracak.
-
-Amaç:
-
-> Uygulamada tek bir ekran sistemi, tek bir navigation yapısı ve tek bir giriş akışı olmalıdır.
-
----
-
-### 4.3 Giriş Sisteminin Tekleştirilmesi
-
-Üretim için tek ve güvenli giriş sistemi kullanılmalıdır.
-
-Doğru yapı:
-
-```txt
-Firebase Authentication
-+
-Realtime Database kullanıcı profili
-```
-
-Yapılacaklar:
-
-- Manuel kullanıcı adı / şifre kontrolü kaldırılacak.
-- Şifreler Realtime Database içinde düz metin tutulmayacak.
-- Firebase Auth email/password kullanılacak.
-- Kullanıcının rolü Realtime Database üzerinden okunacak.
-- Kullanıcı profili `kullanicilar/{uid}` altında tutulacak.
-
-Önerilen kullanıcı profili:
-
-```txt
-kullanicilar/{uid}
-  ad
-  email
-  rol
-  kresId
-  aktif
-  createdAt
-```
-
-Roller için tek dil seçilmelidir:
-
-```txt
-yonetici
-ogretmen
-veli
-```
-
-veya
-
-```txt
-admin
-teacher
-parent
-```
-
-Türkçe ve İngilizce alan adları karışık kullanılmamalıdır.
+| Durum | İş                                                          |
+| ----- | ----------------------------------------------------------- |
+| 🟢    | Expo SDK 53’e geçildi                                       |
+| 🟢    | Google Play için AAB build hedeflendi                       |
+| 🟢    | `eas.json` production profili düzenlendi                    |
+| 🟢    | `codemagic.yaml` production build komutuna çekildi          |
+| 🟢    | Android package adı belirlendi: `com.furukcell.yumurcakapp` |
+| 🟢    | Android `versionCode: 1` eklendi                            |
+| ⚪     | İlk AAB dosyası üretilecek                                  |
+| ⚪     | Play Console kapalı test kanalı açılacak                    |
+| ⚪     | Test kullanıcı listesi hazırlanacak                         |
+| ⚪     | Kapalı teste ilk sürüm yüklenecek                           |
+| ⚪     | Crash / açılış / giriş / rapor testleri yapılacak           |
 
 ---
 
 ## 5. Firebase Veri Modeli
 
-Yumurcak için sade ve anlaşılır bir veri modeli yeterlidir.
-
-Önerilen ana node yapısı:
+Kullanılacak ana node yapısı:
 
 ```txt
-kresler/
 kullanicilar/
+kresler/
 siniflar/
 cocuklar/
-raporlar/
+gunlukRaporlar/
 duyurular/
-bildirimTokenlari/
 ```
 
-### 5.1 Kreşler
-
-```txt
-kresler/{kresId}
-  ad
-  adres
-  telefon
-  aktif
-  createdAt
-```
-
-### 5.2 Kullanıcılar
-
-```txt
-kullanicilar/{uid}
-  ad
-  email
-  rol
-  kresId
-  aktif
-  createdAt
-```
-
-Roller:
-
-```txt
-yonetici
-ogretmen
-veli
-```
-
-### 5.3 Sınıflar
-
-```txt
-siniflar/{sinifId}
-  kresId
-  ad
-  ogretmenIds
-  aktif
-  createdAt
-```
-
-### 5.4 Çocuklar
-
-```txt
-cocuklar/{cocukId}
-  kresId
-  sinifId
-  ad
-  dogumTarihi
-  veliIds
-  aktif
-  createdAt
-```
-
-### 5.5 Raporlar
-
-```txt
-raporlar/{raporId}
-  kresId
-  cocukId
-  sinifId
-  ogretmenId
-  tarih
-  ruhHali
-  yemek
-  uyku
-  tuvalet
-  not
-  createdAt
-```
-
-### 5.6 Duyurular
-
-```txt
-duyurular/{duyuruId}
-  kresId
-  baslik
-  mesaj
-  oncelik
-  hedef
-  createdAt
-```
-
-### 5.7 Bildirim Tokenları
-
-```txt
-bildirimTokenlari/{uid}
-  token
-  platform
-  updatedAt
-```
+| Durum | İş                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------- |
+| 🟢    | Türkçe veri modeli seçildi                                                                      |
+| 🟢    | Roller netleştirildi: `yonetici`, `ogretmen`, `veli`                                            |
+| 🟢    | `kullanicilar` yapısı belirlendi                                                                |
+| 🟢    | `kresler` yapısı belirlendi                                                                     |
+| 🟢    | `siniflar` yapısı belirlendi                                                                    |
+| 🟢    | `cocuklar` yapısı belirlendi                                                                    |
+| 🟢    | `gunlukRaporlar` yapısı belirlendi                                                              |
+| 🟢    | `duyurular` yapısı belirlendi                                                                   |
+| ⚪     | Firebase içinde test verileri manuel oluşturulacak                                              |
+| ⚪     | Eski `users`, `raporlar`, `parentIds`, `teacherIds` gibi İngilizce/karışık alanlar temizlenecek |
+| ⚪     | Tüm sorgular `kresId` filtresiyle güvenli hale getirilecek                                      |
+| ⚪     | Veli sadece kendi çocuğunu görebilecek şekilde kontrol edilecek                                 |
+| ⚪     | Öğretmen sadece kendi sınıfındaki çocukları görebilecek şekilde kontrol edilecek                |
 
 ---
 
-## 6. Build ve Expo Ayarları
+## 6. Auth / Giriş Sistemi
 
-### 6.1 app.json Kontrolü
-
-Yapılacaklar:
-
-- `app.json` JSON formatı doğrulanacak.
-- Eksik virgül, yanlış kapanan blok veya hatalı alanlar düzeltilecek.
-- Android package adı netleştirilecek.
-- Uygulama adı netleştirilecek.
-- Splash screen ve ikon dosyaları kontrol edilecek.
-- Expo project ID placeholder kalmayacak.
-
-Önerilen Android package:
-
-```txt
-com.yumurcak.kres
-```
-
-Önerilen uygulama adı:
-
-```txt
-Yumurcak Kreş
-```
-
-Kontrol komutu:
-
-```bash
-npx expo doctor
-```
-
-### 6.2 Build Testi
-
-Android build öncesi:
-
-```bash
-npm install
-npx expo start
-```
-
-Production build için:
-
-```bash
-eas build --platform android --profile production
-```
+| Durum | İş                                                       |
+| ----- | -------------------------------------------------------- |
+| 🟢    | Geçici kullanıcı adı / şifre sistemi kuruldu             |
+| 🟢    | Kullanıcı rolüne göre yönlendirme mantığı oluşturuldu    |
+| 🟢    | Oturum bilgisini saklama mantığı eklendi                 |
+| 🟢    | Çıkış yapma akışı oluşturuldu                            |
+| ⚪     | Firebase Auth email/password sistemine geçilecek         |
+| ⚪     | Düz metin şifre kullanımı kaldırılacak                   |
+| ⚪     | Kullanıcı profili `kullanicilar/{uid}` altında tutulacak |
+| ⚪     | Login hataları daha kullanıcı dostu hale getirilecek     |
+| ⚪     | Pasif kullanıcı / aktif kullanıcı kontrolü eklenecek     |
 
 ---
 
 ## 7. Yönetici Paneli
 
-Yönetici paneli MVP için sade tutulmalıdır.
+Yönetici, kreş müdürü / kreş yönetimi anlamına gelir.
 
-Yönetici yapabilecekleri:
-
-- Sınıf oluşturma
-- Sınıf listeleme
-- Öğretmen ekleme
-- Veli ekleme
-- Çocuk ekleme
-- Çocuğu sınıfa bağlama
-- Çocuğu veliye bağlama
-- Duyuru oluşturma
-- Duyuru listeleme
-
-Önerilen yönetici menüsü:
-
-```txt
-Sınıflar
-Çocuklar
-Öğretmenler
-Veliler
-Duyurular
-Ayarlar
-```
-
-İlk MVP'de gelişmiş istatistik veya grafik gerekli değildir.
+| Durum | İş                                                      |
+| ----- | ------------------------------------------------------- |
+| 🟢    | Yönetici rolü tanımlandı                                |
+| 🟢    | Yönetici stack yapısı oluşturuldu                       |
+| 🟢    | Yönetici paneli için temel ekranlar oluşturuldu         |
+| 🟢    | Sınıf ekranları eklendi                                 |
+| 🟢    | Çocuk ekranları eklendi                                 |
+| 🟢    | Öğretmen ekranları eklendi                              |
+| 🟢    | Veli ekranları eklendi                                  |
+| 🟢    | Duyuru ekranları eklendi                                |
+| ⚪     | Sınıf oluşturma gerçek Firebase verisiyle test edilecek |
+| ⚪     | Öğretmen oluşturma ve sınıfa atama test edilecek        |
+| ⚪     | Veli oluşturma test edilecek                            |
+| ⚪     | Çocuk oluşturma test edilecek                           |
+| ⚪     | Çocuğu veliye bağlama test edilecek                     |
+| ⚪     | Çocuğu sınıfa bağlama test edilecek                     |
+| ⚪     | Yönetici ekranlarında eksik CRUD işlemleri tamamlanacak |
+| ⚪     | Gereksiz/boş placeholder ekranlar temizlenecek          |
 
 ---
 
 ## 8. Öğretmen Paneli
 
-Öğretmen panelinin ana amacı, öğretmenin kendi sınıfındaki çocuklara günlük rapor girmesidir.
-
-Öğretmen akışı:
-
-```txt
-Öğretmen giriş yapar
-↓
-Kendi sınıfını veya sınıflarını görür
-↓
-Çocuk listesini görür
-↓
-Çocuğa tıklar
-↓
-Bugünkü raporu girer
-↓
-Kaydet der
-↓
-Veliye bildirim gider
-```
-
-Günlük rapor alanları:
-
-```txt
-Ruh hali
-Yemek durumu
-Uyku süresi
-Tuvalet durumu
-Genel not
-```
+| Durum | İş                                                                  |
+| ----- | ------------------------------------------------------------------- |
+| 🟢    | Öğretmen rolü tanımlandı                                            |
+| 🟢    | Öğretmen stack yapısı oluşturuldu                                   |
+| 🟢    | Öğretmen dashboard ekranı oluşturuldu                               |
+| 🟢    | Öğretmenin kendi sınıfındaki çocukları görmesi hedeflendi           |
+| 🟢    | Çocuk raporu giriş ekranı oluşturuldu                               |
+| 🟢    | Günlük rapor alanları eklendi                                       |
+| ⚪     | Öğretmenin sadece kendi sınıfındaki çocukları gördüğü test edilecek |
+| ⚪     | Aynı çocuk için aynı gün ikinci rapor davranışı netleştirilecek     |
+| ⚪     | Rapor kaydetme sonrası başarılı / hata mesajları test edilecek      |
+| ⚪     | Saving/loading state kontrol edilecek                               |
+| ⚪     | Rapor kaydı sonrası veliye bildirim akışı bağlanacak                |
 
 ---
 
 ## 9. Veli Paneli
 
-Veli paneli ilk sürümde çok sade olmalıdır.
-
-Veli yapabilecekleri:
-
-- Kendisine bağlı çocukları görüntüleme
-- Çocuğun günlük raporlarını görüntüleme
-- Duyuruları görüntüleme
-
-Veli akışı:
-
-```txt
-Veli giriş yapar
-↓
-Çocuğunu veya çocuklarını görür
-↓
-Çocuğa tıklar
-↓
-Rapor geçmişini görür
-↓
-Bugünkü raporu en üstte görür
-```
-
-İlk MVP'de veli-öğretmen mesajlaşması eklenmemelidir.
+| Durum | İş                                                      |
+| ----- | ------------------------------------------------------- |
+| 🟢    | Veli rolü tanımlandı                                    |
+| 🟢    | Veli stack yapısı oluşturuldu                           |
+| 🟢    | Veli dashboard ekranı oluşturuldu                       |
+| 🟢    | Veliye bağlı çocukları listeleme hedeflendi             |
+| 🟢    | Veli rapor görüntüleme ekranı oluşturuldu               |
+| ⚪     | Veli sadece kendi çocuğunu görüyor mu test edilecek     |
+| ⚪     | Başka veliye ait çocuk görünmüyor mu test edilecek      |
+| ⚪     | Raporlar tarihe göre doğru sıralanıyor mu test edilecek |
+| ⚪     | Rapor yoksa boş ekran mesajı kontrol edilecek           |
+| ⚪     | Duyuru görüntüleme akışı tamamlanacak                   |
 
 ---
 
 ## 10. Günlük Rapor Sistemi
 
-Yumurcak'ın ana ürünü günlük rapor sistemidir.
-
-Örnek rapor ekranı:
-
-```txt
-Bugünkü ruh hali:
-Mutlu / Normal / Huzursuz / Yorgun
-
-Yemek:
-İyi yedi / Az yedi / Yemedi
-
-Uyku:
-Uyudu / Uyumadı
-Süre: 1 saat / 2 saat
-
-Tuvalet:
-Normal / Az / Sorun var
-
-Öğretmen notu:
-Bugün çok neşeliydi.
-```
-
-Rapor kaydetme mantığı:
-
-```txt
-Öğretmen raporu kaydeder
-↓
-raporlar/{raporId} altına veri yazılır
-↓
-Çocuğun veliIds alanı okunur
-↓
-Velilere bildirim gönderilir
-```
-
-Aynı çocuğa aynı gün tekrar rapor girilirse:
-
-- Mevcut rapor güncellenebilir
-- veya kullanıcıya "Bugün için rapor var, düzenlemek ister misiniz?" uyarısı gösterilebilir
+| Durum | İş                                                                                |
+| ----- | --------------------------------------------------------------------------------- |
+| 🟢    | Günlük rapor sistemi MVP’nin ana özelliği olarak belirlendi                       |
+| 🟢    | Rapor giriş ekranı oluşturuldu                                                    |
+| 🟢    | Ruh hali alanı eklendi                                                            |
+| 🟢    | Yemek bilgisi alanı eklendi                                                       |
+| 🟢    | Uyku bilgisi alanı eklendi                                                        |
+| 🟢    | Tuvalet bilgisi alanı eklendi                                                     |
+| 🟢    | Öğretmen notu alanı eklendi                                                       |
+| 🟢    | Raporların Firebase’e yazılması hedeflendi                                        |
+| ⚪     | Raporların `gunlukRaporlar` node’una doğru yazıldığı test edilecek                |
+| ⚪     | Raporlarda `kresId`, `sinifId`, `cocukId`, `ogretmenId` alanları kontrol edilecek |
+| ⚪     | Aynı gün rapor güncelleme / yeniden oluşturma kararı verilecek                    |
+| ⚪     | Veli rapor ekranında doğru veri görüntülendiği test edilecek                      |
 
 ---
 
-## 11. Bildirim Sistemi
+## 11. Duyuru Sistemi
 
-Bildirim sistemi MVP için ikinci önceliktir. Önce rapor kayıt akışı çalışmalıdır.
-
-Bildirim kullanım alanları:
-
-- Yeni günlük rapor bildirimi
-- Yeni duyuru bildirimi
-- Acil duyuru bildirimi
-
-Örnek rapor bildirimi:
-
-```txt
-Zeynep için bugünkü rapor hazır.
-```
-
-Örnek duyuru bildirimi:
-
-```txt
-Yumurcak Kreş yeni bir duyuru paylaştı.
-```
-
-Bildirim akışı:
-
-```txt
-Kullanıcı giriş yapar
-↓
-Push token alınır
-↓
-Token Firebase'e kaydedilir
-↓
-Rapor veya duyuru oluşunca ilgili kullanıcıların tokenları okunur
-↓
-Bildirim gönderilir
-```
-
-Üretim aşamasında bildirim gönderimi mümkünse Cloud Functions üzerinden yapılmalıdır.
+| Durum | İş                                                         |
+| ----- | ---------------------------------------------------------- |
+| 🟢    | Duyuru sistemi MVP içinde tanımlandı                       |
+| 🟢    | Yönetici duyuru ekranları oluşturuldu                      |
+| ⚪     | Duyuru oluşturma Firebase ile test edilecek                |
+| ⚪     | Veli duyuruları görebilecek şekilde ekran tamamlanacak     |
+| ⚪     | Öğretmen duyuruları görebilecek şekilde ekran tamamlanacak |
+| ⚪     | Acil / normal duyuru ayrımı test edilecek                  |
+| ⚪     | Duyuru bildirimi MVP sonrası aktif edilecek                |
 
 ---
 
-## 12. Firebase Security Rules
+## 12. Bildirim Sistemi
 
-Yumurcak'ta çocuk verisi bulunduğu için güvenlik en kritik konulardan biridir.
-
-Temel kural hedefleri:
-
-- Yönetici sadece kendi kreşinin verisini görebilmeli.
-- Öğretmen sadece kendi sınıfındaki çocukları görebilmeli.
-- Veli sadece kendi çocuğunu görebilmeli.
-- Raporu öğretmen veya yönetici yazabilmeli.
-- Veli rapor okuyabilmeli ama değiştirememeli.
-- Farklı kreşlerin verileri birbirine kapalı olmalı.
-
-Bu kurallar tamamlanmadan uygulama geniş kullanıma açılmamalıdır.
-
----
-
-## 13. Test Hesapları ve Test Senaryosu
-
-MVP testleri için üç temel hesap oluşturulmalıdır.
-
-Örnek hesaplar:
-
-```txt
-admin@yumurcak.com
-ogretmen@yumurcak.com
-veli@yumurcak.com
-```
-
-Örnek test verisi:
-
-```txt
-Kreş: Yumurcak Kreş
-Sınıf: Minikler
-Öğretmen: Ayşe Öğretmen
-Veli: Faruk Veli
-Çocuk: Zeynep
-```
-
-Uçtan uca test senaryosu:
-
-```txt
-Admin giriş yapar
-↓
-Sınıf oluşturur
-↓
-Öğretmen oluşturur
-↓
-Veli oluşturur
-↓
-Çocuk oluşturur
-↓
-Çocuğu sınıfa ve veliye bağlar
-↓
-Öğretmen giriş yapar
-↓
-Çocuğa günlük rapor girer
-↓
-Veli giriş yapar
-↓
-Raporu görür
-```
-
-Bu senaryo hatasız çalışıyorsa MVP'nin ana omurgası tamamdır.
+| Durum | İş                                                                |
+| ----- | ----------------------------------------------------------------- |
+| 🟢    | Expo Notifications altyapısı projede yer aldı                     |
+| 🟢    | Bildirim sistemi MVP sonrası aktif edilecek şekilde planlandı     |
+| 🟢    | Bildirim kodlarının uygulamayı çökertmemesi hedeflendi            |
+| ⚪     | Expo Project ID netleştirilecek                                   |
+| ⚪     | Push token alma gerçek cihazda test edilecek                      |
+| ⚪     | Token `kullanicilar/{uid}/pushToken` altında tutulacak            |
+| ⚪     | Rapor girildiğinde veliye bildirim gönderilecek                   |
+| ⚪     | Duyuru yayınlandığında ilgili kullanıcılara bildirim gönderilecek |
+| ⚪     | Üretim için mümkünse Cloud Functions değerlendirilecek            |
 
 ---
 
-## 14. Tasarım Yaklaşımı
+## 13. Firebase Security Rules
 
-Yumurcak, Gayıt gibi ciddi bir pazar yeri uygulaması değil; aile, çocuk ve güven odaklı bir kreş uygulamasıdır.
-
-Tasarım hissi:
-
-```txt
-Sıcak
-Güvenli
-Yumuşak
-Renkli ama karışık değil
-Anne-babaya güven veren
-```
-
-Renk önerileri:
-
-```txt
-Pastel sarı
-Pastel mavi
-Pastel yeşil
-Beyaz zemin
-Yuvarlak kartlar
-Büyük okunaklı yazılar
-```
-
-Tasarımda öncelik:
-
-- Kolay okunabilirlik
-- Büyük butonlar
-- Az seçenek
-- Basit rapor görüntüleme
-- Veli için güven veren ekranlar
+| Durum | İş                                                      |
+| ----- | ------------------------------------------------------- |
+| ⚪     | Firebase Security Rules üretim için güçlendirilecek     |
+| ⚪     | Yönetici sadece kendi kreşinin verisini görecek         |
+| ⚪     | Öğretmen sadece kendi sınıfındaki çocukları görecek     |
+| ⚪     | Veli sadece kendi çocuğunu görecek                      |
+| ⚪     | Veli rapor okuyacak ama yazamayacak                     |
+| ⚪     | Öğretmen rapor yazabilecek                              |
+| ⚪     | Farklı kreş verileri birbirinden ayrılacak              |
+| ⚪     | Kapalı test öncesi minimum güvenlik kuralları yazılacak |
 
 ---
 
-## 15. İş Modeli
+## 14. Test Hesapları
 
-Yumurcak için en uygun model B2B abonelik modelidir.
-
-Önerilen model:
-
-```txt
-Kreş öder, veli ücretsiz kullanır.
-```
-
-Bireysel veliden ücret almak ilk aşamada önerilmez. Çünkü veli tarafında "çocuğumu görmek için para ödüyorum" algısı oluşabilir.
-
-### 15.1 Örnek Paketler
-
-#### Başlangıç Paketi
-
-```txt
-499 TL / ay
-1 kreş
-3 sınıf
-50 çocuk
-Günlük rapor
-Duyuru
-```
-
-#### Standart Paket
-
-```txt
-999 TL / ay
-1 kreş
-10 sınıf
-150 çocuk
-Günlük rapor
-Duyuru
-Bildirim
-Rapor geçmişi
-```
-
-#### Premium Paket
-
-```txt
-1499 TL / ay
-Sınırsız sınıf
-Sınırsız çocuk
-Fotoğraflı rapor
-Gelişim notları
-PDF çıktı
-```
-
-İlk pilot aşamada ödeme entegrasyonu şart değildir. Pilot kreşle manuel ödeme veya ücretsiz deneme modeli uygulanabilir.
+| Durum | İş                                                 |
+| ----- | -------------------------------------------------- |
+| 🟢    | Test kullanıcı rolleri belirlendi                  |
+| 🟢    | Yönetici test hesabı belirlendi                    |
+| 🟢    | Öğretmen test hesabı belirlendi                    |
+| 🟢    | Veli test hesabı belirlendi                        |
+| ⚪     | Firebase içine gerçek test kullanıcıları eklenecek |
+| ⚪     | Test sınıfı oluşturulacak                          |
+| ⚪     | Test çocuk kaydı oluşturulacak                     |
+| ⚪     | Öğretmen sınıfa bağlanacak                         |
+| ⚪     | Çocuk veliye bağlanacak                            |
+| ⚪     | Uçtan uca test yapılacak                           |
 
 ---
 
-## 16. Pilot Kreş Planı
+## 15. Uçtan Uca MVP Testi
 
-Kod toparlandıktan sonra uygulama doğrudan geniş kitleye açılmamalıdır. Önce bir pilot kreşte denenmelidir.
+Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 
-Pilot hedef:
-
-```txt
-1 kreş
-1 yönetici
-2 öğretmen
-10 veli
-15 çocuk
-2 hafta test
-```
-
-Pilot testte ölçülecek sorular:
-
-- Öğretmen rapor girmeyi kolay buluyor mu?
-- Veli raporu kolay anlıyor mu?
-- Bildirimler düzgün geliyor mu?
-- Yönetici çocuk ve sınıf eklerken zorlanıyor mu?
-- Uygulama her gün kullanılabilir mi?
-- Öğretmenler günlük rapor girmeyi ek yük olarak mı görüyor?
-- Veliler uygulamayı değerli buluyor mu?
+| Durum | Test                                                       |
+| ----- | ---------------------------------------------------------- |
+| ⚪     | Uygulama açılıyor mu?                                      |
+| ⚪     | Login ekranı geliyor mu?                                   |
+| ⚪     | Yönetici giriş yapabiliyor mu?                             |
+| ⚪     | Yönetici sınıf oluşturabiliyor mu?                         |
+| ⚪     | Yönetici öğretmen oluşturabiliyor mu?                      |
+| ⚪     | Yönetici veli oluşturabiliyor mu?                          |
+| ⚪     | Yönetici çocuk oluşturabiliyor mu?                         |
+| ⚪     | Çocuk sınıfa bağlanıyor mu?                                |
+| ⚪     | Çocuk veliye bağlanıyor mu?                                |
+| ⚪     | Öğretmen kendi sınıfındaki çocuğu görüyor mu?              |
+| ⚪     | Öğretmen günlük rapor giriyor mu?                          |
+| ⚪     | Veli kendi çocuğunu görüyor mu?                            |
+| ⚪     | Veli günlük raporu görüyor mu?                             |
+| ⚪     | Çıkış yap / tekrar giriş akışı çalışıyor mu?               |
+| ⚪     | Uygulama kapanıp açıldığında oturum kontrolü çalışıyor mu? |
 
 ---
 
-## 17. Kod Temizliği Sırası
+## 16. Tasarım Yaklaşımı
 
-Kod temizliği şu sırayla yapılmalıdır:
-
-```txt
-1. App.js
-2. app.json
-3. src/navigation
-4. AuthContext
-5. firebase.ts
-6. LoginScreen
-7. AdminDashboard
-8. TeacherDashboard
-9. ParentDashboard
-10. ChildReportScreen
-11. database.rules.json
-12. Bildirim hookları
-13. Gereksiz eski ekranların temizlenmesi
-```
+| Durum | İş                                                       |
+| ----- | -------------------------------------------------------- |
+| 🟢    | Uygulamanın aile/çocuk/güven odaklı olması belirlendi    |
+| 🟢    | Sade ve sıcak tasarım hedefi belirlendi                  |
+| ⚪     | Renk paleti netleştirilecek                              |
+| ⚪     | Ortak buton/kart/input componentleri sadeleştirilecek    |
+| ⚪     | Veli ekranları daha güven veren hale getirilecek         |
+| ⚪     | Öğretmen ekranları hızlı veri girişine göre düzenlenecek |
+| ⚪     | Yönetici ekranlarında karmaşa azaltılacak                |
 
 ---
 
-## 18. Uygulama Geliştirme Sırası
+## 17. İş Modeli
 
-Yumurcak için önerilen geliştirme sırası:
-
-```txt
-1. App.js çalışır hale getirilecek
-2. app.json düzeltilecek
-3. Eski/yeni ekran karmaşası temizlenecek
-4. Firebase Auth tek giriş sistemi yapılacak
-5. Rol bazlı yönlendirme netleşecek
-6. Veri modeli sadeleştirilecek
-7. Admin sınıf/çocuk/veli/öğretmen ekleyebilecek
-8. Öğretmen çocuğa günlük rapor girebilecek
-9. Veli çocuğunun raporunu görebilecek
-10. Duyuru sistemi çalışacak
-11. Bildirim sistemi bağlanacak
-12. Firebase rules güvenli hale getirilecek
-13. 3 test hesabıyla uçtan uca test yapılacak
-14. Gereksiz özellikler ertelenecek
-15. Pilot kreş için demo hazırlanacak
-```
+| Durum | İş                                                       |
+| ----- | -------------------------------------------------------- |
+| 🟢    | B2B abonelik modeli seçildi                              |
+| 🟢    | “Kreş öder, veli ücretsiz kullanır” yaklaşımı belirlendi |
+| 🟢    | İlk pilotta ödeme entegrasyonu şart değil kararı verildi |
+| ⚪     | Pilot sonrası fiyat netleştirilecek                      |
+| ⚪     | İlk 5-10 kreş için özel lansman fiyatı düşünülecek       |
+| ⚪     | Ödeme entegrasyonu MVP sonrası değerlendirilecek         |
 
 ---
 
-## 19. Öncelik Matrisi
+## 18. Pilot Kreş Planı
 
-| Öncelik | İş | Durum |
-|---|---|---|
-| Kritik | App.js ve navigation akışı | Yapılacak |
-| Kritik | app.json build düzeltmeleri | Yapılacak |
-| Kritik | Firebase Auth'a geçiş | Yapılacak |
-| Kritik | Rol bazlı yönlendirme | Yapılacak |
-| Kritik | Firebase Security Rules | Yapılacak |
-| Yüksek | Günlük rapor sistemi | Yapılacak |
-| Yüksek | Yönetici temel veri yönetimi | Yapılacak |
-| Yüksek | Veli rapor görüntüleme | Yapılacak |
-| Orta | Duyuru sistemi | Yapılacak |
-| Orta | Push bildirim | Yapılacak |
-| Düşük | Fotoğraflı rapor | Sonraki sürüm |
-| Düşük | Mesajlaşma | Sonraki sürüm |
-| Düşük | PDF çıktı | Sonraki sürüm |
-| Düşük | AI rapor | Sonraki sürüm |
+| Durum | İş                                                             |
+| ----- | -------------------------------------------------------------- |
+| 🟢    | Önce tek pilot kreşte denenmesi gerektiği belirlendi           |
+| 🟢    | Pilot hedefi belirlendi: 1 kreş, 2 öğretmen, 10 veli, 15 çocuk |
+| ⚪     | Pilot kreş adayı bulunacak                                     |
+| ⚪     | Demo test hesapları hazırlanacak                               |
+| ⚪     | 2 haftalık pilot kullanım yapılacak                            |
+| ⚪     | Öğretmenlerden geri bildirim alınacak                          |
+| ⚪     | Velilerden geri bildirim alınacak                              |
+| ⚪     | Yönetici kullanım zorluğu ölçülecek                            |
+| ⚪     | Pilot sonrası fiyatlandırma ve özellik listesi revize edilecek |
 
 ---
 
-## 20. Sürüm Planı
+## 19. Sürüm Planı
 
-### v0.1 - Teknik Toparlama
+### v0.1 — Teknik Toparlama
 
-- App.js düzenlenir
-- Navigation bağlanır
-- app.json düzeltilir
-- Eski ekran karmaşası temizlenir
-
-### v0.2 - Auth ve Rol Sistemi
-
-- Firebase Auth aktif hale getirilir
-- Kullanıcı profili database'e bağlanır
-- Yönetici / öğretmen / veli yönlendirmesi yapılır
-
-### v0.3 - Yönetici MVP
-
-- Sınıf ekleme
-- Öğretmen ekleme
-- Veli ekleme
-- Çocuk ekleme
-- Çocuk-sınıf-veli bağlantısı
-
-### v0.4 - Öğretmen MVP
-
-- Öğretmen kendi sınıfını görür
-- Çocuk listesini görür
-- Günlük rapor girer
-
-### v0.5 - Veli MVP
-
-- Veli kendi çocuğunu görür
-- Rapor geçmişini görür
-- Bugünkü raporu görüntüler
-
-### v0.6 - Duyuru ve Bildirim
-
-- Yönetici duyuru gönderir
-- Veli duyuruyu görür
-- Push bildirim altyapısı bağlanır
-
-### v0.7 - Güvenlik ve Pilot Hazırlık
-
-- Firebase rules güçlendirilir
-- Test hesapları oluşturulur
-- Pilot kreş senaryosu denenir
-
-### v1.0 - Pilot Sürüm
-
-- 1 pilot kreş ile gerçek kullanım testi
-- Öğretmen ve veli geri bildirimleri toplanır
-- Hatalar düzeltilir
-- Sonraki özellik listesi gerçek kullanıma göre belirlenir
+| Durum | İş                                        |
+| ----- | ----------------------------------------- |
+| 🟢    | App.js düzenlendi                         |
+| 🟢    | Navigation bağlandı                       |
+| 🟢    | app.json düzeltildi                       |
+| 🟢    | Expo SDK 53’e geçildi                     |
+| 🟢    | EAS / Codemagic production AAB ayarlandı  |
+| ⚪     | Eski ekran karmaşası tamamen temizlenecek |
+| ⚪     | İlk Metro testi yapılacak                 |
 
 ---
 
-## 21. Gayıt ile Stratejik Konumlandırma
+### v0.2 — Auth ve Rol Sistemi
 
-Gayıt, daha büyük ve karmaşık bir yerel hizmet pazaryeri uygulamasıdır. Yumurcak ise daha kapalı, daha sade ve B2B satışı daha kolay olabilecek bir kreş yönetim / veli iletişim ürünüdür.
-
-Gayıt'tan öğrenilecek şeyler Yumurcak'a aktarılmalıdır:
-
-- Google Play süreci
-- Firebase güvenlik tecrübesi
-- Bildirim sistemi tecrübesi
-- Admin panel mantığı
-- Gerçek kullanıcı geri bildirimi
-- Lansman ve saha iletişimi
-- KVKK / gizlilik metni hazırlığı
-
-Yumurcak, Gayıt'tan sonra daha temiz mimariyle ilerletilmelidir.
+| Durum | İş                                                               |
+| ----- | ---------------------------------------------------------------- |
+| 🟢    | Geçici kullanıcı adı / şifre sistemi çalışacak şekilde planlandı |
+| 🟢    | Rol bazlı yönlendirme oluşturuldu                                |
+| ⚪     | Firebase Auth’a geçilecek                                        |
+| ⚪     | Kullanıcı profili database ile güvenli bağlanacak                |
+| ⚪     | Şifreler düz metin olmaktan çıkarılacak                          |
 
 ---
 
-## 22. Nihai Hedef
+### v0.3 — Yönetici MVP
 
-Yumurcak'ın nihai hedefi:
+| Durum | İş                                                |
+| ----- | ------------------------------------------------- |
+| 🟢    | Yönetici ekran iskeleti oluşturuldu               |
+| 🟢    | Sınıf ekranları oluşturuldu                       |
+| 🟢    | Öğretmen ekranları oluşturuldu                    |
+| 🟢    | Veli ekranları oluşturuldu                        |
+| 🟢    | Çocuk ekranları oluşturuldu                       |
+| ⚪     | Tüm yönetici CRUD akışı test edilecek             |
+| ⚪     | Çocuk-sınıf-veli-öğretmen bağlantısı doğrulanacak |
+
+---
+
+### v0.4 — Öğretmen MVP
+
+| Durum | İş                                                             |
+| ----- | -------------------------------------------------------------- |
+| 🟢    | Öğretmen ekran iskeleti oluşturuldu                            |
+| 🟢    | Çocuk listesi ekranı oluşturuldu                               |
+| 🟢    | Günlük rapor ekranı oluşturuldu                                |
+| ⚪     | Öğretmen kendi sınıfındaki çocuğu görebiliyor mu test edilecek |
+| ⚪     | Günlük rapor Firebase’e doğru yazılıyor mu test edilecek       |
+
+---
+
+### v0.5 — Veli MVP
+
+| Durum | İş                                                      |
+| ----- | ------------------------------------------------------- |
+| 🟢    | Veli ekran iskeleti oluşturuldu                         |
+| 🟢    | Çocuk listeleme hedefi oluşturuldu                      |
+| 🟢    | Rapor görüntüleme ekranı oluşturuldu                    |
+| ⚪     | Veli kendi çocuğunu görebiliyor mu test edilecek        |
+| ⚪     | Veli rapor geçmişini doğru görebiliyor mu test edilecek |
+
+---
+
+### v0.6 — Duyuru ve Bildirim
+
+| Durum | İş                                                 |
+| ----- | -------------------------------------------------- |
+| 🟢    | Duyuru ekranları oluşturuldu                       |
+| 🟢    | Bildirim altyapısı planlandı                       |
+| ⚪     | Duyuru Firebase akışı test edilecek                |
+| ⚪     | Push bildirim gerçek cihazda test edilecek         |
+| ⚪     | Bildirimlerin uygulamayı çökertmediği doğrulanacak |
+
+---
+
+### v0.7 — Güvenlik ve Pilot Hazırlık
+
+| Durum | İş                             |
+| ----- | ------------------------------ |
+| ⚪     | Firebase rules güçlendirilecek |
+| ⚪     | Test hesapları oluşturulacak   |
+| ⚪     | Uçtan uca test yapılacak       |
+| ⚪     | Kapalı test AAB build alınacak |
+| ⚪     | Pilot kreş demo hazırlanacak   |
+
+---
+
+### v1.0 — Pilot Sürüm
+
+| Durum | İş                                                         |
+| ----- | ---------------------------------------------------------- |
+| ⚪     | 1 pilot kreş ile gerçek kullanım testi yapılacak           |
+| ⚪     | Öğretmen geri bildirimleri toplanacak                      |
+| ⚪     | Veli geri bildirimleri toplanacak                          |
+| ⚪     | Hatalar düzeltilecek                                       |
+| ⚪     | Sonraki özellik listesi gerçek kullanıma göre belirlenecek |
+
+---
+
+## 20. MVP Sonrası Özellikler
+
+Aşağıdaki özellikler şimdilik yapılmayacak.
+
+| Durum | Özellik                    |
+| ----- | -------------------------- |
+| ⚪     | Veli-öğretmen mesajlaşması |
+| ⚪     | Fotoğraf yükleme           |
+| ⚪     | Video yükleme              |
+| ⚪     | Canlı kamera               |
+| ⚪     | Servis takibi              |
+| ⚪     | Detaylı yemek menüsü       |
+| ⚪     | PDF rapor çıktısı          |
+| ⚪     | Aylık gelişim analizi      |
+| ⚪     | AI yorum / AI özet         |
+| ⚪     | Çoklu şube sistemi         |
+| ⚪     | Ödeme entegrasyonu         |
+| ⚪     | Gelişmiş istatistik paneli |
+| ⚪     | Web yönetim paneli         |
+
+---
+
+## 21. Nihai Hedef
+
+Yumurcak’ın nihai hedefi:
 
 > Kreşlerin velilere daha profesyonel, düzenli ve güvenilir şekilde günlük çocuk bilgisi sunmasını sağlayan sade bir mobil uygulama olmak.
 
-İlk hedef büyük ve karmaşık bir sistem kurmak değildir.
+İlk hedef büyük ve karmaşık sistem kurmak değildir.
 
 İlk hedef:
 
