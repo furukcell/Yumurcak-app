@@ -1,32 +1,46 @@
+// ============================================================
+// YUMURCAK — notifications.js
+// Push bildirim sistemi (şimdilik pasif)
+// TODO: Expo Project ID eklendiğinde aktif edilecek
+// ============================================================
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { ref, set, get } from 'firebase/database';
-import { db, auth } from '../config/firebase';
+import { database } from '../config/firebase';
 
-// Bildirim ayarları
+// Bildirim handler'ı ayarla
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
   }),
 });
 
-// İzin al
+/**
+ * Push notification için izin iste ve token al
+ * Şu an pasif - projectId yoksa null döner
+ */
 export async function registerForPushNotificationsAsync() {
-  let token;
+  try {
+    // Fiziksel cihaz kontrolü
+    if (!Device.isDevice) {
+      console.warn('Bildirim için fiziksel cihaz gerekli');
+      return null;
+    }
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#3C3489',
-    });
-  }
+    // Android için notification channel oluştur
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
 
-  if (Device.isDevice) {
+    // Bildirim izni kontrol et
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     
@@ -36,82 +50,66 @@ export async function registerForPushNotificationsAsync() {
     }
     
     if (finalStatus !== 'granted') {
-      console.log('Bildirim izni alınamadı');
+      console.warn('Bildirim izni verilmedi');
       return null;
     }
+
+    // Token al (projectId yoksa null döner)
+    // TODO: Expo Project ID eklendiğinde aktif et
+    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const token = tokenData?.data;
     
-    token = (await Notifications.getExpoPushTokenAsync({
-      projectId: 'YOUR_EXPO_PROJECT_ID', // Expo proje ID'n
-    })).data;
-    
-    console.log('Push Token:', token);
-  } else {
-    console.log('Fiziksel cihaz gerekli');
-  }
-
-  return token;
-}
-
-// Token'ı Firebase'e kaydet
-export async function savePushTokenToDatabase(token) {
-  const user = auth.currentUser;
-  if (!user || !token) return;
-
-  const userRole = getUserRole(); // AuthContext'ten al
-  const userRef = ref(db, `users/${user.uid}`);
-  
-  await set(userRef, {
-    pushToken: token,
-    role: userRole,
-    updatedAt: Date.now(),
-  });
-}
-
-// Kullanıcı rolünü al (AuthContext'ten)
-function getUserRole() {
-  const userData = auth.currentUser;
-  return userData?.role || 'parent';
-}
-
-// Bildirim gönder (Admin/Teacher tarafından)
-export async function sendNotification(toToken, title, body, data = {}) {
-  const response = await fetch('https://exp.host/--/api/v2/push/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      to: toToken,
-      title,
-      body,
-      data,
-      sound: 'default',
-    }),
-  });
-
-  return response.json();
-}
-
-// Tüm velilere bildirim gönder (Duyuru için)
-export async function broadcastNotificationToParents(title, body, data = {}) {
-  const parentsRef = ref(db, 'users');
-  const snapshot = await get(parentsRef);
-  
-  if (!snapshot.exists()) return;
-
-  const parents = snapshot.val();
-  const tokens = [];
-
-  Object.values(parents).forEach(parent => {
-    if (parent.role === 'parent' && parent.pushToken) {
-      tokens.push(parent.pushToken);
+    if (token) {
+      console.log('Push token alındı:', token);
     }
-  });
 
-  // Her bir token'a gönder
-  const promises = tokens.map(token => 
-    sendNotification(token, title, body, data)
-  );
+    return token || null;
+  } catch (error) {
+    console.warn('Bildirim token alınamadı:', error.message);
+    return null;
+  }
+}
 
-  await Promise.all(promises);
+/**
+ * Push token'ı Firebase'e kaydet
+ * @param {string} token - Expo push token
+ * @param {string} userId - Kullanıcı ID
+ * @param {string} role - Kullanıcı rolü (admin, teacher, parent)
+ */
+export async function savePushTokenToDatabase(token, userId, role = 'parent') {
+  try {
+    if (!token || !userId) {
+      console.warn('Token veya userId eksik');
+      return;
+    }
+
+    const tokenRef = ref(database, `users/${userId}`);
+    await set(tokenRef, {
+      pushToken: token,
+      role: role,
+      updatedAt: Date.now(),
+    });
+    
+    console.log('Push token kaydedildi');
+  } catch (error) {
+    console.warn('Push token kaydedilemedi:', error.message);
+  }
+}
+
+/**
+ * Bildirim gönder (şu an pasif)
+ * TODO: Backend fonksiyonu eklendiğinde aktif edilecek
+ */
+export async function sendNotification(toToken, title, body, data = {}) {
+  console.warn('Bildirim gönderme şu an pasif');
+  return;
+}
+
+/**
+ * Tüm velilere bildirim gönder (şu an pasif)
+ * TODO: Duyuru sistemi aktif edildiğinde kullanılacak
+ */
+export async function broadcastNotificationToParents(title, body, data = {}) {
+  console.warn('Toplu bildirim gönderme şu an pasif');
+  return;
 }
