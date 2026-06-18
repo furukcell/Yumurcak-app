@@ -14,6 +14,7 @@ export default function DashboardScreen() {
     { title: 'Çocuklar', icon: '👶', screen: 'ChildList', color: '#712B13' },
     { title: 'Öğretmenler', icon: '‍', screen: 'TeacherList', color: '#633806' },
     { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', color: '#27500A' },
+    { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', color: '#1a6b3c' },
   ];
 
   return (
