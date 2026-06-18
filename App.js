@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
-import { RootNavigator } from './src/navigation/RootNavigator';
+import RootNavigator from './src/navigation/RootNavigator';
 import { registerForPushNotificationsAsync, savePushTokenToDatabase } from './src/utils/notifications';
 import { auth } from './src/config/firebase';
 
