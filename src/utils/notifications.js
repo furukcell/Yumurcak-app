@@ -76,7 +76,7 @@ export async function savePushTokenToDatabase(token, userId) {
       return;
     }
 
-    const userRef = ref(database, `users/${userId}`);
+    const userRef = ref(database, `kullanicilar/${userId}/pushToken`)
     await set(userRef, {
       pushToken: token,
       updatedAt: Date.now(),
