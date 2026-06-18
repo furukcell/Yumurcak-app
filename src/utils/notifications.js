@@ -77,11 +77,9 @@ export async function savePushTokenToDatabase(token, userId) {
       return;
     }
 
-    const userRef = ref(database, `kullanicilar/${userId}/pushToken`)
-    await set(userRef, token);
-      pushToken: token,
-      updatedAt: Date.now(),
-    });
+   const userRef = ref(database, `kullanicilar/${userId}/pushToken`);
+   await set(userRef, token);
+  
     
     console.log('Push token kaydedildi');
   } catch (error) {
