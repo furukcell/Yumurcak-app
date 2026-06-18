@@ -4,7 +4,7 @@
 
 Uygulama ile öğretmenler çocuklara günlük rapor girebilir, veliler çocuklarının günlük durumunu takip edebilir, kreş yöneticileri ise sınıf, çocuk, öğretmen, veli ve duyuru yönetimini tek yerden yapabilir.
 
-**Expo + React Native + Firebase Realtime Database** altyapısı üzerine kuruludur.
+**Expo SDK 53 + React Native + Firebase Realtime Database** altyapısı üzerine kuruludur.
 
 ---
 
@@ -12,12 +12,12 @@ Uygulama ile öğretmenler çocuklara günlük rapor girebilir, veliler çocukla
 
 Kreşlerde velilerin en çok merak ettiği konular genellikle şunlardır:
 
-* Çocuğum bugün nasıldı?
-* Yemek yedi mi?
-* Uyudu mu?
-* Tuvalet durumu nasıldı?
-* Öğretmen bir not bıraktı mı?
-* Kreşten önemli bir duyuru var mı?
+- Çocuğum bugün nasıldı?
+- Yemek yedi mi?
+- Uyudu mu?
+- Tuvalet durumu nasıldı?
+- Öğretmen bir not bıraktı mı?
+- Kreşten önemli bir duyuru var mı?
 
 Yumurcak Kreş, bu bilgileri WhatsApp grupları veya dağınık manuel yöntemler yerine daha düzenli, takip edilebilir ve rol bazlı çalışan bir sisteme taşımayı hedefler.
 
@@ -29,11 +29,11 @@ Temel amaç:
 
 ## Kullanıcı Rolleri
 
-| Rol        | Açıklama                                                                              |
-| ---------- | ------------------------------------------------------------------------------------- |
+| Rol | Açıklama |
+|---|---|
 | `yonetici` | Kreş müdürü / kreş yönetimi. Sınıf, çocuk, öğretmen, veli ve duyuru yönetimini yapar. |
-| `ogretmen` | Kendi sınıfındaki çocuklar için günlük rapor girer.                                   |
-| `veli`     | Sadece kendi çocuğunun raporlarını görüntüler.                                        |
+| `ogretmen` | Kendi sınıfındaki çocuklar için günlük rapor girer. |
+| `veli` | Sadece kendi çocuğunun raporlarını görüntüler. |
 
 ---
 
@@ -65,11 +65,9 @@ Kullanıcılar sisteme kullanıcı adı ve şifre ile giriş yapar. Giriş yapan
 
 Desteklenen roller:
 
-* `yonetici`
-* `ogretmen`
-* `veli`
-
----
+- `yonetici`
+- `ogretmen`
+- `veli`
 
 ### Yönetici Paneli
 
@@ -77,15 +75,13 @@ Yönetici paneli kreşin temel yönetim alanıdır.
 
 Yönetici şu işlemleri yapabilir:
 
-* Sınıf oluşturma ve listeleme
-* Öğretmen ekleme ve sınıfa atama
-* Veli ekleme
-* Çocuk ekleme
-* Çocuğu sınıfa bağlama
-* Çocuğu veliye bağlama
-* Duyuru oluşturma ve listeleme
-
----
+- Sınıf oluşturma ve listeleme
+- Öğretmen ekleme ve sınıfa atama
+- Veli ekleme
+- Çocuk ekleme
+- Çocuğu sınıfa bağlama
+- Çocuğu veliye bağlama
+- Duyuru oluşturma ve listeleme
 
 ### Öğretmen Paneli
 
@@ -93,24 +89,20 @@ Yönetici şu işlemleri yapabilir:
 
 Öğretmen bir çocuğu seçerek günlük rapor ekranına geçer ve çocuğun gün içindeki temel bilgilerini girer.
 
----
-
 ### Günlük Rapor Sistemi
 
 Günlük raporlar uygulamanın ana özelliğidir.
 
 Öğretmen, çocuk için şu bilgileri rapora ekleyebilir:
 
-* Ruh hali
-* Yemek bilgisi
-* Uyku süresi
-* Tuvalet sayısı
-* Öğretmen notu
-* Tarih
+- Ruh hali
+- Yemek bilgisi
+- Uyku süresi
+- Tuvalet sayısı
+- Öğretmen notu
+- Tarih
 
 Raporlar Firebase Realtime Database üzerinde saklanır ve veli panelinde çocuğa bağlı şekilde listelenir.
-
----
 
 ### Veli Paneli
 
@@ -120,14 +112,12 @@ Veli bir çocuğu seçtiğinde o çocuğa ait günlük raporları görüntüleye
 
 Raporda şu bilgiler gösterilir:
 
-* Tarih
-* Ruh hali
-* Yemek durumu
-* Uyku süresi
-* Tuvalet bilgisi
-* Öğretmen notu
-
----
+- Tarih
+- Ruh hali
+- Yemek durumu
+- Uyku süresi
+- Tuvalet bilgisi
+- Öğretmen notu
 
 ### Duyuru Sistemi
 
@@ -135,11 +125,11 @@ Yönetici panelinden duyuru oluşturulabilir.
 
 Duyurular şu amaçlarla kullanılabilir:
 
-* Genel bilgilendirme
-* Acil duyuru
-* Etkinlik haberi
-* Tatil veya çalışma düzeni bilgilendirmesi
-* Veliye toplu bilgilendirme
+- Genel bilgilendirme
+- Acil duyuru
+- Etkinlik haberi
+- Tatil veya çalışma düzeni bilgilendirmesi
+- Veliye toplu bilgilendirme
 
 ---
 
@@ -147,13 +137,13 @@ Duyurular şu amaçlarla kullanılabilir:
 
 Projede kullanılan temel teknolojiler:
 
-* React Native
-* Expo
-* JavaScript
-* Firebase Realtime Database
-* AsyncStorage
-* React Navigation
-* Expo Notifications
+- Expo SDK 53
+- React Native
+- JavaScript
+- Firebase Realtime Database
+- AsyncStorage
+- React Navigation
+- Expo Notifications
 
 > Not: Firebase Auth üretim öncesi teknik borç olarak planlanmıştır. Mevcut MVP aşamasında kullanıcı adı / şifre kontrolü Firebase Realtime Database üzerinden yapılmaktadır.
 
@@ -171,8 +161,6 @@ cocuklar/
 gunlukRaporlar/
 duyurular/
 ```
-
----
 
 ### `kullanicilar`
 
@@ -202,8 +190,6 @@ ogretmen
 veli
 ```
 
----
-
 ### `kresler`
 
 Kreş bilgilerini ve yönetici ilişkilerini tutar.
@@ -216,8 +202,6 @@ Kreş bilgilerini ve yönetici ilişkilerini tutar.
   }
 }
 ```
-
----
 
 ### `siniflar`
 
@@ -235,8 +219,6 @@ Sınıf bilgilerini tutar.
 }
 ```
 
----
-
 ### `cocuklar`
 
 Çocuk kayıtlarını tutar.
@@ -253,8 +235,6 @@ Sınıf bilgilerini tutar.
   }
 }
 ```
-
----
 
 ### `gunlukRaporlar`
 
@@ -287,8 +267,6 @@ Sınıf bilgilerini tutar.
   }
 }
 ```
-
----
 
 ### `duyurular`
 
@@ -377,6 +355,18 @@ npx expo start --clear
 
 ---
 
+## Build
+
+Android production build için EAS production profili kullanılır.
+
+```bash
+eas build --platform android --profile production --non-interactive
+```
+
+Production profili Android tarafında **AAB** üretir.
+
+---
+
 ## Ortam Değişkenleri
 
 Kök dizine `.env` dosyası oluşturulmalıdır.
@@ -442,12 +432,12 @@ Bu yapı sadece geliştirme ve pilot test içindir.
 
 Üretim öncesinde yapılması gerekenler:
 
-* Firebase Auth’a geçilmeli
-* Şifreler düz metin tutulmamalı
-* Firebase Database Rules güçlendirilmeli
-* Kullanıcılar sadece kendi `kresId` alanına bağlı verileri görebilmeli
-* Veli sadece kendi çocuğunun raporlarını görebilmeli
-* Öğretmen sadece kendi sınıfındaki çocukların raporlarını yönetebilmeli
+- Firebase Auth’a geçilmeli
+- Şifreler düz metin tutulmamalı
+- Firebase Database Rules güçlendirilmeli
+- Kullanıcılar sadece kendi `kresId` alanına bağlı verileri görebilmeli
+- Veli sadece kendi çocuğunun raporlarını görebilmeli
+- Öğretmen sadece kendi sınıfındaki çocukların raporlarını yönetebilmeli
 
 ---
 
@@ -457,9 +447,9 @@ Uygulamada Expo Notifications altyapısı planlanmıştır.
 
 Bildirimlerin kullanım alanları:
 
-* Günlük rapor girildiğinde veliye bildirim
-* Yeni duyuru yayınlandığında velilere bildirim
-* Acil duyuruların öne çıkarılması
+- Günlük rapor girildiğinde veliye bildirim
+- Yeni duyuru yayınlandığında velilere bildirim
+- Acil duyuruların öne çıkarılması
 
 MVP aşamasında bildirim sistemi pasif veya sınırlı çalışabilir. Bildirim kodları uygulamayı çökertmeyecek şekilde güvenli çalışmalıdır.
 
@@ -475,31 +465,31 @@ kullanicilar/{uid}/pushToken
 
 Aşağıdaki özellikler MVP sonrasına bırakılmıştır:
 
-* Mesajlaşma
-* Fotoğraf / video gönderme
-* Yoklama sistemi
-* İlaç / alerji takibi
-* Servis takibi
-* PDF rapor çıktısı
-* Ödeme / abonelik sistemi
-* Çoklu kreş / SuperAdmin paneli
-* Web yönetim paneli
-* Yapay zekâ destekli rapor analizi
+- Mesajlaşma
+- Fotoğraf / video gönderme
+- Yoklama sistemi
+- İlaç / alerji takibi
+- Servis takibi
+- PDF rapor çıktısı
+- Ödeme / abonelik sistemi
+- Çoklu kreş / SuperAdmin paneli
+- Web yönetim paneli
+- Yapay zekâ destekli rapor analizi
 
 ---
 
 ## Teknik Borçlar
 
-* [ ] Firebase Auth’a geçiş
-* [ ] Düz metin şifre kullanımının kaldırılması
-* [ ] Firebase Database Rules üretim için güçlendirilmesi
-* [ ] Bildirim sisteminin gerçek Expo Project ID ile aktif edilmesi
-* [ ] Çoklu kreş desteğinin güvenli hale getirilmesi
-* [ ] `kresId` bazlı veri izolasyonunun tüm ekranlarda zorunlu yapılması
-* [ ] Yönetici ekranlarında eksik CRUD işlemlerinin tamamlanması
-* [ ] UI / UX sadeleştirme ve gerçek cihaz testi
-* [ ] Codemagic / EAS build testleri
-* [ ] Play Store kapalı test hazırlığı
+- [ ] Firebase Auth’a geçiş
+- [ ] Düz metin şifre kullanımının kaldırılması
+- [ ] Firebase Database Rules üretim için güçlendirilmesi
+- [ ] Bildirim sisteminin gerçek Expo Project ID ile aktif edilmesi
+- [ ] Çoklu kreş desteğinin güvenli hale getirilmesi
+- [ ] `kresId` bazlı veri izolasyonunun tüm ekranlarda zorunlu yapılması
+- [ ] Yönetici ekranlarında eksik CRUD işlemlerinin tamamlanması
+- [ ] UI / UX sadeleştirme ve gerçek cihaz testi
+- [ ] Codemagic / EAS build testleri
+- [ ] Play Store kapalı test hazırlığı
 
 ---
 
