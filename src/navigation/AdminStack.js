@@ -2,7 +2,7 @@
 // YUMURCAK — AdminStack.js
 // Yönetici navigasyon stack'i
 // ============================================================
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DashboardScreen from '../screens/admin/DashboardScreen';
 import ClassListScreen from '../screens/admin/ClassListScreen';
 import ClassFormScreen from '../screens/admin/ClassFormScreen';
@@ -13,7 +13,7 @@ import TeacherFormScreen from '../screens/admin/TeacherFormScreen';
 import AnnouncementListScreen from '../screens/admin/AnnouncementListScreen';
 import AnnouncementFormScreen from '../screens/admin/AnnouncementFormScreen';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 export default function AdminStack() {
   return (
