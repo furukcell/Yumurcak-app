@@ -13,7 +13,7 @@ export default function ParentStack() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#27500A' }, // Yeşil ton
+        headerStyle: { backgroundColor: '#27500A' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
       }}
