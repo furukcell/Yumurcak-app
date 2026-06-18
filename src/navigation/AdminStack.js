@@ -9,6 +9,7 @@ import ClassFormScreen from '../screens/admin/ClassFormScreen';
 import ChildListScreen from '../screens/admin/ChildListScreen';
 import ChildFormScreen from '../screens/admin/ChildFormScreen';
 import TeacherListScreen from '../screens/admin/TeacherListScreen';
+import TeacherFormScreen from '../screens/admin/TeacherFormScreen';
 import AnnouncementListScreen from '../screens/admin/AnnouncementListScreen';
 import AnnouncementFormScreen from '../screens/admin/AnnouncementFormScreen';
 
@@ -29,6 +30,7 @@ export default function AdminStack() {
       <Stack.Screen name="ChildList" component={ChildListScreen} options={{ title: 'Çocuklar' }} />
       <Stack.Screen name="ChildForm" component={ChildFormScreen} options={{ title: 'Çocuk Ekle/Düzenle' }} />
       <Stack.Screen name="TeacherList" component={TeacherListScreen} options={{ title: 'Öğretmenler' }} />
+      <Stack.Screen name="TeacherForm" component={TeacherFormScreen} options={{ title: 'Öğretmen Ekle/Düzenle' }} />
       <Stack.Screen name="AnnouncementList" component={AnnouncementListScreen} options={{ title: 'Duyurular' }} />
       <Stack.Screen name="AnnouncementForm" component={AnnouncementFormScreen} options={{ title: 'Duyuru Oluştur' }} />
     </Stack.Navigator>
