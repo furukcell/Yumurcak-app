@@ -26,11 +26,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-font", "expo-notifications"],
-    "extra": {
-      "eas": {
-        "projectId": "BURAYA_EAS_PROJECT_ID_GELECEK"
-      }
-    }
+    "plugins": ["expo-font"]
   }
 }
