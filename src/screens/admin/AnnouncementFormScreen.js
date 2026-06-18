@@ -11,9 +11,11 @@ import { ref, set, push, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AnnouncementFormScreen() {
   const route = useRoute();
+  const { kullanici } = useAuth();
   const navigation = useNavigation();
   const { announcementId } = route.params || {};
   
@@ -49,7 +51,7 @@ export default function AnnouncementFormScreen() {
       const data = {
         title: title.trim(),
         message: message.trim(),
-        kresId: 'default-kres',
+        kresId: kullanici?.kresId || 'default-kres',
         sentBy: 'admin',
         priority: isUrgent ? 'urgent' : 'normal',
         targetRole: 'all',
