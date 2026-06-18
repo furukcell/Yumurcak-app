@@ -11,10 +11,12 @@ import { ref, set, get, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TeacherFormScreen() {
   const route = useRoute();
   const navigation = useNavigation();
+  const { kullanici } = useAuth();
   const { teacherId } = route.params || {};
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
@@ -67,7 +69,7 @@ export default function TeacherFormScreen() {
         ad: ad.trim(),
         rol: 'ogretmen',
         sinifId: sinifId || '',
-        kresId: 'default-kres',
+        kresId: kullanici?.kresId || 'default-kres',
         createdAt: Date.now(),
       });
 
