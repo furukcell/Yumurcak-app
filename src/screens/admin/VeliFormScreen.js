@@ -11,10 +11,12 @@ import { ref, set, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function VeliFormScreen() {
   const route = useRoute();
   const navigation = useNavigation();
+  const { kullanici } = useAuth();
   const { veliId } = route.params || {};
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
@@ -53,7 +55,7 @@ export default function VeliFormScreen() {
         ad: ad.trim(),
         telefon: telefon.trim(),
         rol: 'veli',
-        kresId: 'default-kres',
+        kresId: kullanici?.kresId || 'default-kres',
         createdAt: Date.now(),
       });
 
