@@ -5,7 +5,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TeacherDashboardScreen from '../screens/teacher/TeacherDashboardScreen';
-import ChildReportScreen from '../screens/teacher/ChildReportScreen';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
 
