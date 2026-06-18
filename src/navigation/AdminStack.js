@@ -1,3 +1,7 @@
+// ============================================================
+// YUMURCAK — AdminStack.js
+// Yönetici navigasyon stack'i
+// ============================================================
 import { createStackNavigator } from '@react-navigation/stack';
 import DashboardScreen from '../screens/admin/DashboardScreen';
 import ClassListScreen from '../screens/admin/ClassListScreen';
@@ -5,23 +9,10 @@ import ClassFormScreen from '../screens/admin/ClassFormScreen';
 import ChildListScreen from '../screens/admin/ChildListScreen';
 import ChildFormScreen from '../screens/admin/ChildFormScreen';
 import TeacherListScreen from '../screens/admin/TeacherListScreen';
-import TeacherFormScreen from '../screens/admin/TeacherFormScreen';
 import AnnouncementListScreen from '../screens/admin/AnnouncementListScreen';
 import AnnouncementFormScreen from '../screens/admin/AnnouncementFormScreen';
 
-export type AdminStackParams = {
-  Dashboard: undefined;
-  ClassList: undefined;
-  ClassForm: { classId?: string };
-  ChildList: undefined;
-  ChildForm: { childId?: string };
-  TeacherList: undefined;
-  TeacherForm: { teacherId?: string };
-  AnnouncementList: undefined;
-  AnnouncementForm: { announcementId?: string };
-};
-
-const Stack = createStackNavigator<AdminStackParams>();
+const Stack = createStackNavigator();
 
 export default function AdminStack() {
   return (
@@ -38,7 +29,6 @@ export default function AdminStack() {
       <Stack.Screen name="ChildList" component={ChildListScreen} options={{ title: 'Çocuklar' }} />
       <Stack.Screen name="ChildForm" component={ChildFormScreen} options={{ title: 'Çocuk Ekle/Düzenle' }} />
       <Stack.Screen name="TeacherList" component={TeacherListScreen} options={{ title: 'Öğretmenler' }} />
-      <Stack.Screen name="TeacherForm" component={TeacherFormScreen} options={{ title: 'Öğretmen Ekle/Düzenle' }} />
       <Stack.Screen name="AnnouncementList" component={AnnouncementListScreen} options={{ title: 'Duyurular' }} />
       <Stack.Screen name="AnnouncementForm" component={AnnouncementFormScreen} options={{ title: 'Duyuru Oluştur' }} />
     </Stack.Navigator>
