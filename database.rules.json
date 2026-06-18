@@ -9,54 +9,25 @@
     "siniflar": {
       "$sinifId": {
         ".read": "auth != null",
-        ".write": "auth != null && (
-          root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
-          root.child('siniflar').child($sinifId).child('teacherIds').hasChild(auth.uid)
-        )"
+        ".write": "auth != null && (root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) || root.child('siniflar').child($sinifId).child('teacherIds').hasChild(auth.uid))"
       }
     },
     "cocuklar": {
       "$cocukId": {
-        ".read": "auth != null && (
-          root.child('cocuklar').child($cocukId).child('parentIds').hasChild(auth.uid) ||
-          root.child('siniflar').child(root.child('cocuklar').child($cocukId).child('sinifId').val()).child('teacherIds').hasChild(auth.uid) ||
-          root.child('kresler').child(root.child('cocuklar').child($cocukId).child('kresId').val()).child('adminIds').hasChild(auth.uid)
-        )",
-        ".write": "auth != null && (
-          root.child('kresler').child(root.child('cocuklar').child($cocukId).child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
-          root.child('siniflar').child(root.child('cocuklar').child($cocukId).child('sinifId').val()).child('teacherIds').hasChild(auth.uid)
-        )"
+        ".read": "auth != null && (root.child('cocuklar').child($cocukId).child('parentIds').hasChild(auth.uid) || root.child('siniflar').child(root.child('cocuklar').child($cocukId).child('sinifId').val()).child('teacherIds').hasChild(auth.uid) || root.child('kresler').child(root.child('cocuklar').child($cocukId).child('kresId').val()).child('adminIds').hasChild(auth.uid))",
+        ".write": "auth != null && (root.child('kresler').child(root.child('cocuklar').child($cocukId).child('kresId').val()).child('adminIds').hasChild(auth.uid) || root.child('siniflar').child(root.child('cocuklar').child($cocukId).child('sinifId').val()).child('teacherIds').hasChild(auth.uid))"
       }
     },
-    "gunlukRaporlar": {
+    "raporlar": {
       "$raporId": {
-        ".read": "auth != null && (
-          root.child('cocuklar').child(data.child('cocukId').val()).child('parentIds').hasChild(auth.uid) ||
-          root.child('siniflar').child(data.child('sinifId').val()).child('teacherIds').hasChild(auth.uid) ||
-          root.child('kresler').child(data.child('kresId').val()).child('adminIds').hasChild(auth.uid)
-        )",
+        ".read": "auth != null && (root.child('cocuklar').child(data.child('cocukId').val()).child('parentIds').hasChild(auth.uid) || root.child('siniflar').child(data.child('sinifId').val()).child('teacherIds').hasChild(auth.uid) || root.child('kresler').child(data.child('kresId').val()).child('adminIds').hasChild(auth.uid))",
         ".write": "auth != null && root.child('siniflar').child(newData.child('sinifId').val()).child('teacherIds').hasChild(auth.uid)"
       }
     },
     "duyurular": {
       "$duyuruId": {
         ".read": "auth != null",
-        ".write": "auth != null && (
-          root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) ||
-          newData.child('sentBy').val() == auth.uid
-        )"
-      }
-    },
-    "kullanicilar": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid"
-      }
-    },
-    "users": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": "auth != null && (root.child('kresler').child(newData.child('kresId').val()).child('adminIds').hasChild(auth.uid) || newData.child('sentBy').val() == auth.uid)"
       }
     }
   }
