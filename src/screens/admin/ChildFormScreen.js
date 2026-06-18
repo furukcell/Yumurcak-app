@@ -11,9 +11,11 @@ import { ref, set, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ChildFormScreen() {
   const route = useRoute();
+  const { kullanici } = useAuth();
   const navigation = useNavigation();
   const { childId } = route.params || {};
 
@@ -81,7 +83,7 @@ export default function ChildFormScreen() {
         ad: ad.trim(),
         dogumTarihi: dogumTarihi.trim(),
         sinifId,
-        kresId: 'default-kres',
+        kresId: kullanici?.kresId || 'default-kres',
         veliIds: seciliVeliIds,
         createdAt: Date.now(),
       });
