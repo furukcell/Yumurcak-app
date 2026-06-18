@@ -15,8 +15,8 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function TeacherFormScreen() {
   const route = useRoute();
-  const navigation = useNavigation();
   const { kullanici } = useAuth();
+  const navigation = useNavigation();
   const { teacherId } = route.params || {};
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
