@@ -3,7 +3,7 @@
 // Öğretmen navigasyon stack'i
 // ============================================================
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TeacherDashboardScreen from '../screens/teacher/TeacherDashboardScreen';
 import ChildReportScreen from '../screens/teacher/ChildReportScreen';
 
