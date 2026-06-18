@@ -1,19 +1,25 @@
+// ============================================================
+// YUMURCAK — ParentDashboard.js
+// Veli ana ekranı — kendi çocuklarını gösterir
+// ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ref, onValue } from 'firebase/database';
-import { db, auth } from '../../config/firebase';
+import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ParentDashboardScreen() {
   const navigation = useNavigation();
+  const { kullanici } = useAuth();
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
-  const parentId = auth.currentUser?.uid;
+  const parentId = kullanici?.uid;
 
   useEffect(() => {
     if (!parentId) return;
 
-    const childrenRef = ref(db, 'cocuklar');
+    const childrenRef = ref(database, 'cocuklar');
     const unsubscribe = onValue(childrenRef, (snapshot) => {
       const data = snapshot.val();
       const myChildren = [];
@@ -21,7 +27,7 @@ export default function ParentDashboardScreen() {
       if (data) {
         Object.entries(data).forEach(([id, childData]) => {
           // Eğer bu çocuğun veli listesinde giriş yapan kullanıcının ID'si varsa
-          if (childData.parentIds?.includes(parentId)) {
+          if (childData.veliIds?.includes(parentId)) {
             myChildren.push({ id, ...childData });
           }
         });
@@ -58,8 +64,8 @@ export default function ParentDashboardScreen() {
               style={styles.card}
               onPress={() => navigation.navigate('ChildReport', { child: item })}
             >
-              <Text style={styles.childName}>{item.name}</Text>
-              <Text style={styles.birthDate}>Doğum: {item.birthDate}</Text>
+              <Text style={styles.childName}>{item.ad}</Text>
+              <Text style={styles.birthDate}>Doğum: {item.dogumTarihi}</Text>
             </TouchableOpacity>
           )}
         />
