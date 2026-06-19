@@ -17,9 +17,14 @@ workflows:
         script: |
           npm install -g eas-cli
           eas whoami || true
+      - name: Build Android APK with EAS
+        script: |
+          eas build --platform android --profile preview --non-interactive
       - name: Build Android AAB with EAS
         script: |
           eas build --platform android --profile production --non-interactive
     artifacts:
       - "*.aab"
       - "**/*.aab"
+      - "*.apk"
+      - "**/*.apk"
