@@ -7,7 +7,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { ref, set, get } from 'firebase/database';
 import { database, auth } from '../config/firebase';
-import { ROLLER } from '../../constants';
+import { ROLLER } from '../constants';
 
 // Bildirim handler'ı ayarla
 Notifications.setNotificationHandler({
