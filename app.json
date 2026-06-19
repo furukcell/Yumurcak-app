@@ -4,6 +4,7 @@
     "slug": "yumurcak-app-",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./icon.png",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
@@ -22,7 +23,11 @@
       "versionCode": 1,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
-      "minSdkVersion": 24
+      "minSdkVersion": 24,
+      "adaptiveIcon": {
+        "foregroundImage": "./icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": []
   }
