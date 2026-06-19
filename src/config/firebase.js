@@ -1,9 +1,9 @@
-// ============================================================
-// YUMURCAK — firebase.js
-// Firebase merkezi yapılandırması
-// ============================================================
-import { initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeApp, getApp, getApps } from 'firebase/app';
+import {
+  initializeAuth,
+  getAuth,
+  getReactNativePersistence,
+} from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,15 +14,24 @@ const firebaseConfig = {
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '',
-  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL 
-    || 'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app',
+  databaseURL:
+    process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL ||
+    'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app',
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+let auth;
 
-export const database = getDatabase(app);
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch (error) {
+  auth = getAuth(app);
+}
+
+const database = getDatabase(app);
+
+export { app, auth, database };
 export default app;
