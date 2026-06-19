@@ -30,10 +30,9 @@ export default function LoginScreen() {
       const temizKullaniciAdi = kullaniciAdi.trim().toLowerCase();
       const temizSifre = sifre.trim();
 
-      const res = await fetch(
-        `${DB_URL}/kullanicilar.json?orderBy="kullaniciAdi"&equalTo="${temizKullaniciAdi}"`
-      );
-
+      // Tüm kullanıcıları çekip uygulama içinde eşleştiriyoruz.
+      // Böylece Firebase orderBy/equalTo, büyük-küçük harf ve aynı kullanıcı adı sorunlarına takılmıyoruz.
+      const res = await fetch(`${DB_URL}/kullanicilar.json`);
       const data = await res.json();
 
       if (!data || Object.keys(data).length === 0) {
@@ -41,13 +40,33 @@ export default function LoginScreen() {
         return;
       }
 
-      const uid = Object.keys(data)[0];
-      const kullaniciObj = { uid, ...data[uid] };
+      const kullaniciListesi = Object.entries(data).map(([uid, kullanici]) => ({
+        uid,
+        ...kullanici,
+      }));
 
-      // Firebase'de şifre bazen sayı, bazen metin gelebilir.
-      // İki tarafı da metne çevirip karşılaştırıyoruz.
-      if (String(kullaniciObj.sifre ?? '').trim() !== temizSifre) {
+      const ayniKullaniciAdindakiKayitlar = kullaniciListesi.filter((kullanici) => {
+        const kayitKullaniciAdi = String(kullanici.kullaniciAdi ?? '').trim().toLowerCase();
+        return kayitKullaniciAdi === temizKullaniciAdi;
+      });
+
+      if (ayniKullaniciAdindakiKayitlar.length === 0) {
+        Alert.alert('Hata', 'Kullanıcı bulunamadı!');
+        return;
+      }
+
+      const kullaniciObj = ayniKullaniciAdindakiKayitlar.find((kullanici) => {
+        const kayitSifre = String(kullanici.sifre ?? '').trim();
+        return kayitSifre === temizSifre;
+      });
+
+      if (!kullaniciObj) {
         Alert.alert('Hata', 'Şifre yanlış!');
+        return;
+      }
+
+      if (kullaniciObj.aktif === false) {
+        Alert.alert('Hata', 'Bu kullanıcı pasif durumda!');
         return;
       }
 
@@ -129,6 +148,7 @@ export default function LoginScreen() {
           </View>
 
           <Text style={s.versiyon}>© 2026 Yumurcak v1.0</Text>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
