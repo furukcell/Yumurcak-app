@@ -19,14 +19,14 @@ workflows:
         script: |
           npx expo prebuild --clean --platform android
 
-      - name: Build APK with Gradle
+      - name: Build standalone APK with Gradle
         script: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
     artifacts:
-      - android/app/build/outputs/apk/debug/*.apk
+      - android/app/build/outputs/apk/release/*.apk
 
     publishing:
       email:
