@@ -7,16 +7,21 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
-import { registerForPushNotificationsAsync, savePushTokenToDatabase } from './src/utils/notifications';
+import {
+  registerForPushNotificationsAsync,
+  savePushTokenToDatabase,
+} from './src/utils/notifications';
 import { auth } from './src/config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
   useEffect(() => {
     // Firebase Auth durumu değiştiğinde token kaydet
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
           const token = await registerForPushNotificationsAsync();
+
           if (token) {
             await savePushTokenToDatabase(token, user.uid);
           }
