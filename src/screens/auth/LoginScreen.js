@@ -7,7 +7,7 @@ import {
   SafeAreaView, ScrollView, ActivityIndicator,
   StyleSheet, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
-import { RENKLER, DB_URL } from '../../constants';  // ✅ 2 seviye yukarı
+import { RENKLER, DB_URL } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginScreen() {
@@ -23,11 +23,17 @@ export default function LoginScreen() {
       Alert.alert('Eksik Bilgi', 'Kullanıcı adı ve şifre giriniz!');
       return;
     }
+
     setYukleniyor(true);
+
     try {
-      const res  = await fetch(
-        `${DB_URL}/kullanicilar.json?orderBy="kullaniciAdi"&equalTo="${kullaniciAdi.trim().toLowerCase()}"`
+      const temizKullaniciAdi = kullaniciAdi.trim().toLowerCase();
+      const temizSifre = sifre.trim();
+
+      const res = await fetch(
+        `${DB_URL}/kullanicilar.json?orderBy="kullaniciAdi"&equalTo="${temizKullaniciAdi}"`
       );
+
       const data = await res.json();
 
       if (!data || Object.keys(data).length === 0) {
@@ -35,10 +41,12 @@ export default function LoginScreen() {
         return;
       }
 
-      const uid          = Object.keys(data)[0];
+      const uid = Object.keys(data)[0];
       const kullaniciObj = { uid, ...data[uid] };
 
-      if (kullaniciObj.sifre !== sifre.trim()) {
+      // Firebase'de şifre bazen sayı, bazen metin gelebilir.
+      // İki tarafı da metne çevirip karşılaştırıyoruz.
+      if (String(kullaniciObj.sifre ?? '').trim() !== temizSifre) {
         Alert.alert('Hata', 'Şifre yanlış!');
         return;
       }
@@ -46,7 +54,7 @@ export default function LoginScreen() {
       // Kreş bilgisini çek
       let kresObj = null;
       if (kullaniciObj.kresId) {
-        const kresRes  = await fetch(`${DB_URL}/kresler/${kullaniciObj.kresId}.json`);
+        const kresRes = await fetch(`${DB_URL}/kresler/${kullaniciObj.kresId}.json`);
         const kresData = await kresRes.json();
         if (kresData) kresObj = { id: kullaniciObj.kresId, ...kresData };
       }
