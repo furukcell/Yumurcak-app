@@ -8,21 +8,21 @@ import { getDatabase } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '',
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '',
-  databaseURL:
-    process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL ||
-    'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app',
+  apiKey: 'AIzaSyCH_lb0nGSyL0SMx2OmjipRw2VT0AdoPq0',
+  authDomain: 'yumurcak-app.firebaseapp.com',
+  databaseURL: 'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'yumurcak-app',
+  storageBucket: 'yumurcak-app.firebasestorage.app',
+  messagingSenderId: '857802425510',
+  appId: '1:857802425510:web:f023a72805bb40d750e067',
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Firebase App tek sefer initialize edilir
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 let auth;
 
+// React Native / Expo için doğru Auth kurulumu
 try {
   auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
@@ -31,6 +31,7 @@ try {
   auth = getAuth(app);
 }
 
+// Realtime Database
 const database = getDatabase(app);
 
 export { app, auth, database };
