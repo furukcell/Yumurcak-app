@@ -1,8 +1,20 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// ============================================================
+// YUMURCAK — AuthContext.js
+// FAZ 10: Firebase Auth destekli hibrit oturum sistemi
+// - Auth ile giriş varsa auth.uid -> authKullaniciIndex -> kullanicilar/{legacyId}
+// - Eski AsyncStorage / RTDB login fallback korunur
+// ============================================================
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DB_URL, ROLLER } from '../constants';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { get, ref } from 'firebase/database';
+import { auth, database } from '../config/firebase';
+import { getKresForUser, findUserIdByAuthUid } from '../utils/authHelpers';
 
 const AuthContext = createContext(null);
+
+const USER_KEY = 'yumurcak_kullanici';
+const KRES_KEY = 'yumurcak_kres';
 
 export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null);
@@ -10,48 +22,117 @@ export function AuthProvider({ children }) {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   useEffect(() => {
-    otomatikGirisKontrol();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          const legacyUserId = await findUserIdByAuthUid(firebaseUser.uid);
+
+          if (legacyUserId) {
+            const userSnap = await get(ref(database, `kullanicilar/${legacyUserId}`));
+            if (userSnap.exists()) {
+              const userData = {
+                uid: legacyUserId,
+                id: legacyUserId,
+                authUid: firebaseUser.uid,
+                email: firebaseUser.email,
+                ...userSnap.val(),
+              };
+
+              const kresObj = await getKresForUser(userData);
+
+              setKullanici(userData);
+              setKres(kresObj);
+
+              await AsyncStorage.setItem(USER_KEY, JSON.stringify(userData));
+              if (kresObj) await AsyncStorage.setItem(KRES_KEY, JSON.stringify(kresObj));
+              else await AsyncStorage.removeItem(KRES_KEY);
+
+              setYukleniyor(false);
+              return;
+            }
+          }
+        }
+
+        // Auth yoksa veya eşleşme yoksa eski kayıtlı oturumu dene
+        await legacyStorageLogin();
+      } catch (error) {
+        console.warn('Auth kontrol hatası:', error);
+        await legacyStorageLogin();
+      } finally {
+        setYukleniyor(false);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const otomatikGirisKontrol = async () => {
+  const legacyStorageLogin = async () => {
     try {
-      const kayitliKullanici = await AsyncStorage.getItem('yumurcak_kullanici');
-      const kayitliKres = await AsyncStorage.getItem('yumurcak_kres');
-      
-      if (kayitliKullanici) {
-        const kullaniciObj = JSON.parse(kayitliKullanici);
-        const kresObj = kayitliKres ? JSON.parse(kayitliKres) : null;
+      const kayitliKullanici = await AsyncStorage.getItem(USER_KEY);
+      const kayitliKres = await AsyncStorage.getItem(KRES_KEY);
 
-        const res = await fetch(`${DB_URL}/kullanicilar/${kullaniciObj.uid}.json`);
-        const data = await res.json();
-
-        if (data) {
-          setKullanici({ ...kullaniciObj, ...data });
-          setKres(kresObj);
-        } else {
-          await AsyncStorage.multiRemove(['yumurcak_kullanici', 'yumurcak_kres']);
-        }
+      if (!kayitliKullanici) {
+        setKullanici(null);
+        setKres(null);
+        return;
       }
-    } catch (e) {
-      console.warn('Otomatik giriş hatası:', e);
-    } finally {
-      setYukleniyor(false);
+
+      const kullaniciObj = JSON.parse(kayitliKullanici);
+      const legacyId = kullaniciObj.uid || kullaniciObj.id;
+
+      if (!legacyId) {
+        await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
+        setKullanici(null);
+        setKres(null);
+        return;
+      }
+
+      const snap = await get(ref(database, `kullanicilar/${legacyId}`));
+
+      if (snap.exists()) {
+        const freshUser = { ...kullaniciObj, uid: legacyId, id: legacyId, ...snap.val() };
+        const kresObj = kayitliKres ? JSON.parse(kayitliKres) : await getKresForUser(freshUser);
+        setKullanici(freshUser);
+        setKres(kresObj);
+      } else {
+        await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
+        setKullanici(null);
+        setKres(null);
+      }
+    } catch (error) {
+      console.warn('Eski oturum kontrol hatası:', error);
+      setKullanici(null);
+      setKres(null);
     }
   };
 
   const girisYap = async (kullaniciObj, kresObj) => {
+    const normalizedUser = {
+      ...kullaniciObj,
+      uid: kullaniciObj.uid || kullaniciObj.id,
+      id: kullaniciObj.id || kullaniciObj.uid,
+    };
+
     try {
-      await AsyncStorage.setItem('yumurcak_kullanici', JSON.stringify(kullaniciObj));
-      await AsyncStorage.setItem('yumurcak_kres', JSON.stringify(kresObj));
-    } catch (e) {}
-    setKullanici(kullaniciObj);
-    setKres(kresObj);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(normalizedUser));
+      if (kresObj) await AsyncStorage.setItem(KRES_KEY, JSON.stringify(kresObj));
+      else await AsyncStorage.removeItem(KRES_KEY);
+    } catch (error) {
+      console.warn('Oturum kaydedilemedi:', error);
+    }
+
+    setKullanici(normalizedUser);
+    setKres(kresObj || null);
   };
 
   const cikisYap = async () => {
     try {
-      await AsyncStorage.multiRemove(['yumurcak_kullanici', 'yumurcak_kres']);
-    } catch (e) {}
+      await signOut(auth).catch(() => {});
+      await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
+    } catch (error) {
+      console.warn('Çıkış hatası:', error);
+    }
+
     setKullanici(null);
     setKres(null);
   };
