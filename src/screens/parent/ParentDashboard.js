@@ -3,7 +3,7 @@
 // Modern veli arayüzü — ana sayfa, raporlar, duyurular, profil
 // + Hızlı işlem ekranları (local state navigation)
 // + Yemek Listesi (Firebase yemekListeleri node)
-// + Etkinlikler ve yeni veli modül placeholder ekranları
+// + Etkinlikler, yoklama, gelişim, medikal, iletişim ve servis ekranları
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -14,8 +14,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  TextInput,
+  Linking,
+  Alert,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -42,6 +45,50 @@ const GUN_LABEL = {
   persembe: 'Perşembe',
   cuma: 'Cuma',
 };
+
+
+const MONTH_LABELS = [
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
+];
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function toDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function getMonthKey(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+}
+
+function getMonthLabel(monthKey) {
+  const [year, month] = String(monthKey || '').split('-');
+  const monthIndex = Number(month) - 1;
+  return `${MONTH_LABELS[monthIndex] || monthKey} ${year || ''}`.trim();
+}
+
+function getDayKey(date = new Date()) {
+  const keys = ['pazar', 'pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', 'cumartesi'];
+  return keys[date.getDay()] || 'pazartesi';
+}
+
+function isAbsentStatus(status) {
+  const value = String(status || '').toLowerCase();
+  return value === 'gelmedi' || value === 'devamsiz' || value === 'devamsız' || value === 'yok';
+}
 
 // Placeholder ekran tanımları (meals çıkarıldı — gerçek ekrana geçti)
 const PLACEHOLDER_SCREENS = {
@@ -114,6 +161,17 @@ export default function ParentDashboardScreen() {
   const [announcements, setAnnouncements] = useState([]);
   const [yemekListeleri, setYemekListeleri] = useState([]);
   const [etkinlikler, setEtkinlikler] = useState([]);
+  const [yoklamalar, setYoklamalar] = useState([]);
+  const [fizikselGelisim, setFizikselGelisim] = useState([]);
+  const [medikalBilgi, setMedikalBilgi] = useState(null);
+  const [medikalDraft, setMedikalDraft] = useState({ alerjiler: '', ilaclar: '', notlar: '' });
+  const [savingMedical, setSavingMedical] = useState(false);
+  const [servisBilgi, setServisBilgi] = useState(null);
+  const [kresBilgi, setKresBilgi] = useState(null);
+  const [siniflar, setSiniflar] = useState({});
+  const [kullanicilar, setKullanicilar] = useState({});
+  const [mealTab, setMealTab] = useState('today');
+  const [selectedAttendanceMonth, setSelectedAttendanceMonth] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const parentId = kullanici?.uid || kullanici?.id;
@@ -244,6 +302,120 @@ export default function ParentDashboardScreen() {
     return () => unsubscribe();
   }, [sinifId, kresId]);
 
+
+  // ─── Firebase: Yoklamalar ────────────────────────────────────
+  useEffect(() => {
+    if (!selectedChild?.id) {
+      setYoklamalar([]);
+      return undefined;
+    }
+    const yoklamaRef = ref(database, 'yoklamalar');
+    const unsubscribe = onValue(yoklamaRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = [];
+      if (data) {
+        Object.entries(data).forEach(([id, item]) => {
+          if (item.cocukId !== selectedChild.id) return;
+          if (kresId && item.kresId && item.kresId !== kresId) return;
+          list.push({ id, ...item });
+        });
+      }
+      list.sort((a, b) => String(b.tarih || '').localeCompare(String(a.tarih || '')));
+      setYoklamalar(list);
+    });
+    return () => unsubscribe();
+  }, [selectedChild?.id, kresId]);
+
+  // ─── Firebase: Fiziksel Gelişim ──────────────────────────────
+  useEffect(() => {
+    if (!selectedChild?.id) {
+      setFizikselGelisim([]);
+      return undefined;
+    }
+    const gelisimRef = ref(database, 'fizikselGelisim');
+    const unsubscribe = onValue(gelisimRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = [];
+      if (data) {
+        Object.entries(data).forEach(([id, item]) => {
+          if (item.cocukId !== selectedChild.id) return;
+          if (kresId && item.kresId && item.kresId !== kresId) return;
+          list.push({ id, ...item });
+        });
+      }
+      list.sort((a, b) => String(b.tarih || '').localeCompare(String(a.tarih || '')));
+      setFizikselGelisim(list);
+    });
+    return () => unsubscribe();
+  }, [selectedChild?.id, kresId]);
+
+  // ─── Firebase: Medikal Bilgiler ──────────────────────────────
+  useEffect(() => {
+    if (!selectedChild?.id) {
+      setMedikalBilgi(null);
+      setMedikalDraft({ alerjiler: '', ilaclar: '', notlar: '' });
+      return undefined;
+    }
+    const medikalRef = ref(database, `medikalBilgiler/${selectedChild.id}`);
+    const unsubscribe = onValue(medikalRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setMedikalBilgi(data);
+        setMedikalDraft({
+          alerjiler: data.alerjiler || '',
+          ilaclar: data.ilaclar || '',
+          notlar: data.notlar || '',
+        });
+      } else {
+        setMedikalBilgi(null);
+        setMedikalDraft({ alerjiler: '', ilaclar: '', notlar: '' });
+      }
+    });
+    return () => unsubscribe();
+  }, [selectedChild?.id]);
+
+  // ─── Firebase: Servis Bilgileri ──────────────────────────────
+  useEffect(() => {
+    if (!selectedChild?.id) {
+      setServisBilgi(null);
+      return undefined;
+    }
+    const servisRef = ref(database, `servisBilgileri/${selectedChild.id}`);
+    const unsubscribe = onValue(servisRef, (snapshot) => {
+      setServisBilgi(snapshot.val() || null);
+    });
+    return () => unsubscribe();
+  }, [selectedChild?.id]);
+
+  // ─── Firebase: Kurum / Sınıf / Kullanıcı Bilgileri ───────────
+  useEffect(() => {
+    if (!kresId) {
+      setKresBilgi(null);
+      return undefined;
+    }
+    const kresRef = ref(database, `kresler/${kresId}`);
+    const unsubscribe = onValue(kresRef, (snapshot) => {
+      setKresBilgi(snapshot.val() || null);
+    });
+    return () => unsubscribe();
+  }, [kresId]);
+
+  useEffect(() => {
+    const sinifRef = ref(database, 'siniflar');
+    const unsubscribe = onValue(sinifRef, (snapshot) => {
+      setSiniflar(snapshot.val() || {});
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const kullaniciRef = ref(database, 'kullanicilar');
+    const unsubscribe = onValue(kullaniciRef, (snapshot) => {
+      setKullanicilar(snapshot.val() || {});
+    });
+    return () => unsubscribe();
+  }, []);
+
   // ─── Hesaplanan değerler ──────────────────────────────────────
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
@@ -251,6 +423,62 @@ export default function ParentDashboardScreen() {
   }, [reports, selectedChild?.id]);
 
   const todayReport = childReports[0];
+
+  const todayKey = toDateKey(new Date());
+  const todayDayKey = getDayKey(new Date());
+  const thisMonthKey = getMonthKey(new Date());
+  const thisYear = new Date().getFullYear();
+
+  const son12AyYoklama = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i += 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = getMonthKey(d);
+      const records = yoklamalar.filter((item) => String(item.tarih || '').startsWith(key));
+      months.push({
+        key,
+        label: getMonthLabel(key),
+        records,
+        absentCount: records.filter((item) => isAbsentStatus(item.durum)).length,
+      });
+    }
+    return months;
+  }, [yoklamalar]);
+
+  const selectedMonthData = son12AyYoklama.find((item) => item.key === selectedAttendanceMonth);
+  const thisMonthAbsence = son12AyYoklama.find((item) => item.key === thisMonthKey)?.absentCount || 0;
+  const yearAbsence = yoklamalar.filter((item) => {
+    const tarih = String(item.tarih || '');
+    return tarih.startsWith(String(thisYear)) && isAbsentStatus(item.durum);
+  }).length;
+
+  const activeMeal = useMemo(() => {
+    return yemekListeleri.find((item) => item.aktif !== false) || yemekListeleri[0] || null;
+  }, [yemekListeleri]);
+
+  const todayMealData = useMemo(() => {
+    if (!activeMeal) return null;
+    if (activeMeal.tip === 'haftalik') {
+      return activeMeal.ogunler?.[todayDayKey] || null;
+    }
+    if (activeMeal.tip === 'aylik') {
+      const haftalar = activeMeal.haftalar || {};
+      const haftaKeys = Object.keys(haftalar).sort();
+      for (const haftaKey of haftaKeys) {
+        const gunData = haftalar?.[haftaKey]?.gunler?.[todayDayKey];
+        if (gunData) return gunData;
+      }
+    }
+    return null;
+  }, [activeMeal, todayDayKey]);
+
+  const sinifBilgi = sinifId ? siniflar?.[sinifId] : null;
+  const ogretmenId = selectedChild?.ogretmenId || sinifBilgi?.ogretmenId || sinifBilgi?.ogretmenIds?.[0];
+  const ogretmenBilgi = ogretmenId ? kullanicilar?.[ogretmenId] : null;
+  const yoneticiId = kresBilgi?.yoneticiId;
+  const yoneticiBilgi = yoneticiId ? kullanicilar?.[yoneticiId] : null;
+
 
   const getChildName = () => selectedChild?.ad || selectedChild?.adSoyad || 'Çocuğum';
   const getParentName = () =>
@@ -279,6 +507,8 @@ export default function ParentDashboardScreen() {
   };
 
   const openScreen = (screen) => {
+    if (screen === 'meals') setMealTab('today');
+    if (screen === 'attendance') setSelectedAttendanceMonth(null);
     setCurrentScreen(screen);
   };
 
@@ -293,6 +523,39 @@ export default function ParentDashboardScreen() {
   const openMealDetail = (meal) => {
     setSelectedMeal(meal);
     setCurrentScreen('mealDetail');
+  };
+
+
+  const saveMedicalInfo = async () => {
+    if (!selectedChild?.id) return;
+    try {
+      setSavingMedical(true);
+      await set(ref(database, `medikalBilgiler/${selectedChild.id}`), {
+        kresId: kresId || '',
+        cocukId: selectedChild.id,
+        alerjiler: medikalDraft.alerjiler || '',
+        ilaclar: medikalDraft.ilaclar || '',
+        notlar: medikalDraft.notlar || '',
+        guncelleyenVeliId: parentId || '',
+        updatedAt: Date.now(),
+      });
+      Alert.alert('Kaydedildi', 'Medikal bilgiler güncellendi.');
+    } catch (error) {
+      Alert.alert('Hata', 'Medikal bilgiler kaydedilemedi.');
+    } finally {
+      setSavingMedical(false);
+    }
+  };
+
+  const callPhone = (phone) => {
+    if (!phone) return;
+    Linking.openURL(`tel:${String(phone).replace(/\s/g, '')}`);
+  };
+
+  const openWhatsapp = (phone) => {
+    if (!phone) return;
+    const cleanPhone = String(phone).replace(/\D/g, '');
+    Linking.openURL(`https://wa.me/90${cleanPhone.slice(-10)}`);
   };
 
   // ─── Loading ──────────────────────────────────────────────────
@@ -328,6 +591,52 @@ export default function ParentDashboardScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         {renderEventsScreen()}
+      </SafeAreaView>
+    );
+  }
+
+
+  // ─── Yoklama Ekranı ──────────────────────────────────────────
+  if (currentScreen === 'attendance') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderAttendanceScreen()}
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Gelişim Ekranı ──────────────────────────────────────────
+  if (currentScreen === 'development') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderDevelopmentScreen()}
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Medikal Ekranı ──────────────────────────────────────────
+  if (currentScreen === 'medical') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderMedicalScreen()}
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Kurum İletişim Ekranı ───────────────────────────────────
+  if (currentScreen === 'contact') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderContactScreen()}
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Servis Ekranı ───────────────────────────────────────────
+  if (currentScreen === 'service') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderServiceScreen()}
       </SafeAreaView>
     );
   }
@@ -429,23 +738,83 @@ export default function ParentDashboardScreen() {
           <View style={styles.backButtonSpacer} />
         </View>
 
+        <View style={styles.segmentTabs}>
+          <TouchableOpacity
+            style={[styles.segmentTab, mealTab === 'today' && styles.segmentTabActive]}
+            onPress={() => setMealTab('today')}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.segmentTabText, mealTab === 'today' && styles.segmentTabTextActive]}>
+              Bugünün Yemekleri
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segmentTab, mealTab === 'list' && styles.segmentTabActive]}
+            onPress={() => setMealTab('list')}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.segmentTabText, mealTab === 'list' && styles.segmentTabTextActive]}>
+              Liste
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView
           style={styles.placeholderScroll}
           contentContainerStyle={styles.placeholderContent}
           showsVerticalScrollIndicator={false}
         >
-          {yemekListeleri.length === 0 ? (
-            <View style={styles.emptyStateCard}>
-              <Text style={styles.emptyIcon}>🍽️</Text>
-              <Text style={styles.emptyTitle}>Henüz yemek listesi eklenmemiş.</Text>
-              <Text style={styles.emptyDesc}>Kreş yemek listesi girdiğinde burada görünecek.</Text>
-            </View>
-          ) : (
-            yemekListeleri.map((item) => renderMealCard(item))
-          )}
+          {mealTab === 'today' ? renderTodayMeals() : renderMealList()}
         </ScrollView>
       </View>
     );
+  }
+
+  function renderTodayMeals() {
+    if (!todayMealData) {
+      return (
+        <View style={styles.emptyStateCard}>
+          <Text style={styles.emptyIcon}>🍽️</Text>
+          <Text style={styles.emptyTitle}>Bugün için yemek bilgisi yok.</Text>
+          <Text style={styles.emptyDesc}>Kurum yemek listesini girdiğinde sabah, öğle ve ikindi burada görünecek.</Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>Bugün — {GUN_LABEL[todayDayKey] || 'Bugün'}</Text>
+          <Text style={styles.emptyDesc}>Kurumun güncel yemek listesinden otomatik alınır.</Text>
+        </View>
+        {renderTodayMealCard('☀️', 'Kahvaltı', todayMealData.kahvalti, todayMealData.kahvaltiFotoUrl)}
+        {renderTodayMealCard('🍽️', 'Öğle', todayMealData.ogle, todayMealData.ogleFotoUrl)}
+        {renderTodayMealCard('🍎', 'İkindi', todayMealData.ikindi, todayMealData.ikindiFotoUrl)}
+      </>
+    );
+  }
+
+  function renderTodayMealCard(icon, title, value, photoUrl) {
+    return (
+      <View style={styles.mealCard}>
+        <Text style={styles.mealCardTitle}>{icon} {title}</Text>
+        {photoUrl ? <Text style={styles.photoPlaceholder}>📷 Fotoğraf: {photoUrl}</Text> : null}
+        <Text style={styles.eventDesc}>{value || '-'}</Text>
+      </View>
+    );
+  }
+
+  function renderMealList() {
+    if (yemekListeleri.length === 0) {
+      return (
+        <View style={styles.emptyStateCard}>
+          <Text style={styles.emptyIcon}>🍽️</Text>
+          <Text style={styles.emptyTitle}>Henüz yemek listesi eklenmemiş.</Text>
+          <Text style={styles.emptyDesc}>Kreş yemek listesi girdiğinde burada görünecek.</Text>
+        </View>
+      );
+    }
+    return yemekListeleri.map((item) => renderMealCard(item));
   }
 
   function renderMealCard(item) {
@@ -585,6 +954,257 @@ export default function ParentDashboardScreen() {
         <Text style={styles.ogunIcon}>{icon}</Text>
         <Text style={styles.ogunLabel}>{label}</Text>
         <Text style={styles.ogunValue}>{value || '-'}</Text>
+      </View>
+    );
+  }
+
+
+  // ════════════════════════════════════════════════════════════
+  // YOKLAMA / GELİŞİM / MEDİKAL / İLETİŞİM / SERVİS EKRANLARI
+  // ════════════════════════════════════════════════════════════
+
+  function renderAttendanceScreen() {
+    const monthRows = selectedMonthData?.records || [];
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Yoklama</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+        <ScrollView style={styles.placeholderScroll} contentContainerStyle={styles.placeholderContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.statRow}>
+            <View style={styles.statMiniCard}>
+              <Text style={styles.statMiniValue}>{thisMonthAbsence}</Text>
+              <Text style={styles.statMiniLabel}>Bu ay devamsızlık</Text>
+            </View>
+            <View style={styles.statMiniCard}>
+              <Text style={styles.statMiniValue}>{yearAbsence}</Text>
+              <Text style={styles.statMiniLabel}>Bu yıl toplam</Text>
+            </View>
+          </View>
+
+          {selectedAttendanceMonth ? (
+            <>
+              <TouchableOpacity style={styles.smallBackButton} onPress={() => setSelectedAttendanceMonth(null)} activeOpacity={0.85}>
+                <Text style={styles.smallBackText}>← Aylara Dön</Text>
+              </TouchableOpacity>
+              <Text style={styles.sectionTitle}>{getMonthLabel(selectedAttendanceMonth)}</Text>
+              {monthRows.length === 0 ? (
+                <View style={styles.emptyStateCard}>
+                  <Text style={styles.emptyIcon}>✅</Text>
+                  <Text style={styles.emptyTitle}>Bu ay yoklama kaydı yok.</Text>
+                </View>
+              ) : (
+                monthRows.map((item) => renderAttendanceDay(item))
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={styles.sectionTitle}>Son 12 Ay</Text>
+              {son12AyYoklama.map((item) => (
+                <TouchableOpacity key={item.key} style={styles.listCard} onPress={() => setSelectedAttendanceMonth(item.key)} activeOpacity={0.85}>
+                  <View>
+                    <Text style={styles.listCardTitle}>{item.label}</Text>
+                    <Text style={styles.listCardSub}>{item.records.length} yoklama kaydı</Text>
+                  </View>
+                  <Text style={[styles.statusPill, item.absentCount > 0 ? styles.statusRed : styles.statusGreen]}>
+                    {item.absentCount} devamsızlık
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderAttendanceDay(item) {
+    const absent = isAbsentStatus(item.durum);
+    return (
+      <View key={item.id} style={styles.listCard}>
+        <View>
+          <Text style={styles.listCardTitle}>{item.tarih || '-'}</Text>
+          <Text style={styles.listCardSub}>{item.not || 'Not yok'}</Text>
+        </View>
+        <Text style={[styles.statusPill, absent ? styles.statusRed : styles.statusGreen]}>
+          {absent ? 'Gelmedi' : item.durum || 'Geldi'}
+        </Text>
+      </View>
+    );
+  }
+
+  function renderDevelopmentScreen() {
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Fiziksel Gelişim</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+        <ScrollView style={styles.placeholderScroll} contentContainerStyle={styles.placeholderContent} showsVerticalScrollIndicator={false}>
+          {fizikselGelisim.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyIcon}>📈</Text>
+              <Text style={styles.emptyTitle}>Henüz gelişim kaydı yok.</Text>
+              <Text style={styles.emptyDesc}>Boy/kilo ölçümleri girildiğinde burada tablo halinde görünecek.</Text>
+            </View>
+          ) : (
+            fizikselGelisim.map((item) => (
+              <View key={item.id} style={styles.listCard}>
+                <View>
+                  <Text style={styles.listCardTitle}>{item.tarih || '-'}</Text>
+                  <Text style={styles.listCardSub}>{item.not || 'Not yok'}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.listCardTitle}>{item.boy || '-'} cm</Text>
+                  <Text style={styles.listCardSub}>{item.kilo || '-'} kg</Text>
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderMedicalScreen() {
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Medikal Takip</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+        <ScrollView style={styles.placeholderScroll} contentContainerStyle={styles.placeholderContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Alerji Bilgileri</Text>
+            <TextInput
+              style={styles.medicalInput}
+              value={medikalDraft.alerjiler}
+              onChangeText={(textValue) => setMedikalDraft((prev) => ({ ...prev, alerjiler: textValue }))}
+              placeholder="Örn: Süt alerjisi, polen..."
+              multiline
+            />
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Kullandığı İlaçlar</Text>
+            <TextInput
+              style={styles.medicalInput}
+              value={medikalDraft.ilaclar}
+              onChangeText={(textValue) => setMedikalDraft((prev) => ({ ...prev, ilaclar: textValue }))}
+              placeholder="Örn: Düzenli kullanılan ilaç yok..."
+              multiline
+            />
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Notlar</Text>
+            <TextInput
+              style={styles.medicalInput}
+              value={medikalDraft.notlar}
+              onChangeText={(textValue) => setMedikalDraft((prev) => ({ ...prev, notlar: textValue }))}
+              placeholder="Öğretmen ve yönetici için önemli sağlık notları..."
+              multiline
+            />
+          </View>
+          {medikalBilgi?.updatedAt ? (
+            <Text style={styles.lastUpdateText}>Son güncelleme: {new Date(medikalBilgi.updatedAt).toLocaleDateString('tr-TR')}</Text>
+          ) : null}
+          <TouchableOpacity style={styles.primaryButton} onPress={saveMedicalInfo} disabled={savingMedical} activeOpacity={0.85}>
+            <Text style={styles.primaryButtonText}>{savingMedical ? 'Kaydediliyor...' : 'Kaydet'}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderContactScreen() {
+    const kurumTelefon = kresBilgi?.telefon || '';
+    const yoneticiTelefon = yoneticiBilgi?.telefon || kurumTelefon;
+    const ogretmenAd = `${ogretmenBilgi?.ad || ''} ${ogretmenBilgi?.soyad || ''}`.trim() || '-';
+    const yoneticiAd = `${yoneticiBilgi?.ad || ''} ${yoneticiBilgi?.soyad || ''}`.trim() || '-';
+
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Kurum İletişim</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+        <ScrollView style={styles.placeholderScroll} contentContainerStyle={styles.placeholderContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Kurum</Text>
+            {renderInfoRow('🏫', 'Kurum', kresBilgi?.ad || '-')}
+            {renderInfoRow('📍', 'Adres', kresBilgi?.adres || '-')}
+            {renderInfoRow('☎️', 'Telefon', kurumTelefon || '-')}
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Yönetici</Text>
+            {renderInfoRow('👤', 'Ad Soyad', yoneticiAd)}
+            {renderInfoRow('☎️', 'Telefon', yoneticiTelefon || '-')}
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={styles.contactButton} onPress={() => callPhone(yoneticiTelefon)} activeOpacity={0.85}>
+                <Text style={styles.contactButtonText}>Ara</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.contactButtonAlt} onPress={() => openWhatsapp(yoneticiTelefon)} activeOpacity={0.85}>
+                <Text style={styles.contactButtonAltText}>WhatsApp</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Öğretmen</Text>
+            {renderInfoRow('👩‍🏫', 'Ad Soyad', ogretmenAd)}
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => openScreen('messages')} activeOpacity={0.85}>
+              <Text style={styles.secondaryButtonText}>Mesaj Gönder</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderServiceScreen() {
+    const usesService = servisBilgi?.servisKullaniyor === true;
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Servis</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+        <ScrollView style={styles.placeholderScroll} contentContainerStyle={styles.placeholderContent} showsVerticalScrollIndicator={false}>
+          {!usesService ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyIcon}>🚌</Text>
+              <Text style={styles.emptyTitle}>Servis kullanmıyorsunuz.</Text>
+              <Text style={styles.emptyDesc}>Kurum servis bilgisi eklerse alış ve bırakış saatleri burada görünecek.</Text>
+            </View>
+          ) : (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>Servis Bilgileri</Text>
+              {renderInfoRow('🚌', 'Durum', 'Servis kullanıyor')}
+              {renderInfoRow('⏰', 'Alış Saati', servisBilgi.alisSaati || '-')}
+              {renderInfoRow('🏠', 'Bırakış Saati', servisBilgi.birakisSaati || '-')}
+              {renderInfoRow('📝', 'Not', servisBilgi.servisNotu || '-')}
+            </View>
+          )}
+        </ScrollView>
       </View>
     );
   }
@@ -1145,4 +1765,69 @@ const styles = StyleSheet.create({
   ogunIcon: { fontSize: 16, width: 24 },
   ogunLabel: { fontSize: 12, fontWeight: '800', color: THEME.muted, width: 60 },
   ogunValue: { fontSize: 13, color: THEME.text, flex: 1, lineHeight: 18 },
+
+
+  // ─── YENİ VELİ MODÜL STİLLERİ ────────────────────────────────
+  segmentTabs: {
+    flexDirection: 'row',
+    marginHorizontal: 18,
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  segmentTab: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 14 },
+  segmentTabActive: { backgroundColor: THEME.primary },
+  segmentTabText: { fontSize: 13, fontWeight: '900', color: THEME.muted },
+  segmentTabTextActive: { color: '#FFFFFF' },
+  statRow: { flexDirection: 'row', gap: 12, marginBottom: 18 },
+  statMiniCard: {
+    flex: 1,
+    backgroundColor: THEME.card,
+    borderRadius: 20,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  statMiniValue: { fontSize: 30, fontWeight: '900', color: THEME.primary },
+  statMiniLabel: { fontSize: 12, fontWeight: '800', color: THEME.muted, textAlign: 'center', marginTop: 4 },
+  listCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  listCardTitle: { fontSize: 15, fontWeight: '900', color: THEME.text },
+  listCardSub: { fontSize: 12, fontWeight: '700', color: THEME.muted, marginTop: 4, maxWidth: 190 },
+  statusPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden', fontSize: 11, fontWeight: '900' },
+  statusGreen: { backgroundColor: '#E8F9EF', color: THEME.green },
+  statusRed: { backgroundColor: '#FFE5EB', color: THEME.red },
+  smallBackButton: { alignSelf: 'flex-start', backgroundColor: THEME.primarySoft, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  smallBackText: { color: THEME.primary, fontWeight: '900' },
+  photoPlaceholder: { fontSize: 12, color: THEME.blue, fontWeight: '800', marginBottom: 8 },
+  medicalInput: {
+    minHeight: 92,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 16,
+    padding: 12,
+    color: THEME.text,
+    fontSize: 14,
+    textAlignVertical: 'top',
+    backgroundColor: '#FAF9FF',
+  },
+  lastUpdateText: { color: THEME.muted, fontSize: 12, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  contactButton: { flex: 1, backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  contactButtonText: { color: '#FFFFFF', fontWeight: '900' },
+  contactButtonAlt: { flex: 1, backgroundColor: '#E8F9EF', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  contactButtonAltText: { color: THEME.green, fontWeight: '900' },
 });
