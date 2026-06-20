@@ -31,6 +31,10 @@ Son testlerde ulaşılan durum:
 - Veli hesabının çocuk görebilmesi için çocuğun `veliIds` alanına veli ID'sinin bağlanması gerektiği doğrulandı.
 - Codemagic üzerinden release APK alınabiliyor.
 - Expo / Firebase / Metro / Android açılış hataları giderildi.
+- **Öğretmen listesi `kullanicilar` node'undan gerçek ad/soyad, kullanıcı adı ve sınıf bilgisiyle güncellendi.**
+- **Öğretmen listesine sağ alt köşede + (ekle) butonu eklendi.**
+- **Veli listesi çocuk adı, sınıf ve telefon bilgisiyle zenginleştirildi.**
+- **Çocuk listesi veli adı, telefon, sınıf ve öğretmen bilgisiyle zenginleştirildi.**
 
 Henüz tamamlanmamış alanlar:
 
@@ -320,11 +324,56 @@ Yönetici tarafından gönderilen duyuruları tutar.
 }
 ```
 
+### `odemeler` _(ileride kullanılacak)_
+
+```txt
+odemeler/odeme001:
+  kresId: "kres001"
+  cocukId: "cocuk001"
+  veliId: "veli001"
+  ay: 6
+  yil: 2026
+  tutar: 7500
+  durum: "odendi" / "bekliyor" / "gecikti"
+  odemeTarihi: "2026-06-20"
+  createdAt: 1780000000000
+```
+
+### `dersProgramlari` _(ileride kullanılacak)_
+
+```txt
+dersProgramlari/program001:
+  kresId: "kres001"
+  sinifId: "sinif001"
+  hafta: "2026-W25"
+  gunler:
+    pazartesi:
+      "09:00": "Serbest Oyun"
+      "10:00": "İngilizce"
+    sali:
+      "09:00": "Müzik"
+      "10:00": "Drama"
+```
+
+### `etkinlikler` _(ileride kullanılacak)_
+
+```txt
+etkinlikler/etkinlik001:
+  kresId: "kres001"
+  baslik: "Piknik Etkinliği"
+  tarih: "2026-06-25"
+  saat: "10:00"
+  sinifIds: ["sinif001"]
+  aciklama: "Çocuklarımızla bahçe pikniği yapılacaktır."
+  aktif: true
+  createdAt: 1780000000000
+```
+
 ---
 
 ## Test Kullanıcıları
 
-Firebase Realtime Database içinde `kullanicilar/` node’una manuel olarak eklenebilir veya yönetici panelinden oluşturulabilir.
+Firebase Realtime Database içinde `kullanicilar/` node'una manuel olarak eklenebilir veya yönetici panelinden oluşturulabilir.
 
 ### Yönetici
 
@@ -444,7 +493,7 @@ android/app/build/outputs/apk/release/*.apk
 
 Önemli not:
 
-- Codemagic’te **Build branch: main** seçilmelidir.
+- Codemagic'te **Build branch: main** seçilmelidir.
 - Eski commit seçilirse önceki hatalar tekrar görülebilir.
 - Doğru çalışan APK için son stabil commit ayrıca not edilmelidir.
 
@@ -456,7 +505,7 @@ Bu aşamaya kadar çözülen ana problemler:
 
 - Expo SDK yükseltmesi sonrası Firebase Auth başlatma hatası giderildi.
 - Firebase API key / config boş gelme sorunu giderildi.
-- Android release APK’da JS bundle yüklenmeme sorunu giderildi.
+- Android release APK'da JS bundle yüklenmeme sorunu giderildi.
 - `main has not been registered` hatası için `index.js` ve `registerRootComponent` akışı düzeltildi.
 - `package.json` içinde `main` alanı `index.js` olarak ayarlandı.
 - Firebase login tarafında sayı/metin şifre karşılaştırması düzeltildi.
@@ -464,6 +513,9 @@ Bu aşamaya kadar çözülen ana problemler:
 - Codemagic release APK üretimi çalışır hale getirildi.
 - Uygulama ikonu `app.json` içine bağlandı.
 - TypeScript yazımı kalmış `.js` dosyası temizlendi.
+- Öğretmen listesi `siniflar` node'u yerine `kullanicilar` node'undan okunacak şekilde yeniden yazıldı.
+- Veli listesi `cocuklar` ve `siniflar` node'ları çekilerek çocuk ve sınıf bilgisiyle zenginleştirildi.
+- Çocuk listesi `kullanicilar` ve `siniflar` node'ları çekilerek veli, telefon ve öğretmen bilgisiyle zenginleştirildi.
 
 ---
 
@@ -505,6 +557,10 @@ Amaç: Uygulamanın üç rol için çökmeden çalışması.
 - [x] Yönetici panelini açılır hale getir
 - [x] Yönetici kartlarını çalıştır
 - [x] Veli bağlantı mantığını doğrula
+- [x] Öğretmen listesinde gerçek ad/soyad ve sınıf bilgisini göster
+- [x] Öğretmen listesine + ekleme butonu ekle
+- [x] Veli listesinde çocuk adı, sınıf ve telefon bilgisini göster
+- [x] Çocuk listesinde veli, telefon, sınıf ve öğretmen bilgisini göster
 - [ ] Öğretmen hesabı ile sınıf / çocuk görünümünü test et
 - [ ] Öğretmen günlük rapor girişini test et
 - [ ] Veli günlük rapor görüntülemeyi test et
@@ -529,7 +585,7 @@ Amaç: Gerçek kreş demo kullanımına hazır hale getirmek.
 
 Amaç: Pilot sonrası daha güvenli yapıya geçmek.
 
-- [ ] Firebase Auth’a geçiş
+- [ ] Firebase Auth'a geçiş
 - [ ] Düz metin şifre kullanımını kaldırma
 - [ ] Firebase Database Rules güçlendirme
 - [ ] `kresId` bazlı veri izolasyonunu zorunlu hale getirme
@@ -554,6 +610,35 @@ Bu özellikler MVP stabil hale gelmeden eklenmemelidir:
 
 ---
 
+## Sonraki Yönetici Paneli Geliştirmeleri
+
+Aşağıdaki özellikler planlanmış ancak henüz kodlanmamıştır:
+
+- [ ] Çocuk detay ekranı
+- [ ] Çocuk bazlı veli, sınıf, öğretmen, rapor ve ödeme bilgilerini tek ekranda gösterme
+- [ ] Ödeme takibi modülü
+- [ ] Çocuk bazlı aylık ödeme durumu
+- [ ] Ödenen / bekleyen / geciken ödeme istatistikleri
+- [ ] Yönetici dashboard'da aylık tahsilat özeti
+- [ ] Veli/çocuk bazlı ödeme geçmişi
+- [ ] Haftalık ders programı modülü
+- [ ] Sınıf bazlı ders programı oluşturma
+- [ ] Veli ekranında ders programı görüntüleme
+- [ ] Öğretmen ekranında kendi sınıfının programını görüntüleme
+- [ ] Etkinlik takvimi modülü
+- [ ] Sınıf bazlı etkinlik oluşturma
+- [ ] Veli ekranında etkinlik görüntüleme
+- [ ] Etkinlik tarih/saat/sınıf/açıklama alanları
+- [ ] Veli toplantısı, piknik, gezi, doğum günü gibi etkinlik türleri
+- [ ] Yönetici dashboard gelişmiş istatistikleri
+- [ ] Bugün rapor girilen / girilmeyen çocuk sayısı
+- [ ] Öğretmen bazlı günlük rapor tamamlama durumu
+- [ ] Yoklama özeti
+- [ ] Ödeme özeti
+- [ ] Yönetici dashboard istatistiklerini `kresId` filtresiyle sayacak hale getirme
+
+---
+
 ## Güvenlik Notu
 
 Mevcut MVP aşamasında giriş sistemi Firebase Realtime Database üzerindeki kullanıcı adı / şifre karşılaştırması ile çalışmaktadır.
@@ -562,7 +647,7 @@ Bu yapı sadece geliştirme ve pilot test içindir.
 
 Üretim öncesinde yapılması gerekenler:
 
-- Firebase Auth’a geçilmeli
+- Firebase Auth'a geçilmeli
 - Şifreler düz metin tutulmamalı
 - Firebase Database Rules güçlendirilmeli
 - Kullanıcılar sadece kendi `kresId` alanına bağlı verileri görebilmeli
