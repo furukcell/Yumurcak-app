@@ -19,7 +19,6 @@ export default function TeacherListScreen() {
     const unsubscribe = onValue(classesRef, (snapshot) => {
       const data = snapshot.val();
       let extractedTeachers = [];
-
       if (data) {
         Object.entries(data).forEach(([classId, classData]) => {
           if (classData.ogretmenIds) {
@@ -32,17 +31,14 @@ export default function TeacherListScreen() {
             });
           }
         });
-
         // Tekilleştirme (aynı öğretmen 2 sınıfta olabilir)
         extractedTeachers = [...new Set(extractedTeachers.map((t) => t.id))].map((id) => {
           return extractedTeachers.find((t) => t.id === id);
         });
       }
-
       setTeachers(extractedTeachers);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -73,6 +69,15 @@ export default function TeacherListScreen() {
           contentContainerStyle={styles.list}
         />
       )}
+
+      {/* ── Sağ alt + butonu ── */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('TeacherForm')}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -85,4 +90,22 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600', color: '#333' },
   info: { fontSize: 14, color: '#633806', marginTop: 4 },
   empty: { textAlign: 'center', marginTop: 40, color: '#888' },
+
+  // ── FAB ──
+  fab: {
+    position: 'absolute',
+    bottom: 28,
+    right: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#6C3DEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#6C3DEB',
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+  },
+  fabText: { fontSize: 32, color: '#fff', lineHeight: 36, fontWeight: '700' },
 });
