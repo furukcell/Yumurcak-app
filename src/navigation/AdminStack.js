@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — AdminStack.js
-// FAZ 10: Auth Migration route eklendi
+// FAZ 11: Dashboard ve AuthMigration native header kapatıldı
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -39,11 +39,11 @@ export default function AdminStack() {
         headerTitleStyle: { fontWeight: '600' },
       }}
     >
-      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Yönetim Paneli' }} />
+      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
       <Stack.Screen name="InstitutionSettings" component={AdminInstitutionSettingsScreen} options={{ title: 'Kurum Bilgileri' }} />
       <Stack.Screen name="Subscription" component={AdminSubscriptionScreen} options={{ title: 'Abonelik / Ödeme' }} />
       <Stack.Screen name="AdminMessages" component={AdminMessagesScreen} options={{ title: 'Mesajlar' }} />
-      <Stack.Screen name="AuthMigration" component={AdminAuthMigrationScreen} options={{ title: 'Firebase Auth Geçişi' }} />
+      <Stack.Screen name="AuthMigration" component={AdminAuthMigrationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ClassList" component={ClassListScreen} options={{ title: 'Sınıflar' }} />
       <Stack.Screen name="ClassForm" component={ClassFormScreen} options={{ title: 'Sınıf Ekle/Düzenle' }} />
