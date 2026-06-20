@@ -533,6 +533,7 @@ Amaç: Pilot sonrası daha güvenli yapıya geçmek.
 - [ ] Düz metin şifre kullanımını kaldırma
 - [ ] Firebase Database Rules güçlendirme
 - [ ] `kresId` bazlı veri izolasyonunu zorunlu hale getirme
+- [ ] Yönetici dashboard istatistiklerini `kresId` filtresiyle sayacak hale getirme
 - [ ] Veli sadece kendi çocuğunu görebilmeli
 - [ ] Öğretmen sadece kendi sınıfındaki çocukları yönetebilmeli
 - [ ] Çoklu kreş desteğini güvenli hale getirme
