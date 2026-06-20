@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — AuthContext.js
-// FAZ 11: Çıkış sonrası otomatik tekrar giriş hatası düzeltildi
+// FAZ 11 v2: Çıkış sonrası otomatik tekrar giriş hatası düzeltildi
 // ============================================================
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null);
   const [kres, setKres] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+
   const isSigningOutRef = useRef(false);
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function AuthProvider({ children }) {
 
           if (legacyUserId) {
             const userSnap = await get(ref(database, `kullanicilar/${legacyUserId}`));
+
             if (userSnap.exists()) {
               const userData = {
                 uid: legacyUserId,
@@ -62,7 +64,9 @@ export function AuthProvider({ children }) {
         await legacyStorageLogin();
       } catch (error) {
         console.warn('Auth kontrol hatası:', error);
-        if (!isSigningOutRef.current) await legacyStorageLogin();
+        if (!isSigningOutRef.current) {
+          await legacyStorageLogin();
+        }
       } finally {
         setYukleniyor(false);
       }
@@ -140,6 +144,7 @@ export function AuthProvider({ children }) {
 
   const cikisYap = async () => {
     isSigningOutRef.current = true;
+
     setKullanici(null);
     setKres(null);
 
@@ -157,7 +162,7 @@ export function AuthProvider({ children }) {
 
     setTimeout(() => {
       isSigningOutRef.current = false;
-    }, 500);
+    }, 700);
   };
 
   return (
