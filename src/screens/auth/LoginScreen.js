@@ -46,7 +46,14 @@ export default function LoginScreen() {
       }));
 
       const ayniKullaniciAdindakiKayitlar = kullaniciListesi.filter((kullanici) => {
-        const kayitKullaniciAdi = String(kullanici.kullaniciAdi ?? '').trim().toLowerCase();
+        const kayitKullaniciAdi = String(
+          kullanici.kullaniciAdi ??
+          kullanici.kullanici_adi ??
+          kullanici.username ??
+          kullanici.userName ??
+          ''
+        ).trim().toLowerCase();
+
         return kayitKullaniciAdi === temizKullaniciAdi;
       });
 
@@ -56,12 +63,24 @@ export default function LoginScreen() {
       }
 
       const kullaniciObj = ayniKullaniciAdindakiKayitlar.find((kullanici) => {
-        const kayitSifre = String(kullanici.sifre ?? '').trim();
+        const kayitSifre = String(
+          kullanici.sifre ??
+          kullanici['şifre'] ??
+          kullanici.password ??
+          kullanici.parola ??
+          kullanici.pass ??
+          ''
+        ).trim();
+
         return kayitSifre === temizSifre;
       });
 
       if (!kullaniciObj) {
-        Alert.alert('Hata', 'Şifre yanlış!');
+        const bulunanAlanlar = Object.keys(ayniKullaniciAdindakiKayitlar[0] || {}).join(', ');
+        Alert.alert(
+          'Hata',
+          `Şifre yanlış!\n\nBulunan kullanıcı alanları: ${bulunanAlanlar}`
+        );
         return;
       }
 
