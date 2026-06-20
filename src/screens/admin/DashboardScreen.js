@@ -56,6 +56,12 @@ export default function DashboardScreen() {
   });
   const [yukleniyor, setYukleniyor] = useState(true);
 
+  // Gelişmiş istatistikler
+  const [bugunRaporDurumu, setBugunRaporDurumu] = useState({ girilen: 0, toplam: 0 });
+  const [ogretmenTamamlama, setOgretmenTamamlama] = useState([]);
+  const [odemeOzeti, setOdemeOzeti] = useState({ odendi: 0, bekliyor: 0, gecikti: 0 });
+  const [istatistikYukleniyor, setIstatistikYukleniyor] = useState(true);
+
   useEffect(() => {
     const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
       const data = snap.val();
@@ -84,6 +90,108 @@ export default function DashboardScreen() {
       sinifUnsub();
       cocukUnsub();
       kullaniciUnsub();
+    };
+  }, []);
+
+  // ── Gelişmiş istatistikler: bugünkü rapor durumu + öğretmen tamamlama + ödeme özeti ──
+  useEffect(() => {
+    let cocuklar = {};
+    let kullanicilar = {};
+    let raporlar = {};
+    let odemeler = {};
+    let cocukLoaded = false;
+    let kulLoaded = false;
+    let raporLoaded = false;
+    let odemeLoaded = false;
+
+    function bugunTarihStr() {
+      const d = new Date();
+      const yil = d.getFullYear();
+      const ay = String(d.getMonth() + 1).padStart(2, '0');
+      const gun = String(d.getDate()).padStart(2, '0');
+      return `${yil}-${ay}-${gun}`;
+    }
+
+    function build() {
+      if (!cocukLoaded || !kulLoaded || !raporLoaded || !odemeLoaded) return;
+
+      const bugun = bugunTarihStr();
+      const cocukListesi = Object.entries(cocuklar);
+      const toplamCocuk = cocukListesi.length;
+
+      // Bugün rapor girilen çocukId'leri topla
+      const bugunRaporGirilenCocukIdleri = new Set(
+        Object.values(raporlar)
+          .filter((r) => r && r.tarih === bugun && r.cocukId)
+          .map((r) => r.cocukId)
+      );
+
+      setBugunRaporDurumu({
+        girilen: bugunRaporGirilenCocukIdleri.size,
+        toplam: toplamCocuk,
+      });
+
+      // Öğretmen bazlı tamamlama: her öğretmenin sınıfındaki çocuk sayısı vs bugün rapor girilen sayısı
+      const ogretmenler = Object.entries(kullanicilar).filter(([, u]) => u?.rol === 'ogretmen');
+
+      const ogretmenIstatistik = ogretmenler.map(([ogId, og]) => {
+        const ogSinifId = og.sinifId;
+        const ogCocuklari = cocukListesi.filter(([, c]) => c.sinifId === ogSinifId);
+        const ogToplam = ogCocuklari.length;
+        const ogGirilen = ogCocuklari.filter(([cid]) => bugunRaporGirilenCocukIdleri.has(cid)).length;
+        const ad = `${og.ad || ''} ${og.soyad || ''}`.trim() || og.kullaniciAdi || 'İsimsiz Öğretmen';
+        return { id: ogId, ad, girilen: ogGirilen, toplam: ogToplam };
+      });
+
+      setOgretmenTamamlama(ogretmenIstatistik);
+
+      // Ödeme özeti — bu ay
+      const simdi = new Date();
+      const guncelAy = simdi.getMonth() + 1;
+      const guncelYil = simdi.getFullYear();
+
+      const buAyOdemeleri = Object.values(odemeler).filter(
+        (o) => o && o.ay === guncelAy && o.yil === guncelYil
+      );
+
+      setOdemeOzeti({
+        odendi: buAyOdemeleri.filter((o) => o.durum === 'odendi').length,
+        bekliyor: buAyOdemeleri.filter((o) => o.durum === 'bekliyor').length,
+        gecikti: buAyOdemeleri.filter((o) => o.durum === 'gecikti').length,
+      });
+
+      setIstatistikYukleniyor(false);
+    }
+
+    const cocukUnsub2 = onValue(ref(database, 'cocuklar'), (snap) => {
+      cocuklar = snap.val() || {};
+      cocukLoaded = true;
+      build();
+    });
+
+    const kulUnsub2 = onValue(ref(database, 'kullanicilar'), (snap) => {
+      kullanicilar = snap.val() || {};
+      kulLoaded = true;
+      build();
+    });
+
+    const raporUnsub = onValue(ref(database, 'gunlukRaporlar'), (snap) => {
+      raporlar = snap.val() || {};
+      raporLoaded = true;
+      build();
+    });
+
+    const odemeUnsub = onValue(ref(database, 'odemeler'), (snap) => {
+      odemeler = snap.val() || {};
+      odemeLoaded = true;
+      build();
+    });
+
+    return () => {
+      cocukUnsub2();
+      kulUnsub2();
+      raporUnsub();
+      odemeUnsub();
     };
   }, []);
 
@@ -137,6 +245,84 @@ export default function DashboardScreen() {
               </View>
             ))}
           </View>
+        )}
+
+        {/* ── Bugünkü Durum ── */}
+        <Text style={styles.sectionTitle}>Bugünkü Durum</Text>
+        {istatistikYukleniyor ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={THEME.primary} />
+          </View>
+        ) : (
+          <>
+            {/* Bugün rapor girilen/girilmeyen */}
+            <View style={styles.istatistikKart}>
+              <View style={styles.istatistikKartUst}>
+                <Text style={styles.istatistikIkon}>📋</Text>
+                <Text style={styles.istatistikBaslik}>Günlük Rapor Durumu</Text>
+              </View>
+              <Text style={styles.istatistikDeger}>
+                {bugunRaporDurumu.girilen} / {bugunRaporDurumu.toplam}
+                <Text style={styles.istatistikAltMetin}> çocuk için rapor girildi</Text>
+              </Text>
+              {bugunRaporDurumu.toplam > 0 ? (
+                <View style={styles.ilerlemeCubuguArkaplan}>
+                  <View
+                    style={[
+                      styles.ilerlemeCubugu,
+                      {
+                        width: `${Math.min(100, Math.round((bugunRaporDurumu.girilen / bugunRaporDurumu.toplam) * 100))}%`,
+                        backgroundColor: THEME.green,
+                      },
+                    ]}
+                  />
+                </View>
+              ) : null}
+            </View>
+
+            {/* Öğretmen bazlı tamamlama */}
+            {ogretmenTamamlama.length > 0 ? (
+              <View style={styles.istatistikKart}>
+                <View style={styles.istatistikKartUst}>
+                  <Text style={styles.istatistikIkon}>👨‍🏫</Text>
+                  <Text style={styles.istatistikBaslik}>Öğretmen Bazlı Tamamlama</Text>
+                </View>
+                {ogretmenTamamlama.map((og) => (
+                  <View key={og.id} style={styles.ogretmenSatir}>
+                    <Text style={styles.ogretmenAd}>{og.ad}</Text>
+                    <Text style={[
+                      styles.ogretmenOran,
+                      { color: og.toplam > 0 && og.girilen === og.toplam ? THEME.green : THEME.orange }
+                    ]}>
+                      {og.girilen} / {og.toplam}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {/* Ödeme özeti */}
+            <View style={styles.istatistikKart}>
+              <View style={styles.istatistikKartUst}>
+                <Text style={styles.istatistikIkon}>💳</Text>
+                <Text style={styles.istatistikBaslik}>Bu Ayki Ödeme Özeti</Text>
+              </View>
+              <View style={styles.odemeOzetGrid}>
+                <View style={styles.odemeOzetKutu}>
+                  <Text style={[styles.odemeOzetSayi, { color: THEME.green }]}>{odemeOzeti.odendi}</Text>
+                  <Text style={styles.odemeOzetLabel}>Ödendi</Text>
+                </View>
+                <View style={styles.odemeOzetKutu}>
+                  <Text style={[styles.odemeOzetSayi, { color: THEME.orange }]}>{odemeOzeti.bekliyor}</Text>
+                  <Text style={styles.odemeOzetLabel}>Bekliyor</Text>
+                </View>
+                <View style={styles.odemeOzetKutu}>
+                  <Text style={[styles.odemeOzetSayi, { color: THEME.red }]}>{odemeOzeti.gecikti}</Text>
+                  <Text style={styles.odemeOzetLabel}>Gecikti</Text>
+                </View>
+              </View>
+            </View>
+          </>
         )}
 
         {/* ── Yönetim İşlemleri ── */}
@@ -202,4 +388,30 @@ const styles = StyleSheet.create({
   menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, marginBottom: 3 },
   menuDesc: { fontSize: 12, color: THEME.muted, fontWeight: '600' },
   menuArrow: { fontSize: 28, fontWeight: '700', lineHeight: 32 },
+
+  istatistikKart: {
+    backgroundColor: THEME.card, borderRadius: 18, padding: 16, marginBottom: 14,
+    borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+  },
+  istatistikKartUst: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  istatistikIkon: { fontSize: 18, marginRight: 8 },
+  istatistikBaslik: { fontSize: 14, fontWeight: '800', color: THEME.text },
+  istatistikDeger: { fontSize: 20, fontWeight: '900', color: THEME.text, marginBottom: 10 },
+  istatistikAltMetin: { fontSize: 12, fontWeight: '600', color: THEME.muted },
+
+  ilerlemeCubuguArkaplan: { height: 8, borderRadius: 4, backgroundColor: '#EEEAF8', overflow: 'hidden' },
+  ilerlemeCubugu: { height: 8, borderRadius: 4 },
+
+  ogretmenSatir: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 8, borderTopWidth: 1, borderTopColor: THEME.border,
+  },
+  ogretmenAd: { fontSize: 13, fontWeight: '700', color: THEME.text, flex: 1 },
+  ogretmenOran: { fontSize: 13, fontWeight: '900' },
+
+  odemeOzetGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  odemeOzetKutu: { flex: 1, alignItems: 'center' },
+  odemeOzetSayi: { fontSize: 22, fontWeight: '900', marginBottom: 3 },
+  odemeOzetLabel: { fontSize: 11, color: THEME.muted, fontWeight: '700' },
 });
