@@ -1,10 +1,8 @@
 // ============================================================
 // YUMURCAK — AuthContext.js
-// FAZ 10: Firebase Auth destekli hibrit oturum sistemi
-// - Auth ile giriş varsa auth.uid -> authKullaniciIndex -> kullanicilar/{legacyId}
-// - Eski AsyncStorage / RTDB login fallback korunur
+// FAZ 11: Çıkış sonrası otomatik tekrar giriş hatası düzeltildi
 // ============================================================
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
@@ -20,10 +18,18 @@ export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null);
   const [kres, setKres] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const isSigningOutRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
+        if (isSigningOutRef.current) {
+          setKullanici(null);
+          setKres(null);
+          setYukleniyor(false);
+          return;
+        }
+
         if (firebaseUser) {
           const legacyUserId = await findUserIdByAuthUid(firebaseUser.uid);
 
@@ -53,11 +59,10 @@ export function AuthProvider({ children }) {
           }
         }
 
-        // Auth yoksa veya eşleşme yoksa eski kayıtlı oturumu dene
         await legacyStorageLogin();
       } catch (error) {
         console.warn('Auth kontrol hatası:', error);
-        await legacyStorageLogin();
+        if (!isSigningOutRef.current) await legacyStorageLogin();
       } finally {
         setYukleniyor(false);
       }
@@ -68,6 +73,12 @@ export function AuthProvider({ children }) {
 
   const legacyStorageLogin = async () => {
     try {
+      if (isSigningOutRef.current) {
+        setKullanici(null);
+        setKres(null);
+        return;
+      }
+
       const kayitliKullanici = await AsyncStorage.getItem(USER_KEY);
       const kayitliKres = await AsyncStorage.getItem(KRES_KEY);
 
@@ -107,6 +118,8 @@ export function AuthProvider({ children }) {
   };
 
   const girisYap = async (kullaniciObj, kresObj) => {
+    isSigningOutRef.current = false;
+
     const normalizedUser = {
       ...kullaniciObj,
       uid: kullaniciObj.uid || kullaniciObj.id,
@@ -126,15 +139,25 @@ export function AuthProvider({ children }) {
   };
 
   const cikisYap = async () => {
-    try {
-      await signOut(auth).catch(() => {});
-      await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
-    } catch (error) {
-      console.warn('Çıkış hatası:', error);
-    }
-
+    isSigningOutRef.current = true;
     setKullanici(null);
     setKres(null);
+
+    try {
+      await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
+    } catch (error) {
+      console.warn('Local oturum temizlenemedi:', error);
+    }
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.warn('Firebase çıkış hatası:', error);
+    }
+
+    setTimeout(() => {
+      isSigningOutRef.current = false;
+    }, 500);
   };
 
   return (
