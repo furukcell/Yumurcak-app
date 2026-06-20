@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — ParentDashboard.js
 // Modern veli arayüzü — ana sayfa, raporlar, duyurular, profil
+// + Hızlı işlem placeholder ekranları (local state navigation)
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -31,15 +32,48 @@ const THEME = {
   border: '#EEEAF8',
 };
 
+// Placeholder ekran tanımları
+const PLACEHOLDER_SCREENS = {
+  messages: {
+    icon: '💬',
+    title: 'Mesajlar',
+    description: 'Mesajlaşma özelliği yakında aktif olacak.',
+    color: '#3A7BFF',
+    bgColor: '#EEF4FF',
+  },
+  gallery: {
+    icon: '🖼️',
+    title: 'Galeri',
+    description: 'Fotoğraf galerisi yakında aktif olacak.',
+    color: '#FF9F1C',
+    bgColor: '#FFF6E8',
+  },
+  meals: {
+    icon: '🍽️',
+    title: 'Yemek Listesi',
+    description: 'Yemek listesi yakında aktif olacak.',
+    color: '#20B45B',
+    bgColor: '#E8F9EF',
+  },
+  documents: {
+    icon: '📁',
+    title: 'Belgeler',
+    description: 'Belgeler yakında aktif olacak.',
+    color: '#6C3DEB',
+    bgColor: '#EFE8FF',
+  },
+};
+
 export default function ParentDashboardScreen() {
   const { kullanici, cikisYap } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
+  const [currentScreen, setCurrentScreen] = useState('main'); // 'main' | 'messages' | 'gallery' | 'meals' | 'documents'
   const [children, setChildren] = useState([]);
   const [reports, setReports] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const parentId = kullanici?.uid;
+  const parentId = kullanici?.uid || kullanici?.id;
   const selectedChild = children[0];
 
   useEffect(() => {
@@ -114,7 +148,7 @@ export default function ParentDashboardScreen() {
   const todayReport = childReports[0];
 
   const getChildName = () => selectedChild?.ad || selectedChild?.adSoyad || 'Çocuğum';
-  const getParentName = () => kullanici?.ad || `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || 'Veli';
+  const getParentName = () => `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Veli';
   const getMood = (report) => report?.mood || report?.ruhHali || report?.durum || 'Mutlu';
   const getMeal = (report) => {
     if (!report) return 'İyi';
@@ -135,12 +169,29 @@ export default function ParentDashboardScreen() {
     await cikisYap();
   };
 
+  const openScreen = (screen) => {
+    setCurrentScreen(screen);
+  };
+
+  const goBack = () => {
+    setCurrentScreen('main');
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
         <Text style={styles.loadingText}>Veli ekranı hazırlanıyor...</Text>
       </View>
+    );
+  }
+
+  // Placeholder ekran açıksa tab bar ve diğer içerikleri gizle
+  if (currentScreen !== 'main') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderPlaceholderScreen(currentScreen)}
+      </SafeAreaView>
     );
   }
 
@@ -156,6 +207,68 @@ export default function ParentDashboardScreen() {
     </SafeAreaView>
   );
 
+  // ─── PLACEHOLDER EKRANLAR ────────────────────────────────────
+
+  function renderPlaceholderScreen(screenKey) {
+    const config = PLACEHOLDER_SCREENS[screenKey];
+    if (!config) return null;
+
+    return (
+      <View style={styles.placeholderRoot}>
+        {/* Üst Bar */}
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>{config.title}</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+
+        {/* İçerik */}
+        <ScrollView
+          style={styles.placeholderScroll}
+          contentContainerStyle={styles.placeholderContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Ana Kart */}
+          <View style={styles.placeholderCard}>
+            <View style={[styles.placeholderIconWrapper, { backgroundColor: config.bgColor }]}>
+              <Text style={styles.placeholderIcon}>{config.icon}</Text>
+            </View>
+            <Text style={styles.placeholderTitle}>{config.title}</Text>
+            <Text style={styles.placeholderDesc}>{config.description}</Text>
+
+            <View style={[styles.placeholderDivider, { backgroundColor: config.bgColor }]} />
+
+            <View style={styles.comingSoonRow}>
+              <View style={[styles.comingSoonDot, { backgroundColor: config.color }]} />
+              <Text style={[styles.comingSoonText, { color: config.color }]}>Yakında aktif olacak</Text>
+            </View>
+          </View>
+
+          {/* Bilgi Kartı */}
+          <View style={styles.placeholderInfoCard}>
+            <Text style={styles.placeholderInfoIcon}>🔔</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.placeholderInfoTitle}>Bildirim alacaksınız</Text>
+              <Text style={styles.placeholderInfoDesc}>
+                Bu özellik hazır olduğunda size bildirim göndereceğiz.
+              </Text>
+            </View>
+          </View>
+
+          {/* Geri Dön Butonu */}
+          <TouchableOpacity style={styles.backHomeButton} onPress={goBack} activeOpacity={0.85}>
+            <Text style={styles.backHomeButtonText}>← Ana Sayfaya Dön</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ─── ANA EKRANLAR ────────────────────────────────────────────
+
   function renderHome() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -170,10 +283,10 @@ export default function ParentDashboardScreen() {
         <View style={styles.quickGrid}>
           {renderQuickAction('📋', 'Günlük Rapor', () => setActiveTab('reports'))}
           {renderQuickAction('📣', 'Duyurular', () => setActiveTab('announcements'))}
-          {renderQuickAction('💬', 'Mesajlar', null)}
-          {renderQuickAction('🖼️', 'Galeri', null)}
-          {renderQuickAction('🍽️', 'Yemek Listesi', null)}
-          {renderQuickAction('📁', 'Belgeler', null)}
+          {renderQuickAction('💬', 'Mesajlar', () => openScreen('messages'))}
+          {renderQuickAction('🖼️', 'Galeri', () => openScreen('gallery'))}
+          {renderQuickAction('🍽️', 'Yemek Listesi', () => openScreen('meals'))}
+          {renderQuickAction('📁', 'Belgeler', () => openScreen('documents'))}
         </View>
       </ScrollView>
     );
@@ -266,6 +379,8 @@ export default function ParentDashboardScreen() {
       </ScrollView>
     );
   }
+
+  // ─── YARDIMCI RENDER FONKSİYONLARI ─────────────────────────
 
   function renderTopHeader(title, rightIcon) {
     return (
@@ -632,4 +747,81 @@ const styles = StyleSheet.create({
   tabIconActive: { color: THEME.primary },
   tabLabel: { fontSize: 10, color: THEME.muted, fontWeight: '800' },
   tabLabelActive: { color: THEME.primary, fontWeight: '900' },
+
+  // ─── PLACEHOLDER EKRAN STİLLERİ ──────────────────────────────
+  placeholderRoot: { flex: 1, backgroundColor: THEME.bg },
+  placeholderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
+    backgroundColor: THEME.card,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  backButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingRight: 8 },
+  backArrow: { fontSize: 28, color: THEME.primary, fontWeight: '700', lineHeight: 32, marginRight: 2 },
+  backLabel: { fontSize: 15, color: THEME.primary, fontWeight: '800' },
+  backButtonSpacer: { width: 60 },
+  placeholderHeaderTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, textAlign: 'center' },
+
+  placeholderScroll: { flex: 1 },
+  placeholderContent: { paddingHorizontal: 18, paddingTop: 32, paddingBottom: 48 },
+
+  placeholderCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 28,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+    marginBottom: 16,
+  },
+  placeholderIconWrapper: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  placeholderIcon: { fontSize: 46 },
+  placeholderTitle: { fontSize: 22, fontWeight: '900', color: THEME.text, marginBottom: 10 },
+  placeholderDesc: { fontSize: 15, color: THEME.muted, textAlign: 'center', lineHeight: 22 },
+  placeholderDivider: { width: '100%', height: 1, marginVertical: 20, borderRadius: 1 },
+  comingSoonRow: { flexDirection: 'row', alignItems: 'center' },
+  comingSoonDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  comingSoonText: { fontSize: 13, fontWeight: '800' },
+
+  placeholderInfoCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 20,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  placeholderInfoIcon: { fontSize: 28, marginRight: 14 },
+  placeholderInfoTitle: { fontSize: 14, fontWeight: '900', color: THEME.text, marginBottom: 4 },
+  placeholderInfoDesc: { fontSize: 13, color: THEME.muted, lineHeight: 19 },
+
+  backHomeButton: {
+    backgroundColor: THEME.primary,
+    borderRadius: 18,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  backHomeButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
 });
