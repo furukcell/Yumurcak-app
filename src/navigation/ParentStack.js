@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — ParentStack.js
-// Veli navigasyon stack'i
+// Veli navigasyon stack'i - FAZ 1 mesajlaşma
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -20,6 +20,7 @@ import ParentServiceScreen from '../screens/parent/ParentServiceScreen';
 import ParentMessagesScreen from '../screens/parent/ParentMessagesScreen';
 import ParentGalleryScreen from '../screens/parent/ParentGalleryScreen';
 import ParentDocumentsScreen from '../screens/parent/ParentDocumentsScreen';
+import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +42,7 @@ export default function ParentStack() {
       <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
       <Stack.Screen name="ParentGallery" component={ParentGalleryScreen} />
       <Stack.Screen name="ParentDocuments" component={ParentDocumentsScreen} />
+      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
     </Stack.Navigator>
   );
 }

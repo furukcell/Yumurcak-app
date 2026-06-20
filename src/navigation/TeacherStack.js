@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — TeacherStack.js
-// Öğretmen navigasyon stack'i
+// Öğretmen navigasyon stack'i - FAZ 1 mesajlaşma
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -14,18 +14,15 @@ import TeacherEventsScreen from '../screens/teacher/TeacherEventsScreen';
 import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
 import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
+import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
+import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function TeacherStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: '#F8F6FF' },
-      }}
-    >
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8F6FF' } }}>
       <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
       <Stack.Screen name="TeacherChildren" component={TeacherChildrenScreen} />
       <Stack.Screen name="ChildReport" component={ChildReportScreen} />
@@ -35,7 +32,9 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherMeals" component={TeacherMealsScreen} />
       <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
       <Stack.Screen name="TeacherAnnouncements" component={TeacherAnnouncementsScreen} />
+      <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
       <Stack.Screen name="TeacherProfile" component={TeacherProfileScreen} />
+      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
     </Stack.Navigator>
   );
 }
