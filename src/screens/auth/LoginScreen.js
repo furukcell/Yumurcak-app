@@ -1,5 +1,6 @@
 // ============================================================
 // YUMURCAK — LoginScreen.js
+// FAZ 10: Firebase Auth + eski RTDB login fallback
 // ============================================================
 import { useState } from 'react';
 import {
@@ -7,8 +8,17 @@ import {
   SafeAreaView, ScrollView, ActivityIndicator,
   StyleSheet, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
-import { RENKLER, DB_URL } from '../../constants';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { get, ref } from 'firebase/database';
+import { RENKLER } from '../../constants';
+import { auth, database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import {
+  usernameToEmail,
+  findUserIdByAuthUid,
+  getKresForUser,
+  findLegacyUserByUsernameAndPassword,
+} from '../../utils/authHelpers';
 
 export default function LoginScreen() {
   const { girisYap } = useAuth();
@@ -27,77 +37,78 @@ export default function LoginScreen() {
     setYukleniyor(true);
 
     try {
-      const temizKullaniciAdi = kullaniciAdi.trim().toLowerCase();
-      const temizSifre = sifre.trim().toLowerCase();
+      // 1) Önce Firebase Auth dene
+      const email = usernameToEmail(kullaniciAdi);
+      const authResult = await signInWithEmailAndPassword(auth, email, sifre.trim());
 
-      const res = await fetch(`${DB_URL}/kullanicilar.json`);
-      const data = await res.json();
+      const authUid = authResult.user.uid;
+      const legacyUserId = await findUserIdByAuthUid(authUid);
 
-      if (!data || Object.keys(data).length === 0) {
-        Alert.alert('Hata', 'Kullanıcı bulunamadı!');
-        return;
-      }
-
-      const kullaniciListesi = Object.entries(data).map(([uid, kullanici]) => ({
-        uid,
-        ...kullanici,
-      }));
-
-      const ayniKullaniciAdindakiKayitlar = kullaniciListesi.filter((kullanici) => {
-        const kayitKullaniciAdi = String(
-          kullanici.kullaniciAdi ??
-          kullanici.kullanici_adi ??
-          kullanici.username ??
-          kullanici.userName ??
-          ''
-        ).trim().toLowerCase();
-
-        return kayitKullaniciAdi === temizKullaniciAdi;
-      });
-
-      if (ayniKullaniciAdindakiKayitlar.length === 0) {
-        Alert.alert('Hata', 'Kullanıcı bulunamadı!');
-        return;
-      }
-
-      const kullaniciObj = ayniKullaniciAdindakiKayitlar.find((kullanici) => {
-        const kayitSifre = String(
-          kullanici.sifre ??
-          kullanici['şifre'] ??
-          kullanici.password ??
-          kullanici.parola ??
-          kullanici.pass ??
-          ''
-        ).trim().toLowerCase();
-
-        return kayitSifre === temizSifre;
-      });
-
-      if (!kullaniciObj) {
-        const bulunanAlanlar = Object.keys(ayniKullaniciAdindakiKayitlar[0] || {}).join(', ');
+      if (!legacyUserId) {
         Alert.alert(
-          'Hata',
-          `Şifre yanlış!\n\nBulunan kullanıcı alanları: ${bulunanAlanlar}`
+          'Hesap Eşleşmedi',
+          'Firebase Auth girişi başarılı ama uygulama kullanıcı kaydı bulunamadı. Yönetici panelinden Auth Geçiş ekranını tekrar çalıştır.'
         );
         return;
       }
 
-      if (kullaniciObj.aktif === false) {
+      const userSnap = await get(ref(database, `kullanicilar/${legacyUserId}`));
+      if (!userSnap.exists()) {
+        Alert.alert('Hata', 'Kullanıcı kaydı bulunamadı.');
+        return;
+      }
+
+      const userData = {
+        uid: legacyUserId,
+        id: legacyUserId,
+        authUid,
+        email: authResult.user.email,
+        ...userSnap.val(),
+      };
+
+      if (userData.aktif === false) {
         Alert.alert('Hata', 'Bu kullanıcı pasif durumda!');
         return;
       }
 
-      let kresObj = null;
-      if (kullaniciObj.kresId) {
-        const kresRes = await fetch(`${DB_URL}/kresler/${kullaniciObj.kresId}.json`);
-        const kresData = await kresRes.json();
-        if (kresData) kresObj = { id: kullaniciObj.kresId, ...kresData };
+      const kresObj = await getKresForUser(userData);
+      await girisYap(userData, kresObj);
+    } catch (authError) {
+      // 2) Auth hesabı yoksa eski RTDB kullanıcı adı/şifre sistemiyle giriş yap
+      try {
+        const legacyResult = await findLegacyUserByUsernameAndPassword(kullaniciAdi, sifre);
+
+        if (legacyResult.status === 'not_found') {
+          Alert.alert('Hata', 'Kullanıcı bulunamadı!');
+          return;
+        }
+
+        if (legacyResult.status === 'wrong_password') {
+          Alert.alert(
+            'Hata',
+            `Şifre yanlış!\n\nBulunan kullanıcı alanları: ${(legacyResult.fields || []).join(', ')}`
+          );
+          return;
+        }
+
+        if (legacyResult.status === 'passive') {
+          Alert.alert('Hata', 'Bu kullanıcı pasif durumda!');
+          return;
+        }
+
+        const kullaniciObj = legacyResult.user;
+        const kresObj = await getKresForUser(kullaniciObj);
+
+        await girisYap(kullaniciObj, kresObj);
+
+        Alert.alert(
+          'Bilgi',
+          'Eski giriş sistemiyle giriş yapıldı. Firebase Auth için yönetici panelinden Auth Geçiş ekranı çalıştırılmalı.'
+        );
+      } catch (legacyError) {
+        console.error('Login hata:', authError, legacyError);
+        Alert.alert('Hata', 'Bağlantı hatası, tekrar deneyin!');
       }
-
-      await girisYap(kullaniciObj, kresObj);
-
-    } catch (e) {
-      Alert.alert('Hata', 'Bağlantı hatası, tekrar deneyin!');
     } finally {
       setYukleniyor(false);
     }
