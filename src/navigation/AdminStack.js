@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — AdminStack.js
-// FAZ 7: Admin mesajlaşma route'ları eklendi
+// FAZ 10: Auth Migration route eklendi
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -25,6 +25,7 @@ import EventFormScreen from '../screens/admin/EventFormScreen';
 import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSettingsScreen';
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
+import AdminAuthMigrationScreen from '../screens/admin/AdminAuthMigrationScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
@@ -42,6 +43,7 @@ export default function AdminStack() {
       <Stack.Screen name="InstitutionSettings" component={AdminInstitutionSettingsScreen} options={{ title: 'Kurum Bilgileri' }} />
       <Stack.Screen name="Subscription" component={AdminSubscriptionScreen} options={{ title: 'Abonelik / Ödeme' }} />
       <Stack.Screen name="AdminMessages" component={AdminMessagesScreen} options={{ title: 'Mesajlar' }} />
+      <Stack.Screen name="AuthMigration" component={AdminAuthMigrationScreen} options={{ title: 'Firebase Auth Geçişi' }} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ClassList" component={ClassListScreen} options={{ title: 'Sınıflar' }} />
       <Stack.Screen name="ClassForm" component={ClassFormScreen} options={{ title: 'Sınıf Ekle/Düzenle' }} />
