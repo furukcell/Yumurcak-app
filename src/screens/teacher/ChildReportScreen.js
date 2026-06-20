@@ -1,24 +1,32 @@
 // ============================================================
-// YUMURCAK — ChildReportScreen.js (TEACHER)
+// YUMURCAK — ChildReportScreen.js
 // Öğretmen günlük rapor girişi
 // ============================================================
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Alert, ActivityIndicator
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { ref, push, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { MOOD_LISTESI, OGUN_LISTESI } from '../../constants';
+import { THEME, ScreenHeader, getChildName, todayString } from './teacherShared';
 
 export default function ChildReportScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { child } = route.params;
+  const { child } = route.params || {};
   const { kullanici } = useAuth();
-  const teacherId = kullanici?.uid;
+  const teacherId = kullanici?.uid || kullanici?.id;
 
   const [mood, setMood] = useState('');
   const [yemek, setYemek] = useState({ kahvalti: false, ogle: false, araOgun: false });
@@ -28,25 +36,25 @@ export default function ChildReportScreen() {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!child?.id) return Alert.alert('Hata', 'Çocuk bilgisi bulunamadı.');
     if (!sleepDuration || !toiletCount) {
       return Alert.alert('Eksik Bilgi', 'Uyku süresi ve tuvalet sayısı zorunludur.');
     }
 
     setSaving(true);
-
     try {
-      // Çocuğun veli bilgilerini al
       const childRef = ref(database, `cocuklar/${child.id}`);
       const childSnap = await get(childRef);
-      const childData = childSnap.val();
+      const childData = childSnap.val() || child;
 
-      // Raporu kaydet
-      const reportRef = ref(database, 'gunlukRaporlar');
-      await push(reportRef, {
+      await push(ref(database, 'gunlukRaporlar'), {
+        kresId: childData.kresId || kullanici?.kresId || '',
         cocukId: child.id,
-        sinifId: child.sinifId,
-        teacherId: teacherId,
-        tarih: new Date().toISOString().split('T')[0],
+        sinifId: childData.sinifId || child.sinifId || '',
+        ogretmenId: teacherId,
+        teacherId,
+        tarih: todayString(),
+        ruhHali: mood,
         mood,
         yemek,
         uyku: { sure: Number(sleepDuration), not: '' },
@@ -55,33 +63,25 @@ export default function ChildReportScreen() {
         createdAt: Date.now(),
       });
 
-      // Velilere bildirim gönder (şimdilik pasif)
-      // TODO: Expo Project ID eklendiğinde aktif et
-      if (childData.veliIds && childData.veliIds.length > 0) {
-        console.log('Bildirim gönderilecek veliler:', childData.veliIds);
-      }
-
       Alert.alert('Başarılı', 'Rapor kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() }
+        { text: 'Tamam', onPress: () => navigation.goBack() },
       ]);
     } catch (err) {
-      Alert.alert('Hata', 'Rapor kaydedilemedi.');
       console.error(err);
+      Alert.alert('Hata', 'Rapor kaydedilemedi.');
     } finally {
       setSaving(false);
     }
   };
 
   const toggleYemek = (key) => {
-    setYemek(prev => ({ ...prev, [key]: !prev[key] }));
+    setYemek((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>{child.ad} - Günlük Rapor</Text>
-
-        {/* Ruh Hali */}
+    <SafeAreaView style={styles.safeArea}>
+      <ScreenHeader navigation={navigation} title="Günlük Rapor" subtitle={getChildName(child)} />
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Ruh Hali</Text>
         <View style={styles.moodContainer}>
           {MOOD_LISTESI.map((m) => (
@@ -96,25 +96,20 @@ export default function ChildReportScreen() {
           ))}
         </View>
 
-        {/* Yemek */}
         <Text style={styles.sectionTitle}>Yemek</Text>
-        <View style={styles.yemekContainer}>
+        <View style={styles.row}>
           {OGUN_LISTESI.map((ogun) => (
             <TouchableOpacity
               key={ogun.key}
-              style={[
-                styles.yemekButton,
-                yemek[ogun.key] && styles.yemekButtonActive
-              ]}
+              style={[styles.choiceButton, yemek[ogun.key] && styles.choiceActive]}
               onPress={() => toggleYemek(ogun.key)}
             >
-              <Text style={styles.yemekEmoji}>{ogun.emoji}</Text>
-              <Text style={styles.yemekLabel}>{ogun.label}</Text>
+              <Text style={styles.choiceEmoji}>{ogun.emoji}</Text>
+              <Text style={styles.choiceText}>{ogun.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Uyku */}
         <Text style={styles.sectionTitle}>Uyku Süresi (saat)</Text>
         <TextInput
           style={styles.input}
@@ -125,7 +120,6 @@ export default function ChildReportScreen() {
           placeholderTextColor="#999"
         />
 
-        {/* Tuvalet */}
         <Text style={styles.sectionTitle}>Tuvalet Sayısı</Text>
         <TextInput
           style={styles.input}
@@ -136,7 +130,6 @@ export default function ChildReportScreen() {
           placeholderTextColor="#999"
         />
 
-        {/* Not */}
         <Text style={styles.sectionTitle}>Öğretmen Notu</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -148,71 +141,61 @@ export default function ChildReportScreen() {
           placeholderTextColor="#999"
         />
 
-        {/* Kaydet Butonu */}
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.saveButtonText}>Raporu Kaydet</Text>
-          )}
+        <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+          {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveButtonText}>Raporu Kaydet</Text>}
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  content: { padding: 20 },
-  title: { fontSize: 20, fontWeight: '700', color: '#333', marginBottom: 20, textAlign: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginTop: 20, marginBottom: 10 },
+  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  screen: { flex: 1 },
+  content: { padding: 16, paddingBottom: 38 },
+  sectionTitle: { fontSize: 16, fontWeight: '900', color: THEME.text, marginTop: 18, marginBottom: 10 },
   moodContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   moodButton: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.card,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
-    minWidth: 80,
+    minWidth: 82,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: THEME.border,
   },
-  moodButtonActive: { borderColor: '#633806', backgroundColor: '#fff8e1' },
+  moodButtonActive: { borderColor: THEME.primary, backgroundColor: THEME.primarySoft },
   moodEmoji: { fontSize: 24, marginBottom: 4 },
-  moodLabel: { fontSize: 12, color: '#333' },
-  yemekContainer: { flexDirection: 'row', gap: 10 },
-  yemekButton: {
+  moodLabel: { fontSize: 12, color: THEME.text, fontWeight: '800' },
+  row: { flexDirection: 'row', gap: 10 },
+  choiceButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.card,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: THEME.border,
   },
-  yemekButtonActive: { borderColor: '#27500A', backgroundColor: '#e8f5e9' },
-  yemekEmoji: { fontSize: 24, marginBottom: 4 },
-  yemekLabel: { fontSize: 12, color: '#333', textAlign: 'center' },
+  choiceActive: { borderColor: THEME.green, backgroundColor: '#EAF8EF' },
+  choiceEmoji: { fontSize: 24, marginBottom: 4 },
+  choiceText: { fontSize: 12, fontWeight: '800', color: THEME.text, textAlign: 'center' },
   input: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: THEME.card,
+    padding: 13,
+    borderRadius: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: THEME.border,
+    color: THEME.text,
   },
   textArea: { height: 100, textAlignVertical: 'top' },
   saveButton: {
-    backgroundColor: '#633806',
+    backgroundColor: THEME.primary,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 40,
+    marginTop: 28,
   },
-  saveButtonDisabled: { opacity: 0.6 },
-  saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '900' },
 });

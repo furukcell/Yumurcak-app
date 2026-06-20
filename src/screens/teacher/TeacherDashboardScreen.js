@@ -1,99 +1,116 @@
 // ============================================================
 // YUMURCAK — TeacherDashboardScreen.js
-// Öğretmen ana ekranı — sınıfındaki çocukları gösterir
+// Öğretmen ana menüsü
 // ============================================================
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { ref, onValue } from 'firebase/database';
-import { database } from '../../config/firebase';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../context/AuthContext';
+import { THEME, useTeacherData, LoadingState, EmptyState } from './teacherShared';
+
+const MENU = [
+  { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren' },
+  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren' },
+  { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance' },
+  { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule' },
+  { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents' },
+  { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals' },
+  { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical' },
+  { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements' },
+  { icon: '👤', title: 'Profil', desc: 'Bilgiler ve çıkış', route: 'TeacherProfile' },
+];
 
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
-  const { kullanici } = useAuth();
-  const [children, setChildren] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const teacherId = kullanici?.uid;
+  const { loading, kullanici, currentClass, classChildren, reports, attendance } = useTeacherData();
 
-  useEffect(() => {
-    if (!teacherId) return;
+  if (loading) return <LoadingState text="Öğretmen paneli hazırlanıyor..." />;
 
-    const classesRef = ref(database, 'siniflar');
-    const unsubscribe = onValue(classesRef, (snapshot) => {
-      const data = snapshot.val();
-      let assignedClassId = null;
+  const today = new Date().toISOString().split('T')[0];
+  const todayReports = reports.filter((item) => item.tarih === today).length;
+  const todayAttendance = attendance.filter((item) => item.tarih === today && item.sinifId === currentClass?.id).length;
 
-      if (data) {
-        for (const [classId, classData] of Object.entries(data)) {
-          if (classData.ogretmenIds?.includes(teacherId)) {
-            assignedClassId = classId;
-            break;
-          }
-        }
-      }
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.topBar}>
+          <View>
+            <Text style={styles.title}>Öğretmen Paneli</Text>
+            <Text style={styles.subtitle}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
+          </View>
+          <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
+        </View>
 
-      if (assignedClassId) {
-        const childrenRef = ref(database, 'cocuklar');
-        const childUnsub = onValue(childrenRef, (childSnap) => {
-          const childData = childSnap.val();
-          const classChildren = childData
-            ? Object.entries(childData)
-                .filter(([_, c]) => c.sinifId === assignedClassId)
-                .map(([id, c]) => ({ id, ...c }))
-            : [];
-          setChildren(classChildren);
-          setLoading(false);
-        });
-        return () => childUnsub();
-      }
-      setLoading(false);
-    });
+        {currentClass ? (
+          <View style={styles.hero}>
+            <Text style={styles.heroTitle}>{currentClass.ad || 'Sınıfım'}</Text>
+            <Text style={styles.heroSub}>Bugünkü sınıf özeti</Text>
+            <View style={styles.statsRow}>
+              {renderStat('Çocuk', classChildren.length)}
+              {renderStat('Rapor', todayReports)}
+              {renderStat('Yoklama', todayAttendance)}
+            </View>
+          </View>
+        ) : (
+          <EmptyState icon="🏫" title="Sınıf ataması bulunamadı" desc="Yönetici öğretmeni bir sınıfa bağladığında panel aktifleşir." />
+        )}
 
-    return () => unsubscribe();
-  }, [teacherId]);
+        <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
+        <View style={styles.grid}>
+          {MENU.map((item) => (
+            <TouchableOpacity
+              key={item.title}
+              style={styles.menuCard}
+              onPress={() => navigation.navigate(item.route)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.menuIcon}>{item.icon}</Text>
+              <Text style={styles.menuTitle}>{item.title}</Text>
+              <Text style={styles.menuDesc}>{item.desc}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 
-  if (loading) {
+  function renderStat(label, value) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#633806" />
+      <View style={styles.statBox}>
+        <Text style={styles.statValue}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
       </View>
     );
   }
-
-  return (
-    <View style={styles.container}>
-      {children.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Sınıfında henüz çocuk tanımlanmamış.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={children}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => navigation.navigate('ChildReport', { child: item })}
-            >
-              <Text style={styles.childName}>{item.ad}</Text>
-              <Text style={styles.birthDate}>Doğum: {item.dogumTarihi}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-    </View>
-  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16 },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 12, marginBottom: 12, elevation: 2 },
-  childName: { fontSize: 18, fontWeight: '600', color: '#333' },
-  birthDate: { fontSize: 14, color: '#633806', marginTop: 4 },
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { textAlign: 'center', color: '#888', fontSize: 16 },
+  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  screen: { flex: 1 },
+  content: { padding: 18, paddingBottom: 28 },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  title: { fontSize: 25, fontWeight: '900', color: THEME.primary },
+  subtitle: { marginTop: 4, fontSize: 14, color: THEME.muted, fontWeight: '700' },
+  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 27 },
+  hero: { backgroundColor: THEME.primary, borderRadius: 24, padding: 18, marginBottom: 22 },
+  heroTitle: { color: '#FFF', fontSize: 22, fontWeight: '900' },
+  heroSub: { color: 'rgba(255,255,255,0.82)', marginTop: 4, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  statBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 16, padding: 12, alignItems: 'center' },
+  statValue: { color: '#FFF', fontSize: 22, fontWeight: '900' },
+  statLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '700' },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  menuCard: {
+    width: '48%',
+    backgroundColor: THEME.card,
+    borderRadius: 20,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  menuIcon: { fontSize: 28, marginBottom: 8 },
+  menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text },
+  menuDesc: { fontSize: 12, color: THEME.muted, marginTop: 4, lineHeight: 17 },
 });
