@@ -1,12 +1,6 @@
 // ============================================================
 // YUMURCAK — SuperAdminDashboardScreen.js
-// FAZ 13: Gerçek platform admin paneli
-// Görülenler:
-// - Kaç kreş var
-// - Kaç öğrenci / öğretmen / veli var
-// - Abonelik aktif/biten/yaklaşan
-// - İl/ilçe dağılımı
-// - Kreş listesi
+// FAZ 14: Yeni Kreş Ekle butonu eklendi
 // ============================================================
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -16,7 +10,6 @@ import {
   Platform,
   RefreshControl,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -81,8 +74,10 @@ export default function SuperAdminDashboardScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', loadData);
     loadData();
-  }, [loadData]);
+    return unsubscribe;
+  }, [navigation, loadData]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -173,6 +168,18 @@ export default function SuperAdminDashboardScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
+            <TouchableOpacity
+              style={styles.createButton}
+              activeOpacity={0.86}
+              onPress={() => navigation.navigate('SuperAdminKresCreate')}
+            >
+              <View>
+                <Text style={styles.createTitle}>+ Yeni Kreş Ekle</Text>
+                <Text style={styles.createDesc}>Kurum + yönetici hesabı + demo abonelik oluştur</Text>
+              </View>
+              <Text style={styles.createArrow}>›</Text>
+            </TouchableOpacity>
+
             <View style={styles.hero}>
               <View>
                 <Text style={styles.heroLabel}>Genel Durum</Text>
@@ -243,7 +250,7 @@ export default function SuperAdminDashboardScreen({ navigation }) {
           <View style={styles.emptyPanel}>
             <Text style={styles.emptyIcon}>🏫</Text>
             <Text style={styles.emptyTitle}>Henüz kreş yok</Text>
-            <Text style={styles.emptyText}>Yeni kreş onboarding fazında buradan eklenecek.</Text>
+            <Text style={styles.emptyText}>Yeni Kreş Ekle butonuyla ilk kurumu oluştur.</Text>
           </View>
         }
       />
@@ -330,6 +337,10 @@ const styles = StyleSheet.create({
   headerSub: { color: THEME.muted, fontWeight: '800', marginTop: 2 },
   logoutButton: { backgroundColor: '#1F2937', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: THEME.line },
   logoutText: { color: THEME.soft, fontWeight: '900' },
+  createButton: { backgroundColor: '#0EA5E9', borderRadius: 20, padding: 16, marginBottom: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  createTitle: { color: '#FFF', fontWeight: '900', fontSize: 18 },
+  createDesc: { color: 'rgba(255,255,255,0.78)', fontWeight: '700', marginTop: 4 },
+  createArrow: { color: '#FFF', fontSize: 34, fontWeight: '900' },
   hero: { backgroundColor: THEME.panel, borderRadius: 24, padding: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: THEME.line, marginBottom: 14 },
   heroLabel: { color: THEME.blue, fontWeight: '900', fontSize: 12 },
   heroTitle: { color: THEME.text, fontWeight: '900', fontSize: 23, marginTop: 4 },
