@@ -116,8 +116,8 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ── Bugünkü Özet ── */}
-        <Text style={styles.sectionTitle}>Bugünkü Özet</Text>
+        {/* ── Genel Özet ── */}
+        <Text style={styles.sectionTitle}>Genel Özet</Text>
         {yukleniyor ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={THEME.primary} />
