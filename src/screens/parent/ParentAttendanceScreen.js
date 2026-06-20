@@ -1,6 +1,19 @@
+// ============================================================
+// YUMURCAK — ParentAttendanceScreen.js
+// FAZ 2: Yeni tek kayıt yoklama sistemini destekler
+// yoklamalar/{tarih}_{cocukId}
+// ============================================================
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME, getMonthKey, getMonthLabel, isAbsentStatus } from './parentShared';
+
+const STATUS_LABELS = {
+  geldi: 'Geldi',
+  gelmedi: 'Gelmedi',
+  gec: 'Geç',
+  devamsiz: 'Devamsız',
+  devamsız: 'Devamsız',
+};
 
 export default function ParentAttendanceScreen({ navigation }) {
   const { loading, selectedChild } = useParentBase();
@@ -9,10 +22,20 @@ export default function ParentAttendanceScreen({ navigation }) {
 
   const childRecords = useMemo(() => {
     if (!selectedChild?.id) return [];
-    return raw
+
+    const map = {};
+    raw
       .filter((item) => item.cocukId === selectedChild.id)
       .filter((item) => item.tarih)
-      .sort((a, b) => String(b.tarih).localeCompare(String(a.tarih)));
+      .forEach((item) => {
+        const key = `${item.tarih}_${item.cocukId}`;
+        const existing = map[key];
+        if (!existing || Number(item.updatedAt || item.createdAt || 0) > Number(existing.updatedAt || existing.createdAt || 0)) {
+          map[key] = item;
+        }
+      });
+
+    return Object.values(map).sort((a, b) => String(b.tarih).localeCompare(String(a.tarih)));
   }, [raw, selectedChild?.id]);
 
   const months = useMemo(() => buildLast12Months(childRecords), [childRecords]);
@@ -47,7 +70,7 @@ export default function ParentAttendanceScreen({ navigation }) {
           {days.length === 0 ? (
             <EmptyState icon="📅" title="Bu ay kayıt yok" desc="Yoklama kaydı girildiğinde burada görünecek." />
           ) : (
-            days.map((item) => <AttendanceDay key={item.id} item={item} />)
+            days.map((item) => <AttendanceDay key={`${item.tarih}_${item.cocukId}`} item={item} />)
           )}
         </>
       )}
@@ -70,10 +93,22 @@ function buildLast12Months(records) {
 
 function AttendanceDay({ item }) {
   const absent = isAbsentStatus(item.durum);
+  const isLate = String(item.durum || '').toLowerCase() === 'gec';
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{item.tarih}</Text>
-      <Text style={[styles.cardText, { color: absent ? THEME.red : THEME.green, fontWeight: '900' }]}>Durum: {item.durum || '-'}</Text>
+      <Text
+        style={[
+          styles.cardText,
+          {
+            color: absent ? THEME.red : isLate ? THEME.orange : THEME.green,
+            fontWeight: '900',
+          },
+        ]}
+      >
+        Durum: {STATUS_LABELS[item.durum] || item.durum || '-'}
+      </Text>
       {item.not ? <Text style={styles.cardText}>Not: {item.not}</Text> : null}
     </View>
   );
