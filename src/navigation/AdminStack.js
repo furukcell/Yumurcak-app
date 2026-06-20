@@ -16,6 +16,8 @@ import VeliListScreen from '../screens/admin/VeliListScreen';
 import VeliFormScreen from '../screens/admin/VeliFormScreen';
 import AnnouncementListScreen from '../screens/admin/AnnouncementListScreen';
 import AnnouncementFormScreen from '../screens/admin/AnnouncementFormScreen';
+import PaymentListScreen from '../screens/admin/PaymentListScreen';
+import PaymentFormScreen from '../screens/admin/PaymentFormScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +42,8 @@ export default function AdminStack() {
       <Stack.Screen name="VeliForm" component={VeliFormScreen} options={{ title: 'Veli Ekle/Düzenle' }} />
       <Stack.Screen name="AnnouncementList" component={AnnouncementListScreen} options={{ title: 'Duyurular' }} />
       <Stack.Screen name="AnnouncementForm" component={AnnouncementFormScreen} options={{ title: 'Duyuru Oluştur' }} />
+      <Stack.Screen name="PaymentList" component={PaymentListScreen} options={{ title: 'Ödemeler' }} />
+      <Stack.Screen name="PaymentForm" component={PaymentFormScreen} options={{ title: 'Ödeme Ekle/Düzenle' }} />
     </Stack.Navigator>
   );
 }
