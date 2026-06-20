@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -131,6 +133,7 @@ export function useParentBase() {
   const sinifId = selectedChild?.sinifId || null;
   const sinif = sinifId ? siniflar[sinifId] : null;
   const kres = kresId ? kresler[kresId] : null;
+  const kresAdi = kres?.ad || 'Yumurcak';
 
   const ogretmenId = useMemo(() => {
     if (selectedChild?.ogretmenId) return selectedChild.ogretmenId;
@@ -160,6 +163,7 @@ export function useParentBase() {
     childName,
     parentName,
     kresId,
+    kresAdi,
     sinifId,
     sinif,
     kres,
@@ -183,7 +187,7 @@ export function useNodeList(node) {
   return list;
 }
 
-export function ScreenShell({ title, emoji, navigation, children }) {
+export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -195,7 +199,10 @@ export function ScreenShell({ title, emoji, navigation, children }) {
         ) : (
           <View style={styles.backSpacer} />
         )}
-        <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+          {subtitle ? <Text style={styles.headerSubtitle} numberOfLines={1}>{subtitle}</Text> : null}
+        </View>
         <Text style={styles.headerEmoji}>{emoji || ''}</Text>
       </View>
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -240,46 +247,69 @@ export function PlaceholderScreen({ navigation, icon, title, description }) {
       <View style={styles.placeholderCard}>
         <Text style={styles.placeholderIcon}>{icon}</Text>
         <Text style={styles.placeholderTitle}>{title}</Text>
-        <Text style={styles.placeholderDesc}>{description}</Text>
-        <Text style={styles.comingSoonText}>Yakında aktif olacak</Text>
+        <Text style={styles.placeholderDesc}>{description || 'Bu alan yakında aktif olacak.'}</Text>
       </View>
     </ScreenShell>
   );
 }
 
 export const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  safeArea: {
+    flex: 1,
+    backgroundColor: THEME.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   screen: { flex: 1, backgroundColor: THEME.bg },
-  scrollContent: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 36 },
+  scrollContent: { padding: 16, paddingBottom: 52 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.bg },
   loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, backgroundColor: THEME.bg },
-  backButton: { width: 72, flexDirection: 'row', alignItems: 'center' },
-  backSpacer: { width: 72 },
-  backArrow: { fontSize: 30, color: THEME.primary, fontWeight: '900', marginRight: 2 },
-  backLabel: { fontSize: 14, color: THEME.primary, fontWeight: '800' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 19, color: THEME.primary, fontWeight: '900' },
-  headerEmoji: { width: 72, textAlign: 'right', fontSize: 22 },
-  card: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
-  cardTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, marginBottom: 6 },
-  cardText: { fontSize: 13, color: THEME.muted, lineHeight: 19 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginTop: 6, marginBottom: 12 },
-  emptyStateCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
-  emptyIcon: { fontSize: 36, marginBottom: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '900', color: THEME.text, textAlign: 'center', marginBottom: 6 },
-  emptyDesc: { fontSize: 13, color: THEME.muted, textAlign: 'center', lineHeight: 19 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: THEME.border },
-  infoIcon: { width: 30, fontSize: 18 },
-  infoLabel: { flex: 1, fontSize: 13, color: THEME.muted, fontWeight: '700' },
-  infoValue: { flex: 1.2, textAlign: 'right', fontSize: 13, color: THEME.text, fontWeight: '800' },
-  placeholderCard: { backgroundColor: THEME.card, borderRadius: 26, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: THEME.border, marginTop: 20 },
-  placeholderIcon: { fontSize: 48, marginBottom: 14 },
-  placeholderTitle: { fontSize: 22, fontWeight: '900', color: THEME.text, marginBottom: 8 },
-  placeholderDesc: { fontSize: 14, color: THEME.muted, textAlign: 'center', lineHeight: 21 },
-  comingSoonText: { marginTop: 16, fontSize: 13, color: THEME.primary, fontWeight: '900' },
-  primaryButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
-  primaryButtonText: { color: '#fff', fontWeight: '900', fontSize: 15 },
-  secondaryButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
-  secondaryButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 15 },
-  badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, fontSize: 12, fontWeight: '900', overflow: 'hidden' },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: THEME.bg,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: { width: 74, flexDirection: 'row', alignItems: 'center' },
+  backArrow: { fontSize: 28, color: THEME.primary, fontWeight: '800', marginRight: 3 },
+  backLabel: { color: THEME.primary, fontWeight: '800' },
+  backSpacer: { width: 74 },
+  headerTitleWrap: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: THEME.primary },
+  headerSubtitle: { fontSize: 11, color: THEME.muted, marginTop: 2, fontWeight: '700' },
+  headerEmoji: { width: 36, textAlign: 'right', fontSize: 21 },
+  emptyStateCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 22,
+    padding: 22,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  emptyIcon: { fontSize: 40, marginBottom: 8 },
+  emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, textAlign: 'center' },
+  emptyDesc: { fontSize: 13, color: THEME.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
+  card: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
+  cardTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
+  cardText: { color: THEME.muted, marginTop: 6, fontWeight: '700', lineHeight: 19 },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginTop: 8, marginBottom: 12 },
+  infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: THEME.border },
+  infoIcon: { width: 26, fontSize: 17 },
+  infoLabel: { width: 116, color: THEME.muted, fontWeight: '800' },
+  infoValue: { flex: 1, color: THEME.text, fontWeight: '800' },
+  secondaryButton: { backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 12 },
+  secondaryButtonText: { color: THEME.primary, fontWeight: '900' },
+  placeholderCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 22,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  placeholderIcon: { fontSize: 44, marginBottom: 10 },
+  placeholderTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
+  placeholderDesc: { color: THEME.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
 });

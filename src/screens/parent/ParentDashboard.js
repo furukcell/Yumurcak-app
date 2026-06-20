@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Image } from 'react-native';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState, THEME } from './parentShared';
 
 export default function ParentDashboardScreen({ navigation }) {
   const base = useParentBase();
   const reports = useNodeList('gunlukRaporlar');
-  const { loading, selectedChild, childName, parentName, cikisYap } = base;
+  const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, kullanici } = base;
 
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
@@ -41,9 +41,16 @@ export default function ParentDashboardScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
-          <Text style={styles.logo}>Yumurcak</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.logo} numberOfLines={1}>{kresAdi || 'Yumurcak'}</Text>
+            <Text style={styles.brandSub}>Yumurcak Veli Paneli</Text>
+          </View>
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton}>
-            <Text style={styles.profileButtonText}>👤</Text>
+            {kullanici?.profilFotoUrl ? (
+              <Image source={{ uri: kullanici.profilFotoUrl }} style={styles.profileImage} />
+            ) : (
+              <Text style={styles.profileButtonText}>👤</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -99,13 +106,19 @@ function renderSummaryItem(icon, label, value, color) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  safeArea: {
+    flex: 1,
+    backgroundColor: THEME.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   screen: { flex: 1, backgroundColor: THEME.bg },
-  content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 36 },
+  content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 56 },
   topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
-  logo: { color: THEME.primary, fontSize: 25, fontWeight: '900' },
-  profileButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
+  logo: { color: THEME.primary, fontSize: 23, fontWeight: '900' },
+  brandSub: { color: THEME.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
+  profileButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border, overflow: 'hidden' },
   profileButtonText: { fontSize: 20 },
+  profileImage: { width: 44, height: 44, borderRadius: 22 },
   greeting: { fontSize: 20, fontWeight: '900', color: THEME.text, marginBottom: 4 },
   greetingSub: { fontSize: 13, color: THEME.muted, marginBottom: 18 },
   heroCard: { backgroundColor: THEME.primary, borderRadius: 24, padding: 16, marginBottom: 24, shadowColor: THEME.primary, shadowOpacity: 0.22, shadowRadius: 18, elevation: 6 },
