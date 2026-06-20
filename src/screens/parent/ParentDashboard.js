@@ -11,13 +11,16 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function ParentDashboardScreen() {
   const navigation = useNavigation();
-  const { kullanici } = useAuth();
+  const { kullanici, cikisYap } = useAuth();
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const parentId = kullanici?.uid;
 
   useEffect(() => {
-    if (!parentId) return;
+    if (!parentId) {
+      setLoading(false);
+      return;
+    }
 
     const childrenRef = ref(database, 'cocuklar');
     const unsubscribe = onValue(childrenRef, (snapshot) => {
@@ -40,6 +43,10 @@ export default function ParentDashboardScreen() {
     return () => unsubscribe();
   }, [parentId]);
 
+  const handleLogout = async () => {
+    await cikisYap();
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -50,9 +57,20 @@ export default function ParentDashboardScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Çocuklarım</Text>
+          <Text style={styles.subtitle}>{kullanici?.ad || 'Veli'}</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Çıkış Yap</Text>
+        </TouchableOpacity>
+      </View>
+
       {children.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>Sisteme kayıtlı çocuğun bulunmuyor.</Text>
+          <Text style={styles.emptyHint}>Yönetici panelinden çocuğa bu veli bağlanmalı.</Text>
         </View>
       ) : (
         <FlatList
@@ -77,6 +95,23 @@ export default function ParentDashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: {
+    backgroundColor: '#27500A',
+    padding: 20,
+    paddingTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: { color: '#fff', fontSize: 24, fontWeight: '700' },
+  subtitle: { color: '#d8e8d0', fontSize: 15, marginTop: 4 },
+  logoutButton: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  logoutText: { color: '#fff', fontWeight: '700' },
   list: { padding: 16 },
   card: {
     backgroundColor: '#fff',
@@ -93,5 +128,6 @@ const styles = StyleSheet.create({
   childName: { fontSize: 18, fontWeight: '600', color: '#333' },
   birthDate: { fontSize: 14, color: '#666', marginTop: 4 },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { textAlign: 'center', color: '#888', fontSize: 16 },
+  emptyText: { textAlign: 'center', color: '#888', fontSize: 16, fontWeight: '600' },
+  emptyHint: { textAlign: 'center', color: '#999', fontSize: 14, marginTop: 8 },
 });
