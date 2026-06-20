@@ -8,7 +8,7 @@ import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: 'AIzaSyCH_lb0nGSyL0SMx2OmjipRw2VT0AdoPq0',
   authDomain: 'yumurcak-app.firebaseapp.com',
   databaseURL: 'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app',
