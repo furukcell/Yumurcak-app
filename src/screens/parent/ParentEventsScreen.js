@@ -1,34 +1,44 @@
+// ============================================================
+// YUMURCAK — ParentEventsScreen.js
+// FAZ 3: Genel etkinlik + çocuğun sınıf etkinliği gösterilir
+// ============================================================
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles } from './parentShared';
+import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
 
 export default function ParentEventsScreen({ navigation }) {
-  const { loading, kresId, sinifId } = useParentBase();
-  const etkinliklerRaw = useNodeList('etkinlikler');
+  const { loading, selectedChild, kresId, sinifId } = useParentBase();
+  const events = useNodeList('etkinlikler');
 
-  const etkinlikler = useMemo(() => {
-    if (!kresId || !sinifId) return [];
-    return etkinliklerRaw
+  const visible = useMemo(() => {
+    return events
       .filter((item) => item.aktif !== false)
-      .filter((item) => item.kresId === kresId)
-      .filter((item) => Array.isArray(item.sinifIds) && item.sinifIds.includes(sinifId))
+      .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+      .filter((item) => {
+        if (Array.isArray(item.sinifIds)) return item.sinifIds.includes(sinifId);
+        if (item.sinifId) return item.sinifId === sinifId;
+        return true;
+      })
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
-  }, [etkinliklerRaw, kresId, sinifId]);
+  }, [events, kresId, sinifId]);
 
   if (loading) return <LoadingScreen text="Etkinlikler hazırlanıyor..." />;
 
   return (
     <ScreenShell title="Etkinlikler" emoji="🎉" navigation={navigation}>
-      {!sinifId ? (
-        <EmptyState icon="🎉" title="Sınıf bilgisi bulunamadı" desc="Çocuğunuz sınıfa bağlandığında etkinlikler burada görünecek." />
-      ) : etkinlikler.length === 0 ? (
-        <EmptyState icon="🎉" title="Henüz etkinlik yok" desc="Sınıfınıza ait yeni etkinlikler burada görünecek." />
+      {!selectedChild ? (
+        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Etkinlikler için çocuğunuzun sınıfa bağlı olması gerekir." />
+      ) : visible.length === 0 ? (
+        <EmptyState icon="🎉" title="Henüz etkinlik yok" desc="Kurum veya öğretmen etkinlik eklediğinde burada görünecek." />
       ) : (
-        etkinlikler.map((item) => (
+        visible.map((item) => (
           <View key={item.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{item.baslik || 'Etkinlik'}</Text>
-            <Text style={styles.cardText}>📅 {item.tarih || '-'}{item.saat ? ` · ${item.saat}` : ''}</Text>
-            <Text style={[styles.cardText, { marginTop: 8 }]}>{item.aciklama || '-'}</Text>
+            <Text style={[styles.badge, { backgroundColor: THEME.primarySoft, color: THEME.primary }]}>
+              {item.sinifId ? 'Sınıf Etkinliği' : 'Genel Etkinlik'}
+            </Text>
+            <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.baslik || 'Etkinlik'}</Text>
+            <Text style={styles.cardText}>📅 {item.tarih || '-'} {item.saat ? `· ${item.saat}` : ''}</Text>
+            {item.aciklama ? <Text style={styles.cardText}>{item.aciklama}</Text> : null}
           </View>
         ))
       )}
