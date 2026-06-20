@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — teacherShared.js
-// Öğretmen ekranları ortak tema, component ve Firebase verisi
+// FAZ 6: Safe area header + kurum adı desteği
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -184,6 +186,7 @@ export function useTeacherData() {
 
   const kresId = currentClass?.kresId || kullanici?.kresId || classChildren[0]?.kresId || null;
   const kurum = kresId ? kresler[kresId] : null;
+  const kresAdi = kurum?.ad || 'Yumurcak';
 
   const classReports = useMemo(() => {
     const childIds = new Set(classChildren.map((child) => child.id));
@@ -200,6 +203,7 @@ export function useTeacherData() {
     users,
     kresId,
     kurum,
+    kresAdi,
     currentClass,
     classChildren,
     reports: classReports,
@@ -219,7 +223,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: Platform.OS === 'android' ? ((StatusBar.currentHeight || 0) + 6) : 12,
     paddingBottom: 12,
     backgroundColor: THEME.bg,
     flexDirection: 'row',
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
   backSpacer: { width: 74 },
   headerTitleWrap: { flex: 1, alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '900', color: THEME.primary },
-  headerSubtitle: { fontSize: 12, color: THEME.muted, marginTop: 2, fontWeight: '600' },
+  headerSubtitle: { fontSize: 12, color: THEME.muted, marginTop: 2, fontWeight: '700' },
   rightButton: { width: 74, alignItems: 'flex-end' },
   rightButtonText: { color: THEME.primary, fontWeight: '900' },
   emptyCard: {
@@ -241,19 +245,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: THEME.border,
-    margin: 16,
   },
-  emptyIcon: { fontSize: 38, marginBottom: 8 },
+  emptyIcon: { fontSize: 40, marginBottom: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, textAlign: 'center' },
-  emptyDesc: { fontSize: 13, color: THEME.muted, textAlign: 'center', marginTop: 6, lineHeight: 19 },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-  },
-  infoIcon: { width: 30, fontSize: 18 },
-  infoLabel: { flex: 1, color: THEME.muted, fontWeight: '700' },
-  infoValue: { flex: 1.2, color: THEME.text, fontWeight: '900', textAlign: 'right' },
+  emptyDesc: { fontSize: 13, color: THEME.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
+  infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: THEME.border },
+  infoIcon: { width: 26, fontSize: 17 },
+  infoLabel: { width: 116, color: THEME.muted, fontWeight: '800' },
+  infoValue: { flex: 1, color: THEME.text, fontWeight: '800' },
 });

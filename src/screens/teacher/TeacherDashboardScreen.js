@@ -1,9 +1,9 @@
 // ============================================================
 // YUMURCAK — TeacherDashboardScreen.js
-// Öğretmen ana menüsü - FAZ 1 mesajlar butonu eklendi
+// FAZ 6: Üst başlıkta kreş adı + Yumurcak Öğretmen Paneli
 // ============================================================
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, LoadingState, EmptyState } from './teacherShared';
 
@@ -22,7 +22,7 @@ const MENU = [
 
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
-  const { loading, kullanici, currentClass, classChildren, reports, attendance } = useTeacherData();
+  const { loading, kullanici, kresAdi, currentClass, classChildren, reports, attendance } = useTeacherData();
 
   if (loading) return <LoadingState text="Öğretmen paneli hazırlanıyor..." />;
 
@@ -34,8 +34,9 @@ export default function TeacherDashboardScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
-          <View>
-            <Text style={styles.title}>Öğretmen Paneli</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} numberOfLines={1}>{kresAdi || 'Yumurcak'}</Text>
+            <Text style={styles.panelLabel}>Yumurcak Öğretmen Paneli</Text>
             <Text style={styles.subtitle}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
           </View>
           <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
@@ -80,11 +81,16 @@ export default function TeacherDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  safeArea: {
+    flex: 1,
+    backgroundColor: THEME.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   screen: { flex: 1 },
-  content: { padding: 18, paddingBottom: 28 },
+  content: { padding: 18, paddingBottom: 56 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
-  title: { fontSize: 25, fontWeight: '900', color: THEME.primary },
+  title: { fontSize: 23, fontWeight: '900', color: THEME.primary },
+  panelLabel: { marginTop: 2, fontSize: 12, color: THEME.muted, fontWeight: '800' },
   subtitle: { marginTop: 4, fontSize: 14, color: THEME.muted, fontWeight: '700' },
   avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 27 },
