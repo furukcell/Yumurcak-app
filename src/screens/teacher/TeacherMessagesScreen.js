@@ -1,19 +1,32 @@
 // ============================================================
 // YUMURCAK — TeacherMessagesScreen.js
-// FAZ 7: Öğretmen artık yönetici + sınıf velileriyle mesajlaşabilir
+// FAZ 16: Okunmamış badge + son mesaj desteği
 // ============================================================
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet } from 'react-native';
-import { ref, update } from 'firebase/database';
+import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName, getUserName } from './teacherShared';
+import { safeUnread } from '../../utils/messageHelpers';
 
 export default function TeacherMessagesScreen() {
   const navigation = useNavigation();
   const { loading, teacherId, kresId, kurum, currentClass, classChildren, users } = useTeacherData();
+  const [conversations, setConversations] = useState({});
+
+  useEffect(() => {
+    const unsub = onValue(ref(database, 'mesajKonusmalari'), (snap) => {
+      setConversations(snap.val() || {});
+    });
+
+    return () => unsub();
+  }, []);
 
   const adminId = kurum?.yoneticiId || Object.entries(users || {}).find(([, u]) => u?.rol === 'yonetici' && (!u.kresId || u.kresId === kresId))?.[0] || null;
+
+  const adminConversationId = teacherId && adminId ? `admin_${adminId}_ogretmen_${teacherId}` : null;
+  const adminMeta = adminConversationId ? conversations[adminConversationId] || {} : {};
 
   const parentContacts = useMemo(() => {
     const list = [];
@@ -23,19 +36,29 @@ export default function TeacherMessagesScreen() {
       veliIds.forEach((veliId) => {
         const veli = users[veliId];
         if (!veli) return;
+
+        const conversationId = `veli_${veliId}_ogretmen_${teacherId}_cocuk_${child.id}`;
+        const meta = conversations[conversationId] || {};
+
         list.push({
           type: 'parent',
           veliId,
           veli,
           child,
+          conversationId,
+          meta,
+          unread: safeUnread(meta, teacherId),
           title: getUserName(veli),
-          desc: getChildName(child),
+          desc: meta.sonMesaj || getChildName(child),
+          sonMesajAt: meta.sonMesajAt || 0,
         });
       });
     });
 
-    return list;
-  }, [classChildren, users]);
+    return list
+      .sort((a, b) => Number(b.sonMesajAt || 0) - Number(a.sonMesajAt || 0) || a.title.localeCompare(b.title, 'tr'))
+      .slice(0, 20);
+  }, [classChildren, users, conversations, teacherId]);
 
   if (loading) return <LoadingState text="Mesajlar hazırlanıyor..." />;
 
@@ -49,6 +72,7 @@ export default function TeacherMessagesScreen() {
     const now = Date.now();
 
     const conversationMeta = {
+      ...(conversations[conversationId] || {}),
       id: conversationId,
       tip: 'admin_ogretmen',
       kresId: kresId || '',
@@ -88,6 +112,7 @@ export default function TeacherMessagesScreen() {
     const now = Date.now();
 
     const conversationMeta = {
+      ...(conversations[conversationId] || {}),
       id: conversationId,
       tip: 'veli_ogretmen',
       kresId: kresId || '',
@@ -125,8 +150,9 @@ export default function TeacherMessagesScreen() {
         <ContactCard
           icon="🏫"
           title="Kurum Yönetimi"
-          desc={kurum?.ad || 'Yönetim ile yazış'}
+          desc={adminMeta.sonMesaj || kurum?.ad || 'Yönetim ile yazış'}
           sub="İdari ve sınıf konuları"
+          unread={safeUnread(adminMeta, teacherId)}
           onPress={openAdminChat}
         />
 
@@ -141,6 +167,7 @@ export default function TeacherMessagesScreen() {
               title={contact.title}
               desc={contact.desc}
               sub="Veli görüşmesi"
+              unread={contact.unread}
               onPress={() => openParentChat(contact)}
             />
           ))
@@ -150,15 +177,22 @@ export default function TeacherMessagesScreen() {
   );
 }
 
-function ContactCard({ icon, title, desc, sub, onPress }) {
+function ContactCard({ icon, title, desc, sub, unread, onPress }) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.iconBox}>
         <Text style={styles.icon}>{icon}</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.desc}>{desc}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          {unread > 0 ? (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{unread > 99 ? '99+' : unread}</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={styles.desc} numberOfLines={1}>{desc}</Text>
         <Text style={styles.sub}>{sub}</Text>
       </View>
       <Text style={styles.arrow}>›</Text>
@@ -190,8 +224,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   icon: { fontSize: 25 },
-  title: { color: THEME.text, fontSize: 16, fontWeight: '900' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { flex: 1, color: THEME.text, fontSize: 16, fontWeight: '900' },
   desc: { color: THEME.muted, marginTop: 3, fontWeight: '700' },
   sub: { color: THEME.muted, marginTop: 3, fontSize: 12, fontWeight: '600' },
   arrow: { color: THEME.primary, fontSize: 30, fontWeight: '900', marginLeft: 8 },
+  unreadBadge: { minWidth: 24, height: 24, borderRadius: 12, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
+  unreadText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
 });
