@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — TeacherDashboardScreen.js
-// Öğretmen ana menüsü
+// Öğretmen ana menüsü - FAZ 1 mesajlar butonu eklendi
 // ============================================================
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
@@ -16,6 +16,7 @@ const MENU = [
   { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals' },
   { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical' },
   { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements' },
+  { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages' },
   { icon: '👤', title: 'Profil', desc: 'Bilgiler ve çıkış', route: 'TeacherProfile' },
 ];
 
@@ -57,12 +58,7 @@ export default function TeacherDashboardScreen() {
         <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
         <View style={styles.grid}>
           {MENU.map((item) => (
-            <TouchableOpacity
-              key={item.title}
-              style={styles.menuCard}
-              onPress={() => navigation.navigate(item.route)}
-              activeOpacity={0.85}
-            >
+            <TouchableOpacity key={item.title} style={styles.menuCard} onPress={() => navigation.navigate(item.route)} activeOpacity={0.85}>
               <Text style={styles.menuIcon}>{item.icon}</Text>
               <Text style={styles.menuTitle}>{item.title}</Text>
               <Text style={styles.menuDesc}>{item.desc}</Text>
@@ -101,15 +97,7 @@ const styles = StyleSheet.create({
   statLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '700' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  menuCard: {
-    width: '48%',
-    backgroundColor: THEME.card,
-    borderRadius: 20,
-    padding: 15,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
+  menuCard: { width: '48%', backgroundColor: THEME.card, borderRadius: 20, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
   menuIcon: { fontSize: 28, marginBottom: 8 },
   menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text },
   menuDesc: { fontSize: 12, color: THEME.muted, marginTop: 4, lineHeight: 17 },
