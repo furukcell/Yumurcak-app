@@ -1,7 +1,8 @@
 // ============================================================
 // YUMURCAK — ParentDashboard.js
 // Modern veli arayüzü — ana sayfa, raporlar, duyurular, profil
-// + Hızlı işlem placeholder ekranları (local state navigation)
+// + Hızlı işlem ekranları (local state navigation)
+// + Yemek Listesi (Firebase yemekListeleri node)
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -32,7 +33,16 @@ const THEME = {
   border: '#EEEAF8',
 };
 
-// Placeholder ekran tanımları
+const GUNLER = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma'];
+const GUN_LABEL = {
+  pazartesi: 'Pazartesi',
+  sali: 'Salı',
+  carsamba: 'Çarşamba',
+  persembe: 'Perşembe',
+  cuma: 'Cuma',
+};
+
+// Placeholder ekran tanımları (meals çıkarıldı — gerçek ekrana geçti)
 const PLACEHOLDER_SCREENS = {
   messages: {
     icon: '💬',
@@ -48,13 +58,6 @@ const PLACEHOLDER_SCREENS = {
     color: '#FF9F1C',
     bgColor: '#FFF6E8',
   },
-  meals: {
-    icon: '🍽️',
-    title: 'Yemek Listesi',
-    description: 'Yemek listesi yakında aktif olacak.',
-    color: '#20B45B',
-    bgColor: '#E8F9EF',
-  },
   documents: {
     icon: '📁',
     title: 'Belgeler',
@@ -67,26 +70,29 @@ const PLACEHOLDER_SCREENS = {
 export default function ParentDashboardScreen() {
   const { kullanici, cikisYap } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
-  const [currentScreen, setCurrentScreen] = useState('main'); // 'main' | 'messages' | 'gallery' | 'meals' | 'documents'
+  // currentScreen: 'main' | 'messages' | 'gallery' | 'documents' | 'meals' | 'mealDetail'
+  const [currentScreen, setCurrentScreen] = useState('main');
+  const [selectedMeal, setSelectedMeal] = useState(null);
   const [children, setChildren] = useState([]);
   const [reports, setReports] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [yemekListeleri, setYemekListeleri] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const parentId = kullanici?.uid || kullanici?.id;
   const selectedChild = children[0];
+  const kresId = selectedChild?.kresId || kullanici?.kresId || null;
 
+  // ─── Firebase: Çocuklar ──────────────────────────────────────
   useEffect(() => {
     if (!parentId) {
       setLoading(false);
       return undefined;
     }
-
     const childrenRef = ref(database, 'cocuklar');
     const unsubscribe = onValue(childrenRef, (snapshot) => {
       const data = snapshot.val();
       const myChildren = [];
-
       if (data) {
         Object.entries(data).forEach(([id, childData]) => {
           if (childData.veliIds?.includes(parentId)) {
@@ -94,52 +100,90 @@ export default function ParentDashboardScreen() {
           }
         });
       }
-
       setChildren(myChildren);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [parentId]);
 
+  // ─── Firebase: Günlük Raporlar ───────────────────────────────
   useEffect(() => {
     const reportsRef = ref(database, 'gunlukRaporlar');
     const unsubscribe = onValue(reportsRef, (snapshot) => {
       const data = snapshot.val();
       const list = [];
-
       if (data) {
         Object.entries(data).forEach(([id, reportData]) => {
           list.push({ id, ...reportData });
         });
       }
-
       list.sort((a, b) => String(b.tarih || '').localeCompare(String(a.tarih || '')));
       setReports(list);
     });
-
     return () => unsubscribe();
   }, []);
 
+  // ─── Firebase: Duyurular ─────────────────────────────────────
   useEffect(() => {
     const duyuruRef = ref(database, 'duyurular');
     const unsubscribe = onValue(duyuruRef, (snapshot) => {
       const data = snapshot.val();
       const list = [];
-
       if (data) {
         Object.entries(data).forEach(([id, item]) => {
           list.push({ id, ...item });
         });
       }
-
-      list.sort((a, b) => String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || '')));
+      list.sort((a, b) =>
+        String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || ''))
+      );
       setAnnouncements(list);
     });
-
     return () => unsubscribe();
   }, []);
 
+  // ─── Firebase: Yemek Listeleri ───────────────────────────────
+  useEffect(() => {
+    const yemekRef = ref(database, 'yemekListeleri');
+    const unsubscribe = onValue(yemekRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = [];
+      if (data) {
+        // Son 3 ay filtresi
+        const now = new Date();
+        const ucAyOnce = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+
+        Object.entries(data).forEach(([id, item]) => {
+          if (item.aktif === false) return;
+
+          // kresId filtresi (kresId varsa uygula)
+          if (!kresId) return;
+          if (item.kresId !== kresId) return;
+
+          // Tarih filtresi
+          const baslangic = item.baslangicTarihi
+            ? new Date(item.baslangicTarihi)
+            : item.createdAt
+            ? new Date(item.createdAt)
+            : null;
+          if (baslangic && baslangic < ucAyOnce) return;
+
+          list.push({ id, ...item });
+        });
+
+        // Yeniden eskiye sırala
+        list.sort((a, b) => {
+          const aDate = a.baslangicTarihi || String(a.createdAt || '');
+          const bDate = b.baslangicTarihi || String(b.createdAt || '');
+          return String(bDate).localeCompare(String(aDate));
+        });
+      }
+      setYemekListeleri(list);
+    });
+    return () => unsubscribe();
+  }, [kresId]);
+
+  // ─── Hesaplanan değerler ──────────────────────────────────────
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
     return reports.filter((item) => item.cocukId === selectedChild.id);
@@ -148,7 +192,10 @@ export default function ParentDashboardScreen() {
   const todayReport = childReports[0];
 
   const getChildName = () => selectedChild?.ad || selectedChild?.adSoyad || 'Çocuğum';
-  const getParentName = () => `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Veli';
+  const getParentName = () =>
+    `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() ||
+    kullanici?.kullaniciAdi ||
+    'Veli';
   const getMood = (report) => report?.mood || report?.ruhHali || report?.durum || 'Mutlu';
   const getMeal = (report) => {
     if (!report) return 'İyi';
@@ -162,8 +209,9 @@ export default function ParentDashboardScreen() {
     if (report.uykuDurumu) return report.uykuDurumu;
     return 'İyi';
   };
-  const getAttendance = () => selectedChild ? 'Geldi' : '-';
-  const getTeacherNote = (report) => report?.not || report?.ogretmenNotu || report?.notlar || 'Bugün için henüz öğretmen notu girilmedi.';
+  const getAttendance = () => (selectedChild ? 'Geldi' : '-');
+  const getTeacherNote = (report) =>
+    report?.not || report?.ogretmenNotu || report?.notlar || 'Bugün için henüz öğretmen notu girilmedi.';
 
   const handleLogout = async () => {
     await cikisYap();
@@ -174,9 +222,19 @@ export default function ParentDashboardScreen() {
   };
 
   const goBack = () => {
-    setCurrentScreen('main');
+    if (currentScreen === 'mealDetail') {
+      setCurrentScreen('meals');
+    } else {
+      setCurrentScreen('main');
+    }
   };
 
+  const openMealDetail = (meal) => {
+    setSelectedMeal(meal);
+    setCurrentScreen('mealDetail');
+  };
+
+  // ─── Loading ──────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.center}>
@@ -186,7 +244,25 @@ export default function ParentDashboardScreen() {
     );
   }
 
-  // Placeholder ekran açıksa tab bar ve diğer içerikleri gizle
+  // ─── Yemek Listesi Ekranı ─────────────────────────────────────
+  if (currentScreen === 'meals') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderMealsScreen()}
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Yemek Detay Ekranı ───────────────────────────────────────
+  if (currentScreen === 'mealDetail') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderMealDetailScreen()}
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Placeholder Ekranlar ─────────────────────────────────────
   if (currentScreen !== 'main') {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -195,6 +271,7 @@ export default function ParentDashboardScreen() {
     );
   }
 
+  // ─── Ana Dashboard ────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.appShell}>
@@ -207,7 +284,185 @@ export default function ParentDashboardScreen() {
     </SafeAreaView>
   );
 
-  // ─── PLACEHOLDER EKRANLAR ────────────────────────────────────
+  // ════════════════════════════════════════════════════════════
+  // YEMEK LİSTESİ EKRANLARI
+  // ════════════════════════════════════════════════════════════
+
+  function renderMealsScreen() {
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Yemek Listesi</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+
+        <ScrollView
+          style={styles.placeholderScroll}
+          contentContainerStyle={styles.placeholderContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {yemekListeleri.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyIcon}>🍽️</Text>
+              <Text style={styles.emptyTitle}>Henüz yemek listesi eklenmemiş.</Text>
+              <Text style={styles.emptyDesc}>Kreş yemek listesi girdiğinde burada görünecek.</Text>
+            </View>
+          ) : (
+            yemekListeleri.map((item) => renderMealCard(item))
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderMealCard(item) {
+    const isHaftalik = item.tip === 'haftalik';
+    return (
+      <View key={item.id} style={styles.mealCard}>
+        <View style={styles.mealCardTop}>
+          <View style={[styles.mealTipBadge, isHaftalik ? styles.mealTipHaftalik : styles.mealTipAylik]}>
+            <Text style={[styles.mealTipText, isHaftalik ? styles.mealTipTextHaftalik : styles.mealTipTextAylik]}>
+              {isHaftalik ? '📅 Haftalık' : '🗓️ Aylık'}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.mealCardTitle}>{item.baslik || 'Yemek Listesi'}</Text>
+        <Text style={styles.mealCardDate}>
+          {item.baslangicTarihi || '-'} – {item.bitisTarihi || '-'}
+        </Text>
+        <TouchableOpacity
+          style={styles.mealDetailButton}
+          onPress={() => openMealDetail(item)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.mealDetailButtonText}>Detayı Gör →</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  function renderMealDetailScreen() {
+    if (!selectedMeal) return null;
+    const isHaftalik = selectedMeal.tip === 'haftalik';
+
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle} numberOfLines={1}>
+            {selectedMeal.baslik || 'Detay'}
+          </Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+
+        <ScrollView
+          style={styles.placeholderScroll}
+          contentContainerStyle={styles.placeholderContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Tarih bilgisi */}
+          <View style={styles.mealDetailInfoRow}>
+            <Text style={styles.mealDetailInfoText}>
+              📅 {selectedMeal.baslangicTarihi || '-'} – {selectedMeal.bitisTarihi || '-'}
+            </Text>
+            <View style={[styles.mealTipBadge, isHaftalik ? styles.mealTipHaftalik : styles.mealTipAylik]}>
+              <Text style={[styles.mealTipText, isHaftalik ? styles.mealTipTextHaftalik : styles.mealTipTextAylik]}>
+                {isHaftalik ? 'Haftalık' : 'Aylık'}
+              </Text>
+            </View>
+          </View>
+
+          {isHaftalik
+            ? renderHaftalikDetay(selectedMeal)
+            : renderAylikDetay(selectedMeal)}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderHaftalikDetay(meal) {
+    const ogunler = meal.ogunler || {};
+    return (
+      <>
+        {GUNLER.map((gun) => {
+          const gunData = ogunler[gun] || {};
+          return (
+            <View key={gun} style={styles.gunCard}>
+              <View style={styles.gunCardHeader}>
+                <Text style={styles.gunCardTitle}>{GUN_LABEL[gun] || gun}</Text>
+              </View>
+              {renderOgunRow('☀️', 'Kahvaltı', gunData.kahvalti)}
+              {renderOgunRow('🍽️', 'Öğle', gunData.ogle)}
+              {renderOgunRow('🍎', 'İkindi', gunData.ikindi)}
+            </View>
+          );
+        })}
+      </>
+    );
+  }
+
+  function renderAylikDetay(meal) {
+    const haftalar = meal.haftalar || {};
+    const haftaKeys = Object.keys(haftalar).sort();
+
+    if (haftaKeys.length === 0) {
+      return (
+        <View style={styles.emptyStateCard}>
+          <Text style={styles.emptyIcon}>📋</Text>
+          <Text style={styles.emptyTitle}>Hafta verisi bulunamadı.</Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        {haftaKeys.map((haftaKey) => {
+          const hafta = haftalar[haftaKey] || {};
+          const gunler = hafta.gunler || {};
+          return (
+            <View key={haftaKey} style={styles.haftaBlock}>
+              <Text style={styles.haftaBaslik}>{hafta.baslik || haftaKey}</Text>
+              {GUNLER.map((gun) => {
+                const gunData = gunler[gun];
+                if (!gunData) return null;
+                return (
+                  <View key={gun} style={styles.gunCard}>
+                    <View style={styles.gunCardHeader}>
+                      <Text style={styles.gunCardTitle}>{GUN_LABEL[gun] || gun}</Text>
+                    </View>
+                    {renderOgunRow('☀️', 'Kahvaltı', gunData.kahvalti)}
+                    {renderOgunRow('🍽️', 'Öğle', gunData.ogle)}
+                    {renderOgunRow('🍎', 'İkindi', gunData.ikindi)}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })}
+      </>
+    );
+  }
+
+  function renderOgunRow(icon, label, value) {
+    return (
+      <View style={styles.ogunRow}>
+        <Text style={styles.ogunIcon}>{icon}</Text>
+        <Text style={styles.ogunLabel}>{label}</Text>
+        <Text style={styles.ogunValue}>{value || '-'}</Text>
+      </View>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // PLACEHOLDER EKRANLAR (messages, gallery, documents)
+  // ════════════════════════════════════════════════════════════
 
   function renderPlaceholderScreen(screenKey) {
     const config = PLACEHOLDER_SCREENS[screenKey];
@@ -215,7 +470,6 @@ export default function ParentDashboardScreen() {
 
     return (
       <View style={styles.placeholderRoot}>
-        {/* Üst Bar */}
         <View style={styles.placeholderHeader}>
           <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
             <Text style={styles.backArrow}>‹</Text>
@@ -225,29 +479,24 @@ export default function ParentDashboardScreen() {
           <View style={styles.backButtonSpacer} />
         </View>
 
-        {/* İçerik */}
         <ScrollView
           style={styles.placeholderScroll}
           contentContainerStyle={styles.placeholderContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Ana Kart */}
           <View style={styles.placeholderCard}>
             <View style={[styles.placeholderIconWrapper, { backgroundColor: config.bgColor }]}>
               <Text style={styles.placeholderIcon}>{config.icon}</Text>
             </View>
             <Text style={styles.placeholderTitle}>{config.title}</Text>
             <Text style={styles.placeholderDesc}>{config.description}</Text>
-
             <View style={[styles.placeholderDivider, { backgroundColor: config.bgColor }]} />
-
             <View style={styles.comingSoonRow}>
               <View style={[styles.comingSoonDot, { backgroundColor: config.color }]} />
               <Text style={[styles.comingSoonText, { color: config.color }]}>Yakında aktif olacak</Text>
             </View>
           </View>
 
-          {/* Bilgi Kartı */}
           <View style={styles.placeholderInfoCard}>
             <Text style={styles.placeholderInfoIcon}>🔔</Text>
             <View style={{ flex: 1 }}>
@@ -258,7 +507,6 @@ export default function ParentDashboardScreen() {
             </View>
           </View>
 
-          {/* Geri Dön Butonu */}
           <TouchableOpacity style={styles.backHomeButton} onPress={goBack} activeOpacity={0.85}>
             <Text style={styles.backHomeButtonText}>← Ana Sayfaya Dön</Text>
           </TouchableOpacity>
@@ -267,18 +515,17 @@ export default function ParentDashboardScreen() {
     );
   }
 
-  // ─── ANA EKRANLAR ────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════
+  // ANA EKRANLAR
+  // ════════════════════════════════════════════════════════════
 
   function renderHome() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {renderTopHeader('Yumurcak', '🔔')}
-
         <Text style={styles.greeting}>Merhaba, {getParentName()} 👋</Text>
         <Text style={styles.greetingSub}>Bugünün özetini senin için hazırladık.</Text>
-
         {selectedChild ? renderChildHero() : renderEmptyChildCard()}
-
         <Text style={styles.sectionTitle}>Hızlı İşlemler</Text>
         <View style={styles.quickGrid}>
           {renderQuickAction('📋', 'Günlük Rapor', () => setActiveTab('reports'))}
@@ -296,9 +543,7 @@ export default function ParentDashboardScreen() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {renderTopHeader('Raporlar', '📅')}
-
         {!selectedChild ? renderEmptyChildCard() : null}
-
         {selectedChild && childReports.length === 0 ? (
           <View style={styles.emptyStateCard}>
             <Text style={styles.emptyIcon}>📝</Text>
@@ -306,7 +551,6 @@ export default function ParentDashboardScreen() {
             <Text style={styles.emptyDesc}>Öğretmen günlük rapor girdiğinde burada görünecek.</Text>
           </View>
         ) : null}
-
         {selectedChild && childReports.map((item, index) => renderReportCard(item, index))}
       </ScrollView>
     );
@@ -314,11 +558,9 @@ export default function ParentDashboardScreen() {
 
   function renderAnnouncements() {
     const visibleAnnouncements = announcements.slice(0, 10);
-
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {renderTopHeader('Duyurular', '⚙️')}
-
         {visibleAnnouncements.length === 0 ? (
           <>
             {renderAnnouncementCard({
@@ -345,7 +587,6 @@ export default function ParentDashboardScreen() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {renderTopHeader('Profil', '')}
-
         <View style={styles.profileHero}>
           <View style={styles.avatarLarge}>
             <Text style={styles.avatarText}>👧</Text>
@@ -355,21 +596,18 @@ export default function ParentDashboardScreen() {
             <Text style={styles.profileChildSub}>{selectedChild?.yas || selectedChild?.dogumTarihi || 'Kreş öğrencisi'}</Text>
           </View>
         </View>
-
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>Veli Bilgileri</Text>
           {renderInfoRow('👤', 'Veli Adı', getParentName())}
           {renderInfoRow('☎️', 'Telefon', kullanici?.telefon || '-')}
           {renderInfoRow('✉️', 'Kullanıcı Adı', kullanici?.kullaniciAdi || '-')}
         </View>
-
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>Kurum Bilgileri</Text>
           {renderInfoRow('🏫', 'Sınıf', selectedChild?.sinifAdi || selectedChild?.sinifId || '-')}
           {renderInfoRow('👩‍🏫', 'Öğretmen', selectedChild?.ogretmenAdi || '-')}
           {renderInfoRow('🆘', 'Acil Durum', selectedChild?.acilDurumKisi || '-')}
         </View>
-
         <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85}>
           <Text style={styles.primaryButtonText}>✏️ Bilgileri Güncelle</Text>
         </TouchableOpacity>
@@ -380,7 +618,9 @@ export default function ParentDashboardScreen() {
     );
   }
 
-  // ─── YARDIMCI RENDER FONKSİYONLARI ─────────────────────────
+  // ════════════════════════════════════════════════════════════
+  // YARDIMCI RENDER FONKSİYONLARI
+  // ════════════════════════════════════════════════════════════
 
   function renderTopHeader(title, rightIcon) {
     return (
@@ -405,7 +645,6 @@ export default function ParentDashboardScreen() {
           </View>
           <View style={styles.heartCircle}><Text style={styles.heartText}>♡</Text></View>
         </View>
-
         <View style={styles.summaryPanel}>
           {renderSummaryItem('😊', 'Ruh Hali', getMood(todayReport), THEME.orange)}
           {renderSummaryItem('🍴', 'Yemek', getMeal(todayReport), THEME.primary)}
@@ -469,14 +708,12 @@ export default function ParentDashboardScreen() {
             </View>
             {isToday ? <Text style={styles.todayBadge}>Bugün</Text> : null}
           </View>
-
           <View style={styles.reportSummaryRow}>
             {renderMiniMetric('😊', getMood(item))}
             {renderMiniMetric('🍴', getMeal(item))}
             {renderMiniMetric('🌙', getSleep(item))}
             {renderMiniMetric('✅', 'Geldi')}
           </View>
-
           <View style={styles.teacherNoteBox}>
             <Text style={styles.teacherAvatar}>👩‍🏫</Text>
             <View style={{ flex: 1 }}>
@@ -548,6 +785,9 @@ export default function ParentDashboardScreen() {
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// STYLES
+// ════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   appShell: { flex: 1, backgroundColor: THEME.bg },
@@ -576,26 +816,14 @@ const styles = StyleSheet.create({
   },
   heroTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   avatar: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.65)',
+    width: 76, height: 76, borderRadius: 38,
+    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+    marginRight: 14, borderWidth: 3, borderColor: 'rgba(255,255,255,0.65)',
   },
   avatarLarge: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.75)',
+    width: 74, height: 74, borderRadius: 37,
+    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+    marginRight: 14, borderWidth: 3, borderColor: 'rgba(255,255,255,0.75)',
   },
   avatarText: { fontSize: 36 },
   heroName: { color: '#FFFFFF', fontSize: 21, fontWeight: '900' },
@@ -612,31 +840,17 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, marginBottom: 12 },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   quickAction: {
-    width: '31.5%',
-    aspectRatio: 1,
-    backgroundColor: THEME.card,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: THEME.border,
+    width: '31.5%', aspectRatio: 1, backgroundColor: THEME.card, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2,
+    borderWidth: 1, borderColor: THEME.border,
   },
   quickIcon: { fontSize: 30, marginBottom: 10 },
   quickLabel: { fontSize: 12, fontWeight: '900', color: THEME.text, textAlign: 'center' },
 
   emptyStateCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    marginTop: 24,
-    borderWidth: 1,
-    borderColor: THEME.border,
+    backgroundColor: THEME.card, borderRadius: 24, padding: 24, alignItems: 'center',
+    marginTop: 24, borderWidth: 1, borderColor: THEME.border,
   },
   emptyIcon: { fontSize: 42, marginBottom: 10 },
   emptyTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, textAlign: 'center' },
@@ -649,16 +863,9 @@ const styles = StyleSheet.create({
   timelineDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: THEME.primary, marginTop: 20 },
   timelineLine: { flex: 1, width: 2, backgroundColor: '#DED2FF', marginTop: 4 },
   reportCard: {
-    flex: 1,
-    backgroundColor: THEME.card,
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    flex: 1, backgroundColor: THEME.card, borderRadius: 22, padding: 16,
+    borderWidth: 1, borderColor: THEME.border, shadowColor: '#000',
+    shadowOpacity: 0.05, shadowRadius: 12, elevation: 2,
   },
   reportHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
   reportDay: { fontSize: 16, fontWeight: '900', color: THEME.text },
@@ -674,16 +881,9 @@ const styles = StyleSheet.create({
   teacherNote: { fontSize: 12, color: THEME.text, marginTop: 3, lineHeight: 17 },
 
   announcementCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    backgroundColor: THEME.card, borderRadius: 22, padding: 18, marginBottom: 16,
+    borderWidth: 1, borderColor: THEME.border, shadowColor: '#000',
+    shadowOpacity: 0.05, shadowRadius: 12, elevation: 2,
   },
   announcementTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   announcementBadge: { backgroundColor: THEME.primary, color: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, fontSize: 11, fontWeight: '900', overflow: 'hidden' },
@@ -697,23 +897,12 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 30, color: THEME.muted },
 
   profileHero: {
-    backgroundColor: THEME.primary,
-    borderRadius: 24,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: THEME.primary, borderRadius: 24, padding: 18,
+    flexDirection: 'row', alignItems: 'center', marginBottom: 16,
   },
   profileChildName: { color: '#FFFFFF', fontSize: 21, fontWeight: '900' },
   profileChildSub: { color: 'rgba(255,255,255,0.86)', marginTop: 4, fontWeight: '700' },
-  infoCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
+  infoCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
   infoTitle: { fontSize: 16, color: THEME.text, fontWeight: '900', marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9 },
   infoIcon: { width: 28, fontSize: 16 },
@@ -725,22 +914,11 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: THEME.primary, fontSize: 15, fontWeight: '900' },
 
   tabBar: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 14,
-    height: 72,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 26,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: THEME.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 8,
+    position: 'absolute', left: 14, right: 14, bottom: 14, height: 72,
+    backgroundColor: '#FFFFFF', borderRadius: 26, flexDirection: 'row',
+    justifyContent: 'space-around', alignItems: 'center',
+    borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 16, elevation: 8,
   },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tabIcon: { fontSize: 22, color: THEME.muted, marginBottom: 4 },
@@ -748,49 +926,26 @@ const styles = StyleSheet.create({
   tabLabel: { fontSize: 10, color: THEME.muted, fontWeight: '800' },
   tabLabelActive: { color: THEME.primary, fontWeight: '900' },
 
-  // ─── PLACEHOLDER EKRAN STİLLERİ ──────────────────────────────
+  // ─── PLACEHOLDER STİLLERİ ─────────────────────────────────────
   placeholderRoot: { flex: 1, backgroundColor: THEME.bg },
   placeholderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 14,
-    backgroundColor: THEME.card,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14,
+    backgroundColor: THEME.card, borderBottomWidth: 1, borderBottomColor: THEME.border,
   },
   backButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingRight: 8 },
   backArrow: { fontSize: 28, color: THEME.primary, fontWeight: '700', lineHeight: 32, marginRight: 2 },
   backLabel: { fontSize: 15, color: THEME.primary, fontWeight: '800' },
   backButtonSpacer: { width: 60 },
-  placeholderHeaderTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, textAlign: 'center' },
-
+  placeholderHeaderTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, textAlign: 'center', flex: 1 },
   placeholderScroll: { flex: 1 },
-  placeholderContent: { paddingHorizontal: 18, paddingTop: 32, paddingBottom: 48 },
-
+  placeholderContent: { paddingHorizontal: 18, paddingTop: 24, paddingBottom: 48 },
   placeholderCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 28,
-    padding: 28,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: THEME.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-    marginBottom: 16,
+    backgroundColor: THEME.card, borderRadius: 28, padding: 28, alignItems: 'center',
+    borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 16, elevation: 3, marginBottom: 16,
   },
-  placeholderIconWrapper: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
+  placeholderIconWrapper: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   placeholderIcon: { fontSize: 46 },
   placeholderTitle: { fontSize: 22, fontWeight: '900', color: THEME.text, marginBottom: 10 },
   placeholderDesc: { fontSize: 15, color: THEME.muted, textAlign: 'center', lineHeight: 22 },
@@ -798,30 +953,60 @@ const styles = StyleSheet.create({
   comingSoonRow: { flexDirection: 'row', alignItems: 'center' },
   comingSoonDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
   comingSoonText: { fontSize: 13, fontWeight: '800' },
-
   placeholderInfoCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 20,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: THEME.border,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    backgroundColor: THEME.card, borderRadius: 20, padding: 18,
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: THEME.border, marginBottom: 24,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
   },
   placeholderInfoIcon: { fontSize: 28, marginRight: 14 },
   placeholderInfoTitle: { fontSize: 14, fontWeight: '900', color: THEME.text, marginBottom: 4 },
   placeholderInfoDesc: { fontSize: 13, color: THEME.muted, lineHeight: 19 },
-
-  backHomeButton: {
-    backgroundColor: THEME.primary,
-    borderRadius: 18,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
+  backHomeButton: { backgroundColor: THEME.primary, borderRadius: 18, paddingVertical: 15, alignItems: 'center' },
   backHomeButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+
+  // ─── YEMEK LİSTESİ STİLLERİ ──────────────────────────────────
+  mealCard: {
+    backgroundColor: THEME.card, borderRadius: 22, padding: 18, marginBottom: 16,
+    borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, elevation: 2,
+  },
+  mealCardTop: { marginBottom: 10 },
+  mealTipBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12 },
+  mealTipHaftalik: { backgroundColor: THEME.primarySoft },
+  mealTipAylik: { backgroundColor: '#E8F9EF' },
+  mealTipText: { fontSize: 12, fontWeight: '900' },
+  mealTipTextHaftalik: { color: THEME.primary },
+  mealTipTextAylik: { color: THEME.green },
+  mealCardTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, marginBottom: 6 },
+  mealCardDate: { fontSize: 13, color: THEME.muted, fontWeight: '700', marginBottom: 14 },
+  mealDetailButton: {
+    backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 11, alignItems: 'center',
+  },
+  mealDetailButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+
+  mealDetailInfoRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  mealDetailInfoText: { fontSize: 13, color: THEME.muted, fontWeight: '700', flex: 1, marginRight: 8 },
+
+  haftaBlock: { marginBottom: 8 },
+  haftaBaslik: {
+    fontSize: 16, fontWeight: '900', color: THEME.primary,
+    marginBottom: 10, marginTop: 6,
+  },
+  gunCard: {
+    backgroundColor: THEME.card, borderRadius: 18, padding: 14, marginBottom: 12,
+    borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
+  },
+  gunCardHeader: {
+    borderBottomWidth: 1, borderBottomColor: THEME.border, paddingBottom: 8, marginBottom: 10,
+  },
+  gunCardTitle: { fontSize: 15, fontWeight: '900', color: THEME.text },
+  ogunRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 5 },
+  ogunIcon: { fontSize: 16, width: 24 },
+  ogunLabel: { fontSize: 12, fontWeight: '800', color: THEME.muted, width: 60 },
+  ogunValue: { fontSize: 13, color: THEME.text, flex: 1, lineHeight: 18 },
 });
