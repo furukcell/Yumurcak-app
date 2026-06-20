@@ -18,6 +18,7 @@ const THEME = {
   blue: '#3A7BFF',
   red: '#FF4D6D',
   teal: '#00B4D8',
+  purple: '#8E44AD',
   text: '#191A23',
   muted: '#707386',
   bg: '#F8F6FF',
@@ -32,6 +33,7 @@ const MENU_ITEMS = [
   { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
   { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
+  { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Sınıf bazlı haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
 ];
 
 const OZET_ITEMS = [
