@@ -1,7 +1,6 @@
 // ============================================================
 // YUMURCAK — AdminStack.js
-// Yönetici navigasyon stack'i
-// FAZ 5: Abonelik / Ödeme ekranı eklendi
+// FAZ 7: Admin mesajlaşma route'ları eklendi
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -25,6 +24,8 @@ import EventListScreen from '../screens/admin/EventListScreen';
 import EventFormScreen from '../screens/admin/EventFormScreen';
 import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSettingsScreen';
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
+import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
+import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +41,8 @@ export default function AdminStack() {
       <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Yönetim Paneli' }} />
       <Stack.Screen name="InstitutionSettings" component={AdminInstitutionSettingsScreen} options={{ title: 'Kurum Bilgileri' }} />
       <Stack.Screen name="Subscription" component={AdminSubscriptionScreen} options={{ title: 'Abonelik / Ödeme' }} />
+      <Stack.Screen name="AdminMessages" component={AdminMessagesScreen} options={{ title: 'Mesajlar' }} />
+      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ClassList" component={ClassListScreen} options={{ title: 'Sınıflar' }} />
       <Stack.Screen name="ClassForm" component={ClassFormScreen} options={{ title: 'Sınıf Ekle/Düzenle' }} />
       <Stack.Screen name="ChildList" component={ChildListScreen} options={{ title: 'Çocuklar' }} />
