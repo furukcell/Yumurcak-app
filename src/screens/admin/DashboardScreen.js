@@ -34,6 +34,7 @@ const MENU_ITEMS = [
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
   { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
   { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Sınıf bazlı haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
+  { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', desc: 'Etkinlik takvimi', color: '#E67E22', bgColor: '#FCEEE0' },
 ];
 
 const OZET_ITEMS = [
