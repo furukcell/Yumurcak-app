@@ -1,13 +1,43 @@
 // ============================================================
 // YUMURCAK — DashboardScreen.js
-// Yönetici ana paneli
+// Yönetici ana paneli — modern tasarım
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+
+const THEME = {
+  primary: '#6C3DEB',
+  primaryDark: '#4B22B8',
+  primarySoft: '#EFE8FF',
+  green: '#20B45B',
+  orange: '#FF9F1C',
+  blue: '#3A7BFF',
+  red: '#FF4D6D',
+  text: '#191A23',
+  muted: '#707386',
+  bg: '#F8F6FF',
+  card: '#FFFFFF',
+  border: '#EEEAF8',
+};
+
+const MENU_ITEMS = [
+  { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf listesi ve yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
+  { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Kayıtlı çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
+  { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
+  { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
+  { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
+];
+
+const OZET_ITEMS = [
+  { key: 'sinifSayisi', label: 'Sınıf', icon: '🏫', color: THEME.blue },
+  { key: 'cocukSayisi', label: 'Çocuk', icon: '👶', color: THEME.orange },
+  { key: 'ogretmenSayisi', label: 'Öğretmen', icon: '👨‍🏫', color: THEME.primary },
+  { key: 'veliSayisi', label: 'Veli', icon: '👨‍👩‍👧', color: THEME.green },
+];
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -22,19 +52,16 @@ export default function DashboardScreen() {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   useEffect(() => {
-    // Sınıf sayısı
     const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
       const data = snap.val();
       setIstatistik(prev => ({ ...prev, sinifSayisi: data ? Object.keys(data).length : 0 }));
     });
 
-    // Çocuk sayısı
     const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
       const data = snap.val();
       setIstatistik(prev => ({ ...prev, cocukSayisi: data ? Object.keys(data).length : 0 }));
     });
 
-    // Kullanıcılar (öğretmen + veli)
     const kullaniciUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
       const data = snap.val();
       if (data) {
@@ -55,81 +82,151 @@ export default function DashboardScreen() {
     };
   }, []);
 
-  const menuItems = [
-    { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', color: '#0C447C' },
-    { title: 'Çocuklar', icon: '👶', screen: 'ChildList', color: '#712B13' },
-    { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', color: '#633806' },
-    { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', color: '#1a6b3c' },
-    { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', color: '#27500A' },
-  ];
+  const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
 
   return (
-    <ScrollView style={s.container}>
-      <View style={s.header}>
-        <Text style={s.hosgeldin}>Hoş Geldiniz 👋</Text>
-        <Text style={s.altyazi}>{kullanici?.ad || 'Yönetici'} — Yumurcak Kreş</Text>
-        <TouchableOpacity style={s.cikisBtn} onPress={cikisYap}>
-          <Text style={s.cikisBtnYazi}>Çıkış Yap</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-      <View style={s.menuGrid}>
-        {menuItems.map((item) => (
-          <TouchableOpacity
-            key={item.title}
-            style={[s.menuKart, { backgroundColor: item.color }]}
-            onPress={() => navigation.navigate(item.screen)}
-          >
-            <Text style={s.menuIkon}>{item.icon}</Text>
-            <Text style={s.menuYazi}>{item.title}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={s.istatistikKutu}>
-        <Text style={s.istatistikBaslik}>Hızlı İstatistikler</Text>
-        {yukleniyor ? (
-          <ActivityIndicator color="#3C3489" />
-        ) : (
-          <View style={s.istatistikSatir}>
-            <View style={s.istatistikKart}>
-              <Text style={s.sayi}>{istatistik.sinifSayisi}</Text>
-              <Text style={s.etiket}>Sınıf</Text>
+        {/* ── Üst Başlık ── */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarLeft}>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoEmoji}>🍼</Text>
             </View>
-            <View style={s.istatistikKart}>
-              <Text style={s.sayi}>{istatistik.cocukSayisi}</Text>
-              <Text style={s.etiket}>Çocuk</Text>
-            </View>
-            <View style={s.istatistikKart}>
-              <Text style={s.sayi}>{istatistik.ogretmenSayisi}</Text>
-              <Text style={s.etiket}>Öğretmen</Text>
-            </View>
-            <View style={s.istatistikKart}>
-              <Text style={s.sayi}>{istatistik.veliSayisi}</Text>
-              <Text style={s.etiket}>Veli</Text>
+            <View>
+              <Text style={styles.appName}>Yumurcak</Text>
+              <Text style={styles.panelLabel}>Yönetim Paneli</Text>
             </View>
           </View>
+          <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
+            <Text style={styles.cikisBtnText}>↩ Çıkış</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Hoş Geldin Kartı ── */}
+        <View style={styles.welcomeCard}>
+          <View style={styles.welcomeLeft}>
+            <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
+            <Text style={styles.welcomeName}>{adSoyad}</Text>
+            <Text style={styles.welcomeSub}>Yumurcak Kreş Yöneticisi</Text>
+          </View>
+          <View style={styles.welcomeIcon}>
+            <Text style={styles.welcomeIconText}>👑</Text>
+          </View>
+        </View>
+
+        {/* ── Bugünkü Özet ── */}
+        <Text style={styles.sectionTitle}>Bugünkü Özet</Text>
+        {yukleniyor ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={THEME.primary} />
+          </View>
+        ) : (
+          <View style={styles.ozetGrid}>
+            {OZET_ITEMS.map((item) => (
+              <View key={item.key} style={styles.ozetKart}>
+                <Text style={styles.ozetIcon}>{item.icon}</Text>
+                <Text style={[styles.ozetSayi, { color: item.color }]}>{istatistik[item.key]}</Text>
+                <Text style={styles.ozetLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
         )}
-      </View>
-    </ScrollView>
+
+        {/* ── Yönetim İşlemleri ── */}
+        <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
+        {MENU_ITEMS.map((item) => (
+          <TouchableOpacity
+            key={item.title}
+            style={styles.menuKart}
+            onPress={() => navigation.navigate(item.screen)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}>
+              <Text style={styles.menuIcon}>{item.icon}</Text>
+            </View>
+            <View style={styles.menuTextBlock}>
+              <Text style={styles.menuTitle}>{item.title}</Text>
+              <Text style={styles.menuDesc}>{item.desc}</Text>
+            </View>
+            <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
+          </TouchableOpacity>
+        ))}
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: { backgroundColor: '#3C3489', padding: 24, paddingTop: 40 },
-  hosgeldin: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 4 },
-  altyazi: { fontSize: 14, color: '#CECBF6', marginBottom: 16 },
-  cikisBtn: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
-  cikisBtnYazi: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 16, justifyContent: 'space-between' },
-  menuKart: { width: '47%', aspectRatio: 1, borderRadius: 16, padding: 20, marginBottom: 16, justifyContent: 'center', alignItems: 'center', elevation: 3 },
-  menuIkon: { fontSize: 44, marginBottom: 10 },
-  menuYazi: { fontSize: 16, fontWeight: '600', color: '#fff', textAlign: 'center' },
-  istatistikKutu: { backgroundColor: '#fff', margin: 16, padding: 20, borderRadius: 12, elevation: 2 },
-  istatistikBaslik: { fontSize: 17, fontWeight: '600', marginBottom: 16, color: '#333' },
-  istatistikSatir: { flexDirection: 'row', justifyContent: 'space-around' },
-  istatistikKart: { alignItems: 'center' },
-  sayi: { fontSize: 30, fontWeight: 'bold', color: '#3C3489' },
-  etiket: { fontSize: 13, color: '#666', marginTop: 4 },
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  screen: { flex: 1, backgroundColor: THEME.bg },
+  scrollContent: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 40 },
+
+  // ── Üst Bar ──
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20,
+  },
+  topBarLeft: { flexDirection: 'row', alignItems: 'center' },
+  logoCircle: {
+    width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft,
+    alignItems: 'center', justifyContent: 'center', marginRight: 10,
+  },
+  logoEmoji: { fontSize: 22 },
+  appName: { fontSize: 18, fontWeight: '900', color: THEME.primary },
+  panelLabel: { fontSize: 11, color: THEME.muted, fontWeight: '700' },
+  cikisBtn: {
+    backgroundColor: THEME.card, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: THEME.border,
+  },
+  cikisBtnText: { fontSize: 13, fontWeight: '800', color: THEME.primary },
+
+  // ── Hoş Geldin ──
+  welcomeCard: {
+    backgroundColor: THEME.primary, borderRadius: 24, padding: 20,
+    flexDirection: 'row', alignItems: 'center', marginBottom: 24,
+    shadowColor: THEME.primary, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6,
+  },
+  welcomeLeft: { flex: 1 },
+  welcomeGreeting: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700', marginBottom: 4 },
+  welcomeName: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginBottom: 3 },
+  welcomeSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600' },
+  welcomeIcon: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center',
+  },
+  welcomeIconText: { fontSize: 28 },
+
+  // ── Bölüm Başlığı ──
+  sectionTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, marginBottom: 12 },
+
+  // ── Özet Grid ──
+  loadingBox: { alignItems: 'center', paddingVertical: 20, marginBottom: 24 },
+  ozetGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
+  ozetKart: {
+    width: '23%', backgroundColor: THEME.card, borderRadius: 18, padding: 12,
+    alignItems: 'center', borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+  },
+  ozetIcon: { fontSize: 22, marginBottom: 6 },
+  ozetSayi: { fontSize: 24, fontWeight: '900', marginBottom: 3 },
+  ozetLabel: { fontSize: 10, color: THEME.muted, fontWeight: '800', textAlign: 'center' },
+
+  // ── Menü Kartları ──
+  menuKart: {
+    backgroundColor: THEME.card, borderRadius: 20, padding: 16,
+    flexDirection: 'row', alignItems: 'center', marginBottom: 12,
+    borderWidth: 1, borderColor: THEME.border,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
+  },
+  menuIconWrapper: {
+    width: 52, height: 52, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center', marginRight: 14,
+  },
+  menuIcon: { fontSize: 26 },
+  menuTextBlock: { flex: 1 },
+  menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, marginBottom: 3 },
+  menuDesc: { fontSize: 12, color: THEME.muted, fontWeight: '600' },
+  menuArrow: { fontSize: 28, fontWeight: '700', lineHeight: 32 },
 });
