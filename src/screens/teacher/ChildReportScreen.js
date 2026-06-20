@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — ChildReportScreen.js
-// Öğretmen günlük rapor girişi
+// FAZ 2: Öğün detayları eklendi
+// Kahvaltı / Öğle / Ara Öğün: yemedi, az_yedi, bitirdi
 // ============================================================
 import React, { useState } from 'react';
 import {
@@ -18,8 +19,20 @@ import { ref, push, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import { MOOD_LISTESI, OGUN_LISTESI } from '../../constants';
+import { MOOD_LISTESI } from '../../constants';
 import { THEME, ScreenHeader, getChildName, todayString } from './teacherShared';
+
+const MEAL_OPTIONS = [
+  { key: 'yemedi', label: 'Yemedi' },
+  { key: 'az_yedi', label: 'Az yedi' },
+  { key: 'bitirdi', label: 'Bitirdi' },
+];
+
+const MEALS = [
+  { key: 'kahvalti', label: 'Kahvaltı', emoji: '🥐' },
+  { key: 'ogle', label: 'Öğle Yemeği', emoji: '🍲' },
+  { key: 'araOgun', label: 'Ara Öğün', emoji: '🍎' },
+];
 
 export default function ChildReportScreen() {
   const route = useRoute();
@@ -29,7 +42,11 @@ export default function ChildReportScreen() {
   const teacherId = kullanici?.uid || kullanici?.id;
 
   const [mood, setMood] = useState('');
-  const [yemek, setYemek] = useState({ kahvalti: false, ogle: false, araOgun: false });
+  const [yemek, setYemek] = useState({
+    kahvalti: { durum: '', not: '' },
+    ogle: { durum: '', not: '' },
+    araOgun: { durum: '', not: '' },
+  });
   const [sleepDuration, setSleepDuration] = useState('');
   const [toiletCount, setToiletCount] = useState('');
   const [note, setNote] = useState('');
@@ -39,6 +56,11 @@ export default function ChildReportScreen() {
     if (!child?.id) return Alert.alert('Hata', 'Çocuk bilgisi bulunamadı.');
     if (!sleepDuration || !toiletCount) {
       return Alert.alert('Eksik Bilgi', 'Uyku süresi ve tuvalet sayısı zorunludur.');
+    }
+
+    const anyMealSelected = MEALS.some((meal) => yemek[meal.key]?.durum);
+    if (!anyMealSelected) {
+      return Alert.alert('Eksik Bilgi', 'En az bir öğün için yemek durumu seçmelisin.');
     }
 
     setSaving(true);
@@ -74,8 +96,14 @@ export default function ChildReportScreen() {
     }
   };
 
-  const toggleYemek = (key) => {
-    setYemek((prev) => ({ ...prev, [key]: !prev[key] }));
+  const setMealStatus = (mealKey, status) => {
+    setYemek((prev) => ({
+      ...prev,
+      [mealKey]: {
+        ...(prev[mealKey] || {}),
+        durum: status,
+      },
+    }));
   };
 
   return (
@@ -96,19 +124,27 @@ export default function ChildReportScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Yemek</Text>
-        <View style={styles.row}>
-          {OGUN_LISTESI.map((ogun) => (
-            <TouchableOpacity
-              key={ogun.key}
-              style={[styles.choiceButton, yemek[ogun.key] && styles.choiceActive]}
-              onPress={() => toggleYemek(ogun.key)}
-            >
-              <Text style={styles.choiceEmoji}>{ogun.emoji}</Text>
-              <Text style={styles.choiceText}>{ogun.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={styles.sectionTitle}>Yemek Detayları</Text>
+        {MEALS.map((meal) => (
+          <View key={meal.key} style={styles.mealCard}>
+            <Text style={styles.mealTitle}>{meal.emoji} {meal.label}</Text>
+            <View style={styles.mealOptions}>
+              {MEAL_OPTIONS.map((option) => {
+                const active = yemek[meal.key]?.durum === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.mealOptionButton, active && styles.mealOptionActive]}
+                    onPress={() => setMealStatus(meal.key, option.key)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>{option.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ))}
 
         <Text style={styles.sectionTitle}>Uyku Süresi (saat)</Text>
         <TextInput
@@ -167,19 +203,13 @@ const styles = StyleSheet.create({
   moodButtonActive: { borderColor: THEME.primary, backgroundColor: THEME.primarySoft },
   moodEmoji: { fontSize: 24, marginBottom: 4 },
   moodLabel: { fontSize: 12, color: THEME.text, fontWeight: '800' },
-  row: { flexDirection: 'row', gap: 10 },
-  choiceButton: {
-    flex: 1,
-    backgroundColor: THEME.card,
-    padding: 12,
-    borderRadius: 14,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: THEME.border,
-  },
-  choiceActive: { borderColor: THEME.green, backgroundColor: '#EAF8EF' },
-  choiceEmoji: { fontSize: 24, marginBottom: 4 },
-  choiceText: { fontSize: 12, fontWeight: '800', color: THEME.text, textAlign: 'center' },
+  mealCard: { backgroundColor: THEME.card, borderRadius: 16, padding: 13, marginBottom: 10, borderWidth: 1, borderColor: THEME.border },
+  mealTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, marginBottom: 10 },
+  mealOptions: { flexDirection: 'row', gap: 8 },
+  mealOptionButton: { flex: 1, backgroundColor: THEME.bg, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  mealOptionActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  mealOptionText: { color: THEME.text, fontWeight: '900', fontSize: 12 },
+  mealOptionTextActive: { color: '#FFF' },
   input: {
     backgroundColor: THEME.card,
     padding: 13,

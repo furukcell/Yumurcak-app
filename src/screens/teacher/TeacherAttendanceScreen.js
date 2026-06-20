@@ -1,10 +1,11 @@
 // ============================================================
 // YUMURCAK — TeacherAttendanceScreen.js
-// Öğretmen günlük yoklama girişi
+// FAZ 2: Seç / Kaydet sistemi + aynı çocuk aynı gün tek kayıt
+// Firebase path: yoklamalar/{tarih}_{cocukId}
 // ============================================================
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { ref, push } from 'firebase/database';
+import { ref, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName, todayString } from './teacherShared';
@@ -14,6 +15,7 @@ export default function TeacherAttendanceScreen() {
   const { loading, teacherId, kresId, currentClass, classChildren, attendance } = useTeacherData();
   const [saving, setSaving] = useState(false);
   const [localStatus, setLocalStatus] = useState({});
+  const [initialStatus, setInitialStatus] = useState({});
 
   const today = todayString();
 
@@ -27,21 +29,54 @@ export default function TeacherAttendanceScreen() {
     return map;
   }, [attendance, currentClass?.id, today]);
 
+  useEffect(() => {
+    setLocalStatus(todayMap);
+    setInitialStatus(todayMap);
+  }, [todayMap]);
+
+  const hasChanges = useMemo(() => {
+    const childIds = classChildren.map((child) => child.id);
+    return childIds.some((id) => (localStatus[id] || '') !== (initialStatus[id] || ''));
+  }, [classChildren, localStatus, initialStatus]);
+
   if (loading) return <LoadingState text="Yoklama hazırlanıyor..." />;
 
-  const saveOne = async (child, status) => {
+  const selectStatus = (child, status) => {
     setLocalStatus((prev) => ({ ...prev, [child.id]: status }));
+  };
+
+  const saveAll = async () => {
+    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
+
+    const selectedChildren = classChildren.filter((child) => localStatus[child.id]);
+    if (selectedChildren.length === 0) {
+      Alert.alert('Eksik Bilgi', 'En az bir çocuk için yoklama seçmelisin.');
+      return;
+    }
+
     setSaving(true);
     try {
-      await push(ref(database, 'yoklamalar'), {
-        kresId: child.kresId || kresId || '',
-        sinifId: child.sinifId || currentClass?.id || '',
-        cocukId: child.id,
-        ogretmenId: teacherId || '',
-        tarih: today,
-        durum: status,
-        createdAt: Date.now(),
-      });
+      const now = Date.now();
+
+      await Promise.all(
+        selectedChildren.map((child) => {
+          const recordId = `${today}_${child.id}`;
+          return set(ref(database, `yoklamalar/${recordId}`), {
+            id: recordId,
+            kresId: child.kresId || kresId || '',
+            sinifId: child.sinifId || currentClass.id || '',
+            cocukId: child.id,
+            ogretmenId: teacherId || '',
+            tarih: today,
+            durum: localStatus[child.id],
+            updatedAt: now,
+            createdAt: now,
+          });
+        })
+      );
+
+      setInitialStatus(localStatus);
+      Alert.alert('Başarılı', 'Yoklama kaydedildi.');
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Yoklama kaydedilemedi.');
@@ -49,8 +84,6 @@ export default function TeacherAttendanceScreen() {
       setSaving(false);
     }
   };
-
-  const getStatus = (childId) => localStatus[childId] || todayMap[childId] || '';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -62,11 +95,11 @@ export default function TeacherAttendanceScreen() {
           <>
             <View style={styles.infoCard}>
               <Text style={styles.infoTitle}>Bugünkü Yoklama</Text>
-              <Text style={styles.infoDesc}>Her çocuk için geldi, gelmedi veya geç seçimi yap.</Text>
+              <Text style={styles.infoDesc}>Seçimleri yap, sonra alttaki Kaydet butonuna bas.</Text>
             </View>
 
             {classChildren.map((child) => {
-              const status = getStatus(child.id);
+              const status = localStatus[child.id] || '';
               return (
                 <View key={child.id} style={styles.card}>
                   <Text style={styles.childName}>{getChildName(child)}</Text>
@@ -78,7 +111,14 @@ export default function TeacherAttendanceScreen() {
                 </View>
               );
             })}
-            {saving ? <ActivityIndicator color={THEME.primary} style={{ marginTop: 12 }} /> : null}
+
+            {hasChanges ? (
+              <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveAll} disabled={saving} activeOpacity={0.85}>
+                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Yoklamayı Kaydet</Text>}
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.savedInfo}>Bugünkü seçimlerde kaydedilmemiş değişiklik yok.</Text>
+            )}
           </>
         )}
       </ScrollView>
@@ -90,7 +130,7 @@ export default function TeacherAttendanceScreen() {
     return (
       <TouchableOpacity
         style={[styles.statusButton, active && styles.statusButtonActive]}
-        onPress={() => saveOne(child, value)}
+        onPress={() => selectStatus(child, value)}
         activeOpacity={0.85}
       >
         <Text style={[styles.statusText, active && styles.statusTextActive]}>{label}</Text>
@@ -112,4 +152,7 @@ const styles = StyleSheet.create({
   statusButtonActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
   statusText: { color: THEME.text, fontWeight: '900' },
   statusTextActive: { color: '#FFF' },
+  saveButton: { marginTop: 10, backgroundColor: THEME.primary, borderRadius: 16, padding: 16, alignItems: 'center' },
+  saveText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
+  savedInfo: { marginTop: 8, textAlign: 'center', color: THEME.muted, fontWeight: '700' },
 });
