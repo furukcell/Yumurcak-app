@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — constants.js
 // Renkler, Firebase URL ve uygulama sabitleri
+// FAZ 13: SUPERADMIN rolü eklendi
 // ============================================================
 
 export const DB_URL = 'https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app';
@@ -28,9 +29,10 @@ export const RENKLER = {
 // ROL SABİTLERİ
 // ============================================================
 export const ROLLER = {
+  SUPERADMIN: 'superadmin',
   YONETICI:   'yonetici',
   OGRETMEN:   'ogretmen',
-  VELI:       'veli',     
+  VELI:       'veli',
 };
 
 // ============================================================
