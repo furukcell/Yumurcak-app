@@ -1,49 +1,51 @@
 # Yumurcak Kreş
 
-**Yumurcak Kreş**, kreş yönetimi, öğretmen ve veli arasındaki günlük iletişimi dijitalleştirmek için geliştirilen React Native / Expo tabanlı mobil takip uygulamasıdır.
+**Yumurcak Kreş**, kreş yönetimi, öğretmen, veli ve kurum sahibi arasındaki günlük iletişimi dijitalleştirmek için geliştirilen React Native / Expo tabanlı mobil kreş takip uygulamasıdır.
 
 Uygulama ile:
 
-* Yönetici; sınıf, çocuk, öğretmen, veli, duyuru, ödeme, ders programı, etkinlik, kurum bilgileri, abonelik ve mesajlaşma süreçlerini yönetebilir.
-* Öğretmen; kendi sınıfındaki çocuklar için günlük rapor girebilir, yoklama alabilir, velilerle ve kurum yönetimiyle mesajlaşabilir.
-* Veli; sadece kendisine bağlı çocuğun bilgilerini, günlük raporlarını, yoklama durumunu, duyuruları, yemek listesini, etkinlikleri ve kurum iletişim bilgilerini görebilir.
+- **Süper Admin** platformdaki kreşleri, abonelikleri, demo süreçlerini ve Firebase veri düzenini takip eder.
+- **Kurum yöneticisi** sınıf, çocuk, öğretmen, veli, duyuru, ödeme, ders programı, etkinlik, kurum bilgileri, abonelik ve mesajlaşma süreçlerini yönetir.
+- **Öğretmen** kendi sınıfındaki çocuklar için günlük rapor girer, yoklama alır, velilerle ve kurum yönetimiyle mesajlaşır.
+- **Veli** sadece kendisine bağlı çocuğun bilgilerini, günlük raporlarını, yoklama durumunu, duyuruları, yemek listesini, etkinlikleri ve kurum iletişim bilgilerini görür.
 
-Proje şu anda **Android APK / MVP geliştirme, Firebase Auth geçişi ve gerçek cihaz test aşamasındadır**.
+Proje artık fikir aşamasını geçmiş, çalışan **MVP / SaaS altyapısı** seviyesine gelmiştir. Güncel odak: gerçek cihaz testleri, pilot kreş demosu, Firebase Auth geçişinin tamamlanması ve production güvenlik kurallarına geçiştir.
 
 ---
 
 ## Güncel Durum
 
-* Android APK açılıyor.
-* Firebase Realtime Database bağlantısı çalışıyor.
-* Firebase Storage bağlantısı eklendi.
-* Firebase Auth altyapısı kuruldu.
-* Kullanıcı adı / şifre ile eski giriş sistemi çalışıyor.
-* Firebase Auth’a hibrit geçiş sistemi eklendi.
-* Rol bazlı yönlendirme çalışıyor.
-* Yönetici, öğretmen ve veli panelleri ayrılmış durumda.
-* Yönetici dashboard modern mor/beyaz tasarıma geçirildi.
-* Veli paneli modern mobil arayüze geçirildi.
-* Öğretmen paneli modern mobil arayüze geçirildi.
-* Kreş adı yönetici, öğretmen ve veli panellerinde görünür hale getirildi.
-* Safe area / Android üst bar düzenlemeleri yapıldı.
-* Yönetici panelinde sınıf, çocuk, öğretmen, veli, duyuru, ödeme, ders programı ve etkinlik yönetimi çalışıyor.
-* Öğretmen günlük rapor girebiliyor.
-* Öğretmen yoklama alabiliyor.
-* Veli günlük raporları görebiliyor.
-* Veli yoklama geçmişini görebiliyor.
-* Öğretmen ve yönetici yemek listesi / duyuru / etkinlik akışları kullanılabilir hale getirildi.
-* Veli tarafında yemek listesi, duyuru ve etkinlik görüntüleme eklendi.
-* Yönetici, öğretmen ve veli mesajlaşma sistemi eklendi.
-* Yönetici velilerle ve öğretmenlerle mesajlaşabiliyor.
-* Veli öğretmenle ve kurum yönetimiyle mesajlaşabiliyor.
-* Öğretmen velilerle ve kurum yönetimiyle mesajlaşabiliyor.
-* Kurum bilgileri ekranı eklendi.
-* Veli tarafında kurum iletişim ekranı eklendi.
-* Profil fotoğrafı galeri seçimi ve Firebase Storage yükleme eklendi.
-* Abonelik / demo / promosyon altyapısı eklendi.
-* Firebase Rules için pilot ve production taslakları hazırlandı.
-* Codemagic üzerinden release APK alınabiliyor.
+- Android APK açılıyor.
+- Expo SDK 54 / React Native altyapısı çalışıyor.
+- Firebase Realtime Database bağlantısı çalışıyor.
+- Firebase Storage bağlantısı eklendi.
+- Firebase Auth hibrit geçiş sistemi kuruldu.
+- Eski kullanıcı adı / şifre fallback sistemi hâlâ korunuyor.
+- Auth migration ekranı ile kullanıcılar Firebase Auth sistemine taşınabiliyor.
+- `authUid` ve `authKullaniciIndex` eşleme sistemi çalışıyor.
+- Rol bazlı yönlendirme çalışıyor.
+- `superadmin`, `yonetici`, `ogretmen`, `veli` rolleri ayrılmış durumda.
+- Süper Admin paneli eklendi.
+- Süper Admin yeni kreş onboarding akışı eklendi.
+- Kurum yöneticisi, öğretmen ve veli panelleri ayrılmış durumda.
+- Abonelik guard sistemi eklendi.
+- Abonelik yok/bitti/pasif ise öğretmen ve veli kilit ekranı görür.
+- Abonelik yok/bitti/pasif ise yönetici abonelik/ödeme ekranına yönlenir.
+- Süper Admin abonelik kilidinden etkilenmez.
+- Mesajlaşma input sorunu düzeltildi.
+- Mesajlaşma son 20 mesaj + daha fazla yükle + okundu bildirimi desteği eklendi.
+- Konuşma listelerinde okunmamış mesaj badge sistemi eklendi.
+- Firebase kreş bazlı index yapısı eklendi.
+- Firebase index migration ekranı eklendi.
+- Yönetici, öğretmen ve veli mesajlaşma sistemi çalışır durumda.
+- Öğretmen günlük rapor girebiliyor.
+- Öğretmen yoklama alabiliyor.
+- Veli günlük raporları ve yoklama geçmişini görebiliyor.
+- Duyuru, yemek listesi ve etkinlik akışları kullanılabilir durumda.
+- Profil fotoğrafı galeri seçimi ve Firebase Storage yükleme eklendi.
+- Abonelik / demo / promosyon altyapısı eklendi.
+- Codemagic üzerinden release APK alınabiliyor.
+- Production Firebase rules dosyaları taslak/hazır durumdadır; doğrudan uygulanmadan önce Auth geçişi tamamlanmalıdır.
 
 ---
 
@@ -51,13 +53,13 @@ Proje şu anda **Android APK / MVP geliştirme, Firebase Auth geçişi ve gerçe
 
 Kreşlerde velilerin en çok merak ettiği konular:
 
-* Çocuğum bugün nasıldı?
-* Yemek yedi mi?
-* Uyudu mu?
-* Yoklaması nasıl?
-* Öğretmen notu var mı?
-* Kreşten duyuru veya etkinlik bilgisi var mı?
-* Kurumla veya öğretmenle hızlıca iletişime geçebilir miyim?
+- Çocuğum bugün nasıldı?
+- Yemek yedi mi?
+- Uyudu mu?
+- Yoklaması nasıl?
+- Öğretmen notu var mı?
+- Kreşten duyuru veya etkinlik bilgisi var mı?
+- Kurumla veya öğretmenle hızlıca iletişime geçebilir miyim?
 
 Yumurcak Kreş, bu bilgileri WhatsApp grupları yerine daha düzenli, güvenli, takip edilebilir ve profesyonel bir sisteme taşımayı hedefler.
 
@@ -65,52 +67,58 @@ Yumurcak Kreş, bu bilgileri WhatsApp grupları yerine daha düzenli, güvenli, 
 
 ## Kullanıcı Rolleri
 
-| Rol        | Açıklama                                                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Rol | Açıklama |
+| --- | --- |
+| `superadmin` | Platform sahibi. Tüm kreşleri, abonelikleri, demo süreçlerini ve Firebase index bakımını yönetir. |
 | `yonetici` | Kreş yönetimi. Sınıf, çocuk, öğretmen, veli, duyuru, ödeme, abonelik, kurum bilgileri ve diğer yönetim işlemlerini yapar. |
-| `ogretmen` | Kendi sınıfındaki çocuklar için günlük rapor girer, yoklama alır, velilerle ve yönetimle mesajlaşır.                      |
-| `veli`     | Sadece kendisine bağlı çocuğun bilgilerini, raporlarını ve ilgili içerikleri görüntüler.                                  |
+| `ogretmen` | Kendi sınıfındaki çocuklar için günlük rapor girer, yoklama alır, velilerle ve yönetimle mesajlaşır. |
+| `veli` | Sadece kendisine bağlı çocuğun bilgilerini, raporlarını ve ilgili içerikleri görüntüler. |
 
 ---
 
 ## MVP Akışı
 
-1. Yönetici giriş yapar.
-2. Sınıf oluşturur.
-3. Öğretmen ekler ve sınıfa bağlar.
-4. Veli ekler.
-5. Çocuk ekler.
-6. Çocuğu sınıfa ve veliye bağlar.
-7. Öğretmen giriş yapar.
-8. Kendi sınıfındaki çocukları görür.
-9. Günlük rapor girer.
-10. Yoklama alır.
-11. Veli giriş yapar.
-12. Kendisine bağlı çocuğun raporunu ve yoklama durumunu görüntüler.
-13. Veli öğretmenle veya kurum yönetimiyle mesajlaşır.
-14. Yönetici abonelik / demo / promo sürecini yönetir.
-15. Yönetici Firebase Auth geçiş ekranından kullanıcıları Auth sistemine taşır.
+1. Süper Admin giriş yapar.
+2. Yeni kreş oluşturur.
+3. Kreş için kurum yöneticisi kullanıcı adı/şifresi oluşturur.
+4. Kreş için demo abonelik başlatılır.
+5. Kurum yöneticisi giriş yapar.
+6. Sınıf oluşturur.
+7. Öğretmen ekler ve sınıfa bağlar.
+8. Veli ekler.
+9. Çocuk ekler.
+10. Çocuğu sınıfa ve veliye bağlar.
+11. Öğretmen giriş yapar.
+12. Kendi sınıfındaki çocukları görür.
+13. Günlük rapor girer.
+14. Yoklama alır.
+15. Veli giriş yapar.
+16. Kendisine bağlı çocuğun raporunu ve yoklama durumunu görüntüler.
+17. Veli öğretmenle veya kurum yönetimiyle mesajlaşır.
+18. Yönetici abonelik / demo / promo sürecini yönetir.
+19. Firebase Auth geçiş ekranından kullanıcılar Auth sistemine taşınır.
+20. Production rules uygulanmadan önce tüm roller gerçek cihazda test edilir.
 
 ---
 
 ## Teknolojiler
 
-* Expo SDK 54
-* React Native
-* JavaScript
-* Firebase Realtime Database
-* Firebase Auth
-* Firebase Storage
-* AsyncStorage
-* React Navigation
-* Expo Image Picker
-* Codemagic Android APK build
+- Expo SDK 54
+- React Native
+- JavaScript
+- Firebase Realtime Database
+- Firebase Auth
+- Firebase Storage
+- AsyncStorage
+- React Navigation
+- Expo Image Picker
+- Codemagic Android APK build
 
 ---
 
 ## Firebase Veri Modeli
 
-Temel node yapısı:
+Temel ana node yapısı:
 
 ```txt
 kullanicilar/
@@ -133,6 +141,24 @@ authKullaniciIndex/
 medikalBilgiler/
 ```
 
+FAZ 17 sonrası ek index node yapısı:
+
+```txt
+kresKullanicilari/
+kullaniciKresleri/
+kresCocuklari/
+sinifCocuklari/
+veliCocuklari/
+kresSiniflari/
+ogretmenSiniflari/
+kullaniciKonusmalari/
+kresKonusmalari/
+cocukKonusmalari/
+sinifKonusmalari/
+```
+
+Ana veri hâlâ kendi ana node’larında tutulur. Index node’ları sadece hızlı erişim, console düzeni ve production rules için yardımcı işaretçi olarak kullanılır.
+
 ---
 
 ## Kullanıcılar
@@ -143,7 +169,7 @@ kullanicilar/{uid}
   sifre
   ad
   soyad
-  rol: yonetici / ogretmen / veli
+  rol: superadmin / yonetici / ogretmen / veli
   aktif
   kresId
   sinifId
@@ -174,6 +200,85 @@ authKullaniciIndex/{firebaseAuthUid} = eskiKullaniciId
 
 ---
 
+## Süper Admin
+
+Süper Admin paneli platform sahibi için ayrılmıştır.
+
+Süper Admin rolü:
+
+```txt
+rol: superadmin
+```
+
+Süper Admin panelinde:
+
+- Toplam kreş sayısı
+- Toplam öğrenci sayısı
+- Toplam öğretmen sayısı
+- Toplam veli sayısı
+- Aktif/demo abonelik sayısı
+- Biten abonelik sayısı
+- Yaklaşan abonelik sayısı
+- İl/ilçe dağılımı
+- Kreş listesi
+- Kreş detay ekranı
+- Yeni kreş ekleme
+- Kurum yöneticisi oluşturma
+- Demo abonelik başlatma
+- Firebase index migration ekranı
+
+bulunur.
+
+Örnek süper admin kaydı:
+
+```txt
+kullanicilar/superadmin001
+  ad: Faruk
+  soyad: Kurtuluş
+  kullaniciAdi: faruk
+  sifre: faruk123
+  rol: superadmin
+  aktif: true
+```
+
+Production rules sonrası süper adminin de Firebase Auth’a taşınmış olması gerekir.
+
+---
+
+## Kreşler
+
+```txt
+kresler/{kresId}
+  id
+  ad
+  kresAdi
+  il
+  ilce
+  adres
+  telefon
+  email
+  yoneticiId
+  yoneticiAd
+  yoneticiTelefon
+  aktif
+  createdAt
+  updatedAt
+```
+
+Süper Admin yeni kreş oluşturduğunda:
+
+```txt
+kresler/{kresId}
+kullanicilar/{yoneticiId}
+abonelikler/{kresId}
+kresKullanicilari/{kresId}/yoneticiler/{yoneticiId}: true
+kullaniciKresleri/{yoneticiId}/{kresId}: true
+```
+
+kayıtları oluşur.
+
+---
+
 ## Çocuklar
 
 ```txt
@@ -193,6 +298,14 @@ Veli çocuğu görebilsin diye çocuk kaydında şu bağlantı olmalıdır:
 
 ```txt
 veliIds: ["veli001"]
+```
+
+Index yapısı:
+
+```txt
+kresCocuklari/{kresId}/{cocukId}: true
+sinifCocuklari/{sinifId}/{cocukId}: true
+veliCocuklari/{veliId}/{cocukId}: true
 ```
 
 ---
@@ -373,6 +486,9 @@ mesajKonusmalari/{conversationId}
   baslik
   sonMesaj
   sonMesajAt
+  sonGonderenId
+  okunmamisSayac
+  sonOkuma
   aktif
   updatedAt
 ```
@@ -385,6 +501,25 @@ mesajlar/{conversationId}/{messageId}
   gonderenId
   gonderenRol
   createdAt
+  okunduBy
+```
+
+Mesajlaşma performans mantığı:
+
+- Sohbet detayı ilk açılışta son 20 mesajı çeker.
+- 20’den fazla mesaj varsa “Daha fazla mesaj yükle” butonu görünür.
+- Açık sohbet ekranında yeni mesajlar listener ile canlı düşer.
+- Sohbete giren kullanıcı için `okunmamisSayac/{userId}` sıfırlanır.
+- Mesaj gönderilince diğer katılımcıların okunmamış sayacı artırılır.
+- Konuşma listelerinde okunmamış mesaj badge’i gösterilir.
+
+Mesaj index yapısı:
+
+```txt
+kullaniciKonusmalari/{userId}/{conversationId}: true
+kresKonusmalari/{kresId}/{conversationId}: true
+cocukKonusmalari/{cocukId}/{conversationId}: true
+sinifKonusmalari/{sinifId}/{conversationId}: true
 ```
 
 ---
@@ -418,6 +553,14 @@ abonelikler/{kresId}
   createdAt
   updatedAt
 ```
+
+Abonelik guard mantığı:
+
+- `superadmin` abonelikten etkilenmez.
+- `yonetici` abonelik yok/bitti/pasif ise abonelik/ödeme ekranına yönlenir.
+- `ogretmen` abonelik yok/bitti/pasif ise kilit ekranı görür.
+- `veli` abonelik yok/bitti/pasif ise kilit ekranı görür.
+- `demo` veya `aktif` abonelikte paneller normal açılır.
 
 Promo yapısı:
 
@@ -486,10 +629,10 @@ kullanicilar/{parentId}/profilFotoUrl
 
 Veli profil ekranında:
 
-* Galeriden fotoğraf seçme
-* Firebase Storage’a yükleme
-* URL ile fotoğraf ekleme
-* Fotoğraf kaldırma
+- Galeriden fotoğraf seçme
+- Firebase Storage’a yükleme
+- URL ile fotoğraf ekleme
+- Fotoğraf kaldırma
 
 özellikleri bulunur.
 
@@ -519,64 +662,62 @@ Yönetici Paneli > Firebase Auth Geçişi
 
 Auth geçiş ekranı şunları yapar:
 
-* `authUid` olmayan kullanıcıları listeler
-* Firebase Auth hesabı oluşturur
-* Kullanıcıya `authUid` yazar
-* `authKullaniciIndex/{authUid}` kaydı oluşturur
-* Log gösterir
+- `authUid` olmayan kullanıcıları listeler
+- Firebase Auth hesabı oluşturur
+- Kullanıcıya `authUid` yazar
+- `authKullaniciIndex/{authUid}` kaydı oluşturur
+- Log gösterir
 
 Önemli:
 
-Firebase Auth en az 6 karakter şifre ister.
-Şifresi 6 karakterden kısa olan kullanıcılar Auth geçişinde atlanır.
+Firebase Auth en az 6 karakter şifre ister. Şifresi 6 karakterden kısa olan kullanıcılar Auth geçişinde atlanır.
+
+Production rules uygulanmadan önce tüm aktif kullanıcıların Firebase Auth’a geçmiş olması gerekir.
 
 ---
 
 ## Firebase Rules
 
-FAZ 9 ile Firebase Rules dosyaları hazırlandı.
-
-Dosyalar:
+Rules dosyaları:
 
 ```txt
 firebase/database.rules.pilot.json
-firebase/database.rules.production-auth.json
+firebase/database.rules.transition-auth-test.json
+firebase/database.rules.production-auth-v2-fixed.json
 firebase/storage.rules.pilot
-firebase/storage.rules.production-auth
+firebase/storage.rules.production-auth-v2.rules
 ```
 
-Şu an önerilen kullanım:
+Güvenli uygulama sırası:
 
 ```txt
-Realtime Database:
-firebase/database.rules.pilot.json
-
-Firebase Storage:
-firebase/storage.rules.pilot
+1. Pilot testlerde database.rules.pilot.json kullanılabilir.
+2. Auth geçişi sonrası database.rules.transition-auth-test.json ile auth zorunlu test edilir.
+3. Tüm roller Firebase Auth ile çalışıyorsa database.rules.production-auth-v2-fixed.json denenir.
+4. Storage için storage.rules.production-auth-v2.rules uygulanır.
 ```
 
-Production Auth rules hemen uygulanmamalıdır.
-
-Önce:
+Production Auth rules için şartlar:
 
 ```txt
-1. Firebase Auth Geçişi ekranı çalıştırılmalı
-2. Tüm kullanıcıların authUid aldığı doğrulanmalı
-3. Admin / öğretmen / veli girişleri test edilmeli
-4. Mesaj, rapor, yoklama, profil fotoğrafı test edilmeli
-5. Sonra production-auth rules denenmeli
-```
-
-Production rules:
-
-```txt
-firebase/database.rules.production-auth.json
-firebase/storage.rules.production-auth
+kullanicilar/{userId}/authUid mevcut olmalı
+authKullaniciIndex/{authUid} doğru userId göstermeli
+kullanicilar/{userId}/rol doğru olmalı
+kullanicilar/{userId}/kresId doğru olmalı
+FAZ 17 index migration çalışmış olmalı
 ```
 
 ---
 
 ## Test Kullanıcıları
+
+### Süper Admin
+
+```txt
+kullaniciAdi: faruk
+sifre: faruk123
+rol: superadmin
+```
 
 ### Yönetici
 
@@ -604,29 +745,6 @@ kullaniciAdi: veli
 sifre: abc123
 rol: veli
 kresId: kres001
-```
-
----
-
-## Örnek Firebase Test Verisi
-
-```txt
-kullanicilar/testuid001:
-  ad: Test
-  soyad: Yonetici
-  aktif: true
-  kresId: kres001
-  kullaniciAdi: admin
-  rol: yonetici
-  sifre: abc123
-```
-
-```txt
-kresler/kres001:
-  ad: Yumurcak Kreş
-  adres: Test Mahallesi
-  telefon: 5001234567
-  yoneticiId: testuid001
 ```
 
 ---
@@ -662,9 +780,9 @@ android/app/build/outputs/apk/release/*.apk
 
 Notlar:
 
-* Codemagic’te **Build branch: main** seçilmelidir.
-* Eski commit seçilirse eski hatalar tekrar görülebilir.
-* Build almadan önce son commit’in GitHub’a gittiği kontrol edilmelidir.
+- Codemagic’te **Build branch: main** seçilmelidir.
+- Eski commit seçilirse eski hatalar tekrar görülebilir.
+- Build almadan önce son commit’in GitHub’a gittiği kontrol edilmelidir.
 
 ---
 
@@ -675,53 +793,52 @@ Build almadan önce şu kontroller yapılmalıdır:
 ```txt
 1. npm install --legacy-peer-deps çalışmalı
 2. npx expo start --clear ile uygulama açılmalı
-3. App.js hata vermemeli
-4. Firebase config doğru olmalı
-5. Firebase Realtime Database bağlantısı çalışmalı
-6. Firebase Storage bağlantısı çalışmalı
-7. Admin eski sistemle giriş yapabilmeli
-8. Firebase Auth Geçişi ekranı açılmalı
-9. Auth migration çalışmalı
-10. Firebase Console Authentication içinde kullanıcılar oluşmalı
-11. Çıkış / tekrar giriş test edilmeli
-12. Admin paneli açılmalı
-13. Öğretmen paneli açılmalı
-14. Veli paneli açılmalı
-15. Günlük rapor test edilmeli
-16. Yoklama test edilmeli
-17. Duyuru test edilmeli
-18. Yemek listesi test edilmeli
-19. Etkinlik test edilmeli
-20. Mesajlaşma test edilmeli
-21. Profil fotoğraf yükleme test edilmeli
-```
-
----
-
-## Expo Çalıştırma
-
-```bash
-npm install --legacy-peer-deps
-npx expo start --clear
+3. Firebase config doğru olmalı
+4. Firebase Realtime Database bağlantısı çalışmalı
+5. Firebase Storage bağlantısı çalışmalı
+6. Superadmin giriş yapmalı
+7. Yönetici paneli açılmalı
+8. Öğretmen paneli açılmalı
+9. Veli paneli açılmalı
+10. Yeni kreş oluşturma test edilmeli
+11. Abonelik guard test edilmeli
+12. Günlük rapor test edilmeli
+13. Yoklama test edilmeli
+14. Duyuru test edilmeli
+15. Yemek listesi test edilmeli
+16. Etkinlik test edilmeli
+17. Mesajlaşma test edilmeli
+18. Okundu / okunmamış mesaj badge test edilmeli
+19. Daha fazla mesaj yükle test edilmeli
+20. Profil fotoğraf yükleme test edilmeli
+21. Firebase Auth migration test edilmeli
+22. Firebase index migration test edilmeli
+23. Çıkış / tekrar giriş test edilmeli
 ```
 
 ---
 
 ## Çözülen Büyük Teknik Sorunlar
 
-* Firebase config / API key hataları giderildi.
-* Android release APK JS bundle sorunu giderildi.
-* `main has not been registered` hatası çözüldü.
-* `index.js` ve `registerRootComponent` akışı düzeltildi.
-* `package.json` içindeki `main` alanı `index.js` yapıldı.
-* Firebase login şifre karşılaştırması düzeltildi.
-* Kullanıcı adı / şifre input normalize edildi.
-* Codemagic release APK üretimi çalışır hale getirildi.
-* Öğretmen listesi `kullanicilar` node’undan okunacak şekilde düzeltildi.
-* Veli ve çocuk listeleri ilişki bilgileriyle zenginleştirildi.
-* Veli / öğretmen / yönetici mesajlaşma altyapısı eklendi.
-* Firebase Storage profil fotoğrafı desteği eklendi.
-* Firebase Auth hibrit geçiş altyapısı eklendi.
+- Firebase config / API key hataları giderildi.
+- Android release APK JS bundle sorunu giderildi.
+- `main has not been registered` hatası çözüldü.
+- `index.js` ve `registerRootComponent` akışı düzeltildi.
+- `package.json` içindeki `main` alanı `index.js` yapıldı.
+- Firebase login şifre karşılaştırması düzeltildi.
+- Kullanıcı adı / şifre input normalize edildi.
+- Codemagic release APK üretimi çalışır hale getirildi.
+- Öğretmen listesi `kullanicilar` node’undan okunacak şekilde düzeltildi.
+- Veli ve çocuk listeleri ilişki bilgileriyle zenginleştirildi.
+- Veli / öğretmen / yönetici mesajlaşma altyapısı eklendi.
+- Mesaj input tıklanmama sorunu düzeltildi.
+- Mesajlarda son 20 + daha fazla yükle + okundu bildirimi eklendi.
+- Firebase Storage profil fotoğrafı desteği eklendi.
+- Firebase Auth hibrit geçiş altyapısı eklendi.
+- SuperAdmin panel eklendi.
+- Yeni kreş onboarding eklendi.
+- Abonelik guard / kilitleme eklendi.
+- Firebase index migration ekranı eklendi.
 
 ---
 
@@ -729,134 +846,153 @@ npx expo start --clear
 
 ### FAZ 1 — Mesajlaşma
 
-* Veli - öğretmen mesajlaşması
-* Ortak mesaj detay ekranı
-* Firebase `mesajKonusmalari` ve `mesajlar` yapısı
+- Veli - öğretmen mesajlaşması
+- Ortak mesaj detay ekranı
+- Firebase `mesajKonusmalari` ve `mesajlar` yapısı
 
 ### FAZ 2 — Yoklama ve Günlük Rapor
 
-* Öğretmen yoklama ekranı
-* Günlük rapor ekranı
-* Veli günlük rapor görüntüleme
-* Veli yoklama geçmişi
-* Detaylı yemek durumu
+- Öğretmen yoklama ekranı
+- Günlük rapor ekranı
+- Veli günlük rapor görüntüleme
+- Veli yoklama geçmişi
+- Detaylı yemek durumu
 
 ### FAZ 3 — Duyuru / Etkinlik / Yemek
 
-* Öğretmen duyuru oluşturabilir
-* Veli duyuruları görebilir
-* Öğretmen etkinlik oluşturabilir
-* Veli etkinlikleri görebilir
-* Öğretmen yemek listesi girebilir
-* Veli yemek listesini görebilir
+- Öğretmen duyuru oluşturabilir
+- Veli duyuruları görebilir
+- Öğretmen etkinlik oluşturabilir
+- Veli etkinlikleri görebilir
+- Öğretmen yemek listesi girebilir
+- Veli yemek listesini görebilir
 
 ### FAZ 4 — Kurum Bilgileri ve Profil
 
-* Yönetici kurum bilgilerini düzenleyebilir
-* Veli kurum iletişim bilgilerini görebilir
-* Profil URL alanı eklendi
+- Yönetici kurum bilgilerini düzenleyebilir
+- Veli kurum iletişim bilgilerini görebilir
+- Profil URL alanı eklendi
 
 ### FAZ 5 — Abonelik / Ödeme / Promo
 
-* İlk 1 ay ücretsiz demo
-* Aylık 1.000 TL
-* Yıllık 10.000 TL
-* Promo kod sistemi
-* RevenueCat hazırlık alanı
+- İlk 1 ay ücretsiz demo
+- Aylık 1.000 TL
+- Yıllık 10.000 TL
+- Promo kod sistemi
+- RevenueCat hazırlık alanı
 
 ### FAZ 6 — Kreş Adı / Safe Area
 
-* Panellerde kreş adı görünür
-* Yumurcak marka alt başlık olarak kalır
-* Safe area düzenlemesi yapıldı
+- Panellerde kreş adı görünür
+- Yumurcak marka alt başlık olarak kalır
+- Safe area düzenlemesi yapıldı
 
 ### FAZ 7 — Admin Mesajlaşma
 
-* Yönetici velilerle mesajlaşabilir
-* Yönetici öğretmenlerle mesajlaşabilir
-* Veli kurum yönetimiyle mesajlaşabilir
-* Öğretmen kurum yönetimiyle mesajlaşabilir
+- Yönetici velilerle mesajlaşabilir
+- Yönetici öğretmenlerle mesajlaşabilir
+- Veli kurum yönetimiyle mesajlaşabilir
+- Öğretmen kurum yönetimiyle mesajlaşabilir
 
 ### FAZ 8 — Profil Fotoğrafı
 
-* Veli galeriden fotoğraf seçebilir
-* Firebase Storage’a yüklenir
-* Profil URL’i kullanıcı kaydına yazılır
+- Veli galeriden fotoğraf seçebilir
+- Firebase Storage’a yüklenir
+- Profil URL’i kullanıcı kaydına yazılır
 
 ### FAZ 9 — Firebase Rules
 
-* Pilot rules hazırlandı
-* Production Auth rules taslağı hazırlandı
-* Storage rules hazırlandı
+- Pilot rules hazırlandı
+- Production Auth rules taslağı hazırlandı
+- Storage rules hazırlandı
 
 ### FAZ 10 — Firebase Auth Geçişi
 
-* Firebase Auth login desteği eklendi
-* Eski RTDB login fallback korundu
-* Auth migration ekranı eklendi
-* authUid / authKullaniciIndex eşleme sistemi kuruldu
+- Firebase Auth login desteği eklendi
+- Eski RTDB login fallback korundu
+- Auth migration ekranı eklendi
+- authUid / authKullaniciIndex eşleme sistemi kuruldu
+
+### FAZ 11 — Admin UI + Logout Fix
+
+- Admin dashboard ve migration ekranı sadeleştirildi
+- Header karışıklığı giderildi
+- Çıkış sonrası tekrar otomatik giriş / iki kez çıkış sorunu düzeltildi
+
+### FAZ 12 — Mesaj Input Fix
+
+- Mesaj yazma alanına tıklanmama sorunu düzeltildi
+- KeyboardAvoidingView ve input focus akışı düzenlendi
+
+### FAZ 13 — Süper Admin Panel
+
+- Platform sahibi paneli eklendi
+- Kreş, öğrenci, öğretmen, veli istatistikleri eklendi
+- Abonelik durumları ve il/ilçe dağılımı eklendi
+- Kreş detay ekranı eklendi
+
+### FAZ 14 — Süper Admin Kreş Onboarding
+
+- Yeni kreş ekleme ekranı eklendi
+- Kurum yöneticisi oluşturma eklendi
+- Demo abonelik başlatma eklendi
+
+### FAZ 15 — Abonelik Guard / Kilitleme
+
+- Abonelik aktif/demo ise paneller açık
+- Abonelik yok/bitti/pasif ise yönetici ödeme ekranına düşer
+- Öğretmen/veli kilit ekranı görür
+- Superadmin abonelikten etkilenmez
+
+### FAZ 16 — Mesajlaşma Performans + Okundu
+
+- Son 20 mesaj çekme
+- Daha fazla mesaj yükle
+- Okundu / gönderildi göstergesi
+- Okunmamış mesaj badge sistemi
+- Konuşma listelerinde unread sayaç
+
+### FAZ 17 — Firebase Index / Veri Düzeni
+
+- Kreş bazlı index node’ları eklendi
+- Kullanıcı, çocuk, sınıf ve mesaj indexleri eklendi
+- SuperAdmin index migration ekranı eklendi
+
+### FAZ 18 — Production Rules / Güvenlik Hazırlığı
+
+- Transition auth test rules hazırlandı
+- Production auth v2 fixed rules hazırlandı
+- Storage production rules hazırlandı
+- Uygulama sırası ve dikkat notları belirlendi
 
 ---
 
 ## Yol Haritası
 
-### Faz 11 — Build Temizlik ve Son Test
+Yol haritası ayrı dosyada tutulur:
 
-* [ ] Gerçek cihazda admin akışını test et
-* [ ] Gerçek cihazda öğretmen akışını test et
-* [ ] Gerçek cihazda veli akışını test et
-* [ ] Günlük rapor giriş / görüntüleme test et
-* [ ] Yoklama giriş / görüntüleme test et
-* [ ] Mesajlaşma test et
-* [ ] Profil fotoğraf yükleme test et
-* [ ] Firebase Auth migration test et
-* [ ] Boş veri ekranlarını kontrol et
-* [ ] Tüm butonlarda loading / disabled state kontrol et
-
-### Faz 12 — RevenueCat Ödeme Entegrasyonu
-
-* [ ] Aylık abonelik
-* [ ] Yıllık abonelik
-* [ ] Entitlement kontrolü
-* [ ] Abonelik bitiş kontrolü
-* [ ] Demo bitiş uyarısı
-
-### Faz 13 — Firebase Auth Production Rules
-
-* [ ] Tüm kullanıcıların authUid aldığı doğrulanacak
-* [ ] Admin / öğretmen / veli girişleri test edilecek
-* [ ] Production database rules uygulanacak
-* [ ] Production storage rules uygulanacak
-* [ ] Veli sadece kendi çocuğunu görecek
-* [ ] Öğretmen sadece kendi sınıfını görecek
-* [ ] Yönetici sadece kendi kreşini yönetecek
-
-### Faz 14 — Pilot Kreş Demo
-
-* [ ] 1 pilot kreş oluştur
-* [ ] Gerçek öğretmen hesabı oluştur
-* [ ] Gerçek veli hesabı oluştur
-* [ ] Gerçek çocuk kayıtları ekle
-* [ ] Demo kullanımını başlat
-* [ ] 1 ay ücretsiz kullanım ver
-* [ ] Demo sonrası satış görüşmesi yap
+```txt
+YOL_HARITASI.md
+```
 
 ---
 
 ## Şimdilik Yapılmayacaklar
 
-* Web panel
-* SuperAdmin panel
-* RevenueCat aktif ödeme
-* Market yayını için son optimizasyonlar
-* Çoklu ülke / dil desteği
-* Gelişmiş bildirim sistemi
+- Web panel
+- RevenueCat aktif ödeme
+- Push notification / bildirim sistemi
+- Çoklu ülke / dil desteği
+- Muhasebe entegrasyonu
+- E-fatura entegrasyonu
+- Gelişmiş raporlama / grafik paneli
+- App Store yayını
 
 ---
 
 ## Ürün Konumlandırması
 
-Yumurcak Kreş, küçük ve orta ölçekli kreşler için sade, anlaşılır ve hızlı kullanılabilir bir dijital iletişim aracıdır.
+Yumurcak Kreş, küçük ve orta ölçekli kreşler için sade, anlaşılır ve hızlı kullanılabilir bir dijital iletişim ve takip aracıdır.
 
 Değer önerisi:
 
@@ -884,10 +1020,6 @@ GitHub: [furukcell](https://github.com/furukcell)
 
 Proje aktif geliştirme / MVP stabilizasyon aşamasındadır.
 
-Öncelikli hedef:
-
-> Yönetici sınıf-öğretmen-veli-çocuk ilişkisini kursun, öğretmen günlük rapor ve yoklama girsin, veli kendi telefonundan bu bilgileri görsün, kurumla mesajlaşabilsin.
-
 Kısa karar:
 
-> Yumurcak artık fikir aşamasını geçmiş, çalışan MVP seviyesine gelmiş bir kreş yönetim uygulamasıdır. Pilot kreş demosuna hazırlanabilir; ancak ücretli müşteri öncesi gerçek cihaz testleri tamamlanmalıdır.
+> Yumurcak artık fikir aşamasını geçmiş, çalışan MVP + SaaS altyapısı seviyesine gelmiş bir kreş yönetim uygulamasıdır. Pilot kreş demosuna hazırlanabilir; ancak ücretli müşteri öncesi gerçek cihaz testleri ve Firebase Auth/Rules geçişi dikkatli tamamlanmalıdır.
