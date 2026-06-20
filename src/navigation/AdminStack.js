@@ -1,9 +1,10 @@
 // ============================================================
 // YUMURCAK — AdminStack.js
-// FAZ 11: Dashboard ve AuthMigration native header kapatıldı
+// FAZ 11 v2: Dashboard ve AuthMigration native header kapatıldı
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import DashboardScreen from '../screens/admin/DashboardScreen';
 import ClassListScreen from '../screens/admin/ClassListScreen';
 import ClassFormScreen from '../screens/admin/ClassFormScreen';
@@ -36,15 +37,16 @@ export default function AdminStack() {
       screenOptions={{
         headerStyle: { backgroundColor: '#3C3489' },
         headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '600' },
+        headerTitleStyle: { fontWeight: '700' },
       }}
     >
       <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AuthMigration" component={AdminAuthMigrationScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} options={{ headerShown: false }} />
+
       <Stack.Screen name="InstitutionSettings" component={AdminInstitutionSettingsScreen} options={{ title: 'Kurum Bilgileri' }} />
       <Stack.Screen name="Subscription" component={AdminSubscriptionScreen} options={{ title: 'Abonelik / Ödeme' }} />
       <Stack.Screen name="AdminMessages" component={AdminMessagesScreen} options={{ title: 'Mesajlar' }} />
-      <Stack.Screen name="AuthMigration" component={AdminAuthMigrationScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ClassList" component={ClassListScreen} options={{ title: 'Sınıflar' }} />
       <Stack.Screen name="ClassForm" component={ClassFormScreen} options={{ title: 'Sınıf Ekle/Düzenle' }} />
       <Stack.Screen name="ChildList" component={ChildListScreen} options={{ title: 'Çocuklar' }} />
