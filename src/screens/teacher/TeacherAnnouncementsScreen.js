@@ -1,35 +1,119 @@
 // ============================================================
 // YUMURCAK — TeacherAnnouncementsScreen.js
-// Öğretmen duyuruları görür
+// FAZ 3: Öğretmen kendi sınıfı velilerine duyuru oluşturabilir
 // ============================================================
-import React, { useMemo } from 'react';
-import { SafeAreaView, ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { ref, push } from 'firebase/database';
+import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate } from './teacherShared';
 
 export default function TeacherAnnouncementsScreen() {
   const navigation = useNavigation();
-  const { loading, kresId, announcements } = useTeacherData();
+  const { loading, teacherId, kresId, currentClass, announcements } = useTeacherData();
+
+  const [showForm, setShowForm] = useState(false);
+  const [baslik, setBaslik] = useState('');
+  const [icerik, setIcerik] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const visible = useMemo(() => {
+    if (!currentClass?.id) return [];
     return announcements
+      .filter((item) => item.aktif !== false)
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
-      .sort((a, b) => String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || '')))
-      .slice(0, 20);
-  }, [announcements, kresId]);
+      .filter((item) => !item.sinifId || item.sinifId === currentClass.id)
+      .sort((a, b) => String(b.createdAt || b.tarih || '').localeCompare(String(a.createdAt || a.tarih || '')));
+  }, [announcements, currentClass?.id, kresId]);
 
   if (loading) return <LoadingState text="Duyurular hazırlanıyor..." />;
 
+  const saveAnnouncement = async () => {
+    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
+    if (!baslik.trim() || !icerik.trim()) return Alert.alert('Eksik Bilgi', 'Başlık ve duyuru metni zorunludur.');
+
+    setSaving(true);
+    try {
+      await push(ref(database, 'duyurular'), {
+        kresId: kresId || currentClass.kresId || '',
+        sinifId: currentClass.id,
+        olusturanId: teacherId || '',
+        olusturanRol: 'ogretmen',
+        hedefRol: 'veli',
+        baslik: baslik.trim(),
+        icerik: icerik.trim(),
+        tarih: new Date().toISOString().split('T')[0],
+        aktif: true,
+        createdAt: Date.now(),
+      });
+
+      setBaslik('');
+      setIcerik('');
+      setShowForm(false);
+      Alert.alert('Başarılı', 'Duyuru sınıf velilerine gönderildi.');
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Hata', 'Duyuru kaydedilemedi.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader navigation={navigation} title="Duyurular" subtitle="Kurum bilgilendirmeleri" />
+      <ScreenHeader
+        navigation={navigation}
+        title="Duyurular"
+        subtitle={currentClass?.ad || 'Sınıfım'}
+        rightText={showForm ? 'Kapat' : '+ Ekle'}
+        onRightPress={() => setShowForm((v) => !v)}
+      />
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {showForm ? (
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Sınıf Velilerine Duyuru</Text>
+            <TextInput
+              style={styles.input}
+              value={baslik}
+              onChangeText={setBaslik}
+              placeholder="Duyuru başlığı"
+              placeholderTextColor="#999"
+            />
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={icerik}
+              onChangeText={setIcerik}
+              placeholder="Duyuru metni"
+              multiline
+              placeholderTextColor="#999"
+            />
+            <TouchableOpacity style={styles.saveButton} onPress={saveAnnouncement} disabled={saving} activeOpacity={0.85}>
+              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Duyuruyu Gönder</Text>}
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {visible.length === 0 ? (
-          <EmptyState icon="📣" title="Duyuru yok" desc="Yeni duyuru eklendiğinde burada görünür." />
+          <EmptyState icon="📣" title="Duyuru yok" desc="Sınıfına duyuru eklediğinde burada görünür." />
         ) : (
           visible.map((item) => (
             <View key={item.id} style={styles.card}>
-              <Text style={styles.date}>📅 {formatDate(item.tarih || item.createdAt)}</Text>
+              <View style={styles.cardTop}>
+                <Text style={styles.badge}>{item.olusturanRol === 'ogretmen' ? 'Sınıf Duyurusu' : 'Kurum Duyurusu'}</Text>
+                <Text style={styles.date}>{formatDate(item.tarih)}</Text>
+              </View>
               <Text style={styles.title}>{item.baslik || item.title || 'Duyuru'}</Text>
               <Text style={styles.body}>{item.icerik || item.metin || item.aciklama || '-'}</Text>
             </View>
@@ -43,8 +127,16 @@ export default function TeacherAnnouncementsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   content: { padding: 16, paddingBottom: 32 },
+  formCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
+  formTitle: { color: THEME.primary, fontWeight: '900', fontSize: 16, marginBottom: 10 },
+  input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border },
+  textArea: { minHeight: 100, textAlignVertical: 'top' },
+  saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
+  saveText: { color: '#FFF', fontWeight: '900' },
   card: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
-  date: { color: THEME.primary, fontWeight: '900', marginBottom: 8 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  badge: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  date: { color: THEME.muted, fontWeight: '800', fontSize: 12 },
   title: { fontSize: 17, fontWeight: '900', color: THEME.text },
   body: { color: THEME.muted, marginTop: 6, lineHeight: 19, fontWeight: '600' },
 });

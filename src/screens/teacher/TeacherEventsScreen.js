@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — TeacherEventsScreen.js
-// Öğretmen sınıf etkinlikleri görüntüleme / basit oluşturma
+// FAZ 3: Öğretmen sadece kendi sınıfına etkinlik oluşturur
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
@@ -24,7 +24,11 @@ export default function TeacherEventsScreen() {
     return events
       .filter((item) => item.aktif !== false)
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
-      .filter((item) => Array.isArray(item.sinifIds) && item.sinifIds.includes(currentClass.id))
+      .filter((item) => {
+        if (Array.isArray(item.sinifIds)) return item.sinifIds.includes(currentClass.id);
+        if (item.sinifId) return item.sinifId === currentClass.id;
+        return true; // genel etkinlik
+      })
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [events, currentClass?.id, kresId]);
 
@@ -32,18 +36,21 @@ export default function TeacherEventsScreen() {
 
   const save = async () => {
     if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
-    if (!baslik || !tarih) return Alert.alert('Eksik Bilgi', 'Başlık ve tarih zorunludur.');
+    if (!baslik.trim() || !tarih.trim()) return Alert.alert('Eksik Bilgi', 'Başlık ve tarih zorunludur.');
+
     setSaving(true);
     try {
       await push(ref(database, 'etkinlikler'), {
         kresId: kresId || currentClass.kresId || '',
-        baslik,
-        tarih,
-        saat,
+        sinifId: currentClass.id,
         sinifIds: [currentClass.id],
-        aciklama,
-        aktif: true,
         olusturanId: teacherId || '',
+        olusturanRol: 'ogretmen',
+        baslik: baslik.trim(),
+        tarih: tarih.trim(),
+        saat: saat.trim(),
+        aciklama: aciklama.trim(),
+        aktif: true,
         createdAt: Date.now(),
       });
       setBaslik('');
@@ -51,7 +58,7 @@ export default function TeacherEventsScreen() {
       setSaat('');
       setAciklama('');
       setShowForm(false);
-      Alert.alert('Başarılı', 'Etkinlik oluşturuldu.');
+      Alert.alert('Başarılı', 'Etkinlik sınıf velilerine eklendi.');
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Etkinlik kaydedilemedi.');
@@ -72,6 +79,7 @@ export default function TeacherEventsScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {showForm ? (
           <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Sınıf Etkinliği</Text>
             <TextInput style={styles.input} value={baslik} onChangeText={setBaslik} placeholder="Etkinlik başlığı" placeholderTextColor="#999" />
             <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder="2026-06-20" placeholderTextColor="#999" />
             <TextInput style={styles.input} value={saat} onChangeText={setSaat} placeholder="Saat (opsiyonel)" placeholderTextColor="#999" />
@@ -90,6 +98,7 @@ export default function TeacherEventsScreen() {
               <Text style={styles.date}>📅 {formatDate(item.tarih)} {item.saat ? `· ${item.saat}` : ''}</Text>
               <Text style={styles.title}>{item.baslik || 'Etkinlik'}</Text>
               {item.aciklama ? <Text style={styles.desc}>{item.aciklama}</Text> : null}
+              <Text style={styles.badge}>{item.sinifId ? 'Sınıf Etkinliği' : 'Genel Etkinlik'}</Text>
             </View>
           ))
         )}
@@ -102,6 +111,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   content: { padding: 16, paddingBottom: 32 },
   formCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
+  formTitle: { color: THEME.primary, fontWeight: '900', fontSize: 16, marginBottom: 10 },
   input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
@@ -110,4 +120,5 @@ const styles = StyleSheet.create({
   date: { color: THEME.primary, fontWeight: '900', marginBottom: 8 },
   title: { fontSize: 17, fontWeight: '900', color: THEME.text },
   desc: { color: THEME.muted, marginTop: 6, lineHeight: 19, fontWeight: '600' },
+  badge: { color: THEME.primary, fontWeight: '900', marginTop: 10, fontSize: 12 },
 });
