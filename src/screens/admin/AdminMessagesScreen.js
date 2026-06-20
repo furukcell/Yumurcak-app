@@ -1,9 +1,6 @@
 // ============================================================
 // YUMURCAK — AdminMessagesScreen.js
-// FAZ 7: Yönetici <-> veli / öğretmen mesajlaşma
-// Firebase:
-/// mesajKonusmalari/{conversationId}
-/// mesajlar/{conversationId}/{messageId}
+// FAZ 16: Son 20 görüşme + okunmamış badge
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -19,13 +16,12 @@ import { onValue, ref, update } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { safeUnread } from '../../utils/messageHelpers';
 
 const THEME = {
   primary: '#6C3DEB',
-  primaryDark: '#4B22B8',
   primarySoft: '#EFE8FF',
   green: '#20B45B',
-  orange: '#FF9F1C',
   text: '#191A23',
   muted: '#707386',
   bg: '#F8F6FF',
@@ -92,10 +88,13 @@ export default function AdminMessagesScreen() {
           childInfo,
           sonMesaj: meta.sonMesaj || '',
           sonMesajAt: meta.sonMesajAt || 0,
+          unread: safeUnread(meta, adminId),
+          meta,
         };
       })
       .filter((user) => tab === 'all' || user.role === tab)
-      .sort((a, b) => Number(b.sonMesajAt || 0) - Number(a.sonMesajAt || 0) || getUserName(a).localeCompare(getUserName(b), 'tr'));
+      .sort((a, b) => Number(b.sonMesajAt || 0) - Number(a.sonMesajAt || 0) || getUserName(a).localeCompare(getUserName(b), 'tr'))
+      .slice(0, 20);
 
     return list;
   }, [users, children, classes, conversations, adminId, kresId, tab]);
@@ -103,6 +102,7 @@ export default function AdminMessagesScreen() {
   const openChat = async (contact) => {
     const now = Date.now();
     const conversationMeta = {
+      ...(conversations[contact.conversationId] || {}),
       id: contact.conversationId,
       tip: contact.role === 'veli' ? 'admin_veli' : 'admin_ogretmen',
       kresId,
@@ -147,7 +147,7 @@ export default function AdminMessagesScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>💬</Text>
           <Text style={styles.heroTitle}>Mesajlar</Text>
-          <Text style={styles.heroDesc}>{kres?.ad || 'Kurum'} veli ve öğretmen görüşmeleri</Text>
+          <Text style={styles.heroDesc}>{kres?.ad || 'Kurum'} son 20 görüşme</Text>
         </View>
 
         <View style={styles.tabs}>
@@ -171,9 +171,11 @@ export default function AdminMessagesScreen() {
               <View style={{ flex: 1 }}>
                 <View style={styles.row}>
                   <Text style={styles.name} numberOfLines={1}>{getUserName(contact)}</Text>
-                  <Text style={[styles.badge, contact.role === 'veli' ? styles.parentBadge : styles.teacherBadge]}>
-                    {contact.role === 'veli' ? 'Veli' : 'Öğretmen'}
-                  </Text>
+                  {contact.unread > 0 ? (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadText}>{contact.unread > 99 ? '99+' : contact.unread}</Text>
+                    </View>
+                  ) : null}
                 </View>
                 <Text style={styles.desc} numberOfLines={1}>{contact.childInfo || 'Kurum kullanıcısı'}</Text>
                 <Text style={styles.lastMessage} numberOfLines={1}>{contact.sonMesaj || 'Henüz mesaj yok'}</Text>
@@ -239,12 +241,11 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 23 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { flex: 1, color: THEME.text, fontWeight: '900', fontSize: 16 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, overflow: 'hidden', fontWeight: '900', fontSize: 11 },
-  parentBadge: { backgroundColor: '#E8F9EF', color: THEME.green },
-  teacherBadge: { backgroundColor: THEME.primarySoft, color: THEME.primary },
   desc: { color: THEME.muted, marginTop: 4, fontWeight: '700' },
   lastMessage: { color: THEME.muted, marginTop: 5, fontSize: 12, fontWeight: '600' },
   arrow: { color: THEME.primary, fontSize: 28, fontWeight: '900', marginLeft: 8 },
+  unreadBadge: { minWidth: 24, height: 24, borderRadius: 12, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
+  unreadText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
   emptyCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   emptyIcon: { fontSize: 42, marginBottom: 8 },
   emptyTitle: { color: THEME.text, fontWeight: '900', fontSize: 17 },
