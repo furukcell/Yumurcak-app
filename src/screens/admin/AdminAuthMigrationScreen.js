@@ -1,27 +1,23 @@
 // ============================================================
 // YUMURCAK — AdminAuthMigrationScreen.js
-// FAZ 10: RTDB kullanıcılarını Firebase Auth'a taşıma ekranı
-// Not: Client SDK ile UID belirlenemez. Bu yüzden authUid alanı yazılır.
-// Eşleme: authKullaniciIndex/{authUid} = legacyUserId
+// FAZ 11 v2: Modern Yumurcak arayüzü
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { get, ref, set, update } from 'firebase/database';
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  signOut,
-} from 'firebase/auth';
-import { getApp, getApps, initializeApp } from 'firebase/app';
+import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
+import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { usernameToEmail } from '../../utils/authHelpers';
@@ -39,7 +35,7 @@ const THEME = {
   border: '#EEEAF8',
 };
 
-export default function AdminAuthMigrationScreen() {
+export default function AdminAuthMigrationScreen({ navigation }) {
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
 
@@ -87,7 +83,7 @@ export default function AdminAuthMigrationScreen() {
 
     Alert.alert(
       'Firebase Auth Geçişi',
-      'Bu işlem authUid olmayan kullanıcılar için Firebase Auth hesabı oluşturur. Devam edilsin mi?',
+      'authUid olmayan kullanıcılar için Firebase Auth hesabı oluşturulacak. Devam edilsin mi?',
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Başlat', onPress: startMigration },
@@ -135,9 +131,8 @@ export default function AdminAuthMigrationScreen() {
           addLog(`Tamam: ${username} -> ${email}`);
         } catch (error) {
           const username = user.kullaniciAdi || user.id;
-
           if (error?.code === 'auth/email-already-in-use') {
-            addLog(`Zaten var: ${username}. Firebase Console'da bu email var; manuel eşleştirme gerekebilir.`);
+            addLog(`Zaten var: ${username}. Firebase Console'da email var; manuel eşleştirme gerekebilir.`);
           } else {
             addLog(`Hata: ${username} -> ${error?.code || error?.message || 'bilinmeyen hata'}`);
           }
@@ -146,7 +141,7 @@ export default function AdminAuthMigrationScreen() {
 
       await signOut(secondaryAuth).catch(() => {});
       await loadUsers();
-      Alert.alert('Tamamlandı', 'Firebase Auth geçiş denemesi tamamlandı. Logları kontrol et.');
+      Alert.alert('Tamamlandı', 'Firebase Auth geçiş denemesi tamamlandı.');
     } catch (error) {
       console.error(error);
       Alert.alert('Hata', 'Auth geçiş işlemi başlatılamadı.');
@@ -166,11 +161,25 @@ export default function AdminAuthMigrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.customHeader}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <Text style={styles.backArrow}>‹</Text>
+          <Text style={styles.backText}>Geri</Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>Firebase Auth</Text>
+          <Text style={styles.headerSub}>Yumurcak Geçiş Paneli</Text>
+        </View>
+
+        <View style={styles.headerRight} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>🔐</Text>
-          <Text style={styles.heroTitle}>Firebase Auth Geçişi</Text>
-          <Text style={styles.heroDesc}>RTDB kullanıcı adı/şifre hesaplarını Firebase Auth ile eşleştir.</Text>
+          <Text style={styles.heroTitle}>Güvenli Giriş Geçişi</Text>
+          <Text style={styles.heroDesc}>Kullanıcıları Firebase Auth sistemine taşı ve üretim güvenliğine hazırla.</Text>
         </View>
 
         <View style={styles.statsRow}>
@@ -180,12 +189,9 @@ export default function AdminAuthMigrationScreen() {
         </View>
 
         <View style={styles.warningCard}>
-          <Text style={styles.warningTitle}>Önemli</Text>
+          <Text style={styles.warningTitle}>Önemli Not</Text>
           <Text style={styles.warningText}>
-            Client SDK ile eski kullanıcı ID'si auth.uid yapılamaz. Bu yüzden kullanıcı kaydına authUid yazılır ve authKullaniciIndex oluşturulur.
-          </Text>
-          <Text style={styles.warningText}>
-            Production rules'a geçmeden önce bu eşleşmelerin tamamlanması gerekir.
+            Production rules'a geçmeden önce tüm kullanıcıların authUid alması ve 3 rolün giriş testinden geçmesi gerekir.
           </Text>
         </View>
 
@@ -199,7 +205,7 @@ export default function AdminAuthMigrationScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.userName}>{getUserName(user)}</Text>
               <Text style={styles.userMeta}>{user.rol || '-'} · {user.kullaniciAdi || user.email || user.id}</Text>
-              <Text style={styles.userMeta}>{user.authUid ? `authUid: ${user.authUid}` : 'Auth bekliyor'}</Text>
+              <Text style={styles.userMeta}>{user.authUid ? `authUid: ${shortUid(user.authUid)}` : 'Auth bekliyor'}</Text>
             </View>
             <Text style={[styles.statusBadge, user.authUid ? styles.doneBadge : styles.waitBadge]}>
               {user.authUid ? 'Tamam' : 'Bekliyor'}
@@ -233,6 +239,12 @@ function getUserName(user) {
   return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || 'Kullanıcı';
 }
 
+function shortUid(uid) {
+  if (!uid) return '';
+  if (uid.length <= 14) return uid;
+  return `${uid.slice(0, 8)}...${uid.slice(-4)}`;
+}
+
 function Stat({ label, value }) {
   return (
     <View style={styles.statCard}>
@@ -243,21 +255,40 @@ function Stat({ label, value }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.bg },
+  safeArea: {
+    flex: 1,
+    backgroundColor: THEME.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.bg },
   loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
+  customHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: THEME.bg,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: { width: 74, flexDirection: 'row', alignItems: 'center' },
+  backArrow: { fontSize: 28, color: THEME.primary, fontWeight: '900', marginRight: 2 },
+  backText: { color: THEME.primary, fontWeight: '900' },
+  headerTitleWrap: { flex: 1, alignItems: 'center' },
+  headerTitle: { color: THEME.primary, fontSize: 20, fontWeight: '900' },
+  headerSub: { color: THEME.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  headerRight: { width: 74 },
   content: { padding: 16, paddingBottom: 44 },
   hero: { backgroundColor: THEME.primary, borderRadius: 24, padding: 20, alignItems: 'center', marginBottom: 14 },
   heroIcon: { fontSize: 42, marginBottom: 8 },
   heroTitle: { color: '#FFF', fontSize: 22, fontWeight: '900' },
-  heroDesc: { color: 'rgba(255,255,255,0.82)', marginTop: 5, fontWeight: '700', textAlign: 'center' },
+  heroDesc: { color: 'rgba(255,255,255,0.82)', marginTop: 5, fontWeight: '700', textAlign: 'center', lineHeight: 20 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   statCard: { flex: 1, backgroundColor: THEME.card, borderRadius: 18, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   statValue: { color: THEME.primary, fontSize: 24, fontWeight: '900' },
   statLabel: { color: THEME.muted, fontWeight: '800', marginTop: 3 },
   warningCard: { backgroundColor: '#FFF5D9', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#FFE1A1', marginBottom: 12 },
   warningTitle: { color: '#8A6500', fontWeight: '900', fontSize: 16, marginBottom: 6 },
-  warningText: { color: '#7A5A00', fontWeight: '700', lineHeight: 20, marginBottom: 4 },
+  warningText: { color: '#7A5A00', fontWeight: '700', lineHeight: 20 },
   runButton: { backgroundColor: THEME.primary, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 18 },
   runText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 10, marginTop: 8 },
