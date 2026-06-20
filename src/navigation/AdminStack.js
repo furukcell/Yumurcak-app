@@ -18,6 +18,8 @@ import AnnouncementListScreen from '../screens/admin/AnnouncementListScreen';
 import AnnouncementFormScreen from '../screens/admin/AnnouncementFormScreen';
 import PaymentListScreen from '../screens/admin/PaymentListScreen';
 import PaymentFormScreen from '../screens/admin/PaymentFormScreen';
+import LessonScheduleListScreen from '../screens/admin/LessonScheduleListScreen';
+import LessonScheduleFormScreen from '../screens/admin/LessonScheduleFormScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +46,8 @@ export default function AdminStack() {
       <Stack.Screen name="AnnouncementForm" component={AnnouncementFormScreen} options={{ title: 'Duyuru Oluştur' }} />
       <Stack.Screen name="PaymentList" component={PaymentListScreen} options={{ title: 'Ödemeler' }} />
       <Stack.Screen name="PaymentForm" component={PaymentFormScreen} options={{ title: 'Ödeme Ekle/Düzenle' }} />
+      <Stack.Screen name="LessonScheduleList" component={LessonScheduleListScreen} options={{ title: 'Ders Programı' }} />
+      <Stack.Screen name="LessonScheduleForm" component={LessonScheduleFormScreen} options={{ title: 'Programı Düzenle' }} />
     </Stack.Navigator>
   );
 }
