@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — DashboardScreen.js
-// Yönetici ana paneli — FAZ 4 Kurum Bilgileri menüsü eklendi
+// Yönetici ana paneli — FAZ 5 Abonelik / Ödeme menüsü eklendi
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -19,6 +19,7 @@ const THEME = {
   red: '#FF4D6D',
   teal: '#00B4D8',
   purple: '#8E44AD',
+  gold: '#C98A00',
   text: '#191A23',
   muted: '#707386',
   bg: '#F8F6FF',
@@ -28,12 +29,13 @@ const THEME = {
 
 const MENU_ITEMS = [
   { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres, telefon ve iletişim bilgileri', color: THEME.primaryDark, bgColor: THEME.primarySoft },
+  { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Demo, aylık/yıllık paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
   { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf listesi ve yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Kayıtlı çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
   { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
-  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
+  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Veli ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
   { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Sınıf bazlı haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
   { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', desc: 'Etkinlik takvimi', color: '#E67E22', bgColor: '#FCEEE0' },
 ];
@@ -55,23 +57,36 @@ export default function DashboardScreen() {
     ogretmenSayisi: 0,
     veliSayisi: 0,
   });
+  const [kresAdi, setKresAdi] = useState('Yumurcak');
+  const [abonelik, setAbonelik] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
 
+  const kresId = kullanici?.kresId || 'kres001';
+
   useEffect(() => {
+    const kresUnsub = onValue(ref(database, `kresler/${kresId}`), (snap) => {
+      const data = snap.val();
+      if (data?.ad) setKresAdi(data.ad);
+    });
+
+    const subUnsub = onValue(ref(database, `abonelikler/${kresId}`), (snap) => {
+      setAbonelik(snap.val() || null);
+    });
+
     const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
       const data = snap.val();
-      setIstatistik((prev) => ({ ...prev, sinifSayisi: data ? Object.keys(data).length : 0 }));
+      setIstatistik((prev) => ({ ...prev, sinifSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0 }));
     });
 
     const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
       const data = snap.val();
-      setIstatistik((prev) => ({ ...prev, cocukSayisi: data ? Object.keys(data).length : 0 }));
+      setIstatistik((prev) => ({ ...prev, cocukSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0 }));
     });
 
     const kullaniciUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
       const data = snap.val();
       if (data) {
-        const liste = Object.values(data);
+        const liste = Object.values(data).filter((u) => !u.kresId || u.kresId === kresId);
         setIstatistik((prev) => ({
           ...prev,
           ogretmenSayisi: liste.filter((u) => u.rol === 'ogretmen').length,
@@ -82,11 +97,13 @@ export default function DashboardScreen() {
     });
 
     return () => {
+      kresUnsub();
+      subUnsub();
       sinifUnsub();
       cocukUnsub();
       kullaniciUnsub();
     };
-  }, []);
+  }, [kresId]);
 
   const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
 
@@ -99,8 +116,8 @@ export default function DashboardScreen() {
               <Text style={styles.logoEmoji}>🍼</Text>
             </View>
             <View>
-              <Text style={styles.appName}>Yumurcak</Text>
-              <Text style={styles.panelLabel}>Yönetim Paneli</Text>
+              <Text style={styles.appName}>{kresAdi}</Text>
+              <Text style={styles.panelLabel}>Yumurcak Yönetim Paneli</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
@@ -112,7 +129,7 @@ export default function DashboardScreen() {
           <View style={styles.welcomeLeft}>
             <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
             <Text style={styles.welcomeName}>{adSoyad}</Text>
-            <Text style={styles.welcomeSub}>Yumurcak Kreş Yöneticisi</Text>
+            <Text style={styles.welcomeSub}>{getSubscriptionText(abonelik)}</Text>
           </View>
           <View style={styles.welcomeIcon}>
             <Text style={styles.welcomeIconText}>👑</Text>
@@ -159,17 +176,24 @@ export default function DashboardScreen() {
   );
 }
 
+function getSubscriptionText(sub) {
+  if (!sub) return 'İlk 1 ay ücretsiz deneme';
+  if (sub.durum === 'aktif') return sub.plan === 'yillik' ? 'Yıllık abonelik aktif' : 'Aylık abonelik aktif';
+  if (sub.durum === 'demo') return `Demo aktif · ${sub.demoBitisTarihi || sub.bitisTarihi || ''}`;
+  return 'Abonelik durumu kontrol edilmeli';
+}
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   screen: { flex: 1, backgroundColor: THEME.bg },
   scrollContent: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 40 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  topBarLeft: { flexDirection: 'row', alignItems: 'center' },
+  topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   logoCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   logoEmoji: { fontSize: 22 },
-  appName: { fontSize: 22, fontWeight: '900', color: THEME.primary },
+  appName: { fontSize: 21, fontWeight: '900', color: THEME.primary },
   panelLabel: { fontSize: 12, color: THEME.muted, fontWeight: '700' },
-  cikisBtn: { backgroundColor: THEME.card, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: THEME.border },
+  cikisBtn: { backgroundColor: THEME.card, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: THEME.border },
   cikisBtnText: { color: THEME.primary, fontWeight: '900' },
   welcomeCard: { backgroundColor: THEME.primary, borderRadius: 24, padding: 20, marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   welcomeLeft: { flex: 1 },
