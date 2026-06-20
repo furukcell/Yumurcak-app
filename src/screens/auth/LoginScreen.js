@@ -28,10 +28,8 @@ export default function LoginScreen() {
 
     try {
       const temizKullaniciAdi = kullaniciAdi.trim().toLowerCase();
-      const temizSifre = sifre.trim();
+      const temizSifre = sifre.trim().toLowerCase();
 
-      // Tüm kullanıcıları çekip uygulama içinde eşleştiriyoruz.
-      // Böylece Firebase orderBy/equalTo, büyük-küçük harf ve aynı kullanıcı adı sorunlarına takılmıyoruz.
       const res = await fetch(`${DB_URL}/kullanicilar.json`);
       const data = await res.json();
 
@@ -70,7 +68,7 @@ export default function LoginScreen() {
           kullanici.parola ??
           kullanici.pass ??
           ''
-        ).trim();
+        ).trim().toLowerCase();
 
         return kayitSifre === temizSifre;
       });
@@ -89,7 +87,6 @@ export default function LoginScreen() {
         return;
       }
 
-      // Kreş bilgisini çek
       let kresObj = null;
       if (kullaniciObj.kresId) {
         const kresRes = await fetch(`${DB_URL}/kresler/${kullaniciObj.kresId}.json`);
@@ -143,6 +140,9 @@ export default function LoginScreen() {
                 value={sifre}
                 onChangeText={setSifre}
                 secureTextEntry={!sifreGoster}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="none"
                 placeholderTextColor={RENKLER.altMetin}
               />
               <TouchableOpacity onPress={() => setSifreGoster(!sifreGoster)}>
