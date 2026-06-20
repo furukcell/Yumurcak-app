@@ -1,7 +1,7 @@
 // ============================================================
 // YUMURCAK — AdminStack.js
 // Yönetici navigasyon stack'i
-// FAZ 4: Kurum Bilgileri ekranı eklendi
+// FAZ 5: Abonelik / Ödeme ekranı eklendi
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -24,6 +24,7 @@ import LessonScheduleFormScreen from '../screens/admin/LessonScheduleFormScreen'
 import EventListScreen from '../screens/admin/EventListScreen';
 import EventFormScreen from '../screens/admin/EventFormScreen';
 import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSettingsScreen';
+import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +39,7 @@ export default function AdminStack() {
     >
       <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Yönetim Paneli' }} />
       <Stack.Screen name="InstitutionSettings" component={AdminInstitutionSettingsScreen} options={{ title: 'Kurum Bilgileri' }} />
+      <Stack.Screen name="Subscription" component={AdminSubscriptionScreen} options={{ title: 'Abonelik / Ödeme' }} />
       <Stack.Screen name="ClassList" component={ClassListScreen} options={{ title: 'Sınıflar' }} />
       <Stack.Screen name="ClassForm" component={ClassFormScreen} options={{ title: 'Sınıf Ekle/Düzenle' }} />
       <Stack.Screen name="ChildList" component={ChildListScreen} options={{ title: 'Çocuklar' }} />
