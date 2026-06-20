@@ -17,6 +17,7 @@ const THEME = {
   orange: '#FF9F1C',
   blue: '#3A7BFF',
   red: '#FF4D6D',
+  teal: '#00B4D8',
   text: '#191A23',
   muted: '#707386',
   bg: '#F8F6FF',
@@ -30,6 +31,7 @@ const MENU_ITEMS = [
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
   { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
+  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
 ];
 
 const OZET_ITEMS = [
@@ -164,66 +166,34 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: THEME.bg },
   scrollContent: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 40 },
 
-  // ── Üst Bar ──
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20,
-  },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   topBarLeft: { flexDirection: 'row', alignItems: 'center' },
-  logoCircle: {
-    width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft,
-    alignItems: 'center', justifyContent: 'center', marginRight: 10,
-  },
+  logoCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   logoEmoji: { fontSize: 22 },
   appName: { fontSize: 18, fontWeight: '900', color: THEME.primary },
   panelLabel: { fontSize: 11, color: THEME.muted, fontWeight: '700' },
-  cikisBtn: {
-    backgroundColor: THEME.card, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8,
-    borderWidth: 1, borderColor: THEME.border,
-  },
+  cikisBtn: { backgroundColor: THEME.card, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: THEME.border },
   cikisBtnText: { fontSize: 13, fontWeight: '800', color: THEME.primary },
 
-  // ── Hoş Geldin ──
-  welcomeCard: {
-    backgroundColor: THEME.primary, borderRadius: 24, padding: 20,
-    flexDirection: 'row', alignItems: 'center', marginBottom: 24,
-    shadowColor: THEME.primary, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6,
-  },
+  welcomeCard: { backgroundColor: THEME.primary, borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 24, shadowColor: THEME.primary, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 },
   welcomeLeft: { flex: 1 },
   welcomeGreeting: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700', marginBottom: 4 },
   welcomeName: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginBottom: 3 },
   welcomeSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600' },
-  welcomeIcon: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center',
-  },
+  welcomeIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   welcomeIconText: { fontSize: 28 },
 
-  // ── Bölüm Başlığı ──
   sectionTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, marginBottom: 12 },
 
-  // ── Özet Grid ──
   loadingBox: { alignItems: 'center', paddingVertical: 20, marginBottom: 24 },
   ozetGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
-  ozetKart: {
-    width: '23%', backgroundColor: THEME.card, borderRadius: 18, padding: 12,
-    alignItems: 'center', borderWidth: 1, borderColor: THEME.border,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
-  },
+  ozetKart: { width: '23%', backgroundColor: THEME.card, borderRadius: 18, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   ozetIcon: { fontSize: 22, marginBottom: 6 },
   ozetSayi: { fontSize: 24, fontWeight: '900', marginBottom: 3 },
   ozetLabel: { fontSize: 10, color: THEME.muted, fontWeight: '800', textAlign: 'center' },
 
-  // ── Menü Kartları ──
-  menuKart: {
-    backgroundColor: THEME.card, borderRadius: 20, padding: 16,
-    flexDirection: 'row', alignItems: 'center', marginBottom: 12,
-    borderWidth: 1, borderColor: THEME.border,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
-  },
-  menuIconWrapper: {
-    width: 52, height: 52, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center', marginRight: 14,
-  },
+  menuKart: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: THEME.border, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  menuIconWrapper: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   menuIcon: { fontSize: 26 },
   menuTextBlock: { flex: 1 },
   menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, marginBottom: 3 },
