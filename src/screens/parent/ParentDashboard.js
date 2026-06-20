@@ -3,6 +3,7 @@
 // Modern veli arayüzü — ana sayfa, raporlar, duyurular, profil
 // + Hızlı işlem ekranları (local state navigation)
 // + Yemek Listesi (Firebase yemekListeleri node)
+// + Etkinlikler ve yeni veli modül placeholder ekranları
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -65,12 +66,47 @@ const PLACEHOLDER_SCREENS = {
     color: '#6C3DEB',
     bgColor: '#EFE8FF',
   },
+  attendance: {
+    icon: '✅',
+    title: 'Yoklama',
+    description: 'Son 12 aylık yoklama geçmişi yakında burada görünecek.',
+    color: '#20B45B',
+    bgColor: '#EAFBF1',
+  },
+  development: {
+    icon: '📈',
+    title: 'Gelişim',
+    description: 'Boy, kilo ve fiziksel gelişim raporları yakında aktif olacak.',
+    color: '#3A7BFF',
+    bgColor: '#EEF4FF',
+  },
+  medical: {
+    icon: '🩺',
+    title: 'Medikal',
+    description: 'Sağlık bilgileri yakında bu ekrandan takip edilecek.',
+    color: '#FF4D6D',
+    bgColor: '#FFF0F4',
+  },
+  contact: {
+    icon: '☎️',
+    title: 'Kurum İletişim',
+    description: 'Kurum, yönetici ve öğretmen iletişim bilgileri yakında burada olacak.',
+    color: '#6C3DEB',
+    bgColor: '#EFE8FF',
+  },
+  service: {
+    icon: '🚌',
+    title: 'Servis',
+    description: 'Servis alış ve bırakış bilgileri yakında burada görünecek.',
+    color: '#FF9F1C',
+    bgColor: '#FFF6E8',
+  },
 };
 
 export default function ParentDashboardScreen() {
   const { kullanici, cikisYap } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
-  // currentScreen: 'main' | 'messages' | 'gallery' | 'documents' | 'meals' | 'mealDetail' | 'events'
+  // currentScreen: 'main' | 'messages' | 'gallery' | 'documents' | 'meals' | 'mealDetail' | 'events' | 'attendance' | 'development' | 'medical' | 'contact' | 'service'
   const [currentScreen, setCurrentScreen] = useState('main');
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [children, setChildren] = useState([]);
@@ -191,9 +227,10 @@ export default function ParentDashboardScreen() {
     const unsubscribe = onValue(etkinlikRef, (snapshot) => {
       const data = snapshot.val();
       const list = [];
-      if (data && sinifId) {
+      if (data && sinifId && kresId) {
         Object.entries(data).forEach(([id, item]) => {
           if (item.aktif === false) return;
+          if (item.kresId !== kresId) return;
           const sinifIdsArr = Array.isArray(item.sinifIds) ? item.sinifIds : [];
           if (!sinifIdsArr.includes(sinifId)) return;
           list.push({ id, ...item });
@@ -205,7 +242,7 @@ export default function ParentDashboardScreen() {
       setEtkinlikler(list);
     });
     return () => unsubscribe();
-  }, [sinifId]);
+  }, [sinifId, kresId]);
 
   // ─── Hesaplanan değerler ──────────────────────────────────────
   const childReports = useMemo(() => {
@@ -621,11 +658,16 @@ export default function ParentDashboardScreen() {
         <Text style={styles.sectionTitle}>Hızlı İşlemler</Text>
         <View style={styles.quickGrid}>
           {renderQuickAction('📋', 'Günlük Rapor', () => setActiveTab('reports'))}
+          {renderQuickAction('✅', 'Yoklama', () => openScreen('attendance'))}
+          {renderQuickAction('🍽️', 'Yemek Listesi', () => openScreen('meals'))}
+          {renderQuickAction('🎉', 'Etkinlikler', () => openScreen('events'))}
+          {renderQuickAction('📈', 'Gelişim', () => openScreen('development'))}
+          {renderQuickAction('🩺', 'Medikal', () => openScreen('medical'))}
+          {renderQuickAction('☎️', 'Kurum İletişim', () => openScreen('contact'))}
+          {renderQuickAction('🚌', 'Servis', () => openScreen('service'))}
           {renderQuickAction('📣', 'Duyurular', () => setActiveTab('announcements'))}
           {renderQuickAction('💬', 'Mesajlar', () => openScreen('messages'))}
           {renderQuickAction('🖼️', 'Galeri', () => openScreen('gallery'))}
-          {renderQuickAction('🍽️', 'Yemek Listesi', () => openScreen('meals'))}
-          {renderQuickAction('🎉', 'Etkinlikler', () => openScreen('events'))}
           {renderQuickAction('📁', 'Belgeler', () => openScreen('documents'))}
         </View>
       </ScrollView>
