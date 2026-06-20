@@ -4,8 +4,17 @@
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import TeacherDashboardScreen from '../screens/teacher/TeacherDashboardScreen';
+import TeacherChildrenScreen from '../screens/teacher/TeacherChildrenScreen';
 import ChildReportScreen from '../screens/teacher/ChildReportScreen';
+import TeacherAttendanceScreen from '../screens/teacher/TeacherAttendanceScreen';
+import TeacherScheduleScreen from '../screens/teacher/TeacherScheduleScreen';
+import TeacherEventsScreen from '../screens/teacher/TeacherEventsScreen';
+import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
+import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
+import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
+import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,21 +22,20 @@ export default function TeacherStack() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#633806' }, // Kahverengi ton
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '600' },
+        headerShown: false,
+        contentStyle: { backgroundColor: '#F8F6FF' },
       }}
     >
-      <Stack.Screen
-        name="TeacherDashboard"
-        component={TeacherDashboardScreen}
-        options={{ title: 'Sınıfım' }}
-      />
-      <Stack.Screen
-        name="ChildReport"
-        component={ChildReportScreen}
-        options={{ title: 'Günlük Rapor' }}
-      />
+      <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
+      <Stack.Screen name="TeacherChildren" component={TeacherChildrenScreen} />
+      <Stack.Screen name="ChildReport" component={ChildReportScreen} />
+      <Stack.Screen name="TeacherAttendance" component={TeacherAttendanceScreen} />
+      <Stack.Screen name="TeacherSchedule" component={TeacherScheduleScreen} />
+      <Stack.Screen name="TeacherEvents" component={TeacherEventsScreen} />
+      <Stack.Screen name="TeacherMeals" component={TeacherMealsScreen} />
+      <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
+      <Stack.Screen name="TeacherAnnouncements" component={TeacherAnnouncementsScreen} />
+      <Stack.Screen name="TeacherProfile" component={TeacherProfileScreen} />
     </Stack.Navigator>
   );
 }
