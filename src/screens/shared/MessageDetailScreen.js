@@ -1,11 +1,11 @@
 // ============================================================
 // YUMURCAK — MessageDetailScreen.js
-// FAZ 12: Mesaj yazma alanı tıklanmıyor / klavye açılmıyor fix
+// FAZ 16: Son 20 mesaj + Daha fazla yükle + Okundu bildirimi
 // Firebase:
-// mesajKonusmalari/{konusmaId}
-// mesajlar/{konusmaId}/{mesajId}
+// mesajKonusmalari/{conversationId}
+// mesajlar/{conversationId}/{messageId}
 // ============================================================
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,10 +21,29 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { onValue, push, ref, update } from 'firebase/database';
+import {
+  endBefore,
+  get,
+  increment,
+  limitToLast,
+  onValue,
+  orderByChild,
+  push,
+  query as dbQuery,
+  ref,
+  update,
+} from 'firebase/database';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import {
+  formatMessageTime,
+  getParticipantIds,
+  isReadByOtherParticipant,
+  mergeMessages,
+  MESSAGE_PAGE_SIZE,
+  normalizeConversationMeta,
+} from '../../utils/messageHelpers';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -33,7 +52,7 @@ const THEME = {
   bg: '#F8F6FF',
   card: '#FFFFFF',
   border: '#EEEAF8',
-  red: '#FF4D6D',
+  green: '#20B45B',
 };
 
 export default function MessageDetailScreen() {
@@ -54,10 +73,16 @@ export default function MessageDetailScreen() {
   const listRef = useRef(null);
   const inputRef = useRef(null);
 
-  const [messages, setMessages] = useState([]);
+  const [liveMessages, setLiveMessages] = useState([]);
+  const [olderMessages, setOlderMessages] = useState([]);
+  const [conversation, setConversation] = useState(conversationMeta || {});
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [sending, setSending] = useState(false);
+
+  const allMessages = useMemo(() => mergeMessages(olderMessages, liveMessages), [olderMessages, liveMessages]);
 
   useEffect(() => {
     if (!conversationId) {
@@ -65,13 +90,24 @@ export default function MessageDetailScreen() {
       return undefined;
     }
 
-    const messagesRef = ref(database, `mesajlar/${conversationId}`);
-    const unsubscribe = onValue(messagesRef, (snapshot) => {
+    const conversationRef = ref(database, `mesajKonusmalari/${conversationId}`);
+    const unsubConversation = onValue(conversationRef, (snapshot) => {
+      setConversation(snapshot.val() || conversationMeta || {});
+    });
+
+    const messagesQuery = dbQuery(
+      ref(database, `mesajlar/${conversationId}`),
+      orderByChild('createdAt'),
+      limitToLast(MESSAGE_PAGE_SIZE)
+    );
+
+    const unsubMessages = onValue(messagesQuery, (snapshot) => {
       const data = snapshot.val();
       const list = data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : [];
       list.sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
 
-      setMessages(list);
+      setLiveMessages(list);
+      setHasMore(list.length === MESSAGE_PAGE_SIZE);
       setLoading(false);
 
       requestAnimationFrame(() => {
@@ -79,13 +115,68 @@ export default function MessageDetailScreen() {
       });
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubConversation();
+      unsubMessages();
+    };
   }, [conversationId]);
+
+  useEffect(() => {
+    if (!conversationId || !currentUserId) return;
+
+    const now = Date.now();
+    update(ref(database, `mesajKonusmalari/${conversationId}`), {
+      [`okunmamisSayac/${currentUserId}`]: 0,
+      [`sonOkuma/${currentUserId}`]: now,
+      [`lastSeenAt/${currentUserId}`]: now,
+    }).catch(() => {});
+  }, [conversationId, currentUserId]);
 
   const focusInput = () => {
     requestAnimationFrame(() => {
       inputRef.current?.focus?.();
     });
+  };
+
+  const loadOlderMessages = async () => {
+    if (!conversationId || loadingMore || allMessages.length === 0) return;
+
+    const oldest = allMessages[0];
+    const oldestTime = Number(oldest?.createdAt || 0);
+
+    if (!oldestTime) {
+      setHasMore(false);
+      return;
+    }
+
+    setLoadingMore(true);
+
+    try {
+      const olderQuery = dbQuery(
+        ref(database, `mesajlar/${conversationId}`),
+        orderByChild('createdAt'),
+        endBefore(oldestTime),
+        limitToLast(MESSAGE_PAGE_SIZE)
+      );
+
+      const snapshot = await get(olderQuery);
+      const data = snapshot.val();
+      const list = data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : [];
+      list.sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+
+      if (list.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setOlderMessages((prev) => mergeMessages(list, prev));
+      if (list.length < MESSAGE_PAGE_SIZE) setHasMore(false);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Hata', 'Eski mesajlar yüklenemedi.');
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -103,24 +194,38 @@ export default function MessageDetailScreen() {
 
     try {
       const now = Date.now();
+      const mergedMeta = normalizeConversationMeta({ ...conversationMeta, ...conversation });
+      const participants = getParticipantIds(mergedMeta).filter(Boolean);
+      if (!participants.includes(currentUserId)) participants.push(currentUserId);
 
       await push(ref(database, `mesajlar/${conversationId}`), {
         gonderenId: currentUserId,
         gonderenRol: currentRole,
         metin: clean,
         createdAt: now,
-        okundu: false,
+        okunduBy: {
+          [currentUserId]: now,
+        },
       });
 
-      await update(ref(database, `mesajKonusmalari/${conversationId}`), {
-        ...conversationMeta,
+      const updates = {
+        ...mergedMeta,
         id: conversationId,
         sonMesaj: clean,
         sonMesajAt: now,
         sonGonderenId: currentUserId,
         aktif: true,
         updatedAt: now,
+        [`sonOkuma/${currentUserId}`]: now,
+        [`okunmamisSayac/${currentUserId}`]: 0,
+      };
+
+      participants.forEach((participantId) => {
+        if (!participantId || participantId === currentUserId) return;
+        updates[`okunmamisSayac/${participantId}`] = increment(1);
       });
+
+      await update(ref(database, `mesajKonusmalari/${conversationId}`), updates);
 
       setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 80);
     } catch (err) {
@@ -164,12 +269,25 @@ export default function MessageDetailScreen() {
               <FlatList
                 ref={listRef}
                 style={styles.messageList}
-                data={messages}
+                data={allMessages}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
                 onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
+                ListHeaderComponent={
+                  hasMore ? (
+                    <TouchableOpacity style={styles.loadMoreButton} onPress={loadOlderMessages} disabled={loadingMore} activeOpacity={0.85}>
+                      {loadingMore ? (
+                        <ActivityIndicator color={THEME.primary} />
+                      ) : (
+                        <Text style={styles.loadMoreText}>Daha fazla mesaj yükle</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : allMessages.length > 0 ? (
+                    <Text style={styles.noMoreText}>Konuşmanın başlangıcı</Text>
+                  ) : null
+                }
                 ListEmptyComponent={
                   <View style={styles.emptyCard}>
                     <Text style={styles.emptyIcon}>💬</Text>
@@ -179,6 +297,7 @@ export default function MessageDetailScreen() {
                 }
                 renderItem={({ item }) => {
                   const mine = item.gonderenId === currentUserId;
+                  const read = isReadByOtherParticipant(item, conversation, currentUserId);
 
                   return (
                     <View style={[styles.messageRow, mine ? styles.messageRowMine : styles.messageRowOther]}>
@@ -186,9 +305,16 @@ export default function MessageDetailScreen() {
                         <Text style={[styles.messageText, mine ? styles.messageTextMine : styles.messageTextOther]}>
                           {item.metin}
                         </Text>
-                        <Text style={[styles.timeText, mine ? styles.timeTextMine : styles.timeTextOther]}>
-                          {formatTime(item.createdAt)}
-                        </Text>
+                        <View style={styles.metaRow}>
+                          <Text style={[styles.timeText, mine ? styles.timeTextMine : styles.timeTextOther]}>
+                            {formatMessageTime(item.createdAt)}
+                          </Text>
+                          {mine ? (
+                            <Text style={[styles.readText, read ? styles.readTextActive : styles.timeTextMine]}>
+                              {read ? 'Okundu' : 'Gönderildi'}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
                     </View>
                   );
@@ -200,11 +326,7 @@ export default function MessageDetailScreen() {
 
         <View style={styles.inputOuter} pointerEvents="box-none">
           <View style={styles.inputBar}>
-            <TouchableOpacity
-              style={styles.inputTouchable}
-              activeOpacity={1}
-              onPress={focusInput}
-            >
+            <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
               <TextInput
                 ref={inputRef}
                 style={styles.input}
@@ -236,21 +358,9 @@ export default function MessageDetailScreen() {
   );
 }
 
-function formatTime(value) {
-  if (!value) return '';
-  const date = new Date(Number(value));
-  if (Number.isNaN(date.getTime())) return '';
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: THEME.bg,
-  },
+  flex: { flex: 1 },
+  safeArea: { flex: 1, backgroundColor: THEME.bg },
   header: {
     paddingHorizontal: 14,
     paddingTop: 10,
@@ -263,62 +373,30 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 2,
   },
-  backButton: {
-    width: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
+  backButton: { width: 72, flexDirection: 'row', alignItems: 'center' },
+  backArrow: { fontSize: 30, color: THEME.primary, fontWeight: '900', marginRight: 2 },
+  backLabel: { fontSize: 14, color: THEME.primary, fontWeight: '800' },
+  titleWrap: { flex: 1, alignItems: 'center' },
+  title: { fontSize: 18, color: THEME.primary, fontWeight: '900' },
+  subtitle: { fontSize: 12, color: THEME.muted, fontWeight: '700', marginTop: 2 },
+  headerRight: { width: 72 },
+  messagesArea: { flex: 1, backgroundColor: THEME.bg },
+  messageList: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
+  listContent: { padding: 14, paddingBottom: 18, flexGrow: 1 },
+  loadMoreButton: {
+    alignSelf: 'center',
+    backgroundColor: THEME.card,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
-  backArrow: {
-    fontSize: 30,
-    color: THEME.primary,
-    fontWeight: '900',
-    marginRight: 2,
-  },
-  backLabel: {
-    fontSize: 14,
-    color: THEME.primary,
-    fontWeight: '800',
-  },
-  titleWrap: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    color: THEME.primary,
-    fontWeight: '900',
-  },
-  subtitle: {
-    fontSize: 12,
-    color: THEME.muted,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  headerRight: {
-    width: 72,
-  },
-  messagesArea: {
-    flex: 1,
-    backgroundColor: THEME.bg,
-  },
-  messageList: {
-    flex: 1,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: THEME.muted,
-    fontWeight: '700',
-  },
-  listContent: {
-    padding: 14,
-    paddingBottom: 18,
-    flexGrow: 1,
-  },
+  loadMoreText: { color: THEME.primary, fontWeight: '900' },
+  noMoreText: { color: THEME.muted, fontWeight: '700', textAlign: 'center', marginBottom: 12, fontSize: 12 },
   emptyCard: {
     backgroundColor: THEME.card,
     borderRadius: 22,
@@ -328,77 +406,25 @@ const styles = StyleSheet.create({
     borderColor: THEME.border,
     marginTop: 20,
   },
-  emptyIcon: {
-    fontSize: 44,
-    marginBottom: 10,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: THEME.text,
-  },
-  emptyDesc: {
-    color: THEME.muted,
-    marginTop: 6,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  messageRow: {
-    marginBottom: 10,
-    flexDirection: 'row',
-  },
-  messageRowMine: {
-    justifyContent: 'flex-end',
-  },
-  messageRowOther: {
-    justifyContent: 'flex-start',
-  },
-  bubble: {
-    maxWidth: '78%',
-    borderRadius: 18,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-  },
-  bubbleMine: {
-    backgroundColor: THEME.primary,
-    borderTopRightRadius: 6,
-  },
-  bubbleOther: {
-    backgroundColor: THEME.card,
-    borderTopLeftRadius: 6,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '600',
-  },
-  messageTextMine: {
-    color: '#FFF',
-  },
-  messageTextOther: {
-    color: THEME.text,
-  },
-  timeText: {
-    fontSize: 10,
-    alignSelf: 'flex-end',
-    marginTop: 4,
-    fontWeight: '700',
-  },
-  timeTextMine: {
-    color: 'rgba(255,255,255,0.72)',
-  },
-  timeTextOther: {
-    color: THEME.muted,
-  },
-  inputOuter: {
-    backgroundColor: THEME.card,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    zIndex: 50,
-    elevation: 20,
-  },
+  emptyIcon: { fontSize: 44, marginBottom: 10 },
+  emptyTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
+  emptyDesc: { color: THEME.muted, marginTop: 6, textAlign: 'center', lineHeight: 20 },
+  messageRow: { marginBottom: 10, flexDirection: 'row' },
+  messageRowMine: { justifyContent: 'flex-end' },
+  messageRowOther: { justifyContent: 'flex-start' },
+  bubble: { maxWidth: '80%', borderRadius: 18, paddingHorizontal: 13, paddingVertical: 9 },
+  bubbleMine: { backgroundColor: THEME.primary, borderTopRightRadius: 6 },
+  bubbleOther: { backgroundColor: THEME.card, borderTopLeftRadius: 6, borderWidth: 1, borderColor: THEME.border },
+  messageText: { fontSize: 15, lineHeight: 20, fontWeight: '600' },
+  messageTextMine: { color: '#FFF' },
+  messageTextOther: { color: THEME.text },
+  metaRow: { flexDirection: 'row', alignSelf: 'flex-end', alignItems: 'center', gap: 8, marginTop: 4 },
+  timeText: { fontSize: 10, fontWeight: '700' },
+  timeTextMine: { color: 'rgba(255,255,255,0.72)' },
+  timeTextOther: { color: THEME.muted },
+  readText: { fontSize: 10, fontWeight: '900' },
+  readTextActive: { color: '#BFFFD2' },
+  inputOuter: { backgroundColor: THEME.card, borderTopWidth: 1, borderTopColor: THEME.border, zIndex: 50, elevation: 20 },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -407,10 +433,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'android' ? 12 : 10,
     backgroundColor: THEME.card,
   },
-  inputTouchable: {
-    flex: 1,
-    minHeight: 44,
-  },
+  inputTouchable: { flex: 1, minHeight: 44 },
   input: {
     flex: 1,
     minHeight: 44,
@@ -436,11 +459,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 44,
   },
-  sendButtonDisabled: {
-    opacity: 0.45,
-  },
-  sendText: {
-    color: '#FFF',
-    fontWeight: '900',
-  },
+  sendButtonDisabled: { opacity: 0.45 },
+  sendText: { color: '#FFF', fontWeight: '900' },
 });
