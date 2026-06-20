@@ -70,18 +70,20 @@ const PLACEHOLDER_SCREENS = {
 export default function ParentDashboardScreen() {
   const { kullanici, cikisYap } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
-  // currentScreen: 'main' | 'messages' | 'gallery' | 'documents' | 'meals' | 'mealDetail'
+  // currentScreen: 'main' | 'messages' | 'gallery' | 'documents' | 'meals' | 'mealDetail' | 'events'
   const [currentScreen, setCurrentScreen] = useState('main');
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [children, setChildren] = useState([]);
   const [reports, setReports] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [yemekListeleri, setYemekListeleri] = useState([]);
+  const [etkinlikler, setEtkinlikler] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const parentId = kullanici?.uid || kullanici?.id;
   const selectedChild = children[0];
   const kresId = selectedChild?.kresId || kullanici?.kresId || null;
+  const sinifId = selectedChild?.sinifId || null;
 
   // ─── Firebase: Çocuklar ──────────────────────────────────────
   useEffect(() => {
@@ -183,6 +185,28 @@ export default function ParentDashboardScreen() {
     return () => unsubscribe();
   }, [kresId]);
 
+  // ─── Firebase: Etkinlikler (çocuğun sınıfına ait, aktif olanlar) ──
+  useEffect(() => {
+    const etkinlikRef = ref(database, 'etkinlikler');
+    const unsubscribe = onValue(etkinlikRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = [];
+      if (data && sinifId) {
+        Object.entries(data).forEach(([id, item]) => {
+          if (item.aktif === false) return;
+          const sinifIdsArr = Array.isArray(item.sinifIds) ? item.sinifIds : [];
+          if (!sinifIdsArr.includes(sinifId)) return;
+          list.push({ id, ...item });
+        });
+
+        // Tarihi yaklaşan en üstte
+        list.sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
+      }
+      setEtkinlikler(list);
+    });
+    return () => unsubscribe();
+  }, [sinifId]);
+
   // ─── Hesaplanan değerler ──────────────────────────────────────
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
@@ -262,6 +286,15 @@ export default function ParentDashboardScreen() {
     );
   }
 
+  // ─── Etkinlikler Ekranı ───────────────────────────────────────
+  if (currentScreen === 'events') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderEventsScreen()}
+      </SafeAreaView>
+    );
+  }
+
   // ─── Placeholder Ekranlar ─────────────────────────────────────
   if (currentScreen !== 'main') {
     return (
@@ -283,6 +316,65 @@ export default function ParentDashboardScreen() {
       </View>
     </SafeAreaView>
   );
+
+  // ════════════════════════════════════════════════════════════
+  // ETKİNLİKLER EKRANI
+  // ════════════════════════════════════════════════════════════
+
+  function renderEventsScreen() {
+    return (
+      <View style={styles.placeholderRoot}>
+        <View style={styles.placeholderHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.75}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backLabel}>Geri</Text>
+          </TouchableOpacity>
+          <Text style={styles.placeholderHeaderTitle}>Etkinlikler</Text>
+          <View style={styles.backButtonSpacer} />
+        </View>
+
+        <ScrollView
+          style={styles.placeholderScroll}
+          contentContainerStyle={styles.placeholderContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {!sinifId ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyIcon}>🎉</Text>
+              <Text style={styles.emptyTitle}>Sınıf bilgisi bulunamadı.</Text>
+              <Text style={styles.emptyDesc}>Çocuğunuz bir sınıfa bağlandığında etkinlikler burada görünecek.</Text>
+            </View>
+          ) : etkinlikler.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyIcon}>🎉</Text>
+              <Text style={styles.emptyTitle}>Henüz etkinlik eklenmemiş.</Text>
+              <Text style={styles.emptyDesc}>Sınıfınıza ait yeni bir etkinlik olduğunda burada görünecek.</Text>
+            </View>
+          ) : (
+            etkinlikler.map((item) => renderEventCard(item))
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  function renderEventCard(item) {
+    return (
+      <View key={item.id} style={styles.mealCard}>
+        <View style={styles.mealCardTop}>
+          <View style={[styles.mealTipBadge, styles.mealTipHaftalik]}>
+            <Text style={[styles.mealTipText, styles.mealTipTextHaftalik]}>
+              📅 {item.tarih || 'Tarih belirtilmemiş'}{item.saat ? ` · ${item.saat}` : ''}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.mealCardTitle}>{item.baslik || 'Etkinlik'}</Text>
+        {item.aciklama ? (
+          <Text style={styles.eventDesc}>{item.aciklama}</Text>
+        ) : null}
+      </View>
+    );
+  }
 
   // ════════════════════════════════════════════════════════════
   // YEMEK LİSTESİ EKRANLARI
@@ -533,6 +625,7 @@ export default function ParentDashboardScreen() {
           {renderQuickAction('💬', 'Mesajlar', () => openScreen('messages'))}
           {renderQuickAction('🖼️', 'Galeri', () => openScreen('gallery'))}
           {renderQuickAction('🍽️', 'Yemek Listesi', () => openScreen('meals'))}
+          {renderQuickAction('🎉', 'Etkinlikler', () => openScreen('events'))}
           {renderQuickAction('📁', 'Belgeler', () => openScreen('documents'))}
         </View>
       </ScrollView>
@@ -984,6 +1077,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 11, alignItems: 'center',
   },
   mealDetailButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  eventDesc: { fontSize: 13, color: THEME.muted, lineHeight: 19, marginTop: 2 },
 
   mealDetailInfoRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
