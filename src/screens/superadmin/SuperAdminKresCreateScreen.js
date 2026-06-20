@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — SuperAdminKresCreateScreen.js
-// FAZ 14: Süper admin yeni kreş + kurum yöneticisi + demo abonelik oluşturur
+// FAZ 17: Yeni kreş oluştururken index kayıtları helper ile yazılır
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import {
@@ -19,25 +19,22 @@ import {
 } from 'react-native';
 import { push, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
+import { addUserIndexUpdates } from '../../utils/firebaseIndexHelpers';
 
 const THEME = {
   bg: '#0F172A',
   panel: '#111827',
-  card: '#1E293B',
   line: '#334155',
   text: '#F8FAFC',
   muted: '#94A3B8',
   blue: '#38BDF8',
   green: '#22C55E',
-  orange: '#F59E0B',
-  red: '#EF4444',
 };
 
 const DEFAULT_DEMO_DAYS = 30;
 
 export default function SuperAdminKresCreateScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
-
   const [form, setForm] = useState({
     ad: '',
     il: '',
@@ -62,9 +59,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
     };
   }, [form.kullaniciAdi, form.sifre]);
 
-  const setValue = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  const setValue = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const validate = () => {
     if (!form.ad.trim()) return 'Kreş adı zorunlu.';
@@ -74,7 +69,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
     if (!form.kullaniciAdi.trim()) return 'Yönetici kullanıcı adı zorunlu.';
     if (form.kullaniciAdi.trim().length < 3) return 'Kullanıcı adı en az 3 karakter olmalı.';
     if (!form.sifre.trim()) return 'Yönetici şifresi zorunlu.';
-    if (form.sifre.trim().length < 6) return 'Şifre en az 6 karakter olmalı. Firebase Auth için gerekli.';
+    if (form.sifre.trim().length < 6) return 'Şifre en az 6 karakter olmalı.';
     const demoGun = Number(form.demoGun);
     if (!demoGun || demoGun < 1) return 'Demo gün sayısı en az 1 olmalı.';
     return null;
@@ -99,7 +94,6 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
 
   const saveKres = async () => {
     if (saving) return;
-
     setSaving(true);
 
     try {
@@ -115,9 +109,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
 
       const cleanUsername = normalizeUsername(form.kullaniciAdi);
 
-      const updates = {};
-
-      updates[`kresler/${kresId}`] = {
+      const kresRecord = {
         id: kresId,
         ad: form.ad.trim(),
         kresAdi: form.ad.trim(),
@@ -126,6 +118,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         adres: form.adres.trim(),
         telefon: form.telefon.trim(),
         email: form.email.trim(),
+        yoneticiId,
         yoneticiAd: `${form.yoneticiAd.trim()} ${form.yoneticiSoyad.trim()}`.trim(),
         yoneticiTelefon: form.yoneticiTelefon.trim(),
         aktif: true,
@@ -133,7 +126,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         updatedAt: now,
       };
 
-      updates[`kullanicilar/${yoneticiId}`] = {
+      const userRecord = {
         uid: yoneticiId,
         id: yoneticiId,
         kresId,
@@ -148,6 +141,10 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         updatedAt: now,
       };
 
+      const updates = {};
+
+      updates[`kresler/${kresId}`] = kresRecord;
+      updates[`kullanicilar/${yoneticiId}`] = userRecord;
       updates[`abonelikler/${kresId}`] = {
         kresId,
         plan: 'demo',
@@ -162,9 +159,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         updatedAt: now,
       };
 
-      // Firebase Console'da daha düzenli görünmesi için index kayıtları.
-      // Ana kaynak yine kullancilar/kresler/cocuklar node'larıdır.
-      updates[`kresKullanicilari/${kresId}/yoneticiler/${yoneticiId}`] = true;
+      addUserIndexUpdates(updates, yoneticiId, userRecord);
 
       await update(ref(database), updates);
 
@@ -174,10 +169,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         [
           {
             text: 'Tamam',
-            onPress: () => navigation.navigate('SuperAdminKresDetail', {
-              kresId,
-              kres: updates[`kresler/${kresId}`],
-            }),
+            onPress: () => navigation.navigate('SuperAdminKresDetail', { kresId, kres: kresRecord }),
           },
         ]
       );
@@ -239,7 +231,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
           </TouchableOpacity>
 
           <Text style={styles.note}>
-            Not: Bu fazda kullanıcı Firebase Auth'a otomatik taşınmaz. Yönetici ilk etapta kullanıcı adı/şifre fallback ile giriş yapar. İstersen sonra Auth Geçiş ekranından Firebase Auth'a alınır.
+            Yeni kayıt oluşturulunca kresKullanicilari ve kullaniciKresleri indexleri de otomatik yazılır.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -291,11 +283,7 @@ function Input({ label, value, onChangeText, placeholder, multiline, keyboardTyp
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: {
-    flex: 1,
-    backgroundColor: THEME.bg,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
-  },
+  safeArea: { flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
   content: { padding: 16, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   backButton: { width: 70 },
@@ -309,16 +297,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: THEME.text, fontSize: 18, fontWeight: '900', marginBottom: 10 },
   inputWrap: { marginBottom: 12 },
   inputLabel: { color: THEME.muted, fontWeight: '900', marginBottom: 7 },
-  input: {
-    minHeight: 48,
-    backgroundColor: '#0B1220',
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 15,
-    paddingHorizontal: 13,
-    color: THEME.text,
-    fontWeight: '800',
-  },
+  input: { minHeight: 48, backgroundColor: '#0B1220', borderWidth: 1, borderColor: THEME.line, borderRadius: 15, paddingHorizontal: 13, color: THEME.text, fontWeight: '800' },
   inputMulti: { minHeight: 86, paddingTop: 12 },
   previewCard: { backgroundColor: '#0B1220', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: THEME.line },
   previewTitle: { color: THEME.blue, fontWeight: '900', marginBottom: 8 },

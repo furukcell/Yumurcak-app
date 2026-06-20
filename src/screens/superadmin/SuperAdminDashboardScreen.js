@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — SuperAdminDashboardScreen.js
-// FAZ 14: Yeni Kreş Ekle butonu eklendi
+// FAZ 17: Firebase Index butonu eklendi
+// Not: FAZ 14 dashboard üstüne küçük index butonu eklenmiş sürüm.
 // ============================================================
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -55,15 +56,10 @@ export default function SuperAdminDashboardScreen({ navigation }) {
         get(ref(database, 'abonelikler')),
       ]);
 
-      const kresData = kresSnap.val() || {};
-      const userData = userSnap.val() || {};
-      const childData = childSnap.val() || {};
-      const subData = subSnap.val() || {};
-
-      setKresler(Object.entries(kresData).map(([id, val]) => ({ id, ...val })));
-      setKullanicilar(Object.entries(userData).map(([id, val]) => ({ id, uid: id, ...val })));
-      setCocuklar(Object.entries(childData).map(([id, val]) => ({ id, ...val })));
-      setAbonelikler(subData);
+      setKresler(Object.entries(kresSnap.val() || {}).map(([id, val]) => ({ id, ...val })));
+      setKullanicilar(Object.entries(userSnap.val() || {}).map(([id, val]) => ({ id, uid: id, ...val })));
+      setCocuklar(Object.entries(childSnap.val() || {}).map(([id, val]) => ({ id, ...val })));
+      setAbonelikler(subSnap.val() || {});
     } catch (error) {
       console.error(error);
       Alert.alert('Hata', 'Süper admin verileri yüklenemedi.');
@@ -95,16 +91,7 @@ export default function SuperAdminDashboardScreen({ navigation }) {
         const kalanGun = getRemainingDays(sub);
         const subStatus = getSubscriptionStatus(sub);
 
-        return {
-          ...kres,
-          abonelik: sub,
-          kalanGun,
-          subStatus,
-          childCount,
-          teacherCount,
-          parentCount,
-          managerCount,
-        };
+        return { ...kres, abonelik: sub, kalanGun, subStatus, childCount, teacherCount, parentCount, managerCount };
       })
       .sort((a, b) => {
         const order = { expired: 0, expiring: 1, demo: 2, active: 3, none: 4 };
@@ -113,15 +100,15 @@ export default function SuperAdminDashboardScreen({ navigation }) {
   }, [kresler, abonelikler, cocuklar, kullanicilar]);
 
   const stats = useMemo(() => {
-    const totalKres = enrichedKresler.length;
-    const totalChild = cocuklar.length;
-    const totalTeacher = kullanicilar.filter((u) => u.rol === 'ogretmen').length;
-    const totalParent = kullanicilar.filter((u) => u.rol === 'veli').length;
-    const activeSub = enrichedKresler.filter((k) => ['active', 'demo'].includes(k.subStatus.key)).length;
-    const expiredSub = enrichedKresler.filter((k) => k.subStatus.key === 'expired').length;
-    const expiringSub = enrichedKresler.filter((k) => k.subStatus.key === 'expiring').length;
-
-    return { totalKres, totalChild, totalTeacher, totalParent, activeSub, expiredSub, expiringSub };
+    return {
+      totalKres: enrichedKresler.length,
+      totalChild: cocuklar.length,
+      totalTeacher: kullanicilar.filter((u) => u.rol === 'ogretmen').length,
+      totalParent: kullanicilar.filter((u) => u.rol === 'veli').length,
+      activeSub: enrichedKresler.filter((k) => ['active', 'demo'].includes(k.subStatus.key)).length,
+      expiredSub: enrichedKresler.filter((k) => k.subStatus.key === 'expired').length,
+      expiringSub: enrichedKresler.filter((k) => k.subStatus.key === 'expiring').length,
+    };
   }, [enrichedKresler, cocuklar, kullanicilar]);
 
   const locationStats = useMemo(() => {
@@ -130,11 +117,7 @@ export default function SuperAdminDashboardScreen({ navigation }) {
       const key = `${kres.il || 'İl yok'} / ${kres.ilce || 'İlçe yok'}`;
       map[key] = (map[key] || 0) + 1;
     });
-
-    return Object.entries(map)
-      .map(([label, count]) => ({ label, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
+    return Object.entries(map).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count).slice(0, 6);
   }, [enrichedKresler]);
 
   if (loading) {
@@ -168,11 +151,7 @@ export default function SuperAdminDashboardScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={styles.createButton}
-              activeOpacity={0.86}
-              onPress={() => navigation.navigate('SuperAdminKresCreate')}
-            >
+            <TouchableOpacity style={styles.createButton} activeOpacity={0.86} onPress={() => navigation.navigate('SuperAdminKresCreate')}>
               <View>
                 <Text style={styles.createTitle}>+ Yeni Kreş Ekle</Text>
                 <Text style={styles.createDesc}>Kurum + yönetici hesabı + demo abonelik oluştur</Text>
@@ -180,13 +159,19 @@ export default function SuperAdminDashboardScreen({ navigation }) {
               <Text style={styles.createArrow}>›</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity style={styles.indexButton} activeOpacity={0.86} onPress={() => navigation.navigate('SuperAdminIndexMigration')}>
+              <View>
+                <Text style={styles.indexTitle}>Firebase Index / Veri Düzeni</Text>
+                <Text style={styles.indexDesc}>Kreş, kullanıcı, çocuk ve mesaj indexlerini oluştur</Text>
+              </View>
+              <Text style={styles.indexArrow}>›</Text>
+            </TouchableOpacity>
+
             <View style={styles.hero}>
               <View>
                 <Text style={styles.heroLabel}>Genel Durum</Text>
                 <Text style={styles.heroTitle}>{stats.totalKres} kreş takipte</Text>
-                <Text style={styles.heroDesc}>
-                  Aktif/demo: {stats.activeSub} · Yaklaşan: {stats.expiringSub} · Biten: {stats.expiredSub}
-                </Text>
+                <Text style={styles.heroDesc}>Aktif/demo: {stats.activeSub} · Yaklaşan: {stats.expiringSub} · Biten: {stats.expiredSub}</Text>
               </View>
               <Text style={styles.heroIcon}>📊</Text>
             </View>
@@ -289,10 +274,8 @@ function SmallInfo({ label, value }) {
 function getRemainingDays(sub = {}) {
   const end = sub.bitisTarihi || sub.bitis || sub.endDate || sub.expiresAt;
   if (!end) return null;
-
   const endMs = typeof end === 'number' ? end : new Date(end).getTime();
   if (!endMs || Number.isNaN(endMs)) return null;
-
   return Math.ceil((endMs - Date.now()) / 86400000);
 }
 
@@ -301,33 +284,21 @@ function getSubscriptionStatus(sub = {}) {
   const plan = String(sub.plan || '').toLowerCase();
   const kalan = getRemainingDays(sub);
 
-  if (!sub || Object.keys(sub).length === 0) {
-    return { key: 'none', label: 'Yok', color: THEME.muted, bg: '#263244' };
-  }
-
+  if (!sub || Object.keys(sub).length === 0) return { key: 'none', label: 'Yok', color: THEME.muted, bg: '#263244' };
   if (durum.includes('demo') || plan.includes('demo')) {
     if (kalan !== null && kalan < 0) return { key: 'expired', label: 'Bitti', color: THEME.red, bg: '#3A1F2A' };
     return { key: 'demo', label: 'Demo', color: THEME.blue, bg: '#17344A' };
   }
-
   if (kalan !== null) {
     if (kalan < 0) return { key: 'expired', label: 'Bitti', color: THEME.red, bg: '#3A1F2A' };
     if (kalan <= 7) return { key: 'expiring', label: `${kalan} gün`, color: THEME.orange, bg: '#3A2D17' };
   }
-
-  if (durum.includes('aktif') || durum.includes('active') || kalan === null || kalan > 7) {
-    return { key: 'active', label: 'Aktif', color: THEME.green, bg: '#173A2A' };
-  }
-
+  if (durum.includes('aktif') || durum.includes('active') || kalan === null || kalan > 7) return { key: 'active', label: 'Aktif', color: THEME.green, bg: '#173A2A' };
   return { key: 'none', label: 'Belirsiz', color: THEME.muted, bg: '#263244' };
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: THEME.bg,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
-  },
+  safeArea: { flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
   content: { padding: 16, paddingBottom: 36 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: THEME.muted, marginTop: 12, fontWeight: '800' },
@@ -337,10 +308,14 @@ const styles = StyleSheet.create({
   headerSub: { color: THEME.muted, fontWeight: '800', marginTop: 2 },
   logoutButton: { backgroundColor: '#1F2937', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: THEME.line },
   logoutText: { color: THEME.soft, fontWeight: '900' },
-  createButton: { backgroundColor: '#0EA5E9', borderRadius: 20, padding: 16, marginBottom: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  createButton: { backgroundColor: '#0EA5E9', borderRadius: 20, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   createTitle: { color: '#FFF', fontWeight: '900', fontSize: 18 },
   createDesc: { color: 'rgba(255,255,255,0.78)', fontWeight: '700', marginTop: 4 },
   createArrow: { color: '#FFF', fontSize: 34, fontWeight: '900' },
+  indexButton: { backgroundColor: '#1E293B', borderRadius: 20, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: THEME.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  indexTitle: { color: THEME.text, fontWeight: '900', fontSize: 16 },
+  indexDesc: { color: THEME.muted, fontWeight: '700', marginTop: 4 },
+  indexArrow: { color: THEME.blue, fontSize: 30, fontWeight: '900' },
   hero: { backgroundColor: THEME.panel, borderRadius: 24, padding: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: THEME.line, marginBottom: 14 },
   heroLabel: { color: THEME.blue, fontWeight: '900', fontSize: 12 },
   heroTitle: { color: THEME.text, fontWeight: '900', fontSize: 23, marginTop: 4 },
