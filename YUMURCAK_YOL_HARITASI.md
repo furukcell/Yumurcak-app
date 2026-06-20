@@ -1,37 +1,67 @@
-# Yumurcak Kreş — Güncel Yol Haritası
+# Yumurcak Kreş — Güncel Yol Haritası (Yeşil İşaretli)
 
 Bu doküman, **Yumurcak Kreş** uygulamasının mevcut durumunu ve bundan sonra yapılacak işleri gösterir.
 
 Durum renkleri:
 
-* 🟩 **Bu çalışmada yapıldı / gerçek cihazda doğrulandı**
-* 🟢 **Önceden yapıldı / temel seviye tamamlandı**
+* 🟢 **Önceden yapılmış / temel seviye tamamlandı**
+* 🟩 **Bu çalışmada net yapıldı ve gerçek cihazda doğrulandı**
+* 🟨 **Bu çalışmada sorun tespit edildi / kod tarafında düzeltildi, tekrar build-test gerekir**
 * ⚪ **Yapılacak / sonraki aşama**
-
 ---
 
 ## 0. Bu Çalışmada Net Tamamlananlar
 
-| Durum | İş |
-| ----- | -- |
-| 🟩 | Android APK gerçek cihazda açıldı |
-| 🟩 | `Component auth has not been registered`, `auth/invalid-api-key`, `Unable to load script`, `main has not been registered` hataları çözüldü |
-| 🟩 | Firebase config gerçek proje bilgileriyle düzeltildi |
-| 🟩 | `index.js` + `registerRootComponent(App)` yapısı eklendi |
-| 🟩 | `package.json` ana giriş dosyası `index.js` olarak düzeltildi |
-| 🟩 | Metro / Firebase SDK 54 uyumu için `metro.config.js` düzenlendi |
-| 🟩 | Codemagic debug APK yerine release APK üretecek hale getirildi |
-| 🟩 | Codemagic’in doğru commit/branch üzerinden build alması doğrulandı |
-| 🟩 | Uygulama ikonu `app.json` içine bağlandı |
-| 🟩 | Firebase Realtime Database bağlantısı gerçek cihazda doğrulandı |
-| 🟩 | Geçici kullanıcı adı / şifre login akışı gerçek cihazda çalıştı |
-| 🟩 | Yönetici hesabı ile giriş yapıldı |
-| 🟩 | Yönetici paneli açıldı |
-| 🟩 | Yönetici panelindeki Sınıflar / Çocuklar / Öğretmenler / Veliler / Duyurular kartlarına giriş yapılabildi |
-| 🟩 | Veli hesabı oluşturuldu |
-| 🟩 | Çocuk - veli bağlantısının `veliIds` mantığıyla çalıştığı anlaşıldı |
-| 🟩 | Veli ekranında çocuk yoksa kullanıcıyı kilitleyen çıkış/geri eksikliği tespit edildi |
-| 🟩 | README ve yol haritası çalışan MVP durumuna göre güncellendi |
+Aşağıdaki maddeler bu oturumda yapılan, build alınarak veya gerçek cihazda doğrulanan işlerdir.
+
+| Durum | Yapılan İş |
+| ----- | ---------- |
+| 🟩 | <font color="green">Expo SDK yükseltmesi sonrası açılış crash zinciri çözüldü.</font> |
+| 🟩 | <font color="green">Firebase Auth / Realtime Database bağlantı hataları giderildi.</font> |
+| 🟩 | <font color="green">`auth/invalid-api-key` hatası Firebase config düzenlenerek çözüldü.</font> |
+| 🟩 | <font color="green">`main has not been registered` hatası `index.js` + `registerRootComponent(App)` yapısıyla çözüldü.</font> |
+| 🟩 | <font color="green">Release APK'nın Metro beklememesi için Codemagic `assembleRelease` akışına alındı.</font> |
+| 🟩 | <font color="green">Codemagic üzerinden çalışan Android APK üretildi ve telefonda açıldı.</font> |
+| 🟩 | <font color="green">Login ekranı gerçek cihazda açıldı.</font> |
+| 🟩 | <font color="green">Firebase Realtime Database URL'sinin doğru projeye baktığı doğrulandı.</font> |
+| 🟩 | <font color="green">Kullanıcı adı / şifre login sistemi gerçek Firebase verisiyle çalıştı.</font> |
+| 🟩 | <font color="green">Yönetici hesabıyla giriş yapıldı.</font> |
+| 🟩 | <font color="green">Yönetici paneli açıldı.</font> |
+| 🟩 | <font color="green">Yönetici panelindeki Sınıflar, Çocuklar, Öğretmenler, Veliler, Duyurular kartları açıldı.</font> |
+| 🟩 | <font color="green">Admin üzerinden veli ekleme denendi.</font> |
+| 🟩 | <font color="green">Veli hesabıyla giriş denendi ve veli-çocuk bağlantı mantığı doğrulandı.</font> |
+| 🟩 | <font color="green">Çocuğun veliye `veliIds` alanı ile bağlanması gerektiği netleşti.</font> |
+| 🟨 | <font color="orange">Veli ekranında çocuk yoksa geri/çıkış butonu eksikliği tespit edildi; kod tarafında çıkış butonu eklendi, yeni build ile test edilecek.</font> |
+| 🟨 | <font color="orange">Öğretmen hesabı ve öğretmen-sınıf bağlantısı sıradaki test adımı olarak belirlendi.</font> |
+
+---
+
+## 0.1 Çözülen Kritik Hatalar
+
+| Durum | Hata | Çözüm |
+| ----- | ---- | ----- |
+| 🟩 | <font color="green">Firebase Auth component register hatası</font> | <font color="green">Firebase Auth başlatma yapısı düzenlendi.</font> |
+| 🟩 | <font color="green">`auth/invalid-api-key`</font> | <font color="green">Firebase config gerçek proje bilgileriyle güncellendi.</font> |
+| 🟩 | <font color="green">Debug APK'da `Unable to load script`</font> | <font color="green">Codemagic debug yerine release APK üretecek şekilde değiştirildi.</font> |
+| 🟩 | <font color="green">`main has not been registered`</font> | <font color="green">`index.js` eklendi ve `package.json` main alanı düzeltildi.</font> |
+| 🟩 | <font color="green">App icon görünmeme sorunu</font> | <font color="green">`app.json` içine `icon` ve Android adaptiveIcon bağlandı.</font> |
+| 🟩 | <font color="green">Login şifre yanlış hatası</font> | <font color="green">Şifre karşılaştırması normalize edildi, doğru committen build alındı.</font> |
+| 🟩 | <font color="green">Codemagic eski commit build alma karmaşası</font> | <font color="green">Build branch `main` ve doğru commit `3faa2a3` ile build alındı.</font> |
+
+---
+
+## 0.2 Şu An Bilinen Açık Eksikler
+
+| Durum | Eksik / Risk |
+| ----- | ------------ |
+| ⚪ | Öğretmen hesabı gerçek cihazda uçtan uca test edilecek. |
+| ⚪ | Öğretmen-sınıf bağlantısı doğrulanacak. |
+| ⚪ | Öğretmenin kendi sınıfındaki çocukları görmesi test edilecek. |
+| ⚪ | Günlük rapor girme ve Firebase'e yazma akışı test edilecek. |
+| ⚪ | Veli rapor görüntüleme akışı test edilecek. |
+| ⚪ | Veli ekranında çıkış/geri butonu yeni build ile doğrulanacak. |
+| ⚪ | Admin ekranlarında eksik butonlar, geri tuşları ve loading state'ler tamamlanacak. |
+| ⚪ | Boş veri ekranları kullanıcı dostu hale getirilecek. |
 
 
 ## 1. Genel Hedef
@@ -55,16 +85,14 @@ Ana MVP cümlesi:
 | 🟢    | Veli kendi çocuğunun raporlarını görecek ekran yapısına kavuştu   |
 | 🟢    | Firebase Realtime Database ana veri modeli belirlendi             |
 | 🟢    | README güncel MVP yapısına göre sadeleştirildi                    |
-| 🟩    | Yönetici panelindeki ana modüllere gerçek cihazda giriş yapıldı |
+| 🟩     | <font color="green">Admin panelindeki ana kartların gerçek cihazda açıldığı doğrulandı</font> |
 | ⚪     | Öğretmen rapor girme akışı uçtan uca test edilecek                |
 | ⚪     | Veli rapor görüntüleme akışı uçtan uca test edilecek              |
-| ⚪     | Yönetici / öğretmen / veli hesaplarıyla tam uçtan uca MVP senaryosu tamamlanacak |
+| 🟨     | <font color="orange">Yönetici ve veli tarafı denendi; öğretmen tarafı sıradaki test olarak kaldı</font> |
 
 ---
 
 ## 3. Teknik Toparlama
-
-Bu çalışmada özellikle Android açılışını kilitleyen build/runtime sorunları çözüldü.
 
 | Durum | İş                                                                         |
 | ----- | -------------------------------------------------------------------------- |
@@ -76,15 +104,15 @@ Bu çalışmada özellikle Android açılışını kilitleyen build/runtime soru
 | 🟢    | `app.json` sadeleştirildi                                                  |
 | 🟢    | Eksik asset dosyaları build patlatmasın diye `app.json` içinden kaldırıldı |
 | 🟢    | Android `versionCode` eklendi                                              |
-| 🟩    | Expo SDK 54 yapısına geçiş sonrası açılış/build hataları temizlendi        |
+| 🟢    | Expo SDK 53’e geçildi                                                      |
 | 🟢    | EAS production profili AAB üretimine ayarlandı                             |
-| 🟩    | Codemagic release APK build akışı çalışır hale getirildi                   |
+| 🟢    | Codemagic production build kullanacak şekilde düzenlendi                   |
 | ⚪     | `npm install --legacy-peer-deps` testi yapılacak                           |
 | ⚪     | `npx expo install --fix` çalıştırılacak                                    |
 | ⚪     | `npx expo start --clear` ile Metro testi yapılacak                         |
 | ⚪     | `npx expo-doctor` çıktısı kontrol edilecek                                 |
-| 🟩    | Codemagic üzerinden çalışan release APK build alındı                       |
-| 🟩    | Açılış import/runtime hataları temizlendi                                  |
+| 🟩     | <font color="green">Codemagic üzerinden çalışan Android release APK build alındı</font> |
+| ⚪     | Build hatası çıkarsa import/runtime hataları temizlenecek                  |
 
 ---
 
@@ -92,17 +120,17 @@ Bu çalışmada özellikle Android açılışını kilitleyen build/runtime soru
 
 | Durum | İş                                                          |
 | ----- | ----------------------------------------------------------- |
-| 🟩    | Expo SDK 54 sonrası Android açılış sorunları çözüldü        |
-| 🟢    | Google Play için ileride AAB hedefi korundu; mevcut testte APK üretildi     |
+| 🟢    | Expo SDK 53’e geçildi                                       |
+| 🟢    | Google Play için AAB build hedeflendi                       |
 | 🟢    | `eas.json` production profili düzenlendi                    |
-| 🟩    | `codemagic.yaml` release APK üretecek şekilde düzenlendi    |
+| 🟢    | `codemagic.yaml` production build komutuna çekildi          |
 | 🟢    | Android package adı belirlendi: `com.furukcell.yumurcakapp` |
 | 🟢    | Android `versionCode: 1` eklendi                            |
-| 🟩    | İlk çalışan Android release APK üretildi                    |
+| 🟩     | <font color="green">İlk çalışan Android APK üretildi ve telefonda açıldı</font> |
 | ⚪     | Play Console kapalı test kanalı açılacak                    |
-| 🟩    | Yönetici ve veli test kullanıcısı hazırlandı; öğretmen test kullanıcısı sırada |
+| ⚪     | Test kullanıcı listesi hazırlanacak                         |
 | ⚪     | Kapalı teste ilk sürüm yüklenecek                           |
-| 🟩    | Açılış ve yönetici giriş testleri gerçek cihazda başarılı oldu; rapor testleri sırada |
+| 🟨     | <font color="orange">Crash, açılış ve giriş testleri geçti; rapor testi yapılacak</font> |
 
 ---
 
@@ -129,10 +157,10 @@ duyurular/
 | 🟢    | `cocuklar` yapısı belirlendi                                                                    |
 | 🟢    | `gunlukRaporlar` yapısı belirlendi                                                              |
 | 🟢    | `duyurular` yapısı belirlendi                                                                   |
-| 🟩    | Firebase içinde yönetici ve veli test verileri oluşturuldu                                      |
+| 🟩     | <font color="green">Firebase içinde yönetici/veli test verileri manuel oluşturuldu</font> |
 | ⚪     | Eski `users`, `raporlar`, `parentIds`, `teacherIds` gibi İngilizce/karışık alanlar temizlenecek |
 | ⚪     | Tüm sorgular `kresId` filtresiyle güvenli hale getirilecek                                      |
-| 🟩    | Veli-çocuk bağlantısı için `veliIds` mantığı doğrulandı                                          |
+| 🟩     | <font color="green">Veli-çocuk bağlantısı `veliIds` mantığıyla doğrulandı</font> |
 | ⚪     | Öğretmen sadece kendi sınıfındaki çocukları görebilecek şekilde kontrol edilecek                |
 
 ---
@@ -141,15 +169,15 @@ duyurular/
 
 | Durum | İş                                                       |
 | ----- | -------------------------------------------------------- |
-| 🟩    | Geçici kullanıcı adı / şifre sistemi gerçek cihazda çalıştı |
-| 🟩    | Kullanıcı rolüne göre yönetici yönlendirmesi gerçek cihazda çalıştı |
+| 🟢    | Geçici kullanıcı adı / şifre sistemi kuruldu             |
+| 🟢    | Kullanıcı rolüne göre yönlendirme mantığı oluşturuldu    |
 | 🟢    | Oturum bilgisini saklama mantığı eklendi                 |
-| 🟢    | Çıkış yapma akışı oluşturuldu; veli tarafında eksik buton tespit edildi |
+| 🟢    | Çıkış yapma akışı oluşturuldu                            |
 | ⚪     | Firebase Auth email/password sistemine geçilecek         |
 | ⚪     | Düz metin şifre kullanımı kaldırılacak                   |
 | ⚪     | Kullanıcı profili `kullanicilar/{uid}` altında tutulacak |
-| 🟩    | Login şifre karşılaştırması ve büyük/küçük harf sorunu düzeltildi |
-| 🟢    | `aktif` alanı veri modelinde kullanılıyor; tüm ekranlarda davranış ayrıca test edilecek |
+| 🟨     | <font color="orange">Login şifre hatası çözüldü; kalan hata mesajları sadeleştirilecek</font> |
+| 🟩     | <font color="green">Aktif kullanıcı kontrolü login akışında kullanılacak şekilde doğrulandı</font> |
 
 ---
 
@@ -167,11 +195,11 @@ Yönetici, kreş müdürü / kreş yönetimi anlamına gelir.
 | 🟢    | Öğretmen ekranları eklendi                              |
 | 🟢    | Veli ekranları eklendi                                  |
 | 🟢    | Duyuru ekranları eklendi                                |
-| ⚪     | Sınıf oluşturma gerçek Firebase verisiyle test edilecek |
-| ⚪     | Öğretmen oluşturma ve sınıfa atama test edilecek        |
-| 🟩    | Yönetici panelinden veli oluşturma test edildi            |
+| 🟨     | <font color="orange">Sınıf ekranı açılıyor; gerçek CRUD detay testi devam edecek</font> |
+| 🟨     | <font color="orange">Öğretmen oluşturma/sınıfa atama sıradaki test adımı olarak belirlendi</font> |
+| 🟩     | <font color="green">Veli oluşturma admin hesabıyla denendi</font> |
 | ⚪     | Çocuk oluşturma test edilecek                           |
-| 🟩    | Çocuğu veliye bağlama mantığı test edildi (`veliIds`)     |
+| 🟩     | <font color="green">Çocuğu veliye bağlama `veliIds` ile test edildi/doğrulandı</font> |
 | ⚪     | Çocuğu sınıfa bağlama test edilecek                     |
 | ⚪     | Yönetici ekranlarında eksik CRUD işlemleri tamamlanacak |
 | ⚪     | Gereksiz/boş placeholder ekranlar temizlenecek          |
@@ -205,10 +233,10 @@ Yönetici, kreş müdürü / kreş yönetimi anlamına gelir.
 | 🟢    | Veli dashboard ekranı oluşturuldu                       |
 | 🟢    | Veliye bağlı çocukları listeleme hedeflendi             |
 | 🟢    | Veli rapor görüntüleme ekranı oluşturuldu               |
-| ⚪     | Veli sadece kendi çocuğunu görüyor mu test edilecek     |
+| 🟩     | <font color="green">Veli tarafında bağlı çocuk kontrolü denendi; bağlantı yoksa çocuk bulunmuyor mesajı görüldü</font> |
 | ⚪     | Başka veliye ait çocuk görünmüyor mu test edilecek      |
 | ⚪     | Raporlar tarihe göre doğru sıralanıyor mu test edilecek |
-| ⚪     | Rapor yoksa boş ekran mesajı kontrol edilecek           |
+| 🟨     | <font color="orange">Boş veri/çocuk yok ekranında geri-çıkış eksikliği tespit edildi</font> |
 | ⚪     | Duyuru görüntüleme akışı tamamlanacak                   |
 
 ---
@@ -262,23 +290,7 @@ Yönetici, kreş müdürü / kreş yönetimi anlamına gelir.
 
 ---
 
-## 13. Bu Çalışmada Çözülen Kritik Hatalar
-
-| Durum | Hata / Sorun | Çözüm |
-| ----- | ------------ | ----- |
-| 🟩 | `auth/invalid-api-key` | Firebase config gerçek proje bilgileriyle dolduruldu |
-| 🟩 | `Component auth has not been registered yet` | Firebase Auth başlatma yapısı ve Metro ayarı düzeltildi |
-| 🟩 | `Unable to load script / index.android.bundle` | Debug APK yerine release APK build akışı kuruldu |
-| 🟩 | `"main" has not been registered` | `index.js` eklendi, `registerRootComponent(App)` bağlandı, `package.json` main düzeltildi |
-| 🟩 | Uygulama ikonunun görünmemesi | `app.json` içine icon/adaptiveIcon bağlandı |
-| 🟩 | `.js` dosyasında TypeScript syntax kalması | JS dosyasındaki tip yazımı temizlendi |
-| 🟩 | Login doğru şifreye rağmen hata vermesi | Şifre karşılaştırması sayı/metin ve büyük/küçük harf toleranslı hale getirildi |
-| 🟩 | Codemagic’in eski commit build etmesi | Build branch/commit kontrolüyle doğru committen APK alındı |
-| 🟩 | Veli hesabında çocuk bulunmaması | Çocuk kaydında `veliIds` ile veli bağlantısı yapılması gerektiği doğrulandı |
-| 🟩 | Veli ekranında geri/çıkış eksikliği | Eksik çıkış/geri butonu stabilizasyon listesine eklendi |
-
-
-## 14. Firebase Security Rules
+## 13. Firebase Security Rules
 
 | Durum | İş                                                      |
 | ----- | ------------------------------------------------------- |
@@ -293,7 +305,7 @@ Yönetici, kreş müdürü / kreş yönetimi anlamına gelir.
 
 ---
 
-## 15. Test Hesapları
+## 14. Test Hesapları
 
 | Durum | İş                                                 |
 | ----- | -------------------------------------------------- |
@@ -301,40 +313,40 @@ Yönetici, kreş müdürü / kreş yönetimi anlamına gelir.
 | 🟢    | Yönetici test hesabı belirlendi                    |
 | 🟢    | Öğretmen test hesabı belirlendi                    |
 | 🟢    | Veli test hesabı belirlendi                        |
-| ⚪     | Firebase içine gerçek test kullanıcıları eklenecek |
+| 🟩     | <font color="green">Firebase içine yönetici ve veli test kullanıcıları eklendi</font> |
 | ⚪     | Test sınıfı oluşturulacak                          |
 | ⚪     | Test çocuk kaydı oluşturulacak                     |
 | ⚪     | Öğretmen sınıfa bağlanacak                         |
-| ⚪     | Çocuk veliye bağlanacak                            |
+| 🟩     | <font color="green">Çocuk veliye `veliIds` üzerinden bağlandı</font> |
 | ⚪     | Uçtan uca test yapılacak                           |
 
 ---
 
-## 16. Uçtan Uca MVP Testi
+## 15. Uçtan Uca MVP Testi
 
 Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 
 | Durum | Test                                                       |
 | ----- | ---------------------------------------------------------- |
-| 🟩    | Uygulama açılıyor mu?                                      |
-| 🟩    | Login ekranı geliyor mu?                                   |
-| 🟩    | Yönetici giriş yapabiliyor mu?                             |
+| 🟩     | <font color="green">Uygulama gerçek cihazda açıldı</font> |
+| 🟩     | <font color="green">Login ekranı gerçek cihazda geldi</font> |
+| 🟩     | <font color="green">Yönetici giriş yapabiliyor</font> |
 | ⚪     | Yönetici sınıf oluşturabiliyor mu?                         |
 | ⚪     | Yönetici öğretmen oluşturabiliyor mu?                      |
-| 🟩    | Yönetici veli oluşturabiliyor mu?                          |
+| 🟩     | <font color="green">Yönetici veli oluşturabiliyor</font> |
 | ⚪     | Yönetici çocuk oluşturabiliyor mu?                         |
 | ⚪     | Çocuk sınıfa bağlanıyor mu?                                |
-| 🟩    | Çocuk veliye bağlanıyor mu?                                |
+| 🟩     | <font color="green">Çocuk veliye bağlandı ve bağlantı mantığı doğrulandı</font> |
 | ⚪     | Öğretmen kendi sınıfındaki çocuğu görüyor mu?              |
 | ⚪     | Öğretmen günlük rapor giriyor mu?                          |
-| ⚪     | Veli kendi çocuğunu görüyor mu?                            |
+| 🟨     | <font color="orange">Veli çocuk bağlantısı denendi; bağlantı yoksa çocuk bulunmuyor uyarısı alındı</font> |
 | ⚪     | Veli günlük raporu görüyor mu?                             |
-| ⚪     | Çıkış yap / tekrar giriş akışı tüm rollerde test edilecek; veli tarafında eksik çıkış butonu düzeltilecek |
+| 🟨     | <font color="orange">Yönetici çıkış çalışıyor; veli ekranında çıkış/geri butonu eksikliği tespit edildi ve kodda düzeltildi</font> |
 | ⚪     | Uygulama kapanıp açıldığında oturum kontrolü çalışıyor mu? |
 
 ---
 
-## 17. Tasarım Yaklaşımı
+## 16. Tasarım Yaklaşımı
 
 | Durum | İş                                                       |
 | ----- | -------------------------------------------------------- |
@@ -348,7 +360,7 @@ Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 
 ---
 
-## 18. İş Modeli
+## 17. İş Modeli
 
 | Durum | İş                                                       |
 | ----- | -------------------------------------------------------- |
@@ -361,7 +373,7 @@ Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 
 ---
 
-## 19. Pilot Kreş Planı
+## 18. Pilot Kreş Planı
 
 | Durum | İş                                                             |
 | ----- | -------------------------------------------------------------- |
@@ -377,7 +389,7 @@ Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 
 ---
 
-## 20. Sürüm Planı
+## 19. Sürüm Planı
 
 ### v0.1 — Teknik Toparlama
 
@@ -387,7 +399,7 @@ Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 | 🟢    | Navigation bağlandı                       |
 | 🟢    | app.json düzeltildi                       |
 | 🟢    | Expo SDK 53’e geçildi                     |
-| 🟩    | Codemagic release APK build akışı çalıştırıldı  |
+| 🟢    | EAS / Codemagic production AAB ayarlandı  |
 | ⚪     | Eski ekran karmaşası tamamen temizlenecek |
 | ⚪     | İlk Metro testi yapılacak                 |
 
@@ -460,9 +472,9 @@ Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 | Durum | İş                             |
 | ----- | ------------------------------ |
 | ⚪     | Firebase rules güçlendirilecek |
-| ⚪     | Yönetici ve veli test hesapları oluşturuldu; öğretmen hesabı tamamlanacak |
-| ⚪     | Uçtan uca test yönetici+veli tarafında başladı; öğretmen+rapor akışı tamamlanacak |
-| ⚪     | Kapalı test için ileride AAB build alınacak; şu an APK ile cihaz testi yapılıyor |
+| ⚪     | Test hesapları oluşturulacak   |
+| ⚪     | Uçtan uca test yapılacak       |
+| 🟨     | <font color="orange">Kapalı test AAB öncesi çalışan APK build doğrulandı</font> |
 | ⚪     | Pilot kreş demo hazırlanacak   |
 
 ---
@@ -479,7 +491,7 @@ Bu akış hatasız çalışmadan yeni büyük özellik eklenmeyecek.
 
 ---
 
-## 21. MVP Sonrası Özellikler
+## 20. MVP Sonrası Özellikler
 
 Aşağıdaki özellikler şimdilik yapılmayacak.
 
@@ -501,7 +513,7 @@ Aşağıdaki özellikler şimdilik yapılmayacak.
 
 ---
 
-## 22. Nihai Hedef
+## 21. Nihai Hedef
 
 Yumurcak’ın nihai hedefi:
 
@@ -519,4 +531,32 @@ Bir yönetici sınıf, çocuk, öğretmen ve veli bağlantısını yönetebilsin
 
 Bu üç temel şey sağlam çalışıyorsa Yumurcak ürünleşmeye başlamış demektir.
 
-Güncel not: Yönetici girişi ve yönetici paneli gerçek cihazda çalıştı. Veli hesabı ve çocuk bağlantısı test edilmeye başlandı. Öğretmen hesabı, rapor girme ve veli rapor görüntüleme akışı sıradaki ana testtir.
+---
+
+## 22. Son Not — 20.06.2026 Güncellemesi
+
+Bu dosyada **🟩 yeşil** görünen maddeler, bu son çalışma sırasında yapılan veya gerçek cihazda doğrulanan işlerdir.
+
+Şu an ürünün durumu:
+
+```txt
+Çalışan APK var.
+Yönetici login çalışıyor.
+Yönetici paneli açılıyor.
+Ana yönetici kartları çalışıyor.
+Veli hesabı eklenebiliyor.
+Çocuk-veli bağlantısı veliIds mantığıyla doğrulandı.
+Öğretmen tarafı ve rapor akışı sonraki test adımı.
+```
+
+Bundan sonra öncelik yeni özellik değil:
+
+```txt
+1. Öğretmen hesabı testi
+2. Öğretmen-sınıf bağlantısı
+3. Günlük rapor girme
+4. Veli rapor görme
+5. Eksik geri/çıkış butonları
+6. Loading/disabled state'ler
+7. Boş ekran mesajları
+```
