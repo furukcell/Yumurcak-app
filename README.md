@@ -1,10 +1,43 @@
 # Yumurcak Kreş
 
-**Yumurcak Kreş**, kreşler, öğretmenler ve veliler arasındaki günlük iletişimi dijitalleştirmek için geliştirilen mobil bir takip uygulamasıdır.
+**Yumurcak Kreş**, kreş yönetimi, öğretmen ve veli arasındaki günlük iletişimi dijitalleştirmek için geliştirilen mobil takip uygulamasıdır.
 
-Uygulama ile öğretmenler çocuklara günlük rapor girebilir, veliler çocuklarının günlük durumunu takip edebilir, kreş yöneticileri ise sınıf, çocuk, öğretmen, veli ve duyuru yönetimini tek yerden yapabilir.
+Uygulama ile:
 
-**Expo SDK 53 + React Native + Firebase Realtime Database** altyapısı üzerine kuruludur.
+- Yönetici sınıf, çocuk, öğretmen, veli ve duyuru yönetimi yapabilir.
+- Öğretmen kendi sınıfındaki çocuklar için günlük rapor girebilir.
+- Veli sadece kendisine bağlı çocuğun bilgilerini ve raporlarını görebilir.
+
+Proje şu anda **çalışan Android APK / MVP test aşamasındadır**.
+
+---
+
+## Güncel Durum
+
+Son testlerde ulaşılan durum:
+
+- Android APK başarıyla açılıyor.
+- Firebase Realtime Database bağlantısı çalışıyor.
+- Kullanıcı adı / şifre ile giriş çalışıyor.
+- Rol bazlı yönlendirme çalışıyor.
+- Yönetici hesabı ile yönetici paneline giriş yapılıyor.
+- Yönetici panelindeki ana kartlar açılıyor:
+  - Sınıflar
+  - Çocuklar
+  - Öğretmenler
+  - Veliler
+  - Duyurular
+- Veli hesabı ile giriş yapılabiliyor.
+- Veli hesabının çocuk görebilmesi için çocuğun `veliIds` alanına veli ID'sinin bağlanması gerektiği doğrulandı.
+- Codemagic üzerinden release APK alınabiliyor.
+- Expo / Firebase / Metro / Android açılış hataları giderildi.
+
+Henüz tamamlanmamış alanlar:
+
+- Bazı ekranlarda geri / çıkış butonu eksikleri var.
+- Veli ve öğretmen tarafında boş veri durumları daha kullanıcı dostu hale getirilmeli.
+- Tüm CRUD akışları tek tek gerçek cihazda test edilmeli.
+- UI/UX tarafında buton, loading, boş ekran ve hata mesajı düzenlemeleri yapılmalı.
 
 ---
 
@@ -33,7 +66,7 @@ Temel amaç:
 |---|---|
 | `yonetici` | Kreş müdürü / kreş yönetimi. Sınıf, çocuk, öğretmen, veli ve duyuru yönetimini yapar. |
 | `ogretmen` | Kendi sınıfındaki çocuklar için günlük rapor girer. |
-| `veli` | Sadece kendi çocuğunun raporlarını görüntüler. |
+| `veli` | Sadece kendisine bağlı çocuğun raporlarını görüntüler. |
 
 ---
 
@@ -45,15 +78,17 @@ Uygulamanın ilk hedefi aşağıdaki temel akışı hatasız çalıştırmaktır
 2. Sınıf oluşturur.
 3. Öğretmen ekler ve sınıfa atar.
 4. Veli ekler.
-5. Çocuk ekler, sınıfa ve veliye bağlar.
-6. Öğretmen giriş yapar.
-7. Kendi sınıfındaki çocukları görür.
-8. Çocuk için günlük rapor girer.
-9. Veli giriş yapar.
-10. Kendi çocuğunu görür.
-11. Günlük raporu görüntüler.
+5. Çocuk ekler.
+6. Çocuğu sınıfa bağlar.
+7. Çocuğu veliye bağlar.
+8. Öğretmen giriş yapar.
+9. Kendi sınıfındaki çocukları görür.
+10. Çocuk için günlük rapor girer.
+11. Veli giriş yapar.
+12. Kendisine bağlı çocuğu görür.
+13. Günlük raporu görüntüler.
 
-Bu akış tamamlanmadan yeni büyük özellik eklenmemesi hedeflenmiştir.
+Bu akış stabil hale gelmeden yeni büyük özellik eklenmemelidir.
 
 ---
 
@@ -68,6 +103,8 @@ Desteklenen roller:
 - `yonetici`
 - `ogretmen`
 - `veli`
+
+MVP aşamasında giriş sistemi Firebase Realtime Database üzerinden yapılmaktadır. Firebase Auth üretim öncesi teknik borç olarak planlanmıştır.
 
 ### Yönetici Paneli
 
@@ -89,9 +126,19 @@ Yönetici şu işlemleri yapabilir:
 
 Öğretmen bir çocuğu seçerek günlük rapor ekranına geçer ve çocuğun gün içindeki temel bilgilerini girer.
 
-### Günlük Rapor Sistemi
+### Veli Paneli
 
-Günlük raporlar uygulamanın ana özelliğidir.
+Veli giriş yaptığında sadece kendisine bağlı çocukları görür.
+
+Veli tarafında çocuğun görünmesi için çocuk kaydında şu ilişki bulunmalıdır:
+
+```txt
+cocuklar/{cocukId}/veliIds: ["veliUid"]
+```
+
+Bu bağlantı yoksa veli panelinde çocuk bulunamaz.
+
+### Günlük Rapor Sistemi
 
 Öğretmen, çocuk için şu bilgileri rapora ekleyebilir:
 
@@ -103,21 +150,6 @@ Günlük raporlar uygulamanın ana özelliğidir.
 - Tarih
 
 Raporlar Firebase Realtime Database üzerinde saklanır ve veli panelinde çocuğa bağlı şekilde listelenir.
-
-### Veli Paneli
-
-Veli giriş yaptığında sadece kendisine bağlı çocukları görür.
-
-Veli bir çocuğu seçtiğinde o çocuğa ait günlük raporları görüntüleyebilir.
-
-Raporda şu bilgiler gösterilir:
-
-- Tarih
-- Ruh hali
-- Yemek durumu
-- Uyku süresi
-- Tuvalet bilgisi
-- Öğretmen notu
 
 ### Duyuru Sistemi
 
@@ -137,15 +169,14 @@ Duyurular şu amaçlarla kullanılabilir:
 
 Projede kullanılan temel teknolojiler:
 
-- Expo SDK 53
+- Expo SDK 54
 - React Native
 - JavaScript
 - Firebase Realtime Database
 - AsyncStorage
 - React Navigation
 - Expo Notifications
-
-> Not: Firebase Auth üretim öncesi teknik borç olarak planlanmıştır. Mevcut MVP aşamasında kullanıcı adı / şifre kontrolü Firebase Realtime Database üzerinden yapılmaktadır.
+- Codemagic Android APK build
 
 ---
 
@@ -169,12 +200,13 @@ Giriş yapan kullanıcıların temel bilgilerini tutar.
 ```json
 {
   "uid": {
-    "kullaniciAdi": "ogretmen1",
-    "sifre": "123456",
-    "ad": "Ayşe Yılmaz",
+    "kullaniciAdi": "ogretmen",
+    "sifre": "abc123",
+    "ad": "Ayşe Öğretmen",
     "rol": "ogretmen",
-    "kresId": "default-kres",
-    "sinifId": "sinifId",
+    "aktif": true,
+    "kresId": "kres001",
+    "sinifId": "sinif001",
     "telefon": "",
     "pushToken": "",
     "createdAt": 1780000000000
@@ -196,9 +228,11 @@ Kreş bilgilerini ve yönetici ilişkilerini tutar.
 
 ```json
 {
-  "default-kres": {
+  "kres001": {
     "ad": "Yumurcak Kreş",
-    "adminIds": ["adminUid"]
+    "adres": "Test Mahallesi",
+    "telefon": "5001234567",
+    "yoneticiId": "testuid001"
   }
 }
 ```
@@ -209,11 +243,11 @@ Sınıf bilgilerini tutar.
 
 ```json
 {
-  "sinifId": {
+  "sinif001": {
     "ad": "Minikler",
     "yasGrubu": "3-4 yaş",
-    "kresId": "default-kres",
-    "ogretmenIds": ["ogretmenUid"],
+    "kresId": "kres001",
+    "ogretmenIds": ["ogretmen001"],
     "createdAt": 1780000000000
   }
 }
@@ -225,12 +259,12 @@ Sınıf bilgilerini tutar.
 
 ```json
 {
-  "cocukId": {
+  "cocuk001": {
     "ad": "Zeynep",
     "dogumTarihi": "2023-05-19",
-    "sinifId": "sinifId",
-    "kresId": "default-kres",
-    "veliIds": ["veliUid"],
+    "sinifId": "sinif001",
+    "kresId": "kres001",
+    "veliIds": ["veli001"],
     "createdAt": 1780000000000
   }
 }
@@ -242,12 +276,12 @@ Sınıf bilgilerini tutar.
 
 ```json
 {
-  "raporId": {
-    "cocukId": "cocukId",
-    "sinifId": "sinifId",
-    "kresId": "default-kres",
-    "ogretmenId": "ogretmenUid",
-    "tarih": "2026-06-06",
+  "rapor001": {
+    "cocukId": "cocuk001",
+    "sinifId": "sinif001",
+    "kresId": "kres001",
+    "ogretmenId": "ogretmen001",
+    "tarih": "2026-06-20",
     "ruhHali": "Mutlu",
     "yemek": {
       "kahvalti": true,
@@ -274,10 +308,10 @@ Yönetici tarafından gönderilen duyuruları tutar.
 
 ```json
 {
-  "duyuruId": {
+  "duyuru001": {
     "baslik": "Yarın etkinlik var",
     "mesaj": "Çocuklarımız için bahçe etkinliği yapılacaktır.",
-    "kresId": "default-kres",
+    "kresId": "kres001",
     "gonderenId": "adminUid",
     "oncelik": "normal",
     "hedefRol": "all",
@@ -288,18 +322,66 @@ Yönetici tarafından gönderilen duyuruları tutar.
 
 ---
 
-## Proje Yapısı
+## Test Kullanıcıları
 
-Güncel proje yapısı aşağıdaki gibi hedeflenmiştir:
+Firebase Realtime Database içinde `kullanicilar/` node’una manuel olarak eklenebilir veya yönetici panelinden oluşturulabilir.
+
+### Yönetici
+
+```txt
+uid: testuid001
+kullaniciAdi: admin
+sifre: abc123
+ad: Test
+soyad: Yonetici
+rol: yonetici
+aktif: true
+kresId: kres001
+```
+
+### Öğretmen
+
+```txt
+uid: ogretmen001
+kullaniciAdi: ogretmen
+sifre: abc123
+ad: Ayse Ogretmen
+rol: ogretmen
+aktif: true
+kresId: kres001
+sinifId: sinif001
+```
+
+### Veli
+
+```txt
+uid: veli001
+kullaniciAdi: veli
+sifre: abc123
+ad: Mehmet Veli
+rol: veli
+aktif: true
+kresId: kres001
+```
+
+Veli çocuğu görebilsin diye çocuk kaydında ayrıca şu bağlantı olmalıdır:
+
+```txt
+cocuklar/{cocukId}/veliIds: ["veli001"]
+```
+
+---
+
+## Proje Yapısı
 
 ```txt
 Yumurcak-app/
 ├── App.js
+├── index.js
 ├── app.json
 ├── package.json
-├── eas.json
 ├── codemagic.yaml
-├── database.rules.json
+├── metro.config.js
 ├── README.md
 └── src/
     ├── constants.js
@@ -317,23 +399,8 @@ Yumurcak-app/
     │   ├── auth/
     │   │   └── LoginScreen.js
     │   ├── admin/
-    │   │   ├── DashboardScreen.js
-    │   │   ├── ClassListScreen.js
-    │   │   ├── ClassFormScreen.js
-    │   │   ├── ChildListScreen.js
-    │   │   ├── ChildFormScreen.js
-    │   │   ├── TeacherListScreen.js
-    │   │   ├── TeacherFormScreen.js
-    │   │   ├── VeliListScreen.js
-    │   │   ├── VeliFormScreen.js
-    │   │   ├── AnnouncementListScreen.js
-    │   │   └── AnnouncementFormScreen.js
     │   ├── teacher/
-    │   │   ├── TeacherDashboardScreen.js
-    │   │   └── ChildReportScreen.js
     │   └── parent/
-    │       ├── ParentDashboard.js
-    │       └── ChildReportScreen.js
     ├── utils/
     │   ├── id.js
     │   └── notifications.js
@@ -349,78 +416,140 @@ Projeyi yerel ortamda çalıştırmak için:
 ```bash
 git clone https://github.com/furukcell/Yumurcak-app.git
 cd Yumurcak-app
-npm install
+npm install --legacy-peer-deps
 npx expo start --clear
 ```
 
 ---
 
-## Build
+## Android Build
 
-Android production build için EAS production profili kullanılır.
+Mevcut APK build süreci Codemagic üzerinden yapılmaktadır.
+
+Codemagic akışı:
 
 ```bash
-eas build --platform android --profile production --non-interactive
+npm install --legacy-peer-deps
+npx expo prebuild --clean --platform android
+cd android
+chmod +x gradlew
+./gradlew assembleRelease
 ```
 
-Production profili Android tarafında **AAB** üretir.
+APK çıktısı:
+
+```txt
+android/app/build/outputs/apk/release/*.apk
+```
+
+Önemli not:
+
+- Codemagic’te **Build branch: main** seçilmelidir.
+- Eski commit seçilirse önceki hatalar tekrar görülebilir.
+- Doğru çalışan APK için son stabil commit ayrıca not edilmelidir.
 
 ---
 
-## Ortam Değişkenleri
+## Çözülen Büyük Teknik Sorunlar
 
-Kök dizine `.env` dosyası oluşturulmalıdır.
+Bu aşamaya kadar çözülen ana problemler:
 
-```env
-EXPO_PUBLIC_FIREBASE_API_KEY=...
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-EXPO_PUBLIC_FIREBASE_APP_ID=...
-EXPO_PUBLIC_FIREBASE_DATABASE_URL=https://yumurcak-app-default-rtdb.europe-west1.firebasedatabase.app
-```
-
-> `.env` dosyası `.gitignore` içine eklenmiş olmalıdır.
+- Expo SDK yükseltmesi sonrası Firebase Auth başlatma hatası giderildi.
+- Firebase API key / config boş gelme sorunu giderildi.
+- Android release APK’da JS bundle yüklenmeme sorunu giderildi.
+- `main has not been registered` hatası için `index.js` ve `registerRootComponent` akışı düzeltildi.
+- `package.json` içinde `main` alanı `index.js` olarak ayarlandı.
+- Firebase login tarafında sayı/metin şifre karşılaştırması düzeltildi.
+- Kullanıcı adı ve şifre input normalize edildi.
+- Codemagic release APK üretimi çalışır hale getirildi.
+- Uygulama ikonu `app.json` içine bağlandı.
+- TypeScript yazımı kalmış `.js` dosyası temizlendi.
 
 ---
 
-## Test Kullanıcıları
+## Güncel Test Senaryosu
 
-Bu kullanıcılar Firebase Realtime Database içinde `kullanicilar/` node’una manuel olarak eklenebilir.
+Uygulama market veya kapalı test öncesi aşağıdaki akışı hatasız tamamlamalıdır:
 
-### Yönetici
+1. Uygulama açılır.
+2. Login ekranı gelir.
+3. Yönetici giriş yapar.
+4. Sınıf oluşturur.
+5. Öğretmen oluşturur.
+6. Öğretmen sınıfa bağlanır.
+7. Veli oluşturur.
+8. Çocuk oluşturur.
+9. Çocuk sınıfa bağlanır.
+10. Çocuk veliye bağlanır.
+11. Yönetici çıkış yapar.
+12. Öğretmen giriş yapar.
+13. Kendi sınıfındaki çocuğu görür.
+14. Çocuk için günlük rapor girer.
+15. Öğretmen çıkış yapar.
+16. Veli giriş yapar.
+17. Kendi çocuğunu görür.
+18. Günlük raporu görüntüler.
+19. Veli çıkış yapar.
 
-```txt
-kullaniciAdi: admin
-sifre: 123456
-ad: Kreş Müdürü
-rol: yonetici
-kresId: default-kres
-```
+---
 
-### Öğretmen
+## Yol Haritası
 
-```txt
-kullaniciAdi: ogretmen1
-sifre: 123456
-ad: Ayşe Yılmaz
-rol: ogretmen
-kresId: default-kres
-sinifId: sinifId
-```
+### Faz 1 — Stabil MVP
 
-### Veli
+Amaç: Uygulamanın üç rol için çökmeden çalışması.
 
-```txt
-kullaniciAdi: veli1
-sifre: 123456
-ad: Mehmet Yılmaz
-rol: veli
-kresId: default-kres
-```
+- [x] Android APK açılışını düzelt
+- [x] Firebase bağlantısını çalıştır
+- [x] Login akışını çalıştır
+- [x] Yönetici panelini açılır hale getir
+- [x] Yönetici kartlarını çalıştır
+- [x] Veli bağlantı mantığını doğrula
+- [ ] Öğretmen hesabı ile sınıf / çocuk görünümünü test et
+- [ ] Öğretmen günlük rapor girişini test et
+- [ ] Veli günlük rapor görüntülemeyi test et
+- [ ] Eksik geri / çıkış butonlarını tamamla
+- [ ] Boş veri ekranlarını kullanıcı dostu hale getir
+- [ ] Tüm butonlara loading / disabled state ekle
+- [ ] Hata mesajlarını sadeleştir
 
-> Bu kullanıcılar sadece MVP / pilot test içindir.
+### Faz 2 — Pilot Test Hazırlığı
+
+Amaç: Gerçek kreş demo kullanımına hazır hale getirmek.
+
+- [ ] Demo kreş datası oluştur
+- [ ] 1 yönetici, 1 öğretmen, 1 veli, 1 çocuk ile tam demo akışı hazırla
+- [ ] Firebase veri yapısını temizle
+- [ ] Gereksiz test kayıtlarını sil
+- [ ] UI metinlerini sadeleştir
+- [ ] Android cihazlarda ekran taşması / buton görünürlüğü testi yap
+- [ ] APK dosyasını yedekle
+
+### Faz 3 — Güvenlik ve Üretim Borçları
+
+Amaç: Pilot sonrası daha güvenli yapıya geçmek.
+
+- [ ] Firebase Auth’a geçiş
+- [ ] Düz metin şifre kullanımını kaldırma
+- [ ] Firebase Database Rules güçlendirme
+- [ ] `kresId` bazlı veri izolasyonunu zorunlu hale getirme
+- [ ] Veli sadece kendi çocuğunu görebilmeli
+- [ ] Öğretmen sadece kendi sınıfındaki çocukları yönetebilmeli
+- [ ] Çoklu kreş desteğini güvenli hale getirme
+
+### Faz 4 — MVP Sonrası Özellikler
+
+Bu özellikler MVP stabil hale gelmeden eklenmemelidir:
+
+- Push bildirimleri
+- Fotoğraf / video paylaşımı
+- Yoklama sistemi
+- İlaç / alerji takibi
+- Servis takibi
+- PDF rapor çıktısı
+- Web yönetim paneli
+- Ödeme / abonelik sistemi
+- Çoklu kreş / SuperAdmin paneli
 
 ---
 
@@ -441,26 +570,6 @@ Bu yapı sadece geliştirme ve pilot test içindir.
 
 ---
 
-## Bildirim Sistemi
-
-Uygulamada Expo Notifications altyapısı planlanmıştır.
-
-Bildirimlerin kullanım alanları:
-
-- Günlük rapor girildiğinde veliye bildirim
-- Yeni duyuru yayınlandığında velilere bildirim
-- Acil duyuruların öne çıkarılması
-
-MVP aşamasında bildirim sistemi pasif veya sınırlı çalışabilir. Bildirim kodları uygulamayı çökertmeyecek şekilde güvenli çalışmalıdır.
-
-Push token bilgisi kullanıcı altında tutulmalıdır:
-
-```txt
-kullanicilar/{uid}/pushToken
-```
-
----
-
 ## Pasif Bırakılan Özellikler
 
 Aşağıdaki özellikler MVP sonrasına bırakılmıştır:
@@ -475,48 +584,6 @@ Aşağıdaki özellikler MVP sonrasına bırakılmıştır:
 - Çoklu kreş / SuperAdmin paneli
 - Web yönetim paneli
 - Yapay zekâ destekli rapor analizi
-
----
-
-## Teknik Borçlar
-
-- [ ] Firebase Auth’a geçiş
-- [ ] Düz metin şifre kullanımının kaldırılması
-- [ ] Firebase Database Rules üretim için güçlendirilmesi
-- [ ] Bildirim sisteminin gerçek Expo Project ID ile aktif edilmesi
-- [ ] Çoklu kreş desteğinin güvenli hale getirilmesi
-- [ ] `kresId` bazlı veri izolasyonunun tüm ekranlarda zorunlu yapılması
-- [ ] Yönetici ekranlarında eksik CRUD işlemlerinin tamamlanması
-- [ ] UI / UX sadeleştirme ve gerçek cihaz testi
-- [ ] Codemagic / EAS build testleri
-- [ ] Play Store kapalı test hazırlığı
-
----
-
-## MVP Test Senaryosu
-
-Uygulama market veya kapalı test öncesi aşağıdaki akışı hatasız tamamlamalıdır:
-
-1. Uygulama açılır.
-2. Login ekranı gelir.
-3. Yönetici giriş yapar.
-4. Sınıf oluşturur.
-5. Öğretmen oluşturur.
-6. Veli oluşturur.
-7. Çocuk oluşturur.
-8. Çocuk sınıfa bağlanır.
-9. Çocuk veliye bağlanır.
-10. Öğretmen sınıfa bağlanır.
-11. Yönetici çıkış yapar.
-12. Öğretmen giriş yapar.
-13. Kendi sınıfındaki çocuğu görür.
-14. Çocuk için günlük rapor girer.
-15. Öğretmen çıkış yapar.
-16. Veli giriş yapar.
-17. Kendi çocuğunu görür.
-18. Günlük raporu görüntüler.
-
-Bu 18 adım çalışmadan yeni büyük özellik eklenmemelidir.
 
 ---
 
@@ -540,10 +607,10 @@ GitHub: [furukcell](https://github.com/furukcell)
 
 ## Durum
 
-Proje aktif geliştirme / MVP toparlama aşamasındadır.
+Proje aktif geliştirme / MVP stabilizasyon aşamasındadır.
 
 Öncelikli hedef:
 
-> Öğretmen çocuk için günlük rapor girsin, veli kendi telefonundan o raporu görsün.
+> Yönetici sınıf-öğretmen-veli-çocuk ilişkisini kursun, öğretmen günlük rapor girsin, veli kendi telefonundan o raporu görsün.
 
 Bu temel akış stabil hale geldikten sonra bildirim, ödeme, gelişmiş rapor, çoklu kreş ve web yönetim paneli gibi özellikler değerlendirilecektir.
