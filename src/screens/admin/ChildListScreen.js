@@ -28,10 +28,8 @@ export default function ChildListScreen() {
       if (!cocukLoaded || !sinifLoaded || !kulLoaded) return;
 
       const liste = Object.entries(cocuklar).map(([id, c]) => {
-        // Sınıf
         const sinif = c.sinifId ? siniflar[c.sinifId] : null;
 
-        // Veliler
         const veliBilgileri = c.veliIds
           ? c.veliIds
               .filter((vid) => kullanicilar[vid])
@@ -44,7 +42,6 @@ export default function ChildListScreen() {
               })
           : [];
 
-        // Öğretmen — sinifın ogretmenIds'inden ilkini al
         let ogretmenAd = null;
         if (sinif && sinif.ogretmenIds && sinif.ogretmenIds.length > 0) {
           const ogId = sinif.ogretmenIds[0];
@@ -96,7 +93,7 @@ export default function ChildListScreen() {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('ChildForm', { childId: item.id })}
+      onPress={() => navigation.navigate('ChildDetail', { childId: item.id })}
       activeOpacity={0.8}
     >
       <View style={styles.cardHeader}>
