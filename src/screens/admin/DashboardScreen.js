@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — DashboardScreen.js
-// Yönetici ana paneli — FAZ 7 Mesajlar menüsü eklendi
+// FAZ 10: Firebase Auth Geçişi menüsü eklendi
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -31,6 +31,7 @@ const MENU_ITEMS = [
   { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres, telefon ve iletişim bilgileri', color: THEME.primaryDark, bgColor: THEME.primarySoft },
   { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Demo, aylık/yıllık paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
   { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
+  { title: 'Firebase Auth Geçişi', icon: '🔐', screen: 'AuthMigration', desc: 'Kullanıcıları Auth sistemine taşı', color: THEME.red, bgColor: '#FFE8EC' },
   { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf listesi ve yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Kayıtlı çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
