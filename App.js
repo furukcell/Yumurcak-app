@@ -1,9 +1,11 @@
 // ============================================================
 // YUMURCAK — App.js
-// Uygulama giriş noktası
+// FAZ 6: SafeAreaProvider + StatusBar düzeni
+// Amaç: Android üst bar / alt sistem alanlarının ekranları ezmesini azaltmak
 // ============================================================
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -35,11 +37,13 @@ export default function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <RootNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" backgroundColor="#F8F6FF" />
+          <RootNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
