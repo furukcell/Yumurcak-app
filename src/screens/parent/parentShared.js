@@ -13,6 +13,7 @@ import {
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 export const THEME = {
   primary: '#6C3DEB',
@@ -28,6 +29,16 @@ export const THEME = {
   card: '#FFFFFF',
   border: '#EEEAF8',
 };
+
+function syncTheme(theme) {
+  Object.assign(THEME, theme || {});
+}
+
+function useParentSharedStyles() {
+  const { theme } = useAppTheme();
+  syncTheme(theme);
+  return useMemo(() => createStyles(theme || THEME), [theme]);
+}
 
 export const MONTH_LABELS = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -188,24 +199,26 @@ export function useNodeList(node) {
 }
 
 export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
+  const themedStyles = useParentSharedStyles();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={themedStyles.safeArea}>
+      <View style={themedStyles.header}>
         {navigation ? (
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
-            <Text style={styles.backArrow}>‹</Text>
-            <Text style={styles.backLabel}>Geri</Text>
+          <TouchableOpacity style={themedStyles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
+            <Text style={themedStyles.backArrow}>‹</Text>
+            <Text style={themedStyles.backLabel}>Geri</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.backSpacer} />
+          <View style={themedStyles.backSpacer} />
         )}
-        <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
-          {subtitle ? <Text style={styles.headerSubtitle} numberOfLines={1}>{subtitle}</Text> : null}
+        <View style={themedStyles.headerTitleWrap}>
+          <Text style={themedStyles.headerTitle} numberOfLines={1}>{title}</Text>
+          {subtitle ? <Text style={themedStyles.headerSubtitle} numberOfLines={1}>{subtitle}</Text> : null}
         </View>
-        <Text style={styles.headerEmoji}>{emoji || ''}</Text>
+        <Text style={themedStyles.headerEmoji}>{emoji || ''}</Text>
       </View>
-      <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={themedStyles.screen} contentContainerStyle={themedStyles.scrollContent} showsVerticalScrollIndicator={false}>
         {children}
       </ScrollView>
     </SafeAreaView>
@@ -213,103 +226,115 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
 }
 
 export function LoadingScreen({ text = 'Hazırlanıyor...' }) {
+  const themedStyles = useParentSharedStyles();
+
   return (
-    <View style={styles.center}>
+    <View style={themedStyles.center}>
       <ActivityIndicator size="large" color={THEME.primary} />
-      <Text style={styles.loadingText}>{text}</Text>
+      <Text style={themedStyles.loadingText}>{text}</Text>
     </View>
   );
 }
 
 export function EmptyState({ icon = 'ℹ️', title, desc }) {
+  const themedStyles = useParentSharedStyles();
+
   return (
-    <View style={styles.emptyStateCard}>
-      <Text style={styles.emptyIcon}>{icon}</Text>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      {desc ? <Text style={styles.emptyDesc}>{desc}</Text> : null}
+    <View style={themedStyles.emptyStateCard}>
+      <Text style={themedStyles.emptyIcon}>{icon}</Text>
+      <Text style={themedStyles.emptyTitle}>{title}</Text>
+      {desc ? <Text style={themedStyles.emptyDesc}>{desc}</Text> : null}
     </View>
   );
 }
 
 export function InfoRow({ icon, label, value }) {
+  const themedStyles = useParentSharedStyles();
+
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoIcon}>{icon}</Text>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || '-'}</Text>
+    <View style={themedStyles.infoRow}>
+      <Text style={themedStyles.infoIcon}>{icon}</Text>
+      <Text style={themedStyles.infoLabel}>{label}</Text>
+      <Text style={themedStyles.infoValue}>{value || '-'}</Text>
     </View>
   );
 }
 
 export function PlaceholderScreen({ navigation, icon, title, description }) {
+  const themedStyles = useParentSharedStyles();
+
   return (
     <ScreenShell title={title} emoji={icon} navigation={navigation}>
-      <View style={styles.placeholderCard}>
-        <Text style={styles.placeholderIcon}>{icon}</Text>
-        <Text style={styles.placeholderTitle}>{title}</Text>
-        <Text style={styles.placeholderDesc}>{description || 'Bu alan yakında aktif olacak.'}</Text>
+      <View style={themedStyles.placeholderCard}>
+        <Text style={themedStyles.placeholderIcon}>{icon}</Text>
+        <Text style={themedStyles.placeholderTitle}>{title}</Text>
+        <Text style={themedStyles.placeholderDesc}>{description || 'Bu alan yakında aktif olacak.'}</Text>
       </View>
     </ScreenShell>
   );
 }
 
-export const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: THEME.bg,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
-  },
-  screen: { flex: 1, backgroundColor: THEME.bg },
-  scrollContent: { padding: 16, paddingBottom: 52 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.bg },
-  loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: THEME.bg,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: { width: 74, flexDirection: 'row', alignItems: 'center' },
-  backArrow: { fontSize: 28, color: THEME.primary, fontWeight: '800', marginRight: 3 },
-  backLabel: { color: THEME.primary, fontWeight: '800' },
-  backSpacer: { width: 74 },
-  headerTitleWrap: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 20, fontWeight: '900', color: THEME.primary },
-  headerSubtitle: { fontSize: 11, color: THEME.muted, marginTop: 2, fontWeight: '700' },
-  headerEmoji: { width: 36, textAlign: 'right', fontSize: 21 },
-  emptyStateCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 22,
-    padding: 22,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  emptyIcon: { fontSize: 40, marginBottom: 8 },
-  emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text, textAlign: 'center' },
-  emptyDesc: { fontSize: 13, color: THEME.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
-  card: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
-  cardTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
-  cardText: { color: THEME.muted, marginTop: 6, fontWeight: '700', lineHeight: 19 },
-  badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginTop: 8, marginBottom: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: THEME.border },
-  infoIcon: { width: 26, fontSize: 17 },
-  infoLabel: { width: 116, color: THEME.muted, fontWeight: '800' },
-  infoValue: { flex: 1, color: THEME.text, fontWeight: '800' },
-  secondaryButton: { backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 12 },
-  secondaryButtonText: { color: THEME.primary, fontWeight: '900' },
-  placeholderCard: {
-    backgroundColor: THEME.card,
-    borderRadius: 22,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  placeholderIcon: { fontSize: 44, marginBottom: 10 },
-  placeholderTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
-  placeholderDesc: { color: THEME.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
-});
+function createStyles(theme) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.bg,
+      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+    },
+    screen: { flex: 1, backgroundColor: theme.bg },
+    scrollContent: { padding: 16, paddingBottom: 52 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg },
+    loadingText: { marginTop: 12, color: theme.muted, fontWeight: '700' },
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 12,
+      backgroundColor: theme.bg,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    backButton: { width: 74, flexDirection: 'row', alignItems: 'center' },
+    backArrow: { fontSize: 28, color: theme.primary, fontWeight: '800', marginRight: 3 },
+    backLabel: { color: theme.primary, fontWeight: '800' },
+    backSpacer: { width: 74 },
+    headerTitleWrap: { flex: 1, alignItems: 'center' },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: theme.primary },
+    headerSubtitle: { fontSize: 11, color: theme.muted, marginTop: 2, fontWeight: '700' },
+    headerEmoji: { width: 36, textAlign: 'right', fontSize: 21 },
+    emptyStateCard: {
+      backgroundColor: theme.card,
+      borderRadius: 22,
+      padding: 22,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    emptyIcon: { fontSize: 40, marginBottom: 8 },
+    emptyTitle: { fontSize: 17, fontWeight: '900', color: theme.text, textAlign: 'center' },
+    emptyDesc: { fontSize: 13, color: theme.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
+    card: { backgroundColor: theme.card, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.border },
+    cardTitle: { fontSize: 17, fontWeight: '900', color: theme.text },
+    cardText: { color: theme.muted, marginTop: 6, fontWeight: '700', lineHeight: 19 },
+    badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
+    sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginTop: 8, marginBottom: 12 },
+    infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border },
+    infoIcon: { width: 26, fontSize: 17 },
+    infoLabel: { width: 116, color: theme.muted, fontWeight: '800' },
+    infoValue: { flex: 1, color: theme.text, fontWeight: '800' },
+    secondaryButton: { backgroundColor: theme.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 12 },
+    secondaryButtonText: { color: theme.primary, fontWeight: '900' },
+    placeholderCard: {
+      backgroundColor: theme.card,
+      borderRadius: 22,
+      padding: 24,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    placeholderIcon: { fontSize: 44, marginBottom: 10 },
+    placeholderTitle: { fontSize: 18, fontWeight: '900', color: theme.text },
+    placeholderDesc: { color: theme.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
+  });
+}
+
+export const styles = createStyles(THEME);
