@@ -23,6 +23,9 @@ import ParentServiceScreen from '../screens/parent/ParentServiceScreen';
 import ParentMessagesScreen from '../screens/parent/ParentMessagesScreen';
 import ParentGalleryScreen from '../screens/parent/ParentGalleryScreen';
 import ParentDocumentsScreen from '../screens/parent/ParentDocumentsScreen';
+import ParentBellScreen from '../screens/parent/ParentBellScreen';
+import ParentPaymentsScreen from '../screens/parent/ParentPaymentsScreen';
+import ParentPollsScreen from '../screens/parent/ParentPollsScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -122,6 +125,9 @@ export default function ParentStack() {
       <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
       <Stack.Screen name="ParentGallery" component={ParentGalleryScreen} />
       <Stack.Screen name="ParentDocuments" component={ParentDocumentsScreen} />
+      <Stack.Screen name="ParentBell" component={ParentBellScreen} />
+      <Stack.Screen name="ParentPayments" component={ParentPaymentsScreen} />
+      <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
     </Stack.Navigator>
   );
