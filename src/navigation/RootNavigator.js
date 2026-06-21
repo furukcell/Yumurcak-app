@@ -61,7 +61,7 @@ export default function RootNavigator() {
   if (yukleniyor || subLoading) {
     return (
       <View style={s.yuklemeEkrani}>
-        <Text style={s.logo}>*</Text>
+        <Text style={s.logo}>🌟</Text>
         <Text style={s.logoYazi}>YUMURCAK</Text>
         <ActivityIndicator color="#FFF" size="large" style={{ marginTop: 20 }} />
       </View>
@@ -103,6 +103,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logo: { fontSize: 72, marginBottom: 10, color: '#FFF' },
+  logo: { fontSize: 72, marginBottom: 10 },
   logoYazi: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 4 },
 });
