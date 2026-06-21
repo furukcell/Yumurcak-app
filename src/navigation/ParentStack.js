@@ -109,27 +109,37 @@ function ParentTabs() {
 
 export default function ParentStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ParentTabs" component={ParentTabs} />
-      <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
-      <Stack.Screen name="ChildReport" component={ChildReportScreen} />
-      <Stack.Screen name="ParentReports" component={ParentReportsScreen} />
-      <Stack.Screen name="ParentAnnouncements" component={ParentAnnouncementsScreen} />
-      <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
-      <Stack.Screen name="ParentMeals" component={ParentMealsScreen} />
-      <Stack.Screen name="ParentEvents" component={ParentEventsScreen} />
-      <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
-      <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
-      <Stack.Screen name="ParentMedical" component={ParentMedicalScreen} />
-      <Stack.Screen name="ParentContact" component={ParentContactScreen} />
-      <Stack.Screen name="ParentService" component={ParentServiceScreen} />
-      <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
-      <Stack.Screen name="ParentGallery" component={ParentGalleryScreen} />
-      <Stack.Screen name="ParentDocuments" component={ParentDocumentsScreen} />
-      <Stack.Screen name="ParentBell" component={ParentBellScreen} />
-      <Stack.Screen name="ParentPayments" component={ParentPaymentsScreen} />
-      <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
-      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
-    </Stack.Navigator>
+    <View style={styles.root}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="ParentTabs" component={ParentTabs} />
+        <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+        <Stack.Screen name="ChildReport" component={ChildReportScreen} />
+        <Stack.Screen name="ParentReports" component={ParentReportsScreen} />
+        <Stack.Screen name="ParentAnnouncements" component={ParentAnnouncementsScreen} />
+        <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
+        <Stack.Screen name="ParentMeals" component={ParentMealsScreen} />
+        <Stack.Screen name="ParentEvents" component={ParentEventsScreen} />
+        <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
+        <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
+        <Stack.Screen name="ParentMedical" component={ParentMedicalScreen} />
+        <Stack.Screen name="ParentContact" component={ParentContactScreen} />
+        <Stack.Screen name="ParentService" component={ParentServiceScreen} />
+        <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
+        <Stack.Screen name="ParentGallery" component={ParentGalleryScreen} />
+        <Stack.Screen name="ParentDocuments" component={ParentDocumentsScreen} />
+        <Stack.Screen name="ParentBell" component={ParentBellScreen} />
+        <Stack.Screen name="ParentPayments" component={ParentPaymentsScreen} />
+        <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
+        <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
+      </Stack.Navigator>
+
+      <ThemePatternOverlay opacity={0.28} />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});
