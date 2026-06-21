@@ -1,10 +1,13 @@
 // ============================================================
 // YUMURCAK — ParentStack.js
-// Veli navigasyon stack'i - FAZ 1 mesajlaşma
+// Veli navigasyon stack'i + alt tab bar
 // ============================================================
-import React from 'react';
+import React, { useMemo } from 'react';
+import { Text } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+import ParentSummaryScreen from '../screens/parent/ParentSummaryScreen';
 import ParentDashboardScreen from '../screens/parent/ParentDashboard';
 import ChildReportScreen from '../screens/parent/ChildReportScreen';
 import ParentReportsScreen from '../screens/parent/ParentReportsScreen';
@@ -21,12 +24,89 @@ import ParentMessagesScreen from '../screens/parent/ParentMessagesScreen';
 import ParentGalleryScreen from '../screens/parent/ParentGalleryScreen';
 import ParentDocumentsScreen from '../screens/parent/ParentDocumentsScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function TabIcon({ icon, focused, color }) {
+  return (
+    <Text style={{ fontSize: focused ? 22 : 20, color }}>{icon}</Text>
+  );
+}
+
+function ParentTabs() {
+  const { theme } = useAppTheme();
+
+  const tabOptions = useMemo(() => ({
+    headerShown: false,
+    tabBarActiveTintColor: theme.primary,
+    tabBarInactiveTintColor: theme.muted,
+    tabBarStyle: {
+      height: 70,
+      paddingTop: 6,
+      paddingBottom: 8,
+      backgroundColor: theme.card,
+      borderTopColor: theme.border,
+      borderTopWidth: 1,
+    },
+    tabBarLabelStyle: {
+      fontSize: 10,
+      fontWeight: '900',
+      marginTop: 2,
+    },
+  }), [theme]);
+
+  return (
+    <Tab.Navigator initialRouteName="ParentSummary" screenOptions={tabOptions}>
+      <Tab.Screen
+        name="ParentSummary"
+        component={ParentSummaryScreen}
+        options={{
+          title: 'Özet',
+          tabBarIcon: ({ focused, color }) => <TabIcon icon="📊" focused={focused} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="ParentDashboard"
+        component={ParentDashboardScreen}
+        options={{
+          title: 'Anasayfa',
+          tabBarIcon: ({ focused, color }) => <TabIcon icon="🏠" focused={focused} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="ParentReportsTab"
+        component={ParentReportsScreen}
+        options={{
+          title: 'Raporlar',
+          tabBarIcon: ({ focused, color }) => <TabIcon icon="📋" focused={focused} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="ParentDevelopmentTab"
+        component={ParentDevelopmentScreen}
+        options={{
+          title: 'Gelişim',
+          tabBarIcon: ({ focused, color }) => <TabIcon icon="📈" focused={focused} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="ParentMessagesTab"
+        component={ParentMessagesScreen}
+        options={{
+          title: 'Mesaj',
+          tabBarIcon: ({ focused, color }) => <TabIcon icon="💬" focused={focused} color={color} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function ParentStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ParentTabs" component={ParentTabs} />
       <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
       <Stack.Screen name="ChildReport" component={ChildReportScreen} />
       <Stack.Screen name="ParentReports" component={ParentReportsScreen} />
