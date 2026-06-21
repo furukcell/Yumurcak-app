@@ -3,7 +3,8 @@
 // Veli navigasyon stack'i + alt tab bar
 // ============================================================
 import React, { useMemo } from 'react';
-import { Text } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
+import ThemePatternOverlay from '../components/ThemePatternOverlay';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
