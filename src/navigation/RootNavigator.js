@@ -1,7 +1,3 @@
-// ============================================================
-// YUMURCAK — RootNavigator.js
-// FAZ 15: Abonelik guard / kilitleme eklendi
-// ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { onValue, ref } from 'firebase/database';
@@ -10,6 +6,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { ROLLER } from '../constants';
 import { getSubscriptionStatus } from '../utils/subscriptionStatus';
+import { ThemeProvider } from '../theme/ThemeProvider';
 
 import AuthStack from './AuthStack';
 import AdminStack from './AdminStack';
@@ -39,7 +36,7 @@ export default function RootNavigator() {
     setSubLoading(true);
 
     const unsubscribe = onValue(
-      ref(database, `abonelikler/${kresId}`),
+      ref(database, 'abonelikler/' + kresId),
       (snap) => {
         setSubscription(snap.val() || null);
         setSubLoading(false);
@@ -55,10 +52,16 @@ export default function RootNavigator() {
 
   const subscriptionStatus = useMemo(() => getSubscriptionStatus(subscription), [subscription]);
 
+  const withTheme = (screen) => (
+    <ThemeProvider kresId={kresId}>
+      {screen}
+    </ThemeProvider>
+  );
+
   if (yukleniyor || subLoading) {
     return (
       <View style={s.yuklemeEkrani}>
-        <Text style={s.logo}>🌟</Text>
+        <Text style={s.logo}>*</Text>
         <Text style={s.logoYazi}>YUMURCAK</Text>
         <ActivityIndicator color="#FFF" size="large" style={{ marginTop: 20 }} />
       </View>
@@ -71,26 +74,23 @@ export default function RootNavigator() {
     return <SuperAdminStack />;
   }
 
-  // Abonelik yok/bitti/pasif ise:
-  // - Kurum yöneticisi ödeme/abonelik ekranını görebilir.
-  // - Öğretmen ve veli kilit ekranı görür.
   if (subscriptionStatus.blocked) {
     if (role === ROLLER.YONETICI) {
-      return <AdminSubscriptionScreen />;
+      return withTheme(<AdminSubscriptionScreen />);
     }
 
     if (role === ROLLER.OGRETMEN || role === ROLLER.VELI) {
-      return <SubscriptionBlockedScreen subscription={subscription} />;
+      return withTheme(<SubscriptionBlockedScreen subscription={subscription} />);
     }
   }
 
   switch (role) {
     case ROLLER.YONETICI:
-      return <AdminStack />;
+      return withTheme(<AdminStack />);
     case ROLLER.OGRETMEN:
-      return <TeacherStack />;
+      return withTheme(<TeacherStack />);
     case ROLLER.VELI:
-      return <ParentStack />;
+      return withTheme(<ParentStack />);
     default:
       return <AuthStack />;
   }
@@ -103,6 +103,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logo: { fontSize: 72, marginBottom: 10 },
+  logo: { fontSize: 72, marginBottom: 10, color: '#FFF' },
   logoYazi: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 4 },
 });
