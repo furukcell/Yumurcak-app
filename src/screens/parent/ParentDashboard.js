@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Image } from 'react-native';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import ThemePatternBackground from '../../components/ThemePatternBackground';
 
 export default function ParentDashboardScreen({ navigation }) {
   const base = useParentBase();
@@ -48,6 +49,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ThemePatternBackground opacity={0.13} />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
@@ -131,7 +133,7 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.bg,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
-  screen: { flex: 1, backgroundColor: theme.bg },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 96 },
   topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
   logo: { color: theme.primary, fontSize: 23, fontWeight: '900' },
