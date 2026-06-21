@@ -25,6 +25,13 @@ export default function ParentDashboardScreen({ navigation }) {
   const getMeal = () => todayReport?.yemekDurumu || (todayReport?.yemek ? 'İyi' : 'İyi');
   const getSleep = () => todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || 'İyi');
 
+  const featuredActions = [
+    ['🔔', 'Kurum Zili', 'ParentBell', 'Geliyorum / kapıdayım bildir'],
+    ['💳', 'Ödeme Takibi', 'ParentPayments', 'Aidat ve ücret kayıtları'],
+    ['🗳️', 'Anketler', 'ParentPolls', 'Kurum anketleri ve oylamalar'],
+    ['☎️', 'Kurum İletişim', 'ParentContact', 'Telefon, adres ve yetkili'],
+  ];
+
   const quickActions = [
     ['📋', 'Günlük Rapor', 'ParentReports'],
     ['✅', 'Yoklama', 'ParentAttendance'],
@@ -32,7 +39,6 @@ export default function ParentDashboardScreen({ navigation }) {
     ['🎉', 'Etkinlikler', 'ParentEvents'],
     ['📈', 'Gelişim', 'ParentDevelopment'],
     ['🩺', 'Medikal', 'ParentMedical'],
-    ['☎️', 'Kurum İletişim', 'ParentContact'],
     ['🚌', 'Servis', 'ParentService'],
     ['📣', 'Duyurular', 'ParentAnnouncements'],
     ['💬', 'Mesajlar', 'ParentMessages'],
@@ -58,7 +64,7 @@ export default function ParentDashboardScreen({ navigation }) {
         </View>
 
         <Text style={styles.greeting}>Merhaba, {parentName} 👋</Text>
-        <Text style={styles.greetingSub}>Bugünün özetini senin için hazırladık.</Text>
+        <Text style={styles.greetingSub}>Bilgi ve işlemlere buradan hızlıca ulaşabilirsin.</Text>
 
         {selectedChild ? (
           <View style={styles.heroCard}>
@@ -80,7 +86,18 @@ export default function ParentDashboardScreen({ navigation }) {
           <EmptyState icon="👧" title="Sisteme kayıtlı çocuk bulunmuyor" desc="Yönetici panelinden çocuğa bu veli bağlanmalı." />
         )}
 
-        <Text style={styles.sectionTitle}>Hızlı İşlemler</Text>
+        <Text style={styles.sectionTitle}>Hızlı Aksiyonlar</Text>
+        <View style={styles.quickGrid}>
+          {featuredActions.map(([icon, label, route, desc]) => (
+            <TouchableOpacity key={route} style={[styles.quickAction, styles.featuredAction]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
+              <Text style={styles.quickIcon}>{icon}</Text>
+              <Text style={styles.quickLabel}>{label}</Text>
+              <Text style={styles.quickDesc}>{desc}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.sectionTitle}>Diğer İşlemler</Text>
         <View style={styles.quickGrid}>
           {quickActions.map(([icon, label, route]) => (
             <TouchableOpacity key={route} style={styles.quickAction} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
@@ -115,7 +132,7 @@ const createStyles = (theme) => StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
   screen: { flex: 1, backgroundColor: theme.bg },
-  content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 56 },
+  content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 96 },
   topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
   logo: { color: theme.primary, fontSize: 23, fontWeight: '900' },
   brandSub: { color: theme.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
@@ -135,11 +152,13 @@ const createStyles = (theme) => StyleSheet.create({
   summaryIcon: { fontSize: 20, marginBottom: 4 },
   summaryLabel: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '700' },
   summaryValue: { color: '#fff', fontSize: 13, fontWeight: '900', marginTop: 2, textAlign: 'center' },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12 },
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12, marginTop: 2 },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10 },
   quickAction: { width: '48%', backgroundColor: theme.card, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: theme.border },
+  featuredAction: { minHeight: 118, justifyContent: 'center' },
   quickIcon: { fontSize: 27, marginBottom: 8 },
   quickLabel: { fontSize: 13, color: theme.text, fontWeight: '900', textAlign: 'center' },
+  quickDesc: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 5, textAlign: 'center', lineHeight: 15 },
   logoutButton: { backgroundColor: theme.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
   logoutText: { color: theme.primary, fontWeight: '900', fontSize: 15 },
 });
