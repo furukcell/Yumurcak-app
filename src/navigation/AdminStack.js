@@ -1,7 +1,3 @@
-// ============================================================
-// YUMURCAK — AdminStack.js
-// FAZ 11 v2: Dashboard ve AuthMigration native header kapatıldı
-// ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -27,43 +23,42 @@ import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSet
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
 import AdminAuthMigrationScreen from '../screens/admin/AdminAuthMigrationScreen';
+import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function AdminStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#3C3489' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '700' },
-      }}
-    >
-      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="AuthMigration" component={AdminAuthMigrationScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="MessageDetail" component={MessageDetailScreen} options={{ headerShown: false }} />
+function stackScreen(name, component, options) {
+  return React.createElement(Stack.Screen, { key: name, name: name, component: component, options: options });
+}
 
-      <Stack.Screen name="InstitutionSettings" component={AdminInstitutionSettingsScreen} options={{ title: 'Kurum Bilgileri' }} />
-      <Stack.Screen name="Subscription" component={AdminSubscriptionScreen} options={{ title: 'Abonelik / Ödeme' }} />
-      <Stack.Screen name="AdminMessages" component={AdminMessagesScreen} options={{ title: 'Mesajlar' }} />
-      <Stack.Screen name="ClassList" component={ClassListScreen} options={{ title: 'Sınıflar' }} />
-      <Stack.Screen name="ClassForm" component={ClassFormScreen} options={{ title: 'Sınıf Ekle/Düzenle' }} />
-      <Stack.Screen name="ChildList" component={ChildListScreen} options={{ title: 'Çocuklar' }} />
-      <Stack.Screen name="ChildForm" component={ChildFormScreen} options={{ title: 'Çocuk Ekle/Düzenle' }} />
-      <Stack.Screen name="ChildDetail" component={ChildDetailScreen} options={{ title: 'Çocuk Detayı' }} />
-      <Stack.Screen name="TeacherList" component={TeacherListScreen} options={{ title: 'Öğretmenler' }} />
-      <Stack.Screen name="TeacherForm" component={TeacherFormScreen} options={{ title: 'Öğretmen Ekle/Düzenle' }} />
-      <Stack.Screen name="VeliList" component={VeliListScreen} options={{ title: 'Veliler' }} />
-      <Stack.Screen name="VeliForm" component={VeliFormScreen} options={{ title: 'Veli Ekle/Düzenle' }} />
-      <Stack.Screen name="AnnouncementList" component={AnnouncementListScreen} options={{ title: 'Duyurular' }} />
-      <Stack.Screen name="AnnouncementForm" component={AnnouncementFormScreen} options={{ title: 'Duyuru Oluştur' }} />
-      <Stack.Screen name="PaymentList" component={PaymentListScreen} options={{ title: 'Ödemeler' }} />
-      <Stack.Screen name="PaymentForm" component={PaymentFormScreen} options={{ title: 'Ödeme Ekle/Düzenle' }} />
-      <Stack.Screen name="LessonScheduleList" component={LessonScheduleListScreen} options={{ title: 'Ders Programı' }} />
-      <Stack.Screen name="LessonScheduleForm" component={LessonScheduleFormScreen} options={{ title: 'Programı Düzenle' }} />
-      <Stack.Screen name="EventList" component={EventListScreen} options={{ title: 'Etkinlikler' }} />
-      <Stack.Screen name="EventForm" component={EventFormScreen} options={{ title: 'Etkinlik Ekle/Düzenle' }} />
-    </Stack.Navigator>
+export default function AdminStack() {
+  return React.createElement(
+    Stack.Navigator,
+    { screenOptions: { headerStyle: { backgroundColor: '#3C3489' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: '700' } } },
+    stackScreen('Dashboard', DashboardScreen, { headerShown: false }),
+    stackScreen('AuthMigration', AdminAuthMigrationScreen, { headerShown: false }),
+    stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
+    stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
+    stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
+    stackScreen('Subscription', AdminSubscriptionScreen, { title: 'Abonelik / Ödeme' }),
+    stackScreen('AdminMessages', AdminMessagesScreen, { title: 'Mesajlar' }),
+    stackScreen('ClassList', ClassListScreen, { title: 'Sınıflar' }),
+    stackScreen('ClassForm', ClassFormScreen, { title: 'Sınıf Ekle/Düzenle' }),
+    stackScreen('ChildList', ChildListScreen, { title: 'Çocuklar' }),
+    stackScreen('ChildForm', ChildFormScreen, { title: 'Çocuk Ekle/Düzenle' }),
+    stackScreen('ChildDetail', ChildDetailScreen, { title: 'Çocuk Detayı' }),
+    stackScreen('TeacherList', TeacherListScreen, { title: 'Öğretmenler' }),
+    stackScreen('TeacherForm', TeacherFormScreen, { title: 'Öğretmen Ekle/Düzenle' }),
+    stackScreen('VeliList', VeliListScreen, { title: 'Veliler' }),
+    stackScreen('VeliForm', VeliFormScreen, { title: 'Veli Ekle/Düzenle' }),
+    stackScreen('AnnouncementList', AnnouncementListScreen, { title: 'Duyurular' }),
+    stackScreen('AnnouncementForm', AnnouncementFormScreen, { title: 'Duyuru Oluştur' }),
+    stackScreen('PaymentList', PaymentListScreen, { title: 'Ödemeler' }),
+    stackScreen('PaymentForm', PaymentFormScreen, { title: 'Ödeme Ekle/Düzenle' }),
+    stackScreen('LessonScheduleList', LessonScheduleListScreen, { title: 'Ders Programı' }),
+    stackScreen('LessonScheduleForm', LessonScheduleFormScreen, { title: 'Programı Düzenle' }),
+    stackScreen('EventList', EventListScreen, { title: 'Etkinlikler' }),
+    stackScreen('EventForm', EventFormScreen, { title: 'Etkinlik Ekle/Düzenle' })
   );
 }
