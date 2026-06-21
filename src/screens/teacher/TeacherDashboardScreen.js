@@ -1,11 +1,13 @@
 // ============================================================
 // YUMURCAK — TeacherDashboardScreen.js
 // FAZ 6: Üst başlıkta kreş adı + Yumurcak Öğretmen Paneli
+// TEMA: Seçilen kreş teması ana ekrana bağlandı
 // ============================================================
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { THEME, useTeacherData, LoadingState, EmptyState } from './teacherShared';
+import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren' },
@@ -23,6 +25,8 @@ const MENU = [
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
   const { loading, kullanici, kresAdi, currentClass, classChildren, reports, attendance } = useTeacherData();
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   if (loading) return <LoadingState text="Öğretmen paneli hazırlanıyor..." />;
 
@@ -47,9 +51,9 @@ export default function TeacherDashboardScreen() {
             <Text style={styles.heroTitle}>{currentClass.ad || 'Sınıfım'}</Text>
             <Text style={styles.heroSub}>Bugünkü sınıf özeti</Text>
             <View style={styles.statsRow}>
-              {renderStat('Çocuk', classChildren.length)}
-              {renderStat('Rapor', todayReports)}
-              {renderStat('Yoklama', todayAttendance)}
+              {renderStat(styles, 'Çocuk', classChildren.length)}
+              {renderStat(styles, 'Rapor', todayReports)}
+              {renderStat(styles, 'Yoklama', todayAttendance)}
             </View>
           </View>
         ) : (
@@ -69,42 +73,42 @@ export default function TeacherDashboardScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-
-  function renderStat(label, value) {
-    return (
-      <View style={styles.statBox}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-      </View>
-    );
-  }
 }
 
-const styles = StyleSheet.create({
+function renderStat(styles, label, value) {
+  return (
+    <View style={styles.statBox}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const createStyles = (theme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.bg,
+    backgroundColor: theme.bg,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: theme.bg },
   content: { padding: 18, paddingBottom: 56 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
-  title: { fontSize: 23, fontWeight: '900', color: THEME.primary },
-  panelLabel: { marginTop: 2, fontSize: 12, color: THEME.muted, fontWeight: '800' },
-  subtitle: { marginTop: 4, fontSize: 14, color: THEME.muted, fontWeight: '700' },
-  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 23, fontWeight: '900', color: theme.primary },
+  panelLabel: { marginTop: 2, fontSize: 12, color: theme.muted, fontWeight: '800' },
+  subtitle: { marginTop: 4, fontSize: 14, color: theme.muted, fontWeight: '700' },
+  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border },
   avatarText: { fontSize: 27 },
-  hero: { backgroundColor: THEME.primary, borderRadius: 24, padding: 18, marginBottom: 22 },
+  hero: { backgroundColor: theme.primary, borderRadius: 24, padding: 18, marginBottom: 22 },
   heroTitle: { color: '#FFF', fontSize: 22, fontWeight: '900' },
   heroSub: { color: 'rgba(255,255,255,0.82)', marginTop: 4, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   statBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 16, padding: 12, alignItems: 'center' },
   statValue: { color: '#FFF', fontSize: 22, fontWeight: '900' },
   statLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '700' },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  menuCard: { width: '48%', backgroundColor: THEME.card, borderRadius: 20, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
+  menuCard: { width: '48%', backgroundColor: theme.card, borderRadius: 20, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: theme.border },
   menuIcon: { fontSize: 28, marginBottom: 8 },
-  menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text },
-  menuDesc: { fontSize: 12, color: THEME.muted, marginTop: 4, lineHeight: 17 },
+  menuTitle: { fontSize: 15, fontWeight: '900', color: theme.text },
+  menuDesc: { fontSize: 12, color: theme.muted, marginTop: 4, lineHeight: 17 },
 });
