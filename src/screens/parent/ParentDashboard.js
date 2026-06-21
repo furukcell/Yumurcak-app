@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Image } from 'react-native';
-import { useNodeList, useParentBase, LoadingScreen, EmptyState, THEME } from './parentShared';
+import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentShared';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 export default function ParentDashboardScreen({ navigation }) {
   const base = useParentBase();
   const reports = useNodeList('gunlukRaporlar');
+  const { theme } = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, kullanici } = base;
 
   const childReports = useMemo(() => {
@@ -67,10 +70,10 @@ export default function ParentDashboardScreen({ navigation }) {
               </View>
             </View>
             <View style={styles.summaryPanel}>
-              {renderSummaryItem('😊', 'Ruh Hali', getMood(), THEME.orange)}
-              {renderSummaryItem('🍴', 'Yemek', getMeal(), THEME.primary)}
-              {renderSummaryItem('🌙', 'Uyku', getSleep(), THEME.blue)}
-              {renderSummaryItem('☑️', 'Yoklama', selectedChild ? 'Geldi' : '-', THEME.green)}
+              {renderSummaryItem(styles, '😊', 'Ruh Hali', getMood(), theme.orange)}
+              {renderSummaryItem(styles, '🍴', 'Yemek', getMeal(), theme.primary)}
+              {renderSummaryItem(styles, '🌙', 'Uyku', getSleep(), theme.blue)}
+              {renderSummaryItem(styles, '☑️', 'Yoklama', selectedChild ? 'Geldi' : '-', theme.green)}
             </View>
           </View>
         ) : (
@@ -95,7 +98,7 @@ export default function ParentDashboardScreen({ navigation }) {
   );
 }
 
-function renderSummaryItem(icon, label, value, color) {
+function renderSummaryItem(styles, icon, label, value, color) {
   return (
     <View style={styles.summaryItem}>
       <Text style={[styles.summaryIcon, { color }]}>{icon}</Text>
@@ -105,23 +108,23 @@ function renderSummaryItem(icon, label, value, color) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: THEME.bg,
+    backgroundColor: theme.bg,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
-  screen: { flex: 1, backgroundColor: THEME.bg },
+  screen: { flex: 1, backgroundColor: theme.bg },
   content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 56 },
   topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
-  logo: { color: THEME.primary, fontSize: 23, fontWeight: '900' },
-  brandSub: { color: THEME.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
-  profileButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border, overflow: 'hidden' },
+  logo: { color: theme.primary, fontSize: 23, fontWeight: '900' },
+  brandSub: { color: theme.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
+  profileButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border, overflow: 'hidden' },
   profileButtonText: { fontSize: 20 },
   profileImage: { width: 44, height: 44, borderRadius: 22 },
-  greeting: { fontSize: 20, fontWeight: '900', color: THEME.text, marginBottom: 4 },
-  greetingSub: { fontSize: 13, color: THEME.muted, marginBottom: 18 },
-  heroCard: { backgroundColor: THEME.primary, borderRadius: 24, padding: 16, marginBottom: 24, shadowColor: THEME.primary, shadowOpacity: 0.22, shadowRadius: 18, elevation: 6 },
+  greeting: { fontSize: 20, fontWeight: '900', color: theme.text, marginBottom: 4 },
+  greetingSub: { fontSize: 13, color: theme.muted, marginBottom: 18 },
+  heroCard: { backgroundColor: theme.primary, borderRadius: 24, padding: 16, marginBottom: 24, shadowColor: theme.primary, shadowOpacity: 0.22, shadowRadius: 18, elevation: 6 },
   heroTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 14, borderWidth: 3, borderColor: 'rgba(255,255,255,0.65)' },
   avatarText: { fontSize: 36 },
@@ -132,11 +135,11 @@ const styles = StyleSheet.create({
   summaryIcon: { fontSize: 20, marginBottom: 4 },
   summaryLabel: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '700' },
   summaryValue: { color: '#fff', fontSize: 13, fontWeight: '900', marginTop: 2, textAlign: 'center' },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12 },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  quickAction: { width: '48%', backgroundColor: THEME.card, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  quickAction: { width: '48%', backgroundColor: theme.card, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: theme.border },
   quickIcon: { fontSize: 27, marginBottom: 8 },
-  quickLabel: { fontSize: 13, color: THEME.text, fontWeight: '900', textAlign: 'center' },
-  logoutButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
-  logoutText: { color: THEME.primary, fontWeight: '900', fontSize: 15 },
+  quickLabel: { fontSize: 13, color: theme.text, fontWeight: '900', textAlign: 'center' },
+  logoutButton: { backgroundColor: theme.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
+  logoutText: { color: theme.primary, fontWeight: '900', fontSize: 15 },
 });
