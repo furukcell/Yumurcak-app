@@ -44,6 +44,8 @@ export default function ParentSummaryScreen({ navigation }) {
   const events = useNodeList('etkinlikler');
   const announcements = useNodeList('duyurular');
   const schedules = useNodeList('dersProgramlari');
+  const payments = useNodeList('odemeler');
+  const polls = useNodeList('anketler');
 
   const {
     loading,
@@ -118,6 +120,34 @@ export default function ParentSummaryScreen({ navigation }) {
       .sort((a, b) => String(b.createdAt || b.tarih || '').localeCompare(String(a.createdAt || a.tarih || '')))[0] || null;
   }, [announcements, kresId, sinifId]);
 
+  const pendingPayment = useMemo(() => {
+    if (!selectedChild?.id && !kullanici?.uid) return null;
+    return payments
+      .filter((item) => item.aktif !== false)
+      .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+      .filter((item) => {
+        if (item.cocukId) return item.cocukId === selectedChild?.id;
+        if (item.veliId) return item.veliId === (kullanici?.uid || kullanici?.id);
+        return true;
+      })
+      .filter((item) => !isPaid(item))
+      .sort((a, b) => String(a.sonOdemeTarihi || a.tarih || '').localeCompare(String(b.sonOdemeTarihi || b.tarih || '')))[0] || null;
+  }, [payments, selectedChild?.id, kullanici?.uid, kullanici?.id, kresId]);
+
+  const activePoll = useMemo(() => {
+    const veliId = kullanici?.uid || kullanici?.id;
+    return polls
+      .filter((item) => item.aktif !== false)
+      .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+      .filter((item) => {
+        if (Array.isArray(item.sinifIds)) return item.sinifIds.includes(sinifId);
+        if (item.sinifId) return item.sinifId === sinifId;
+        return true;
+      })
+      .filter((item) => !item.cevaplar || !veliId || !item.cevaplar[veliId])
+      .sort((a, b) => String(b.createdAt || b.tarih || '').localeCompare(String(a.createdAt || a.tarih || '')))[0] || null;
+  }, [polls, kresId, sinifId, kullanici?.uid, kullanici?.id]);
+
   if (loading) return <LoadingScreen text="Özet hazırlanıyor..." />;
 
   if (!selectedChild) {
@@ -169,6 +199,23 @@ export default function ParentSummaryScreen({ navigation }) {
           </View>
         </View>
 
+        <View style={styles.quickActionRow}>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('ParentBell')} activeOpacity={0.82}>
+            <View style={[styles.quickActionIcon, styles.iconOrange]}><Text style={styles.quickActionIconText}>🔔</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.quickActionTitle}>Kurum Zili</Text>
+              <Text style={styles.quickActionDesc}>Geliyorum / Kapıdayım</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('ParentMessages')} activeOpacity={0.82}>
+            <View style={[styles.quickActionIcon, styles.iconBlue]}><Text style={styles.quickActionIconText}>💬</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.quickActionTitle}>Mesaj</Text>
+              <Text style={styles.quickActionDesc}>Öğretmene yaz</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.commentCard}>
           <View style={styles.commentHead}>
             <Text style={styles.commentTitle}>✨ Günlük kısa yorum</Text>
@@ -183,6 +230,29 @@ export default function ParentSummaryScreen({ navigation }) {
           <MiniCard styles={styles} icon="😴" value={sleep} label="Uyku" />
           <MiniCard styles={styles} icon="🎨" value={`${todayEvents.length}/3`} label="Etkinlik" />
         </View>
+
+        {pendingPayment ? (
+          <TouchableOpacity style={[styles.wideCard, styles.paymentAlert]} onPress={() => navigation.navigate('ParentPayments')} activeOpacity={0.82}>
+            <View style={[styles.bigIcon, styles.iconOrange]}><Text style={styles.bigIconText}>💳</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Ödeme hatırlatması</Text>
+              <Text style={styles.cardDesc}>{pendingPayment.baslik || pendingPayment.aciklama || 'Bekleyen ödeme kaydı var.'}</Text>
+              <Text style={styles.amountText}>{formatAmount(pendingPayment.tutar || pendingPayment.ucret || pendingPayment.miktar)}</Text>
+            </View>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {activePoll ? (
+          <TouchableOpacity style={[styles.wideCard, styles.pollAlert]} onPress={() => navigation.navigate('ParentPolls')} activeOpacity={0.82}>
+            <View style={[styles.bigIcon, styles.iconPurple]}><Text style={styles.bigIconText}>🗳️</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Cevap bekleyen anket</Text>
+              <Text style={styles.cardDesc}>{activePoll.soru || activePoll.baslik || activePoll.title || 'Kurumun yeni anketi var.'}</Text>
+            </View>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <SectionHead styles={styles} title="Yemek ve Menü" action="Yemek listesi" onPress={() => navigation.navigate('ParentMeals')} />
         <View style={styles.card}>
@@ -346,6 +416,18 @@ function formatDate(value) {
   return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 
+function isPaid(item) {
+  const durum = String(item?.durum || item?.status || '').toLowerCase();
+  return item?.odendi === true || item?.paid === true || durum === 'odendi' || durum === 'ödendi' || durum === 'paid';
+}
+
+function formatAmount(value) {
+  if (value === undefined || value === null || value === '') return 'Tutar belirtilmedi';
+  const num = Number(value);
+  if (Number.isNaN(num)) return String(value);
+  return `${num.toLocaleString('tr-TR')} TL`;
+}
+
 const createStyles = (theme) => StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -370,6 +452,12 @@ const createStyles = (theme) => StyleSheet.create({
   pill: { color: theme.primary, backgroundColor: theme.primarySoft, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 99, fontSize: 10.5, fontWeight: '900', overflow: 'hidden' },
   pillGreen: { color: theme.green, backgroundColor: '#E9FBEF' },
   pillOrange: { color: theme.orange, backgroundColor: '#FFF3DF' },
+  quickActionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  quickActionCard: { width: '48.7%', backgroundColor: theme.card, borderRadius: 19, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: theme.border },
+  quickActionIcon: { width: 38, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  quickActionIconText: { fontSize: 20 },
+  quickActionTitle: { color: theme.text, fontSize: 13, fontWeight: '900' },
+  quickActionDesc: { color: theme.muted, fontSize: 10.5, fontWeight: '700', marginTop: 2 },
   commentCard: { backgroundColor: theme.card, borderRadius: 22, padding: 15, marginBottom: 12, borderLeftWidth: 5, borderLeftColor: theme.primary, borderWidth: 1, borderColor: theme.border },
   commentHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
   commentTitle: { color: theme.primary, fontSize: 13, fontWeight: '900' },
@@ -391,6 +479,10 @@ const createStyles = (theme) => StyleSheet.create({
   iconBlue: { backgroundColor: '#EAF0FF' },
   iconPink: { backgroundColor: '#FFE9F8' },
   iconGreen: { backgroundColor: '#E9FBEF' },
+  iconPurple: { backgroundColor: '#F3F0FF' },
+  paymentAlert: { borderLeftWidth: 5, borderLeftColor: theme.orange, backgroundColor: '#FFFAF0' },
+  pollAlert: { borderLeftWidth: 5, borderLeftColor: theme.primary, backgroundColor: '#FBF8FF' },
+  amountText: { color: theme.orange, fontSize: 13, fontWeight: '900', marginTop: 6 },
   cardTitle: { color: theme.text, fontSize: 14.5, fontWeight: '900' },
   cardDesc: { color: theme.muted, fontSize: 11.8, fontWeight: '650', lineHeight: 16, marginTop: 4 },
   mealBox: { marginTop: 10, gap: 8 },
