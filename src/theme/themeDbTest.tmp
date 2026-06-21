@@ -1,0 +1,6 @@
+import { onValue, ref } from 'firebase/database';
+import { database } from '../config/firebase';
+
+export function testTheme(kresId) {
+  return onValue(ref(database, 'kresler/' + kresId), function () {});
+}
