@@ -67,6 +67,7 @@ export default function ParentDashboardScreen({ navigation }) {
        )}
       </TouchableOpacity>
    </View>
+    </View>
 
         <Text style={styles.greeting}>Merhaba, {parentName} 👋</Text>
         <Text style={styles.greetingSub}>Bilgi ve işlemlere buradan hızlıca ulaşabilirsin.</Text>
