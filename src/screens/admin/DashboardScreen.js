@@ -131,12 +131,14 @@ export default function DashboardScreen() {
               </Text>
             </View>
           </View>
-         <View style={styles.topActions}>
-        <AppNotificationButton navigation={navigation} />
-        <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
-        <Text style={styles.cikisBtnText}>↩ Çıkış</Text>
-       </TouchableOpacity>
-    </View>
+
+          <View style={styles.topActions}>
+            <AppNotificationButton navigation={navigation} />
+            <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
+              <Text style={styles.cikisBtnText}>↩ Çıkış</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={styles.welcomeCard}>
           <View style={styles.welcomeLeft}>
