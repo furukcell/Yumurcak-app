@@ -19,18 +19,24 @@ import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { ScreenShell, InfoRow, EmptyState, LoadingScreen, useParentBase, styles, THEME } from './parentShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function ParentProfileScreen({ navigation }) {
   const { loading, selectedChild, childName, parentName, kullanici, parentId, parentPhotoUrl, sinif, ogretmen, cikisYap } = useParentBase();
   const [photoUrl, setPhotoUrl] = useState(parentPhotoUrl || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
 
   useEffect(() => {
     setPhotoUrl(parentPhotoUrl || '');
   }, [parentPhotoUrl]);
 
   if (loading) return <LoadingScreen text="Profil hazırlanıyor..." />;
+
+  const showSuccessToast = (message) => {
+    setSuccessToast({ visible: true, message });
+  };
 
   const pickAndUploadPhoto = async () => {
     if (!parentId) return Alert.alert('Hata', 'Veli hesabı bulunamadı.');
@@ -71,7 +77,7 @@ export default function ParentProfileScreen({ navigation }) {
       });
 
       setPhotoUrl(downloadUrl);
-      Alert.alert('Başarılı', 'Profil fotoğrafı yüklendi.');
+      showSuccessToast('Profil fotoğrafı yüklendi');
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
@@ -96,7 +102,9 @@ export default function ParentProfileScreen({ navigation }) {
               profilFotoUpdatedAt: Date.now(),
               updatedAt: Date.now(),
             });
+
             setPhotoUrl('');
+            showSuccessToast('Profil fotoğrafı kaldırıldı');
           } catch (err) {
             console.error(err);
             Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
@@ -109,70 +117,85 @@ export default function ParentProfileScreen({ navigation }) {
   };
 
   return (
-    <ScreenShell title="Profil" emoji="👤" navigation={navigation}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Profil Resmi</Text>
-        <Text style={local.hintText}>Seçtiğin fotoğraf anasayfa ve özet ekranındaki profil alanlarında otomatik görünür.</Text>
-        <View style={local.avatarWrap}>
-          {photoUrl ? (
-            <Image source={{ uri: photoUrl }} style={local.avatarImage} />
-          ) : (
-            <View style={local.avatarPlaceholder}>
-              <Text style={local.avatarEmoji}>👤</Text>
-            </View>
-          )}
-        </View>
+    <>
+      <AppSuccessToast
+        visible={successToast.visible}
+        message={successToast.message}
+        onHide={() => setSuccessToast({ visible: false, message: '' })}
+      />
 
-        <TouchableOpacity style={local.primaryButton} onPress={pickAndUploadPhoto} disabled={uploading || saving}>
-          {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={local.primaryButtonText}>Galeriden Fotoğraf Seç</Text>}
-        </TouchableOpacity>
-
-        {photoUrl ? (
-          <TouchableOpacity style={local.removeButton} onPress={removePhoto} disabled={saving || uploading}>
-            <Text style={local.removeButtonText}>{saving ? 'Kaldırılıyor...' : 'Fotoğrafı Kaldır'}</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-
-      {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Yönetici panelinden çocuğa bu veli bağlanmalı." />
-      ) : (
+      <ScreenShell title="Profil" emoji="👤" navigation={navigation}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>👧 {childName}</Text>
-          <Text style={styles.cardText}>{selectedChild?.yas || selectedChild?.dogumTarihi || 'Kreş öğrencisi'}</Text>
+          <Text style={styles.cardTitle}>Profil Resmi</Text>
+          <Text style={local.hintText}>Seçtiğin fotoğraf anasayfa ve özet ekranındaki profil alanlarında otomatik görünür.</Text>
+
+          <View style={local.avatarWrap}>
+            {photoUrl ? (
+              <Image source={{ uri: photoUrl }} style={local.avatarImage} />
+            ) : (
+              <View style={local.avatarPlaceholder}>
+                <Text style={local.avatarEmoji}>👤</Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity style={local.primaryButton} onPress={pickAndUploadPhoto} disabled={uploading || saving}>
+            {uploading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={local.primaryButtonText}>Galeriden Fotoğraf Seç</Text>
+            )}
+          </TouchableOpacity>
+
+          {photoUrl ? (
+            <TouchableOpacity style={local.removeButton} onPress={removePhoto} disabled={saving || uploading}>
+              <Text style={local.removeButtonText}>{saving ? 'Kaldırılıyor...' : 'Fotoğrafı Kaldır'}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-      )}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Veli Bilgileri</Text>
-        <InfoRow icon="👤" label="Veli" value={parentName} />
-        <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon} />
-        <InfoRow icon="✉️" label="Kullanıcı" value={kullanici?.kullaniciAdi} />
-      </View>
+        {!selectedChild ? (
+          <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Yönetici panelinden çocuğa bu veli bağlanmalı." />
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>👧 {childName}</Text>
+            <Text style={styles.cardText}>{selectedChild?.yas || selectedChild?.dogumTarihi || 'Kreş öğrencisi'}</Text>
+          </View>
+        )}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Kurum Bilgileri</Text>
-        <InfoRow icon="🏫" label="Sınıf" value={sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifId} />
-        <InfoRow icon="👩‍🏫" label="Öğretmen" value={`${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim()} />
-      </View>
-      <View style={styles.card}>
-  <Text style={styles.cardTitle}>⚖️ Yasal Metinler</Text>
-  <Text style={styles.cardText}>
-    Kullanım şartları, gizlilik politikası ve KVKK aydınlatma metni.
-  </Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Veli Bilgileri</Text>
+          <InfoRow icon="👤" label="Veli" value={parentName} />
+          <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon} />
+          <InfoRow icon="✉️" label="Kullanıcı" value={kullanici?.kullaniciAdi} />
+        </View>
 
-  <TouchableOpacity
-    style={styles.secondaryButton}
-    onPress={() => navigation.navigate('LegalDocuments')}
-    activeOpacity={0.85}
-  >
-    <Text style={styles.secondaryButtonText}>Yasal Metinleri Gör</Text>
-  </TouchableOpacity>
-</View>
-      <TouchableOpacity style={styles.secondaryButton} onPress={cikisYap} activeOpacity={0.85}>
-        <Text style={styles.secondaryButtonText}>↩ Çıkış Yap</Text>
-      </TouchableOpacity>
-    </ScreenShell>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Kurum Bilgileri</Text>
+          <InfoRow icon="🏫" label="Sınıf" value={sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifId} />
+          <InfoRow icon="👩‍🏫" label="Öğretmen" value={`${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim()} />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>⚖️ Yasal Metinler</Text>
+          <Text style={styles.cardText}>
+            Kullanım şartları, gizlilik politikası ve KVKK aydınlatma metni.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('LegalDocuments')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.secondaryButtonText}>Yasal Metinleri Gör</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={cikisYap} activeOpacity={0.85}>
+          <Text style={styles.secondaryButtonText}>↩ Çıkış Yap</Text>
+        </TouchableOpacity>
+      </ScreenShell>
+    </>
   );
 }
 
