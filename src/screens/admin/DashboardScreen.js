@@ -1,6 +1,7 @@
 // ============================================================
 // DashboardScreen.js
 // Admin ana ekran
+// Tema arka planı + kompakt dashboard
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -9,6 +10,7 @@ import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppNotificationButton from '../../components/AppNotificationButton';
+import ThemedBackground from '../../components/ThemedBackground';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -29,21 +31,21 @@ const THEME = {
 };
 
 const MENU_ITEMS = [
-  { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres, telefon ve iletişim bilgileri', color: THEME.primaryDark, bgColor: THEME.primarySoft },
-  { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', desc: 'Renk paleti ve arka plan figürleri', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Demo, aylık/yıllık paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
+  { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres ve iletişim', color: THEME.primaryDark, bgColor: THEME.primarySoft },
+  { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', desc: 'Renk ve arka plan', color: THEME.purple, bgColor: '#F3E8FA' },
+  { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
   { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
-  { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum, öğretmen ve çocuk bazlı gelişim takibi', color: THEME.blue, bgColor: '#EEF4FF' },
-  { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', desc: 'Fotoğraf ve video yükle, 24 saatlik paylaşımları yönet', color: THEME.teal, bgColor: '#E0F7FA' },
-  { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf listesi ve yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
-  { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Kayıtlı çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
+  { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum gelişim özeti', color: THEME.blue, bgColor: '#EEF4FF' },
+  { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', desc: 'Fotoğraf / video', color: THEME.teal, bgColor: '#E0F7FA' },
+  { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
+  { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Çocuk kayıtları', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
   { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
-  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Veli ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
-  { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', desc: 'Veli anketleri oluştur ve sonuçları gör', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', desc: 'Geliyorum / Kapıdayım bildirimlerini yönet', color: THEME.red, bgColor: '#FFE8EC' },
-  { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Sınıf bazlı haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
+  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
+  { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', desc: 'Veli anketleri', color: THEME.purple, bgColor: '#F3E8FA' },
+  { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', desc: 'Kapı / geliyorum', color: THEME.red, bgColor: '#FFE8EC' },
+  { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
   { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', desc: 'Etkinlik takvimi', color: '#E67E22', bgColor: '#FCEEE0' },
 ];
 
@@ -82,12 +84,18 @@ export default function DashboardScreen() {
 
     const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
       const data = snap.val();
-      setIstatistik((prev) => ({ ...prev, sinifSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0 }));
+      setIstatistik((prev) => ({
+        ...prev,
+        sinifSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0,
+      }));
     });
 
     const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
       const data = snap.val();
-      setIstatistik((prev) => ({ ...prev, cocukSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0 }));
+      setIstatistik((prev) => ({
+        ...prev,
+        cocukSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0,
+      }));
     });
 
     const kullaniciUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
@@ -115,91 +123,103 @@ export default function DashboardScreen() {
   const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.topBar}>
-          <View style={styles.topBarLeft}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoEmoji}>🍼</Text>
-            </View>
-            <View style={styles.topTitleBlock}>
-              <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
-                {kresAdi}
-              </Text>
-              <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">
-                Yönetim Paneli
-              </Text>
-            </View>
-          </View>
+    <ThemedBackground>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.topBar}>
+            <View style={styles.topBarLeft}>
+              <View style={styles.logoCircle}>
+                <Text style={styles.logoEmoji}>🍼</Text>
+              </View>
 
-          <View style={styles.topActions}>
-            <AppNotificationButton navigation={navigation} />
-            <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
-              <Text style={styles.cikisBtnText}>↩ Çıkış</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.welcomeCard}>
-          <View style={styles.welcomeLeft}>
-            <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
-            <Text style={styles.welcomeName} numberOfLines={1} ellipsizeMode="tail">
-              {adSoyad}
-            </Text>
-            <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">
-              {getSubscriptionText(abonelik)}
-            </Text>
-          </View>
-          <View style={styles.welcomeIcon}>
-            <Text style={styles.welcomeIconText}>👑</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Genel Özet</Text>
-        {yukleniyor ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color={THEME.primary} />
-          </View>
-        ) : (
-          <View style={styles.ozetGrid}>
-            {OZET_ITEMS.map((item) => (
-              <View key={item.key} style={styles.ozetKart}>
-                <Text style={styles.ozetIcon}>{item.icon}</Text>
-                <Text style={[styles.ozetSayi, { color: item.color }]} numberOfLines={1}>
-                  {istatistik[item.key]}
+              <View style={styles.topTitleBlock}>
+                <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
+                  {kresAdi}
                 </Text>
-                <Text style={styles.ozetLabel} numberOfLines={1}>
-                  {item.label}
+                <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">
+                  Yönetim Paneli
                 </Text>
               </View>
-            ))}
-          </View>
-        )}
+            </View>
 
-        <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
-        {MENU_ITEMS.map((item) => (
-          <TouchableOpacity
-            key={item.title}
-            style={styles.menuKart}
-            onPress={() => navigation.navigate(item.screen)}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
-              <Text style={styles.menuIcon}>{item.icon}</Text>
+            <View style={styles.topActions}>
+              <AppNotificationButton navigation={navigation} />
+              <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
+                <Text style={styles.cikisBtnText}>↩</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.menuTextBlock}>
-              <Text style={styles.menuTitle} numberOfLines={1} ellipsizeMode="tail">
-                {item.title}
+          </View>
+
+          <View style={styles.welcomeCard}>
+            <View style={styles.welcomeLeft}>
+              <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
+              <Text style={styles.welcomeName} numberOfLines={1} ellipsizeMode="tail">
+                {adSoyad}
               </Text>
-              <Text style={styles.menuDesc} numberOfLines={2} ellipsizeMode="tail">
-                {item.desc}
+              <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">
+                {getSubscriptionText(abonelik)}
               </Text>
             </View>
-            <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+
+            <View style={styles.welcomeIcon}>
+              <Text style={styles.welcomeIconText}>👑</Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Genel Özet</Text>
+
+          {yukleniyor ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color={THEME.primary} />
+            </View>
+          ) : (
+            <View style={styles.ozetGrid}>
+              {OZET_ITEMS.map((item) => (
+                <View key={item.key} style={styles.ozetKart}>
+                  <Text style={styles.ozetIcon}>{item.icon}</Text>
+                  <Text style={[styles.ozetSayi, { color: item.color }]} numberOfLines={1}>
+                    {istatistik[item.key]}
+                  </Text>
+                  <Text style={styles.ozetLabel} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
+
+          {MENU_ITEMS.map((item) => (
+            <TouchableOpacity
+              key={item.title}
+              style={styles.menuKart}
+              onPress={() => navigation.navigate(item.screen)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}>
+                <Text style={styles.menuIcon}>{item.icon}</Text>
+              </View>
+
+              <View style={styles.menuTextBlock}>
+                <Text style={styles.menuTitle} numberOfLines={1} ellipsizeMode="tail">
+                  {item.title}
+                </Text>
+                <Text style={styles.menuDesc} numberOfLines={1} ellipsizeMode="tail">
+                  {item.desc}
+                </Text>
+              </View>
+
+              <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedBackground>
   );
 }
 
@@ -211,38 +231,223 @@ function getSubscriptionText(sub) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.bg },
-  screen: { flex: 1, backgroundColor: THEME.bg },
-  scrollContent: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 40 },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 10 },
-  topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
-  topActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  topTitleBlock: { flex: 1, minWidth: 0 },
-  logoCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 },
-  logoEmoji: { fontSize: 22 },
-  appName: { fontSize: 20, fontWeight: '900', color: THEME.primary, flexShrink: 1 },
-  panelLabel: { fontSize: 12, color: THEME.muted, fontWeight: '700', flexShrink: 1 },
-  cikisBtn: { backgroundColor: THEME.card, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, flexShrink: 0 },
-  cikisBtnText: { color: THEME.primary, fontWeight: '900', fontSize: 13 },
-  welcomeCard: { backgroundColor: THEME.primary, borderRadius: 24, padding: 20, marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  welcomeLeft: { flex: 1, minWidth: 0 },
-  welcomeGreeting: { color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
-  welcomeName: { color: '#fff', fontSize: 23, fontWeight: '900', marginTop: 4, flexShrink: 1 },
-  welcomeSub: { color: 'rgba(255,255,255,0.78)', marginTop: 4, fontWeight: '700', flexShrink: 1 },
-  welcomeIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginLeft: 12, flexShrink: 0 },
-  welcomeIconText: { fontSize: 30 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12, marginTop: 6 },
-  loadingBox: { backgroundColor: THEME.card, borderRadius: 18, padding: 20, alignItems: 'center', marginBottom: 18 },
-  ozetGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
-  ozetKart: { width: '48%', minWidth: 0, backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
-  ozetIcon: { fontSize: 27 },
-  ozetSayi: { fontSize: 24, fontWeight: '900', marginTop: 4, maxWidth: '100%' },
-  ozetLabel: { color: THEME.muted, fontWeight: '800', marginTop: 2, maxWidth: '100%' },
-  menuKart: { backgroundColor: THEME.card, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, flexDirection: 'row', alignItems: 'center' },
-  menuIconWrapper: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 12, flexShrink: 0 },
-  menuIcon: { fontSize: 24 },
-  menuTextBlock: { flex: 1, minWidth: 0 },
-  menuTitle: { fontSize: 16, fontWeight: '900', color: THEME.text, flexShrink: 1 },
-  menuDesc: { color: THEME.muted, marginTop: 3, fontWeight: '600', fontSize: 13, lineHeight: 18, flexShrink: 1 },
-  menuArrow: { fontSize: 28, fontWeight: '900', marginLeft: 8, flexShrink: 0 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 34,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 8,
+  },
+  topBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  topTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  logoCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    flexShrink: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(108,61,235,0.12)',
+  },
+  logoEmoji: {
+    fontSize: 20,
+  },
+  appName: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: THEME.primary,
+    flexShrink: 1,
+    letterSpacing: 0.2,
+  },
+  panelLabel: {
+    fontSize: 11,
+    color: THEME.muted,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
+  cikisBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  cikisBtnText: {
+    color: THEME.primary,
+    fontWeight: '900',
+    fontSize: 18,
+  },
+  welcomeCard: {
+    backgroundColor: 'rgba(108,61,235,0.96)',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  welcomeLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  welcomeGreeting: {
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  welcomeName: {
+    color: '#fff',
+    fontSize: 21,
+    fontWeight: '900',
+    marginTop: 3,
+    flexShrink: 1,
+  },
+  welcomeSub: {
+    color: 'rgba(255,255,255,0.78)',
+    marginTop: 3,
+    fontWeight: '700',
+    fontSize: 12,
+    flexShrink: 1,
+  },
+  welcomeIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+    flexShrink: 0,
+  },
+  welcomeIconText: {
+    fontSize: 27,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: THEME.text,
+    marginBottom: 9,
+    marginTop: 2,
+  },
+  loadingBox: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  ozetGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  ozetKart: {
+    width: '48.5%',
+    minWidth: 0,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginBottom: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(238,234,248,0.92)',
+    alignItems: 'center',
+  },
+  ozetIcon: {
+    fontSize: 23,
+  },
+  ozetSayi: {
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 3,
+    maxWidth: '100%',
+  },
+  ozetLabel: {
+    color: THEME.muted,
+    fontWeight: '800',
+    marginTop: 1,
+    maxWidth: '100%',
+    fontSize: 12,
+  },
+  menuKart: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(238,234,248,0.94)',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    flexShrink: 0,
+  },
+  menuIcon: {
+    fontSize: 22,
+  },
+  menuTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  menuTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: THEME.text,
+    flexShrink: 1,
+  },
+  menuDesc: {
+    color: THEME.muted,
+    marginTop: 2,
+    fontWeight: '600',
+    fontSize: 12,
+    lineHeight: 16,
+    flexShrink: 1,
+  },
+  menuArrow: {
+    fontSize: 26,
+    fontWeight: '900',
+    marginLeft: 6,
+    flexShrink: 0,
+  },
 });
