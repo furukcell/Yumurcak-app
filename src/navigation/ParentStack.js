@@ -28,6 +28,7 @@ import ParentBellScreen from '../screens/parent/ParentBellScreen';
 import ParentPaymentsScreen from '../screens/parent/ParentPaymentsScreen';
 import ParentPollsScreen from '../screens/parent/ParentPollsScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
+import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import { useAppTheme } from '../theme/ThemeProvider';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
 
@@ -93,6 +94,7 @@ export default function ParentStack() {
     <View style={styles.root}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="ParentTabs" component={ParentTabs} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
         <Stack.Screen name="ChildReport" component={ChildReportScreen} />
         <Stack.Screen name="ParentReports" component={ParentReportsScreen} />
