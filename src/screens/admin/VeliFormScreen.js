@@ -12,11 +12,12 @@ import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function VeliFormScreen() {
   const route = useRoute();
   const { kullanici } = useAuth();
-  const navigation = useNavigation(); 
+  const navigation = useNavigation();
   const { veliId } = route.params || {};
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
@@ -25,18 +26,26 @@ export default function VeliFormScreen() {
   const [telefon, setTelefon] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!veliId);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     if (veliId) {
-      get(ref(database, `kullanicilar/${veliId}`)).then((snap) => {
-        if (snap.exists()) {
-          const data = snap.val();
-          setKullaniciAdi(data.kullaniciAdi || '');
-          setAd(data.ad || '');
-          setTelefon(data.telefon || '');
-        }
-        setFetching(false);
-      });
+      get(ref(database, `kullanicilar/${veliId}`))
+        .then((snap) => {
+          if (snap.exists()) {
+            const data = snap.val();
+            setKullaniciAdi(data.kullaniciAdi || '');
+            setAd(data.ad || '');
+            setTelefon(data.telefon || '');
+          }
+
+          setFetching(false);
+        })
+        .catch((error) => {
+          console.error(error);
+          setFetching(false);
+          Alert.alert('Hata', 'Veli bilgileri yüklenemedi');
+        });
     }
   }, [veliId]);
 
@@ -47,8 +56,10 @@ export default function VeliFormScreen() {
     }
 
     setLoading(true);
+
     try {
       const id = veliId || generateId();
+
       await set(ref(database, `kullanicilar/${id}`), {
         kullaniciAdi: kullaniciAdi.trim(),
         sifre: sifre.trim() || '123456',
@@ -59,9 +70,11 @@ export default function VeliFormScreen() {
         createdAt: Date.now(),
       });
 
-      Alert.alert('Başarılı', 'Veli kaydedildi', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setSuccessToast(true);
+
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (error) {
       Alert.alert('Hata', 'Veli kaydedilemedi');
       console.error(error);
@@ -71,84 +84,113 @@ export default function VeliFormScreen() {
   };
 
   if (fetching) {
-    return <View style={s.center}><ActivityIndicator size="large" color="#3C3489" /></View>;
+    return (
+      <View style={s.center}>
+        <ActivityIndicator size="large" color="#3C3489" />
+      </View>
+    );
   }
 
   return (
-    <ScrollView style={s.container}>
-      <View style={s.form}>
+    <View style={s.screen}>
+      <AppSuccessToast
+        visible={successToast}
+        message={veliId ? 'Veli bilgileri güncellendi' : 'Veli kaydedildi'}
+        onHide={() => setSuccessToast(false)}
+      />
 
-        <View style={s.field}>
-          <Text style={s.label}>Kullanıcı Adı *</Text>
-          <TextInput
-            style={s.input}
-            value={kullaniciAdi}
-            onChangeText={setKullaniciAdi}
-            placeholder="Örn: veli1"
-            placeholderTextColor="#999"
-            autoCapitalize="none"
-          />
+      <ScrollView style={s.container}>
+        <View style={s.form}>
+
+          <View style={s.field}>
+            <Text style={s.label}>Kullanıcı Adı *</Text>
+            <TextInput
+              style={s.input}
+              value={kullaniciAdi}
+              onChangeText={setKullaniciAdi}
+              placeholder="Örn: veli1"
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={s.field}>
+            <Text style={s.label}>Ad Soyad *</Text>
+            <TextInput
+              style={s.input}
+              value={ad}
+              onChangeText={setAd}
+              placeholder="Örn: Mehmet Yılmaz"
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <View style={s.field}>
+            <Text style={s.label}>Telefon</Text>
+            <TextInput
+              style={s.input}
+              value={telefon}
+              onChangeText={setTelefon}
+              placeholder="05xx xxx xx xx"
+              placeholderTextColor="#999"
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          <View style={s.field}>
+            <Text style={s.label}>Şifre {!veliId && '*'}</Text>
+            <TextInput
+              style={s.input}
+              value={sifre}
+              onChangeText={setSifre}
+              placeholder={veliId ? 'Boş bırakılırsa değişmez' : '123456'}
+              secureTextEntry
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[s.btn, loading && s.btnDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.btnYazi}>
+                {veliId ? 'Güncelle' : 'Oluştur'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
         </View>
-
-        <View style={s.field}>
-          <Text style={s.label}>Ad Soyad *</Text>
-          <TextInput
-            style={s.input}
-            value={ad}
-            onChangeText={setAd}
-            placeholder="Örn: Mehmet Yılmaz"
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={s.field}>
-          <Text style={s.label}>Telefon</Text>
-          <TextInput
-            style={s.input}
-            value={telefon}
-            onChangeText={setTelefon}
-            placeholder="05xx xxx xx xx"
-            placeholderTextColor="#999"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View style={s.field}>
-          <Text style={s.label}>Şifre {!veliId && '*'}</Text>
-          <TextInput
-            style={s.input}
-            value={sifre}
-            onChangeText={setSifre}
-            placeholder={veliId ? 'Boş bırakılırsa değişmez' : '123456'}
-            secureTextEntry
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[s.btn, loading && s.btnDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnYazi}>{veliId ? 'Güncelle' : 'Oluştur'}</Text>
-          }
-        </TouchableOpacity>
-
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   form: { padding: 20 },
   field: { marginBottom: 20 },
   label: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 8 },
-  input: { backgroundColor: '#fff', borderRadius: 8, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#ddd' },
-  btn: { backgroundColor: '#3C3489', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 10 },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  btn: {
+    backgroundColor: '#3C3489',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 10,
+  },
   btnDisabled: { opacity: 0.6 },
   btnYazi: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
