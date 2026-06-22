@@ -18,6 +18,7 @@ import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
 import TeacherGalleryScreen from '../screens/teacher/TeacherGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
+import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherGallery" component={TeacherGalleryScreen} />
       <Stack.Screen name="TeacherProfile" component={TeacherProfileScreen} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
+      <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
     </Stack.Navigator>
   );
 }
