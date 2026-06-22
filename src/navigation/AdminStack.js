@@ -26,6 +26,7 @@ import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
 import AdminAuthMigrationScreen from '../screens/admin/AdminAuthMigrationScreen';
 import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
+import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
