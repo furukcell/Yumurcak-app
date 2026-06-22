@@ -9,15 +9,22 @@ export default function ParentPaymentsScreen({ navigation }) {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const payments = useNodeList('odemeler');
 
-  const { loading, selectedChild, kresId, kresAdi } = base;
+  const { loading, selectedChild, parentId, kresId, kresAdi } = base;
 
   const myPayments = useMemo(() => {
     if (!selectedChild?.id) return [];
+    const childVeliIds = selectedChild.veliIds || [];
+
     return payments
-      .filter((item) => item.cocukId === selectedChild.id || item.veliId === selectedChild.veliId)
+      .filter((item) => {
+        const sameChild = item.cocukId === selectedChild.id;
+        const sameParent = item.veliId === parentId || childVeliIds.includes(item.veliId);
+        const inVeliArray = Array.isArray(item.veliIds) && item.veliIds.includes(parentId);
+        return sameChild || sameParent || inVeliArray;
+      })
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
       .sort((a, b) => String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || '')));
-  }, [payments, selectedChild?.id, selectedChild?.veliId, kresId]);
+  }, [payments, selectedChild?.id, selectedChild?.veliIds, parentId, kresId]);
 
   if (loading) return <LoadingScreen text="Ödeme bilgileri hazırlanıyor..." />;
 
@@ -36,6 +43,7 @@ export default function ParentPaymentsScreen({ navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.paymentTitle}>{item.baslik || item.aciklama || 'Ödeme'}</Text>
               <Text style={styles.paymentDesc}>{item.donem || item.tarih || 'Dönem bilgisi yok'}</Text>
+              {item.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {item.sonOdemeTarihi}</Text> : null}
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={styles.amount}>{formatMoney(item.tutar)}</Text>
@@ -67,6 +75,7 @@ const createStyles = (theme) => StyleSheet.create({
   paymentCard: { backgroundColor: theme.card, borderRadius: 20, padding: 15, marginBottom: 10, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.border },
   paymentTitle: { color: theme.text, fontSize: 15, fontWeight: '900' },
   paymentDesc: { color: theme.muted, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  dueDate: { color: theme.orange, fontSize: 11, fontWeight: '800', marginTop: 4 },
   amount: { color: theme.text, fontSize: 16, fontWeight: '900' },
   status: { marginTop: 4, color: theme.orange, backgroundColor: '#FFF3DF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden', fontSize: 11, fontWeight: '900' },
   statusPaid: { color: theme.green, backgroundColor: '#E9FBEF' },
