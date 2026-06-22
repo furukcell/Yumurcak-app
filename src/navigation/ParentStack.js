@@ -4,7 +4,6 @@
 // ============================================================
 import React, { useMemo } from 'react';
 import { Text, View, StyleSheet } from 'react-native';
-import ThemePatternOverlay from '../components/ThemePatternOverlay';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -63,46 +62,11 @@ function ParentTabs() {
 
   return (
     <Tab.Navigator initialRouteName="ParentSummary" screenOptions={tabOptions}>
-      <Tab.Screen
-        name="ParentSummary"
-        component={ParentSummaryScreen}
-        options={{
-          title: 'Özet',
-          tabBarIcon: ({ focused, color }) => <TabIcon icon="📊" focused={focused} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ParentDashboard"
-        component={ParentDashboardScreen}
-        options={{
-          title: 'Anasayfa',
-          tabBarIcon: ({ focused, color }) => <TabIcon icon="🏠" focused={focused} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ParentReportsTab"
-        component={ParentReportsScreen}
-        options={{
-          title: 'Raporlar',
-          tabBarIcon: ({ focused, color }) => <TabIcon icon="📋" focused={focused} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ParentDevelopmentTab"
-        component={ParentDevelopmentScreen}
-        options={{
-          title: 'Gelişim',
-          tabBarIcon: ({ focused, color }) => <TabIcon icon="📈" focused={focused} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ParentMessagesTab"
-        component={ParentMessagesScreen}
-        options={{
-          title: 'Mesaj',
-          tabBarIcon: ({ focused, color }) => <TabIcon icon="💬" focused={focused} color={color} />,
-        }}
-      />
+      <Tab.Screen name="ParentSummary" component={ParentSummaryScreen} options={{ title: 'Özet', tabBarIcon: ({ focused, color }) => <TabIcon icon="📊" focused={focused} color={color} /> }} />
+      <Tab.Screen name="ParentDashboard" component={ParentDashboardScreen} options={{ title: 'Anasayfa', tabBarIcon: ({ focused, color }) => <TabIcon icon="🏠" focused={focused} color={color} /> }} />
+      <Tab.Screen name="ParentReportsTab" component={ParentReportsScreen} options={{ title: 'Raporlar', tabBarIcon: ({ focused, color }) => <TabIcon icon="📋" focused={focused} color={color} /> }} />
+      <Tab.Screen name="ParentDevelopmentTab" component={ParentDevelopmentScreen} options={{ title: 'Gelişim', tabBarIcon: ({ focused, color }) => <TabIcon icon="📈" focused={focused} color={color} /> }} />
+      <Tab.Screen name="ParentMessagesTab" component={ParentMessagesScreen} options={{ title: 'Mesaj', tabBarIcon: ({ focused, color }) => <TabIcon icon="💬" focused={focused} color={color} /> }} />
     </Tab.Navigator>
   );
 }
