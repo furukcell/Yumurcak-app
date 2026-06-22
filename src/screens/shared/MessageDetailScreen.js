@@ -227,24 +227,34 @@ export default function MessageDetailScreen() {
       });
 
       await update(ref(database, `mesajKonusmalari/${conversationId}`), updates);
-      const receiverIds = participants.filter((participantId) => participantId && participantId !== currentUserId);
 
-      await createUserNotification({
-      kresId: kullanici?.kresId || mergedMeta.kresId || '',
-      userIds: receiverIds,
-      baslik: '💬 Yeni mesaj',
-      mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
-      tip: 'mesaj',
-      routeName: 'MessageDetail',
-      routeParams: {
-      conversationId,
-      conversationMeta: mergedMeta,
-      title,
-      subtitle,
-    },
+      const receiverIds = participants.filter(
+     (participantId) => participantId && participantId !== currentUserId
+   );
+
+     if (receiverIds.length > 0) {
+   try {
+        await createUserNotification({
+        kresId: kullanici?.kresId || mergedMeta.kresId || '',
+        userIds: receiverIds,
+        baslik: '💬 Yeni mesaj',
+        mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
+        tip: 'mesaj',
+        routeName: 'MessageDetail',
+        routeParams: {
+        conversationId,
+        conversationMeta: mergedMeta,
+        title,
+        subtitle,
+      },
       createdBy: currentUserId,
-    });
-      setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 80);
+      });
+    } catch (notificationError) {
+     console.warn('Mesaj gönderildi ama bildirim oluşturulamadı:', notificationError);
+    }
+  }
+
+    setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 80);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Mesaj gönderilemedi.');
