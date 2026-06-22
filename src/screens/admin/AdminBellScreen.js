@@ -26,12 +26,28 @@ const THEME = {
   border: '#EEEAF8',
 };
 
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function toList(data) {
+  const obj = safeObject(data);
+  return Object.entries(obj).map(([id, item]) => ({ id, ...safeObject(item) }));
+}
+
+function normalizeText(value) {
+  return String(value || '').toLowerCase().trim();
+}
+
 function formatTime(value) {
   if (!value) return 'Saat yok';
   let date = null;
   if (typeof value === 'number') date = new Date(value);
-  if (typeof value === 'string') date = new Date(value);
-  if (!date || Number.isNaN(date.getTime())) return 'Saat yok';
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    date = Number.isFinite(numeric) && value.length >= 10 ? new Date(numeric) : new Date(value);
+  }
+  if (!date || Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString('tr-TR', {
     day: '2-digit',
     month: '2-digit',
@@ -42,51 +58,73 @@ function formatTime(value) {
 }
 
 function teslimLabel(value) {
-  if (value === 'birakacagim') return '🏫 Bırakacağım';
-  return '👋 Alacağım';
+  const v = normalizeText(value);
+  if (v === 'birakacagim' || v === 'birakacağım' || v === 'birakma') return '🏫 Bırakacağım';
+  if (v === 'alacagim' || v === 'alacağım' || v === 'alma') return '👋 Alacağım';
+  return value || 'Teslim bilgisi yok';
 }
 
 function durumLabel(value) {
-  if (value === 'kapidayim') return '📍 Kapıdayım';
-  if (value === 'geliyorum') return '🚗 Geliyorum';
+  const v = normalizeText(value);
+  if (v === 'kapidayim' || v === 'kapıdayım') return '📍 Kapıdayım';
+  if (v === 'geliyorum') return '🚗 Geliyorum';
+  if (v === 'tamamlandi' || v === 'tamamlandı') return '✅ Tamamlandı';
   return value || 'Bildirim';
+}
+
+function getAccent(item) {
+  const durum = normalizeText(item?.durum || item?.status);
+  if (item?.tamamlandi || item?.tamamlandı) return THEME.green;
+  if (durum === 'kapidayim' || durum === 'kapıdayım') return THEME.red;
+  if (durum === 'geliyorum') return THEME.orange;
+  return THEME.blue;
 }
 
 export default function AdminBellScreen() {
   const { kullanici } = useAuth();
-  const kresId = kullanici?.kresId || 'kres001';
+  const kresId = kullanici?.kresId || kullanici?.kurumId || null;
   const [bildirimler, setBildirimler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
-    const unsub = onValue(ref(database, 'kurumZili'), (snap) => {
-      const data = snap.val() || {};
-      const liste = Object.entries(data)
-        .filter(([, item]) => !item.kresId || item.kresId === kresId)
-        .map(([id, item]) => ({ id, ...item }))
-        .sort((a, b) => (b.createdAt || b.updatedAt || 0) - (a.createdAt || a.updatedAt || 0));
+    setLoading(true);
+    const unsub = onValue(
+      ref(database, 'kurumZili'),
+      (snap) => {
+        const liste = toList(snap.val())
+          .filter((item) => {
+            if (!kresId) return true;
+            return !item.kresId || item.kresId === kresId || item.kurumId === kresId;
+          })
+          .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0));
 
-      setBildirimler(liste);
-      setLoading(false);
-    });
+        setBildirimler(liste);
+        setLoading(false);
+      },
+      () => {
+        setBildirimler([]);
+        setLoading(false);
+      }
+    );
 
     return () => unsub();
   }, [kresId]);
 
   const stats = useMemo(() => {
-    const aktif = bildirimler.filter((item) => !item.tamamlandi).length;
-    const okunmamis = bildirimler.filter((item) => !item.okundu && !item.tamamlandi).length;
-    const tamamlanan = bildirimler.filter((item) => item.tamamlandi).length;
+    const aktif = bildirimler.filter((item) => !(item.tamamlandi || item.tamamlandı)).length;
+    const okunmamis = bildirimler.filter((item) => !(item.okundu || item.read) && !(item.tamamlandi || item.tamamlandı)).length;
+    const tamamlanan = bildirimler.filter((item) => item.tamamlandi || item.tamamlandı).length;
     return { aktif, okunmamis, tamamlanan };
   }, [bildirimler]);
 
   async function markOkundu(item) {
-    if (!item?.id) return;
+    if (!item?.id || busyId) return;
     setBusyId(item.id);
     try {
       await update(ref(database, `kurumZili/${item.id}`), {
         okundu: true,
+        read: true,
         okunduAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -98,11 +136,12 @@ export default function AdminBellScreen() {
   }
 
   async function markTamamlandi(item) {
-    if (!item?.id) return;
+    if (!item?.id || busyId) return;
     setBusyId(item.id);
     try {
       await update(ref(database, `kurumZili/${item.id}`), {
         okundu: true,
+        read: true,
         tamamlandi: true,
         tamamlandiAt: Date.now(),
         updatedAt: Date.now(),
@@ -115,37 +154,38 @@ export default function AdminBellScreen() {
   }
 
   function renderItem({ item }) {
-    const tamamlandi = !!item.tamamlandi;
-    const okundu = !!item.okundu;
+    const tamamlandi = !!(item.tamamlandi || item.tamamlandı);
+    const okundu = !!(item.okundu || item.read);
     const busy = busyId === item.id;
-    const accent = tamamlandi ? THEME.green : item.durum === 'kapidayim' ? THEME.red : THEME.orange;
+    const accent = getAccent(item);
+    const durum = item.durum || item.status;
 
     return (
       <View style={[styles.card, !okundu && !tamamlandi && styles.unreadCard]}>
         <View style={styles.cardTop}>
           <View style={[styles.iconCircle, { backgroundColor: accent + '20' }]}>
-            <Text style={styles.iconText}>{item.durum === 'kapidayim' ? '📍' : '🚗'}</Text>
+            <Text style={styles.iconText}>{normalizeText(durum).includes('kapi') || normalizeText(durum).includes('kapı') ? '📍' : '🚗'}</Text>
           </View>
           <View style={styles.cardInfo}>
-            <Text style={styles.childName}>{item.cocukAdi || item.cocukAd || item.cocukId || 'Çocuk'}</Text>
-            <Text style={styles.parentName}>{item.veliAdi || item.veliAd || 'Veli'}</Text>
+            <Text style={styles.childName}>{item.cocukAdi || item.cocukAd || item.childName || item.cocukId || 'Çocuk'}</Text>
+            <Text style={styles.parentName}>{item.veliAdi || item.veliAd || item.parentName || item.veliId || 'Veli'}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: accent + '20' }]}>
-            <Text style={[styles.statusText, { color: accent }]}>{tamamlandi ? '✅ Tamamlandı' : durumLabel(item.durum)}</Text>
+            <Text style={[styles.statusText, { color: accent }]}>{tamamlandi ? '✅ Tamamlandı' : durumLabel(durum)}</Text>
           </View>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Teslim</Text>
-          <Text style={styles.infoValue}>{teslimLabel(item.teslimTuru)}</Text>
+          <Text style={styles.infoValue}>{teslimLabel(item.teslimTuru || item.teslimTipi || item.type)}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Saat</Text>
-          <Text style={styles.infoValue}>{formatTime(item.createdAt)}</Text>
+          <Text style={styles.infoValue}>{formatTime(item.createdAt || item.tarih || item.time)}</Text>
         </View>
-        {item.not ? (
+        {item.not || item.note ? (
           <View style={styles.noteBox}>
-            <Text style={styles.noteText}>{item.not}</Text>
+            <Text style={styles.noteText}>{item.not || item.note}</Text>
           </View>
         ) : null}
 
@@ -203,7 +243,7 @@ export default function AdminBellScreen() {
         <FlatList
           data={bildirimler}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
@@ -234,7 +274,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '900' },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#F0EDF8' },
   infoLabel: { color: THEME.muted, fontWeight: '800' },
-  infoValue: { color: THEME.text, fontWeight: '900' },
+  infoValue: { color: THEME.text, fontWeight: '900', flex: 1, textAlign: 'right' },
   noteBox: { backgroundColor: '#F6F3FF', borderRadius: 12, padding: 10, marginTop: 8 },
   noteText: { color: THEME.text, fontWeight: '700' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
