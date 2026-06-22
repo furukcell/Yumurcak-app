@@ -44,6 +44,7 @@ import {
   MESSAGE_PAGE_SIZE,
   normalizeConversationMeta,
 } from '../../utils/messageHelpers';
+import { createUserNotification } from '../../services/notificationCenter';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -226,7 +227,23 @@ export default function MessageDetailScreen() {
       });
 
       await update(ref(database, `mesajKonusmalari/${conversationId}`), updates);
+      const receiverIds = participants.filter((participantId) => participantId && participantId !== currentUserId);
 
+      await createUserNotification({
+      kresId: kullanici?.kresId || mergedMeta.kresId || '',
+      userIds: receiverIds,
+      baslik: '💬 Yeni mesaj',
+      mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
+      tip: 'mesaj',
+      routeName: 'MessageDetail',
+      routeParams: {
+      conversationId,
+      conversationMeta: mergedMeta,
+      title,
+      subtitle,
+    },
+      createdBy: currentUserId,
+    });
       setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 80);
     } catch (err) {
       console.error(err);
