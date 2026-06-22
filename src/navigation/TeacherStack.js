@@ -18,6 +18,7 @@ import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
 import TeacherGalleryScreen from '../screens/teacher/TeacherGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
+import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
 
 const Stack = createNativeStackNavigator();
@@ -26,6 +27,7 @@ export default function TeacherStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8F6FF' } }}>
       <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="TeacherChildren" component={TeacherChildrenScreen} />
       <Stack.Screen name="ChildReport" component={ChildReportScreen} />
       <Stack.Screen name="TeacherAttendance" component={TeacherAttendanceScreen} />
