@@ -33,7 +33,7 @@ const MENU_ITEMS = [
   { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', desc: 'Renk paleti ve arka plan figürleri', color: THEME.purple, bgColor: '#F3E8FA' },
   { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Demo, aylık/yıllık paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
   { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
-  { title: 'Firebase Auth Geçişi', icon: '🔐', screen: 'AuthMigration', desc: 'Kullanıcıları Auth sistemine taşı', color: THEME.red, bgColor: '#FFE8EC' },
+  { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum, öğretmen ve çocuk bazlı gelişim takibi', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf listesi ve yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Kayıtlı çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
