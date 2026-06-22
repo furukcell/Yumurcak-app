@@ -60,6 +60,10 @@ function getChildName(child) {
   return `${child?.ad || child?.adSoyad || child?.isim || 'Çocuk'} ${child?.soyad || ''}`.trim();
 }
 
+function getClassName(classItem) {
+  return classItem?.ad || classItem?.sinifAdi || classItem?.name || 'Sınıf';
+}
+
 function getUserName(user) {
   return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || user?.email || 'Kullanıcı';
 }
@@ -86,6 +90,16 @@ function getFileInfo(asset) {
   return { isVideo, extension, contentType };
 }
 
+function normalizeTargetType(item) {
+  if (item?.targetType) return item.targetType;
+  if (item?.hedef === 'kurum') return 'school';
+  if (item?.hedef === 'sinif') return 'class';
+  if (item?.hedef === 'cocuk') return 'student';
+  if (item?.studentId || item?.cocukId || asArray(item?.cocukIds).length > 0) return 'student';
+  if (item?.classId || item?.sinifId) return 'class';
+  return 'school';
+}
+
 export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const { kullanici } = useAuth();
   const userId = kullanici?.uid || kullanici?.id;
@@ -97,6 +111,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState('');
   const [targetType, setTargetType] = useState('all');
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedChildId, setSelectedChildId] = useState('');
   const [now, setNow] = useState(Date.now());
 
@@ -143,6 +158,12 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     return kullanici?.kresId || myChildren[0]?.kresId || null;
   }, [currentClass?.kresId, kullanici?.kresId, mode, myChildren]);
 
+  const availableClasses = useMemo(() => {
+    return classes
+      .filter((classItem) => !kresId || !classItem.kresId || classItem.kresId === kresId)
+      .sort((a, b) => getClassName(a).localeCompare(getClassName(b), 'tr'));
+  }, [classes, kresId]);
+
   const childIds = useMemo(() => new Set(myChildren.map((child) => String(child.id))), [myChildren]);
   const classIds = useMemo(() => new Set(myChildren.map((child) => String(child.sinifId)).filter(Boolean)), [myChildren]);
 
@@ -152,13 +173,20 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
       .filter((item) => {
         if (mode === 'admin') return true;
+
+        const normalizedTarget = normalizeTargetType(item);
+        const itemClassId = item.classId || item.sinifId;
+        const itemStudentIds = asArray(item.studentId || item.cocukIds || item.cocukId);
+
+        if (normalizedTarget === 'school' || item.hedef === 'kurum') return true;
+
         if (mode === 'teacher') {
-          if (currentClass?.id && item.sinifId === currentClass.id) return true;
-          return asArray(item.cocukIds || item.cocukId).some((id) => childIds.has(String(id)));
+          if (currentClass?.id && String(itemClassId || '') === String(currentClass.id)) return true;
+          return itemStudentIds.some((id) => childIds.has(String(id)));
         }
-        if (item.hedef === 'kurum') return true;
-        if (item.sinifId && classIds.has(String(item.sinifId))) return true;
-        return asArray(item.cocukIds || item.cocukId).some((id) => childIds.has(String(id)));
+
+        if (itemClassId && classIds.has(String(itemClassId))) return true;
+        return itemStudentIds.some((id) => childIds.has(String(id)));
       })
       .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
   }, [childIds, classIds, currentClass?.id, gallery, kresId, mode, now]);
@@ -176,31 +204,60 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       const child = myChildren.find((item) => item.id === selectedChildId);
       return {
         hedef: 'cocuk',
+        targetType: 'student',
+        classId: child?.sinifId || null,
+        studentId: child?.id || null,
         cocukIds: child ? [child.id] : [],
-        sinifId: child?.sinifId || null,
         label: child ? getChildName(child) : 'Seçili çocuk',
       };
     }
+
+    if (targetType === 'class' && selectedClassId) {
+      const classItem = availableClasses.find((item) => item.id === selectedClassId);
+      const classChildren = myChildren.filter((child) => child.sinifId === selectedClassId);
+      return {
+        hedef: 'sinif',
+        targetType: 'class',
+        classId: selectedClassId,
+        studentId: null,
+        cocukIds: classChildren.map((child) => child.id),
+        label: classItem ? getClassName(classItem) : 'Seçili sınıf',
+      };
+    }
+
     if (mode === 'teacher') {
       return {
         hedef: 'sinif',
+        targetType: 'class',
+        classId: currentClass?.id || null,
+        studentId: null,
         cocukIds: myChildren.map((child) => child.id),
-        sinifId: currentClass?.id || null,
-        label: currentClass?.ad || 'Tüm sınıf',
+        label: currentClass ? getClassName(currentClass) : 'Tüm sınıf',
       };
     }
+
     return {
       hedef: 'kurum',
+      targetType: 'school',
+      classId: null,
+      studentId: null,
       cocukIds: myChildren.map((child) => child.id),
-      sinifId: null,
       label: 'Tüm kurum',
     };
-  }, [currentClass, mode, myChildren, selectedChildId, targetType]);
+  }, [availableClasses, currentClass, mode, myChildren, selectedChildId, selectedClassId, targetType]);
 
   async function pickAndUpload() {
     if (!canUpload) return;
     if (!kresId) {
       Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
+      return;
+    }
+    if (targetType === 'class' && !selectedClassId) {
+      Alert.alert('Sınıf Seç', 'Sınıfa özel paylaşım için bir sınıf seçmelisin.');
+      return;
+    }
+    if (targetType === 'child' && !selectedChildId) {
+      Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
       return;
     }
 
@@ -236,7 +293,11 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
 
       await set(itemRef, {
         kresId,
-        sinifId: uploadTarget.sinifId || '',
+        targetType: uploadTarget.targetType,
+        classId: uploadTarget.classId || '',
+        studentId: uploadTarget.studentId || '',
+        sinifId: uploadTarget.classId || '',
+        cocukId: uploadTarget.studentId || '',
         cocukIds: uploadTarget.cocukIds || [],
         hedef: uploadTarget.hedef,
         hedefAdi: uploadTarget.label,
@@ -252,7 +313,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       });
 
       setCaption('');
-      Alert.alert('Yüklendi', 'Medya 24 saat boyunca galeride görünecek.');
+      setSelectedClassId('');
+      setSelectedChildId('');
+      setTargetType(mode === 'teacher' ? 'all' : 'all');
+      Alert.alert('Yüklendi', `${uploadTarget.label} için medya 24 saat boyunca galeride görünecek.`);
     } catch (error) {
       console.error(error);
       Alert.alert('Hata', 'Galeri yüklemesi yapılamadı. Storage ayarlarını kontrol et.');
@@ -302,16 +366,56 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         {canUpload ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Fotoğraf / Video Yükle</Text>
-            <Text style={styles.cardText}>Yüklenen medya 24 saat sonra otomatik gizlenir. Ekran açıldığında süresi dolan kayıtlar temizlenmeye çalışılır.</Text>
+            <Text style={styles.cardText}>Yüklenen medya 24 saat sonra otomatik gizlenir. Paylaşım hedefini tüm kurum, sınıf veya tek çocuk olarak seçebilirsin.</Text>
 
             <View style={styles.segmentRow}>
-              <TouchableOpacity style={[styles.segment, targetType === 'all' && styles.segmentActive]} onPress={() => setTargetType('all')}>
+              <TouchableOpacity
+                style={[styles.segment, targetType === 'all' && styles.segmentActive]}
+                onPress={() => {
+                  setTargetType('all');
+                  setSelectedClassId('');
+                  setSelectedChildId('');
+                }}
+              >
                 <Text style={[styles.segmentText, targetType === 'all' && styles.segmentTextActive]}>{mode === 'teacher' ? 'Tüm Sınıf' : 'Tüm Kurum'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.segment, targetType === 'child' && styles.segmentActive]} onPress={() => setTargetType('child')}>
+
+              {mode === 'admin' ? (
+                <TouchableOpacity
+                  style={[styles.segment, targetType === 'class' && styles.segmentActive]}
+                  onPress={() => {
+                    setTargetType('class');
+                    setSelectedChildId('');
+                  }}
+                >
+                  <Text style={[styles.segmentText, targetType === 'class' && styles.segmentTextActive]}>Sınıf</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.segment, targetType === 'child' && styles.segmentActive]}
+                onPress={() => {
+                  setTargetType('child');
+                  setSelectedClassId('');
+                }}
+              >
                 <Text style={[styles.segmentText, targetType === 'child' && styles.segmentTextActive]}>Tek Çocuk</Text>
               </TouchableOpacity>
             </View>
+
+            {targetType === 'class' ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>
+                {availableClasses.map((classItem) => (
+                  <TouchableOpacity
+                    key={classItem.id}
+                    style={[styles.childChip, selectedClassId === classItem.id && styles.childChipActive]}
+                    onPress={() => setSelectedClassId(classItem.id)}
+                  >
+                    <Text style={[styles.childChipText, selectedClassId === classItem.id && styles.childChipTextActive]}>{getClassName(classItem)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : null}
 
             {targetType === 'child' ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>
@@ -326,6 +430,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
                 ))}
               </ScrollView>
             ) : null}
+
+            <View style={styles.targetPreview}>
+              <Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text>
+            </View>
 
             <TextInput
               value={caption}
@@ -361,6 +469,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             )}
             <View style={styles.mediaBody}>
               <Text style={styles.mediaTitle}>{item.aciklama || item.hedefAdi || 'Galeri paylaşımı'}</Text>
+              <Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || normalizeTargetType(item)}</Text>
               <Text style={styles.mediaMeta}>Yükleyen: {item.yukleyenAd || getUserName(users[item.yukleyenId])}</Text>
               <Text style={styles.mediaMeta}>Yüklenme: {formatDateTime(item.createdAt)}</Text>
               <Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text>
@@ -392,16 +501,18 @@ const styles = StyleSheet.create({
   card: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 16 },
   cardTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   cardText: { color: THEME.muted, fontWeight: '700', lineHeight: 19, marginTop: 6 },
-  segmentRow: { flexDirection: 'row', backgroundColor: THEME.primarySoft, padding: 4, borderRadius: 16, marginTop: 14 },
+  segmentRow: { flexDirection: 'row', backgroundColor: THEME.primarySoft, padding: 4, borderRadius: 16, marginTop: 14, gap: 4 },
   segment: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 13 },
   segmentActive: { backgroundColor: THEME.primary },
-  segmentText: { color: THEME.primary, fontWeight: '900' },
+  segmentText: { color: THEME.primary, fontWeight: '900', fontSize: 12, textAlign: 'center' },
   segmentTextActive: { color: '#fff' },
   childPicker: { marginTop: 12 },
   childChip: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: '#F3F1FA', marginRight: 8, borderWidth: 1, borderColor: THEME.border },
   childChipActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
   childChipText: { color: THEME.text, fontWeight: '800' },
   childChipTextActive: { color: '#fff' },
+  targetPreview: { alignSelf: 'flex-start', marginTop: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F3F1FA', borderRadius: 99, borderWidth: 1, borderColor: THEME.border },
+  targetPreviewText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
   input: { minHeight: 52, backgroundColor: '#FAF9FF', borderWidth: 1, borderColor: THEME.border, borderRadius: 16, padding: 12, color: THEME.text, fontWeight: '700', marginTop: 12 },
   primaryButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
   primaryButtonText: { color: '#fff', fontWeight: '900' },
