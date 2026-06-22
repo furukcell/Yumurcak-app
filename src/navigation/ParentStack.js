@@ -132,8 +132,6 @@ export default function ParentStack() {
         <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
         <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
       </Stack.Navigator>
-
-      <ThemePatternOverlay opacity={0.28} />
     </View>
   );
 }
