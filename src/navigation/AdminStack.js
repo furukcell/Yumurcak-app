@@ -28,6 +28,7 @@ import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import AdminGalleryScreen from '../screens/admin/AdminGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
+import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
 
 const Stack = createNativeStackNavigator();
@@ -41,6 +42,7 @@ export default function AdminStack() {
     Stack.Navigator,
     { screenOptions: { headerStyle: { backgroundColor: '#3C3489' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: '700' } } },
     stackScreen('Dashboard', DashboardScreen, { headerShown: false }),
+    stackScreen('Notifications', NotificationsScreen, { headerShown: false }),
     stackScreen('AdminStatistics', AdminStatisticsScreen, { title: 'Kurum İstatistikleri' }),
     stackScreen('AdminGallery', AdminGalleryScreen, { headerShown: false }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
