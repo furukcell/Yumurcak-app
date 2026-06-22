@@ -41,6 +41,7 @@ const MENU_ITEMS = [
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
   { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Veli ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
   { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', desc: 'Veli anketleri oluştur ve sonuçları gör', color: THEME.purple, bgColor: '#F3E8FA' },
+  { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', desc: 'Geliyorum / Kapıdayım bildirimlerini yönet', color: THEME.red, bgColor: '#FFE8EC' },
   { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Sınıf bazlı haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
   { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', desc: 'Etkinlik takvimi', color: '#E67E22', bgColor: '#FCEEE0' },
 ];
@@ -166,7 +167,7 @@ export default function DashboardScreen() {
             onPress={() => navigation.navigate(item.screen)}
             activeOpacity={0.8}
           >
-            <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
+            <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}>
               <Text style={styles.menuIcon}>{item.icon}</Text>
             </View>
             <View style={styles.menuTextBlock}>
