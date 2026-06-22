@@ -12,6 +12,7 @@ import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { createUserNotification } from '../../services/notificationCenter';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const DURUMLAR = ['bekliyor', 'odendi', 'gecikti'];
 const DURUM_ETIKET = { bekliyor: '⏳ Bekliyor', odendi: '✅ Ödendi', gecikti: '❗ Gecikti' };
@@ -86,6 +87,7 @@ export default function PaymentFormScreen() {
   const [aciklama, setAciklama] = useState('');
   const [createdAt, setCreatedAt] = useState(Date.now());
   const [loading, setLoading] = useState(true);
+  const [successToast, setSuccessToast] = useState(false);
   const [kaydediyor, setKaydediyor] = useState(false);
 
   useEffect(() => {
@@ -210,7 +212,10 @@ export default function PaymentFormScreen() {
   });
 }
 
-navigation.goBack();
+  setSuccessToast(true);
+  setTimeout(() => {
+  navigation.goBack();
+  }, 900);
     } catch (e) {
       Alert.alert('Hata', 'Kayıt sırasında bir sorun oluştu.');
     } finally {
@@ -238,16 +243,27 @@ navigation.goBack();
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#6C3DEB" /><Text style={s.loadingText}>Form hazırlanıyor...</Text></View>;
 
   return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={s.heroCard}>
-          <Text style={s.heroTitle}>{duzenleme ? 'Ödeme Kaydını Düzenle' : 'Yeni Ödeme Kaydı'}</Text>
-          <Text style={s.heroSub} numberOfLines={1}>{seciliCocuk.adSoyad || 'Çocuk seçiniz'} • {monthLabel(ay, yil)}</Text>
-          <View style={s.previewRow}>
-            <View style={s.previewBox}><Text style={s.previewLabel}>Tutar</Text><Text style={s.previewValue}>{formatMoney(tutar)}</Text></View>
-            <View style={s.previewBox}><Text style={s.previewLabel}>Durum</Text><Text style={s.previewValue}>{DURUM_ETIKET[durum]}</Text></View>
+     <SafeAreaView style={s.safe}>
+        <AppSuccessToast
+         visible={successToast}
+         message={duzenleme ? 'Ödeme güncellendi' : 'Ödeme kaydı oluşturuldu'}
+         onHide={() => setSuccessToast(false)}
+       />
+
+         <ScrollView
+           style={s.screen}
+           contentContainerStyle={s.content}
+           keyboardShouldPersistTaps="handled"
+           showsVerticalScrollIndicator={false}
+        >
+           <View style={s.heroCard}>
+             <Text style={s.heroTitle}>{duzenleme ? 'Ödeme Kaydını Düzenle' : 'Yeni Ödeme Kaydı'}</Text>
+             <Text style={s.heroSub} numberOfLines={1}>{seciliCocuk.adSoyad || 'Çocuk seçiniz'} • {monthLabel(ay, yil)}</Text>
+            <View style={s.previewRow}>
+              <View style={s.previewBox}><Text style={s.previewLabel}>Tutar</Text><Text style={s.previewValue}>{formatMoney(tutar)}</Text></View>
+              <View style={s.previewBox}><Text style={s.previewLabel}>Durum</Text><Text style={s.previewValue}>{DURUM_ETIKET[durum]}</Text></View>
+            </View>
           </View>
-        </View>
 
         <View style={s.card}>
           <Text style={s.sectionTitle}>Çocuk Seçimi</Text>
