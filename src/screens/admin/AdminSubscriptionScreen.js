@@ -1,11 +1,7 @@
 // ============================================================
 // YUMURCAK — AdminSubscriptionScreen.js
 // FAZ 5: Abonelik / Ödeme / Promosyon ekranı
-// Fiyat:
-// - İlk 1 ay ücretsiz
-// - Aylık: 1500 TL
-// - Yıllık: 15000 TL
-// RevenueCat sonra entegre edilecek.
+// RevenueCat Android altyapısı bağlandı
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -22,6 +18,14 @@ import {
 import { get, onValue, ref, set, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import {
+  REVENUECAT_ENTITLEMENT_ID,
+  getRevenueCatExpiryDate,
+  getRevenueCatPackages,
+  isRevenueCatPremiumActive,
+  purchaseRevenueCatPackage,
+  restoreRevenueCatPurchases,
+} from '../../services/revenueCat';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -55,9 +59,13 @@ export default function AdminSubscriptionScreen() {
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
   const userId = kullanici?.uid || kullanici?.id || '';
+  const revenueCatUserId = kresId || userId || 'anonymous';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [rcLoading, setRcLoading] = useState(true);
+  const [rcError, setRcError] = useState('');
+  const [rcPackages, setRcPackages] = useState({ monthly: null, yearly: null });
 
   const [kres, setKres] = useState(null);
   const [subscription, setSubscription] = useState(null);
@@ -78,6 +86,22 @@ export default function AdminSubscriptionScreen() {
       subUnsub();
     };
   }, [kresId]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadRevenueCat() {
+      setRcLoading(true);
+      const result = await getRevenueCatPackages(revenueCatUserId);
+      if (!alive) return;
+      setRcPackages({ monthly: result.monthly, yearly: result.yearly });
+      setRcError(result.error || '');
+      setRcLoading(false);
+    }
+
+    loadRevenueCat();
+    return () => { alive = false; };
+  }, [revenueCatUserId]);
 
   const status = useMemo(() => getStatus(subscription), [subscription]);
   const remainingDays = useMemo(() => getRemainingDays(subscription), [subscription]);
@@ -102,8 +126,8 @@ export default function AdminSubscriptionScreen() {
         fiyat: 0,
         paraBirimi: 'TRY',
         kaynak: 'ilk_1_ay_ucretsiz',
-        revenueCatCustomerId: '',
-        revenueCatEntitlement: 'premium',
+        revenueCatCustomerId: revenueCatUserId,
+        revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -120,18 +144,90 @@ export default function AdminSubscriptionScreen() {
   const selectPlan = async (plan) => {
     const isYearly = plan === 'yillik';
     const priceText = isYearly ? `${formatPrice(YEARLY_PRICE)} / yıl` : `${formatPrice(MONTHLY_PRICE)} / ay`;
+    const rcPackage = isYearly ? rcPackages.yearly : rcPackages.monthly;
+
+    if (rcPackage) {
+      Alert.alert(
+        `${isYearly ? 'Yıllık' : 'Aylık'} Paket`,
+        `${priceText}\n\nRevenueCat satın alma ekranı açılacak.`,
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Satın Al', onPress: () => purchasePlan(plan, rcPackage) },
+        ]
+      );
+      return;
+    }
 
     Alert.alert(
-      'Ödeme Altyapısı Hazırlanıyor',
-      `${isYearly ? 'Yıllık' : 'Aylık'} paket seçildi.\n\n${priceText}\n\nRevenueCat entegrasyonu sonrası buradan ödeme alınacak. Şimdilik demo/promo kod ile kullanım açılır.`,
+      'RevenueCat Ürünü Hazır Değil',
+      `${isYearly ? 'Yıllık' : 'Aylık'} paket seçildi.\n\n${priceText}\n\nGoogle Play ürünleri RevenueCat'e bağlanınca buradan gerçek ödeme alınacak. Şimdilik demo/promo kod veya manuel aktif etme kullanılabilir.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Manuel Aktif Et',
-          onPress: () => activateManual(plan),
-        },
+        { text: 'Manuel Aktif Et', onPress: () => activateManual(plan) },
       ]
     );
+  };
+
+  const purchasePlan = async (plan, rcPackage) => {
+    setSaving(true);
+    try {
+      const result = await purchaseRevenueCatPackage(rcPackage, revenueCatUserId);
+      await syncRevenueCatResult(result?.customerInfo, plan);
+      Alert.alert('Başarılı', 'RevenueCat aboneliği aktif edildi.');
+    } catch (err) {
+      const userCancelled = err?.userCancelled || err?.code === 'PURCHASE_CANCELLED';
+      if (!userCancelled) {
+        console.warn('RevenueCat satın alma hatası:', err);
+        Alert.alert('Hata', 'Satın alma tamamlanamadı.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restorePurchases = async () => {
+    setSaving(true);
+    try {
+      const customerInfo = await restoreRevenueCatPurchases(revenueCatUserId);
+      const active = isRevenueCatPremiumActive(customerInfo);
+      if (!active) {
+        Alert.alert('Abonelik Bulunamadı', 'Bu hesap için aktif RevenueCat aboneliği bulunamadı.');
+        return;
+      }
+      await syncRevenueCatResult(customerInfo, subscription?.plan || 'revenuecat');
+      Alert.alert('Başarılı', 'Satın alma geri yüklendi.');
+    } catch (err) {
+      console.warn('RevenueCat restore hatası:', err);
+      Alert.alert('Hata', 'Satın alma geri yüklenemedi.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const syncRevenueCatResult = async (customerInfo, plan) => {
+    const active = isRevenueCatPremiumActive(customerInfo);
+    if (!active) throw new Error('RevenueCat entitlement aktif değil.');
+
+    const now = new Date();
+    const expiryDate = getRevenueCatExpiryDate(customerInfo) || toDateStr(plan === 'yillik' ? addMonths(now, 12) : addMonths(now, 1));
+    const finalPlan = plan === 'yillik' ? 'yillik' : plan === 'aylik' ? 'aylik' : 'revenuecat';
+
+    await set(ref(database, `abonelikler/${kresId}`), {
+      kresId,
+      plan: finalPlan,
+      durum: 'aktif',
+      baslangicTarihi: subscription?.baslangicTarihi || toDateStr(now),
+      bitisTarihi: expiryDate,
+      demoBitisTarihi: '',
+      fiyat: finalPlan === 'yillik' ? YEARLY_PRICE : MONTHLY_PRICE,
+      paraBirimi: 'TRY',
+      kaynak: 'revenuecat',
+      revenueCatCustomerId: revenueCatUserId,
+      revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
+      revenueCatSyncedAt: Date.now(),
+      createdAt: subscription?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+    });
   };
 
   const activateManual = async (plan) => {
@@ -150,8 +246,8 @@ export default function AdminSubscriptionScreen() {
         fiyat: plan === 'yillik' ? YEARLY_PRICE : MONTHLY_PRICE,
         paraBirimi: 'TRY',
         kaynak: 'manuel_admin',
-        revenueCatCustomerId: '',
-        revenueCatEntitlement: 'premium',
+        revenueCatCustomerId: revenueCatUserId,
+        revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
         createdAt: subscription?.createdAt || Date.now(),
         updatedAt: Date.now(),
       });
@@ -212,8 +308,8 @@ export default function AdminSubscriptionScreen() {
         fiyat: 0,
         paraBirimi: 'TRY',
         kaynak: `promo_${code}`,
-        revenueCatCustomerId: subscription?.revenueCatCustomerId || '',
-        revenueCatEntitlement: 'premium',
+        revenueCatCustomerId: subscription?.revenueCatCustomerId || revenueCatUserId,
+        revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
         createdAt: subscription?.createdAt || Date.now(),
         updatedAt: Date.now(),
       });
@@ -269,6 +365,22 @@ export default function AdminSubscriptionScreen() {
           <Text style={styles.statusText}>Plan: {subscription?.plan || 'Henüz yok'}</Text>
           <Text style={styles.statusText}>Bitiş: {subscription?.bitisTarihi || subscription?.demoBitisTarihi || '-'}</Text>
           <Text style={styles.statusText}>Kalan gün: {remainingDays}</Text>
+          <Text style={styles.statusText}>Kaynak: {subscription?.kaynak || '-'}</Text>
+        </View>
+
+        <View style={styles.rcCard}>
+          <View style={styles.statusTop}>
+            <Text style={styles.rcTitle}>RevenueCat Durumu</Text>
+            <Text style={[styles.rcBadge, { backgroundColor: rcPackages.monthly || rcPackages.yearly ? '#E8F9EF' : '#FFF4E1', color: rcPackages.monthly || rcPackages.yearly ? THEME.green : THEME.orange }]}>
+              {rcLoading ? 'Kontrol' : rcPackages.monthly || rcPackages.yearly ? 'Bağlı' : 'Ürün Bekliyor'}
+            </Text>
+          </View>
+          <Text style={styles.rcText}>Offering: default</Text>
+          <Text style={styles.rcText}>Entitlement: {REVENUECAT_ENTITLEMENT_ID}</Text>
+          {rcError ? <Text style={styles.rcWarning}>{rcError}</Text> : null}
+          <TouchableOpacity style={[styles.restoreButton, saving && { opacity: 0.6 }]} onPress={restorePurchases} disabled={saving} activeOpacity={0.85}>
+            <Text style={styles.restoreText}>Satın Almayı Geri Yükle</Text>
+          </TouchableOpacity>
         </View>
 
         {!subscription ? (
@@ -283,15 +395,17 @@ export default function AdminSubscriptionScreen() {
             title="Aylık"
             price={formatPrice(MONTHLY_PRICE)}
             period="/ ay"
-            desc="Her ay yenilenir"
+            desc={rcPackages.monthly ? 'RevenueCat ile satın al' : 'Google Play ürünü bekliyor'}
+            rcReady={!!rcPackages.monthly}
             onPress={() => selectPlan('aylik')}
           />
           <PlanCard
             title="Yıllık"
             price={formatPrice(YEARLY_PRICE)}
             period="/ yıl"
-            desc="2 ay avantajlı"
+            desc={rcPackages.yearly ? 'RevenueCat ile satın al' : 'Google Play ürünü bekliyor'}
             featured
+            rcReady={!!rcPackages.yearly}
             onPress={() => selectPlan('yillik')}
           />
         </View>
@@ -314,19 +428,20 @@ export default function AdminSubscriptionScreen() {
 
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>RevenueCat Hazırlığı</Text>
-          <Text style={styles.noteText}>Ürün ID önerisi: yumurcak_aylik_1500 ve yumurcak_yillik_15000</Text>
-          <Text style={styles.noteText}>Entitlement: premium</Text>
-          <Text style={styles.noteText}>Şimdilik gerçek ödeme yok; manuel/demo sistem hazır.</Text>
+          <Text style={styles.noteText}>Android SDK key bağlandı.</Text>
+          <Text style={styles.noteText}>Product ID: yumurcak_aylik_1500 ve yumurcak_yillik_15000</Text>
+          <Text style={styles.noteText}>Google Play ürünleri bağlanınca gerçek ödeme aktif olur.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function PlanCard({ title, price, period, desc, featured, onPress }) {
+function PlanCard({ title, price, period, desc, featured, rcReady, onPress }) {
   return (
     <TouchableOpacity style={[styles.planCard, featured && styles.featuredPlan]} onPress={onPress} activeOpacity={0.85}>
       {featured ? <Text style={styles.bestBadge}>Avantajlı</Text> : null}
+      {rcReady ? <Text style={styles.rcMiniBadge}>RevenueCat</Text> : null}
       <Text style={styles.planTitle}>{title}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 }}>
         <Text style={styles.planPrice}>{price}</Text>
@@ -387,13 +502,21 @@ const styles = StyleSheet.create({
   statusTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
   statusText: { color: THEME.muted, fontWeight: '700', marginTop: 4 },
+  rcCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
+  rcTitle: { color: THEME.text, fontSize: 17, fontWeight: '900' },
+  rcBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
+  rcText: { color: THEME.muted, fontWeight: '800', marginTop: 4 },
+  rcWarning: { color: THEME.orange, fontWeight: '800', marginTop: 8, lineHeight: 18 },
+  restoreButton: { marginTop: 12, backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center' },
+  restoreText: { color: THEME.primary, fontWeight: '900' },
   trialButton: { backgroundColor: THEME.green, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 18 },
   trialText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 10 },
   planRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  planCard: { flex: 1, backgroundColor: THEME.card, borderRadius: 20, padding: 15, borderWidth: 1, borderColor: THEME.border, minHeight: 150 },
+  planCard: { flex: 1, backgroundColor: THEME.card, borderRadius: 20, padding: 15, borderWidth: 1, borderColor: THEME.border, minHeight: 164 },
   featuredPlan: { borderColor: THEME.gold, borderWidth: 2 },
   bestBadge: { alignSelf: 'flex-start', backgroundColor: '#FFF5D9', color: THEME.gold, fontWeight: '900', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden', marginBottom: 8 },
+  rcMiniBadge: { alignSelf: 'flex-start', backgroundColor: '#E8F9EF', color: THEME.green, fontWeight: '900', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden', marginBottom: 8 },
   planTitle: { color: THEME.text, fontSize: 17, fontWeight: '900' },
   planPrice: { color: THEME.primary, fontSize: 22, fontWeight: '900' },
   planPeriod: { color: THEME.muted, fontWeight: '800', marginLeft: 3, marginBottom: 2 },
