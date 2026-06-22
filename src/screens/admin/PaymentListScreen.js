@@ -2,7 +2,7 @@
 // YUMURCAK — PaymentListScreen.js
 // Ödeme takibi — çocuk bazlı aylık ödeme durumu
 // ============================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
   TouchableOpacity, ActivityIndicator, SafeAreaView, Alert,
@@ -16,60 +16,132 @@ const DURUM_RENK = { odendi: '#20B45B', bekliyor: '#FF9F1C', gecikti: '#FF4D6D' 
 const DURUM_ETIKET = { odendi: '✅ Ödendi', bekliyor: '⏳ Bekliyor', gecikti: '❗ Gecikti' };
 const AY_ADLARI = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function toList(data) {
+  return Object.entries(safeObject(data)).map(([id, item]) => ({ id, ...safeObject(item) }));
+}
+
 function pad2(value) { return String(value).padStart(2, '0'); }
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
+
+function normalizeDurum(value) {
+  const v = String(value || '').toLowerCase().trim();
+  if (['odendi', 'ödendi', 'paid', 'tamamlandi', 'tamamlandı'].includes(v)) return 'odendi';
+  if (['gecikti', 'geçti', 'late', 'overdue'].includes(v)) return 'gecikti';
+  return 'bekliyor';
+}
+
 function formatMoney(value) {
   const number = Number(value || 0);
-  return number ? `${number.toLocaleString('tr-TR')} ₺` : '-';
+  return Number.isFinite(number) && number > 0 ? `${number.toLocaleString('tr-TR')} ₺` : '-';
+}
+
+function getChildName(cocuk = {}, odeme = {}) {
+  return (
+    `${cocuk.ad || ''} ${cocuk.soyad || ''}`.trim() ||
+    cocuk.adSoyad ||
+    cocuk.isim ||
+    odeme.cocukAd ||
+    odeme.cocukAdi ||
+    odeme.childName ||
+    odeme.cocukId ||
+    'Çocuk'
+  );
+}
+
+function getDonem(o = {}) {
+  if (o.donem) return o.donem;
+  if (o.tarih && String(o.tarih).length >= 7) return String(o.tarih);
+  const ayText = AY_ADLARI[Number(o.ay)] || o.ay || '';
+  return `${ayText} ${o.yil || ''}`.trim() || 'Dönem yok';
 }
 
 export default function PaymentListScreen() {
   const navigation = useNavigation();
   const { kullanici } = useAuth();
-  const kresId = kullanici?.kresId || 'default-kres';
+  const kresId = kullanici?.kresId || kullanici?.kurumId || null;
   const [odemeler, setOdemeler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [errorText, setErrorText] = useState('');
 
   useEffect(() => {
     let odemelerData = {};
     let cocuklarData = {};
     let odemelerLoaded = false;
     let cocuklarLoaded = false;
+    let alive = true;
 
     function buildList() {
-      if (!odemelerLoaded || !cocuklarLoaded) return;
-      const liste = Object.entries(odemelerData)
-        .filter(([, o]) => !o.kresId || o.kresId === kresId)
-        .map(([id, o]) => {
-          const cocuk = cocuklarData[o.cocukId] || {};
-          const cocukAd = `${cocuk.ad || ''} ${cocuk.soyad || ''}`.trim() || cocuk.adSoyad || o.cocukAd || o.cocukId || 'Çocuk';
-          const donem = o.donem || `${AY_ADLARI[o.ay] || o.ay || ''} ${o.yil || ''}`.trim() || 'Dönem yok';
-          return { id, ...o, cocukAd, donem };
-        });
-      liste.sort((a, b) => (b.createdAt || b.updatedAt || 0) - (a.createdAt || a.updatedAt || 0));
+      if (!alive || !odemelerLoaded || !cocuklarLoaded) return;
+      const liste = toList(odemelerData)
+        .filter((o) => {
+          if (!kresId) return true;
+          return !o.kresId || o.kresId === kresId || o.kurumId === kresId;
+        })
+        .map((o) => {
+          const cocuk = safeObject(cocuklarData[o.cocukId] || cocuklarData[o.childId]);
+          const durum = normalizeDurum(o.durum || o.status);
+          return {
+            ...o,
+            durum,
+            cocukId: o.cocukId || o.childId || '',
+            cocukAd: getChildName(cocuk, o),
+            donem: getDonem(o),
+          };
+        })
+        .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0));
+
       setOdemeler(liste);
+      setErrorText('');
       setLoading(false);
     }
 
-    const odemelerUnsub = onValue(ref(database, 'odemeler'), (snap) => {
-      odemelerData = snap.val() || {};
-      odemelerLoaded = true;
-      buildList();
-    });
-    const cocuklarUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
-      cocuklarData = snap.val() || {};
-      cocuklarLoaded = true;
-      buildList();
-    });
-    return () => { odemelerUnsub(); cocuklarUnsub(); };
+    const odemelerUnsub = onValue(
+      ref(database, 'odemeler'),
+      (snap) => {
+        odemelerData = safeObject(snap.val());
+        odemelerLoaded = true;
+        buildList();
+      },
+      () => {
+        odemelerData = {};
+        odemelerLoaded = true;
+        setErrorText('Ödeme kayıtları okunamadı.');
+        buildList();
+      }
+    );
+
+    const cocuklarUnsub = onValue(
+      ref(database, 'cocuklar'),
+      (snap) => {
+        cocuklarData = safeObject(snap.val());
+        cocuklarLoaded = true;
+        buildList();
+      },
+      () => {
+        cocuklarData = {};
+        cocuklarLoaded = true;
+        setErrorText('Çocuk kayıtları okunamadı.');
+        buildList();
+      }
+    );
+
+    return () => {
+      alive = false;
+      odemelerUnsub();
+      cocuklarUnsub();
+    };
   }, [kresId]);
 
   async function odendiYap(item) {
-    if (!item?.id) return;
+    if (!item?.id || busyId) return;
     setBusyId(item.id);
     try {
       await update(ref(database, `odemeler/${item.id}`), {
@@ -84,6 +156,12 @@ export default function PaymentListScreen() {
     }
   }
 
+  const stats = useMemo(() => ({
+    odendi: odemeler.filter((o) => o.durum === 'odendi').length,
+    bekliyor: odemeler.filter((o) => o.durum === 'bekliyor').length,
+    gecikti: odemeler.filter((o) => o.durum === 'gecikti').length,
+  }), [odemeler]);
+
   const renderItem = ({ item }) => {
     const durumRenk = DURUM_RENK[item.durum] || '#888';
     const durumEtiket = DURUM_ETIKET[item.durum] || item.durum || 'Bekliyor';
@@ -94,7 +172,7 @@ export default function PaymentListScreen() {
           <View style={styles.cardTop}>
             <View style={styles.cardLeft}>
               <Text style={styles.cocukAd}>{item.cocukAd}</Text>
-              <Text style={styles.baslik}>{item.baslik || item.aciklama || 'Aylık ücret'}</Text>
+              <Text style={styles.baslik}>{item.baslik || item.aciklama || item.title || 'Aylık ücret'}</Text>
               <Text style={styles.donem}>{item.donem}</Text>
             </View>
             <View style={[styles.durumBadge, { backgroundColor: durumRenk + '22' }]}>
@@ -102,7 +180,7 @@ export default function PaymentListScreen() {
             </View>
           </View>
           <View style={styles.cardBottom}>
-            <Text style={styles.tutar}>{formatMoney(item.tutar)}</Text>
+            <Text style={styles.tutar}>{formatMoney(item.tutar || item.amount)}</Text>
             <Text style={styles.tarih}>{item.odemeTarihi ? `📅 ${item.odemeTarihi}` : item.sonOdemeTarihi ? `Son: ${item.sonOdemeTarihi}` : ''}</Text>
           </View>
         </TouchableOpacity>
@@ -115,27 +193,24 @@ export default function PaymentListScreen() {
     );
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#3C3489" /></View>;
-
-  const toplamOdendi = odemeler.filter((o) => o.durum === 'odendi').length;
-  const toplamBekliyor = odemeler.filter((o) => o.durum === 'bekliyor').length;
-  const toplamGecikti = odemeler.filter((o) => o.durum === 'gecikti').length;
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#3C3489" /><Text style={styles.loadingText}>Ödemeler yükleniyor...</Text></View>;
 
   return (
     <SafeAreaView style={styles.safe}>
       {odemeler.length > 0 && (
         <View style={styles.ozetSerit}>
-          <View style={styles.ozetKutu}><Text style={[styles.ozetSayi, { color: DURUM_RENK.odendi }]}>{toplamOdendi}</Text><Text style={styles.ozetEtiket}>Ödendi</Text></View>
+          <View style={styles.ozetKutu}><Text style={[styles.ozetSayi, { color: DURUM_RENK.odendi }]}>{stats.odendi}</Text><Text style={styles.ozetEtiket}>Ödendi</Text></View>
           <View style={styles.ozetAyrac} />
-          <View style={styles.ozetKutu}><Text style={[styles.ozetSayi, { color: DURUM_RENK.bekliyor }]}>{toplamBekliyor}</Text><Text style={styles.ozetEtiket}>Bekliyor</Text></View>
+          <View style={styles.ozetKutu}><Text style={[styles.ozetSayi, { color: DURUM_RENK.bekliyor }]}>{stats.bekliyor}</Text><Text style={styles.ozetEtiket}>Bekliyor</Text></View>
           <View style={styles.ozetAyrac} />
-          <View style={styles.ozetKutu}><Text style={[styles.ozetSayi, { color: DURUM_RENK.gecikti }]}>{toplamGecikti}</Text><Text style={styles.ozetEtiket}>Gecikti</Text></View>
+          <View style={styles.ozetKutu}><Text style={[styles.ozetSayi, { color: DURUM_RENK.gecikti }]}>{stats.gecikti}</Text><Text style={styles.ozetEtiket}>Gecikti</Text></View>
         </View>
       )}
+      {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
       <View style={styles.container}>
         {odemeler.length === 0 ? (
           <View style={styles.bos}><Text style={styles.bosEmoji}>💳</Text><Text style={styles.bosYazi}>Henüz ödeme kaydı yok</Text><Text style={styles.bosAlt}>+ butonuyla yeni kayıt ekle</Text></View>
-        ) : <FlatList data={odemeler} renderItem={renderItem} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} />}
+        ) : <FlatList data={odemeler} renderItem={renderItem} keyExtractor={(item) => String(item.id)} contentContainerStyle={styles.list} />}
         <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('PaymentForm')} activeOpacity={0.85}><Text style={styles.fabText}>+</Text></TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -146,6 +221,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, color: '#888', fontWeight: '700' },
+  errorText: { backgroundColor: '#FFF1F3', color: '#FF4D6D', fontWeight: '800', padding: 10, textAlign: 'center' },
   list: { padding: 16, paddingBottom: 100 },
   ozetSerit: { flexDirection: 'row', backgroundColor: '#fff', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
   ozetKutu: { flex: 1, alignItems: 'center' },
