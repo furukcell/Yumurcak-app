@@ -8,6 +8,7 @@ import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppNotificationButton from '../../components/AppNotificationButton';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -130,10 +131,12 @@ export default function DashboardScreen() {
               </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
-            <Text style={styles.cikisBtnText}>↩ Çıkış</Text>
-          </TouchableOpacity>
-        </View>
+         <View style={styles.topActions}>
+        <AppNotificationButton navigation={navigation} />
+        <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
+        <Text style={styles.cikisBtnText}>↩ Çıkış</Text>
+       </TouchableOpacity>
+    </View>
 
         <View style={styles.welcomeCard}>
           <View style={styles.welcomeLeft}>
@@ -211,6 +214,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 40 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 10 },
   topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   topTitleBlock: { flex: 1, minWidth: 0 },
   logoCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 },
   logoEmoji: { fontSize: 22 },
