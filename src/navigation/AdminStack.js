@@ -28,6 +28,7 @@ import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import AdminGalleryScreen from '../screens/admin/AdminGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
+import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -66,5 +67,6 @@ export default function AdminStack() {
     stackScreen('LessonScheduleForm', LessonScheduleFormScreen, { title: 'Programı Düzenle' }),
     stackScreen('EventList', EventListScreen, { title: 'Etkinlikler' }),
     stackScreen('EventForm', EventFormScreen, { title: 'Etkinlik Ekle/Düzenle' })
+    stackScreen('LegalDocuments', LegalDocumentsScreen, { headerShown: false }),
   );
 }
