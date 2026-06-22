@@ -4,6 +4,7 @@ import { ref, push, serverTimestamp } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, useParentBase, LoadingScreen, EmptyState } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { createRoleNotification } from '../../services/notificationCenter';
 
 export default function ParentBellScreen({ navigation }) {
   const base = useParentBase();
@@ -46,6 +47,15 @@ export default function ParentBellScreen({ navigation }) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+       await createRoleNotification({
+       kresId,
+       roles: ['admin', 'yonetici', 'ogretmen'],
+       baslik: durum === 'geliyorum' ? '🚗 Veli geliyor' : '📍 Veli kapıda',
+       mesaj: `${parentName || 'Veli'}, ${childName || 'çocuğu'} için kurum zili gönderdi.`,
+       tip: 'kurum_zili',
+       routeName: 'AdminBell',
+       createdBy: veliId || '',
+    });
 
       Alert.alert('Bildirim gönderildi', durum === 'geliyorum' ? 'Kuruma yaklaştığınız bildirildi.' : 'Kapıda olduğunuz bildirildi.');
     } catch (error) {
