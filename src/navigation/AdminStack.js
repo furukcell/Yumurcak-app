@@ -66,7 +66,7 @@ export default function AdminStack() {
     stackScreen('LessonScheduleList', LessonScheduleListScreen, { title: 'Ders Programı' }),
     stackScreen('LessonScheduleForm', LessonScheduleFormScreen, { title: 'Programı Düzenle' }),
     stackScreen('EventList', EventListScreen, { title: 'Etkinlikler' }),
-    stackScreen('EventForm', EventFormScreen, { title: 'Etkinlik Ekle/Düzenle' })
+    stackScreen('EventForm', EventFormScreen, { title: 'Etkinlik Ekle/Düzenle' }),
     stackScreen('LegalDocuments', LegalDocumentsScreen, { headerShown: false }),
   );
 }
