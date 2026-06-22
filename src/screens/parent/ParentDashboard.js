@@ -53,8 +53,8 @@ export default function ParentDashboardScreen({ navigation }) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.logo} numberOfLines={1}>{kresAdi || 'Yumurcak'}</Text>
-            <Text style={styles.brandSub}>Yumurcak Veli Paneli</Text>
+            <Text style={styles.logo} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
+            <Text style={styles.brandSub}>Veli Paneli</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton}>
             {parentPhotoUrl ? (
