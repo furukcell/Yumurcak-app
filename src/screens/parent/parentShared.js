@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -232,7 +233,9 @@ export function useNodeList(node) {
 
 export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   const themedStyles = useParentSharedStyles();
+  const insets = useSafeAreaInsets();
   const canGoBack = !!navigation?.canGoBack?.();
+  const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);
 
   return (
     <SafeAreaView style={themedStyles.safeArea}>
@@ -251,7 +254,12 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
         </View>
         <Text style={themedStyles.headerEmoji}>{emoji || ''}</Text>
       </View>
-      <ScrollView style={themedStyles.screen} contentContainerStyle={themedStyles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={themedStyles.screen}
+        contentContainerStyle={[themedStyles.scrollContent, { paddingBottom: bottomSafePadding }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {children}
       </ScrollView>
     </SafeAreaView>
@@ -316,7 +324,7 @@ function createStyles(theme) {
       paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
     },
     screen: { flex: 1, backgroundColor: t.bg },
-    scrollContent: { padding: 16, paddingBottom: 52 },
+    scrollContent: { padding: 16, paddingBottom: 120 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg },
     loadingText: { marginTop: 12, color: t.muted, fontWeight: '700' },
     header: {
