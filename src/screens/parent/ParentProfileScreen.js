@@ -1,17 +1,15 @@
 // ============================================================
 // YUMURCAK — ParentProfileScreen.js
 // FAZ 8: Galeriden profil fotoğrafı seçme + Firebase Storage upload
-// Gereken dependency package.json'da zaten var: expo-image-picker
 // Kayıt:
 // - Storage: profilFotograflari/veliler/{parentId}.jpg
 // - RTDB: kullanicilar/{parentId}/profilFotoUrl
 // ============================================================
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   Alert,
   Image,
   ActivityIndicator,
@@ -23,32 +21,16 @@ import { database, storage } from '../../config/firebase';
 import { ScreenShell, InfoRow, EmptyState, LoadingScreen, useParentBase, styles, THEME } from './parentShared';
 
 export default function ParentProfileScreen({ navigation }) {
-  const { loading, selectedChild, childName, parentName, kullanici, parentId, sinif, ogretmen, cikisYap } = useParentBase();
-  const [photoUrl, setPhotoUrl] = useState(kullanici?.profilFotoUrl || '');
+  const { loading, selectedChild, childName, parentName, kullanici, parentId, parentPhotoUrl, sinif, ogretmen, cikisYap } = useParentBase();
+  const [photoUrl, setPhotoUrl] = useState(parentPhotoUrl || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  useEffect(() => {
+    setPhotoUrl(parentPhotoUrl || '');
+  }, [parentPhotoUrl]);
+
   if (loading) return <LoadingScreen text="Profil hazırlanıyor..." />;
-
-  const savePhotoUrl = async (urlValue = photoUrl) => {
-    if (!parentId) return Alert.alert('Hata', 'Veli hesabı bulunamadı.');
-    if (!urlValue.trim()) return Alert.alert('Eksik Bilgi', 'Fotoğraf URL alanı boş.');
-
-    setSaving(true);
-    try {
-      await update(dbRef(database, `kullanicilar/${parentId}`), {
-        profilFotoUrl: urlValue.trim(),
-        updatedAt: Date.now(),
-      });
-      setPhotoUrl(urlValue.trim());
-      Alert.alert('Başarılı', 'Profil resmi kaydedildi.');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Hata', 'Profil resmi kaydedilemedi.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const pickAndUploadPhoto = async () => {
     if (!parentId) return Alert.alert('Hata', 'Veli hesabı bulunamadı.');
@@ -130,6 +112,7 @@ export default function ParentProfileScreen({ navigation }) {
     <ScreenShell title="Profil" emoji="👤" navigation={navigation}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Profil Resmi</Text>
+        <Text style={local.hintText}>Seçtiğin fotoğraf anasayfa ve özet ekranındaki profil alanlarında otomatik görünür.</Text>
         <View style={local.avatarWrap}>
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={local.avatarImage} />
@@ -144,24 +127,9 @@ export default function ParentProfileScreen({ navigation }) {
           {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={local.primaryButtonText}>Galeriden Fotoğraf Seç</Text>}
         </TouchableOpacity>
 
-        <Text style={local.orText}>veya URL ile ekle</Text>
-
-        <TextInput
-          style={local.input}
-          value={photoUrl}
-          onChangeText={setPhotoUrl}
-          placeholder="Profil fotoğraf URL'si"
-          placeholderTextColor="#999"
-          autoCapitalize="none"
-        />
-
-        <TouchableOpacity style={[styles.secondaryButton, saving && { opacity: 0.6 }]} onPress={() => savePhotoUrl()} disabled={saving || uploading}>
-          <Text style={styles.secondaryButtonText}>{saving ? 'Kaydediliyor...' : 'URL Fotoğrafı Kaydet'}</Text>
-        </TouchableOpacity>
-
         {photoUrl ? (
           <TouchableOpacity style={local.removeButton} onPress={removePhoto} disabled={saving || uploading}>
-            <Text style={local.removeButtonText}>Fotoğrafı Kaldır</Text>
+            <Text style={local.removeButtonText}>{saving ? 'Kaldırılıyor...' : 'Fotoğrafı Kaldır'}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -196,35 +164,25 @@ export default function ParentProfileScreen({ navigation }) {
 }
 
 const local = {
-  avatarWrap: { alignItems: 'center', marginVertical: 10 },
+  avatarWrap: { alignItems: 'center', marginVertical: 12 },
   avatarImage: { width: 96, height: 96, borderRadius: 48, backgroundColor: THEME.primarySoft },
   avatarPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center' },
   avatarEmoji: { fontSize: 44 },
-  input: {
-    backgroundColor: THEME.bg,
-    borderRadius: 14,
-    padding: 12,
-    color: THEME.text,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
+  hintText: { color: THEME.muted, fontWeight: '700', marginTop: 6, lineHeight: 18 },
   primaryButton: {
     backgroundColor: THEME.primary,
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   primaryButtonText: { color: '#FFF', fontWeight: '900' },
-  orText: { color: THEME.muted, textAlign: 'center', fontWeight: '700', marginBottom: 10 },
   removeButton: {
     backgroundColor: '#FFE8EC',
     borderRadius: 14,
     padding: 13,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   removeButtonText: { color: '#FF4D6D', fontWeight: '900' },
 };
