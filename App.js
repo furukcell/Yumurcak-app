@@ -1,10 +1,11 @@
 // ============================================================
 // YUMURCAK — App.js
-// FAZ 6: SafeAreaProvider + StatusBar düzeni
-// Amaç: Android üst bar / alt sistem alanlarının ekranları ezmesini azaltmak
+// SafeAreaProvider + StatusBar + Push token + Android navigation bar
 // ============================================================
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as NavigationBar from 'expo-navigation-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
@@ -18,7 +19,23 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
   useEffect(() => {
-    // Firebase Auth durumu değiştiğinde token kaydet
+    if (Platform.OS !== 'android') return;
+
+    const hideAndroidNavigationBar = async () => {
+      try {
+        await NavigationBar.setBehaviorAsync('overlay-swipe');
+        await NavigationBar.setVisibilityAsync('hidden');
+        await NavigationBar.setBackgroundColorAsync('transparent');
+        await NavigationBar.setButtonStyleAsync('dark');
+      } catch (error) {
+        console.warn('Android navigation bar gizlenemedi:', error);
+      }
+    };
+
+    hideAndroidNavigationBar();
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
