@@ -9,7 +9,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const reports = useNodeList('gunlukRaporlar');
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, kullanici } = base;
+  const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl } = base;
 
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
@@ -57,8 +57,8 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={styles.brandSub}>Yumurcak Veli Paneli</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton}>
-            {kullanici?.profilFotoUrl ? (
-              <Image source={{ uri: kullanici.profilFotoUrl }} style={styles.profileImage} />
+            {parentPhotoUrl ? (
+              <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
             ) : (
               <Text style={styles.profileButtonText}>👤</Text>
             )}
@@ -71,7 +71,13 @@ export default function ParentDashboardScreen({ navigation }) {
         {selectedChild ? (
           <View style={styles.heroCard}>
             <View style={styles.heroTop}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>👧</Text></View>
+              <View style={styles.avatar}>
+                {parentPhotoUrl ? (
+                  <Image source={{ uri: parentPhotoUrl }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>👧</Text>
+                )}
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.heroName}>{childName}</Text>
                 <Text style={styles.heroSub}>Bugünün özeti</Text>
@@ -145,7 +151,8 @@ const createStyles = (theme) => StyleSheet.create({
   greetingSub: { fontSize: 13, color: theme.muted, marginBottom: 18 },
   heroCard: { backgroundColor: theme.primary, borderRadius: 24, padding: 16, marginBottom: 24, shadowColor: theme.primary, shadowOpacity: 0.22, shadowRadius: 18, elevation: 6 },
   heroTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 14, borderWidth: 3, borderColor: 'rgba(255,255,255,0.65)' },
+  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 14, borderWidth: 3, borderColor: 'rgba(255,255,255,0.65)', overflow: 'hidden' },
+  avatarImage: { width: 76, height: 76, borderRadius: 38 },
   avatarText: { fontSize: 36 },
   heroName: { color: '#fff', fontSize: 21, fontWeight: '900' },
   heroSub: { color: 'rgba(255,255,255,0.86)', fontSize: 14, marginTop: 4, fontWeight: '600' },
