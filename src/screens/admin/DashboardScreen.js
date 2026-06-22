@@ -34,6 +34,7 @@ const MENU_ITEMS = [
   { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Demo, aylık/yıllık paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
   { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
   { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum, öğretmen ve çocuk bazlı gelişim takibi', color: THEME.blue, bgColor: '#EEF4FF' },
+  { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', desc: 'Fotoğraf ve video yükle, 24 saatlik paylaşımları yönet', color: THEME.teal, bgColor: '#E0F7FA' },
   { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf listesi ve yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Kayıtlı çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
