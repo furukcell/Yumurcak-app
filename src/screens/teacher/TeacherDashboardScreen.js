@@ -1,7 +1,6 @@
 // ============================================================
-// YUMURCAK — TeacherDashboardScreen.js
-// FAZ 6: Üst başlıkta kreş adı + Yumurcak Öğretmen Paneli
-// TEMA: Seçilen kreş teması ana ekrana bağlandı
+// TeacherDashboardScreen.js
+// Öğretmen ana ekran
 // ============================================================
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
@@ -40,8 +39,8 @@ export default function TeacherDashboardScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>{kresAdi || 'Yumurcak'}</Text>
-            <Text style={styles.panelLabel}>Yumurcak Öğretmen Paneli</Text>
+            <Text style={styles.title} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
+            <Text style={styles.panelLabel}>Öğretmen Paneli</Text>
             <Text style={styles.subtitle}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
           </View>
           <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
