@@ -12,6 +12,7 @@ import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { createRoleNotification } from '../../services/notificationCenter';
 
 export default function AnnouncementFormScreen() {
   const route = useRoute();
@@ -63,7 +64,28 @@ export default function AnnouncementFormScreen() {
       } else {
         await push(ref(database, 'duyurular'), data);
       }
+      
+     if (!announcementId) {
+  await createRoleNotification({
+    kresId: data.kresId,
+    roles: ['veli'],
+    baslik: isUrgent ? '🚨 Acil duyuru' : '📢 Yeni duyuru',
+    mesaj: title.trim(),
+    tip: 'duyuru',
+    routeName: 'ParentAnnouncements',
+    createdBy: kullanici?.uid || kullanici?.id || '',
+  });
 
+  await createRoleNotification({
+    kresId: data.kresId,
+    roles: ['ogretmen'],
+    baslik: isUrgent ? '🚨 Acil duyuru' : '📢 Yeni duyuru',
+    mesaj: title.trim(),
+    tip: 'duyuru',
+    routeName: 'TeacherAnnouncements',
+    createdBy: kullanici?.uid || kullanici?.id || '',
+  });
+}
       Alert.alert('Başarılı', 'Duyuru gönderildi!', [
         { text: 'Tamam', onPress: () => navigation.goBack() },
       ]);
