@@ -7,6 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Pla
 import { useNavigation } from '@react-navigation/native';
 import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import AppNotificationButton from '../../components/AppNotificationButton';
 
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren' },
@@ -43,7 +44,10 @@ export default function TeacherDashboardScreen() {
             <Text style={styles.panelLabel}>Öğretmen Paneli</Text>
             <Text style={styles.subtitle}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
           </View>
-          <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
+          <View style={styles.headerActions}>
+         <AppNotificationButton navigation={navigation} />
+         <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
+        </View>
         </View>
 
         {currentClass ? (
@@ -93,6 +97,7 @@ const createStyles = (theme) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.bg },
   content: { padding: 18, paddingBottom: 56 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 23, fontWeight: '900', color: theme.primary },
   panelLabel: { marginTop: 2, fontSize: 12, color: theme.muted, fontWeight: '800' },
   subtitle: { marginTop: 4, fontSize: 14, color: theme.muted, fontWeight: '700' },
