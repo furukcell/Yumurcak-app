@@ -1,4 +1,4 @@
-import { onValue, ref, update } from 'firebase/database';
+import { onValue, push, ref, serverTimestamp, update } from 'firebase/database';
 import { database } from '../config/firebase';
 
 const PATH = 'bildirimler';
@@ -12,6 +12,13 @@ function arr(value) {
   if (Array.isArray(value)) return value.map(String);
   if (typeof value === 'object') return Object.keys(value).filter((key) => value[key]).map(String);
   return [String(value)];
+}
+
+function cleanObject(value = {}) {
+  return Object.entries(value).reduce((acc, [key, item]) => {
+    if (item !== undefined && item !== null && item !== '') acc[key] = item;
+    return acc;
+  }, {});
 }
 
 function item(id, data = {}) {
@@ -63,6 +70,59 @@ export function listenNotifications(kullanici, callback) {
       .filter((n) => visibleToUser(n, kullanici))
       .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
     callback(list);
+  });
+}
+
+export async function createNotification(payload = {}) {
+  const now = Date.now();
+  const data = cleanObject({
+    baslik: payload.baslik || payload.title || 'Bildirim',
+    mesaj: payload.mesaj || payload.aciklama || '',
+    tip: payload.tip || 'genel',
+    kresId: payload.kresId || '',
+    hedefRol: payload.hedefRol || '',
+    hedefRoller: payload.hedefRoller || null,
+    hedefUserIds: payload.hedefUserIds || null,
+    hedefSinifIds: payload.hedefSinifIds || null,
+    hedefCocukIds: payload.hedefCocukIds || null,
+    routeName: payload.routeName || '',
+    routeParams: payload.routeParams || {},
+    createdBy: payload.createdBy || '',
+    createdAt: now,
+    serverCreatedAt: serverTimestamp(),
+    okunduBy: {},
+  });
+
+  await push(ref(database, PATH), data);
+}
+
+export async function createRoleNotification({ kresId, role, roles, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
+  return createNotification({
+    kresId,
+    hedefRol: role,
+    hedefRoller: roles,
+    baslik,
+    mesaj,
+    tip,
+    routeName,
+    routeParams,
+    createdBy,
+  });
+}
+
+export async function createUserNotification({ kresId, userIds, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
+  const ids = arr(userIds).filter(Boolean);
+  if (!ids.length) return;
+
+  return createNotification({
+    kresId,
+    hedefUserIds: ids,
+    baslik,
+    mesaj,
+    tip,
+    routeName,
+    routeParams,
+    createdBy,
   });
 }
 
