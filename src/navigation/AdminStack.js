@@ -26,12 +26,13 @@ import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
 import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
+import AdminGalleryScreen from '../screens/admin/AdminGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
 function stackScreen(name, component, options) {
-  return React.createElement(Stack.Screen, { key: name, name: name, component: component, options: options });
+  return React.createElement(Stack.Screen, { key: name, name, component, options });
 }
 
 export default function AdminStack() {
@@ -40,6 +41,7 @@ export default function AdminStack() {
     { screenOptions: { headerStyle: { backgroundColor: '#3C3489' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: '700' } } },
     stackScreen('Dashboard', DashboardScreen, { headerShown: false }),
     stackScreen('AdminStatistics', AdminStatisticsScreen, { title: 'Kurum İstatistikleri' }),
+    stackScreen('AdminGallery', AdminGalleryScreen, { headerShown: false }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
