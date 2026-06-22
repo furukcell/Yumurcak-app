@@ -3,8 +3,8 @@
 // FAZ 5: Abonelik / Ödeme / Promosyon ekranı
 // Fiyat:
 // - İlk 1 ay ücretsiz
-// - Aylık: 1000 TL
-// - Yıllık: 10000 TL
+// - Aylık: 1500 TL
+// - Yıllık: 15000 TL
 // RevenueCat sonra entegre edilecek.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
@@ -38,14 +38,18 @@ const THEME = {
   border: '#EEEAF8',
 };
 
-const MONTHLY_PRICE = 1000;
-const YEARLY_PRICE = 10000;
+const MONTHLY_PRICE = 1500;
+const YEARLY_PRICE = 15000;
 
 const BUILT_IN_PROMOS = {
   PILOT1AY: { kod: 'PILOT1AY', tip: 'demo', sureAy: 1, aktif: true },
   PILOT3AY: { kod: 'PILOT3AY', tip: 'demo', sureAy: 3, aktif: true },
   KRES2026: { kod: 'KRES2026', tip: 'demo', sureAy: 3, aktif: true },
 };
+
+function formatPrice(value) {
+  return `${Number(value || 0).toLocaleString('tr-TR')} TL`;
+}
 
 export default function AdminSubscriptionScreen() {
   const { kullanici } = useAuth();
@@ -115,10 +119,11 @@ export default function AdminSubscriptionScreen() {
 
   const selectPlan = async (plan) => {
     const isYearly = plan === 'yillik';
+    const priceText = isYearly ? `${formatPrice(YEARLY_PRICE)} / yıl` : `${formatPrice(MONTHLY_PRICE)} / ay`;
 
     Alert.alert(
       'Ödeme Altyapısı Hazırlanıyor',
-      `${isYearly ? 'Yıllık' : 'Aylık'} paket seçildi.\n\n${isYearly ? '10.000 TL / yıl' : '1.000 TL / ay'}\n\nRevenueCat entegrasyonu sonrası buradan ödeme alınacak. Şimdilik demo/promo kod ile kullanım açılır.`,
+      `${isYearly ? 'Yıllık' : 'Aylık'} paket seçildi.\n\n${priceText}\n\nRevenueCat entegrasyonu sonrası buradan ödeme alınacak. Şimdilik demo/promo kod ile kullanım açılır.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -253,7 +258,7 @@ export default function AdminSubscriptionScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>💎</Text>
           <Text style={styles.heroTitle}>Abonelik / Ödeme</Text>
-          <Text style={styles.heroDesc}>{kres?.ad || 'Kreş'} için Yumurcak kullanım durumu</Text>
+          <Text style={styles.heroDesc}>{kres?.ad || 'Kreş'} için kullanım durumu</Text>
         </View>
 
         <View style={styles.statusCard}>
@@ -276,14 +281,14 @@ export default function AdminSubscriptionScreen() {
         <View style={styles.planRow}>
           <PlanCard
             title="Aylık"
-            price="1.000 TL"
+            price={formatPrice(MONTHLY_PRICE)}
             period="/ ay"
             desc="Her ay yenilenir"
             onPress={() => selectPlan('aylik')}
           />
           <PlanCard
             title="Yıllık"
-            price="10.000 TL"
+            price={formatPrice(YEARLY_PRICE)}
             period="/ yıl"
             desc="2 ay avantajlı"
             featured
@@ -309,7 +314,7 @@ export default function AdminSubscriptionScreen() {
 
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>RevenueCat Hazırlığı</Text>
-          <Text style={styles.noteText}>Ürün ID önerisi: yumurcak_aylik ve yumurcak_yillik</Text>
+          <Text style={styles.noteText}>Ürün ID önerisi: yumurcak_aylik_1500 ve yumurcak_yillik_15000</Text>
           <Text style={styles.noteText}>Entitlement: premium</Text>
           <Text style={styles.noteText}>Şimdilik gerçek ödeme yok; manuel/demo sistem hazır.</Text>
         </View>
