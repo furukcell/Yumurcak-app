@@ -11,6 +11,7 @@ import { ref, onValue, set, push } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { createUserNotification } from '../../services/notificationCenter';
 
 const DURUMLAR = ['bekliyor', 'odendi', 'gecikti'];
 const DURUM_ETIKET = { bekliyor: '⏳ Bekliyor', odendi: '✅ Ödendi', gecikti: '❗ Gecikti' };
@@ -193,9 +194,23 @@ export default function PaymentFormScreen() {
         updatedAt: Date.now(),
       };
 
-      if (duzenleme) await set(ref(database, `odemeler/${paymentId}`), veri);
-      else await push(ref(database, 'odemeler'), veri);
-      navigation.goBack();
+      if (duzenleme) {
+  await set(ref(database, `odemeler/${paymentId}`), veri);
+} else {
+  await push(ref(database, 'odemeler'), veri);
+
+  await createUserNotification({
+    kresId,
+    userIds: finalVeliIds,
+    baslik: '💳 Yeni ödeme kaydı',
+    mesaj: `${childName(cocuk)} için ${monthLabel(finalAy, finalYil)} dönemine ait ${formatMoney(finalTutar)} ödeme kaydı oluşturuldu.`,
+    tip: 'odeme',
+    routeName: 'ParentPayments',
+    createdBy: kullanici?.uid || kullanici?.id || '',
+  });
+}
+
+navigation.goBack();
     } catch (e) {
       Alert.alert('Hata', 'Kayıt sırasında bir sorun oluştu.');
     } finally {
