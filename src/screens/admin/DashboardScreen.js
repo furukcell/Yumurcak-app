@@ -2,6 +2,7 @@
 // YUMURCAK — DashboardScreen.js
 // FAZ 10: Firebase Auth Geçişi menüsü eklendi
 // TEMA: Tema Ayarları menüsü eklendi
+// FAZ 1: Admin ana ekran taşma/sığma düzeltmeleri
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -122,9 +123,13 @@ export default function DashboardScreen() {
             <View style={styles.logoCircle}>
               <Text style={styles.logoEmoji}>🍼</Text>
             </View>
-            <View>
-              <Text style={styles.appName}>{kresAdi}</Text>
-              <Text style={styles.panelLabel}>Yumurcak Yönetim Paneli</Text>
+            <View style={styles.topTitleBlock}>
+              <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
+                {kresAdi}
+              </Text>
+              <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">
+                Yumurcak Yönetim Paneli
+              </Text>
             </View>
           </View>
           <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
@@ -135,8 +140,12 @@ export default function DashboardScreen() {
         <View style={styles.welcomeCard}>
           <View style={styles.welcomeLeft}>
             <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
-            <Text style={styles.welcomeName}>{adSoyad}</Text>
-            <Text style={styles.welcomeSub}>{getSubscriptionText(abonelik)}</Text>
+            <Text style={styles.welcomeName} numberOfLines={1} ellipsizeMode="tail">
+              {adSoyad}
+            </Text>
+            <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">
+              {getSubscriptionText(abonelik)}
+            </Text>
           </View>
           <View style={styles.welcomeIcon}>
             <Text style={styles.welcomeIconText}>👑</Text>
@@ -153,8 +162,12 @@ export default function DashboardScreen() {
             {OZET_ITEMS.map((item) => (
               <View key={item.key} style={styles.ozetKart}>
                 <Text style={styles.ozetIcon}>{item.icon}</Text>
-                <Text style={[styles.ozetSayi, { color: item.color }]}>{istatistik[item.key]}</Text>
-                <Text style={styles.ozetLabel}>{item.label}</Text>
+                <Text style={[styles.ozetSayi, { color: item.color }]} numberOfLines={1}>
+                  {istatistik[item.key]}
+                </Text>
+                <Text style={styles.ozetLabel} numberOfLines={1}>
+                  {item.label}
+                </Text>
               </View>
             ))}
           </View>
@@ -172,8 +185,12 @@ export default function DashboardScreen() {
               <Text style={styles.menuIcon}>{item.icon}</Text>
             </View>
             <View style={styles.menuTextBlock}>
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuDesc}>{item.desc}</Text>
+              <Text style={styles.menuTitle} numberOfLines={1} ellipsizeMode="tail">
+                {item.title}
+              </Text>
+              <Text style={styles.menuDesc} numberOfLines={2} ellipsizeMode="tail">
+                {item.desc}
+              </Text>
             </View>
             <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
           </TouchableOpacity>
@@ -194,33 +211,34 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   screen: { flex: 1, backgroundColor: THEME.bg },
   scrollContent: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 40 },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  logoCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 10 },
+  topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
+  topTitleBlock: { flex: 1, minWidth: 0 },
+  logoCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 },
   logoEmoji: { fontSize: 22 },
-  appName: { fontSize: 21, fontWeight: '900', color: THEME.primary },
-  panelLabel: { fontSize: 12, color: THEME.muted, fontWeight: '700' },
-  cikisBtn: { backgroundColor: THEME.card, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: THEME.border },
-  cikisBtnText: { color: THEME.primary, fontWeight: '900' },
+  appName: { fontSize: 20, fontWeight: '900', color: THEME.primary, flexShrink: 1 },
+  panelLabel: { fontSize: 12, color: THEME.muted, fontWeight: '700', flexShrink: 1 },
+  cikisBtn: { backgroundColor: THEME.card, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, flexShrink: 0 },
+  cikisBtnText: { color: THEME.primary, fontWeight: '900', fontSize: 13 },
   welcomeCard: { backgroundColor: THEME.primary, borderRadius: 24, padding: 20, marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  welcomeLeft: { flex: 1 },
+  welcomeLeft: { flex: 1, minWidth: 0 },
   welcomeGreeting: { color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
-  welcomeName: { color: '#fff', fontSize: 23, fontWeight: '900', marginTop: 4 },
-  welcomeSub: { color: 'rgba(255,255,255,0.78)', marginTop: 4, fontWeight: '700' },
-  welcomeIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  welcomeName: { color: '#fff', fontSize: 23, fontWeight: '900', marginTop: 4, flexShrink: 1 },
+  welcomeSub: { color: 'rgba(255,255,255,0.78)', marginTop: 4, fontWeight: '700', flexShrink: 1 },
+  welcomeIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginLeft: 12, flexShrink: 0 },
   welcomeIconText: { fontSize: 30 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12, marginTop: 6 },
   loadingBox: { backgroundColor: THEME.card, borderRadius: 18, padding: 20, alignItems: 'center', marginBottom: 18 },
   ozetGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
-  ozetKart: { width: '48%', backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
+  ozetKart: { width: '48%', minWidth: 0, backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
   ozetIcon: { fontSize: 27 },
-  ozetSayi: { fontSize: 24, fontWeight: '900', marginTop: 4 },
-  ozetLabel: { color: THEME.muted, fontWeight: '800', marginTop: 2 },
+  ozetSayi: { fontSize: 24, fontWeight: '900', marginTop: 4, maxWidth: '100%' },
+  ozetLabel: { color: THEME.muted, fontWeight: '800', marginTop: 2, maxWidth: '100%' },
   menuKart: { backgroundColor: THEME.card, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, flexDirection: 'row', alignItems: 'center' },
-  menuIconWrapper: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  menuIconWrapper: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 12, flexShrink: 0 },
   menuIcon: { fontSize: 24 },
-  menuTextBlock: { flex: 1 },
-  menuTitle: { fontSize: 16, fontWeight: '900', color: THEME.text },
-  menuDesc: { color: THEME.muted, marginTop: 3, fontWeight: '600' },
-  menuArrow: { fontSize: 28, fontWeight: '900' },
+  menuTextBlock: { flex: 1, minWidth: 0 },
+  menuTitle: { fontSize: 16, fontWeight: '900', color: THEME.text, flexShrink: 1 },
+  menuDesc: { color: THEME.muted, marginTop: 3, fontWeight: '600', fontSize: 13, lineHeight: 18, flexShrink: 1 },
+  menuArrow: { fontSize: 28, fontWeight: '900', marginLeft: 8, flexShrink: 0 },
 });
