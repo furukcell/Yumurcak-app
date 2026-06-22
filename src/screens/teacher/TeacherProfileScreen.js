@@ -29,7 +29,17 @@ export default function TeacherProfileScreen() {
           <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon || '-'} />
           <InfoRow icon="👤" label="Kullanıcı Adı" value={kullanici?.kullaniciAdi || '-'} />
         </View>
+        <View style={styles.card}>
+       <InfoRow icon="⚖️" label="Yasal Metinler" value="Kullanım Şartları / Gizlilik / KVKK" />
 
+       <TouchableOpacity
+       style={styles.legalButton}
+       onPress={() => navigation.navigate('LegalDocuments')}
+       activeOpacity={0.85}
+     >
+    <Text style={styles.legalText}>Yasal Metinleri Gör</Text>
+  </TouchableOpacity>
+</View>
         <TouchableOpacity style={styles.logoutButton} onPress={cikisYap} activeOpacity={0.85}>
           <Text style={styles.logoutText}>Çıkış Yap</Text>
         </TouchableOpacity>
