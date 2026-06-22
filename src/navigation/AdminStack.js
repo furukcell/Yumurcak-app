@@ -15,6 +15,7 @@ import AnnouncementListScreen from '../screens/admin/AnnouncementListScreen';
 import AnnouncementFormScreen from '../screens/admin/AnnouncementFormScreen';
 import PaymentListScreen from '../screens/admin/PaymentListScreen';
 import PaymentFormScreen from '../screens/admin/PaymentFormScreen';
+import PollManagementScreen from '../screens/admin/PollManagementScreen';
 import LessonScheduleListScreen from '../screens/admin/LessonScheduleListScreen';
 import LessonScheduleFormScreen from '../screens/admin/LessonScheduleFormScreen';
 import EventListScreen from '../screens/admin/EventListScreen';
@@ -56,6 +57,7 @@ export default function AdminStack() {
     stackScreen('AnnouncementForm', AnnouncementFormScreen, { title: 'Duyuru Oluştur' }),
     stackScreen('PaymentList', PaymentListScreen, { title: 'Ödemeler' }),
     stackScreen('PaymentForm', PaymentFormScreen, { title: 'Ödeme Ekle/Düzenle' }),
+    stackScreen('PollManagement', PollManagementScreen, { title: 'Anket Yönetimi' }),
     stackScreen('LessonScheduleList', LessonScheduleListScreen, { title: 'Ders Programı' }),
     stackScreen('LessonScheduleForm', LessonScheduleFormScreen, { title: 'Programı Düzenle' }),
     stackScreen('EventList', EventListScreen, { title: 'Etkinlikler' }),
