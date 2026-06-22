@@ -7,6 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Pla
 import { useNavigation } from '@react-navigation/native';
 import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import ThemedBackground from '../../components/ThemedBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
 
 const MENU = [
@@ -37,44 +38,46 @@ export default function TeacherDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.topBar}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
-            <Text style={styles.panelLabel}>Öğretmen Paneli</Text>
-            <Text style={styles.subtitle}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
-          </View>
-          <View style={styles.headerActions}>
-         <AppNotificationButton navigation={navigation} />
-         <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
-        </View>
-        </View>
-
-        {currentClass ? (
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>{currentClass.ad || 'Sınıfım'}</Text>
-            <Text style={styles.heroSub}>Bugünkü sınıf özeti</Text>
-            <View style={styles.statsRow}>
-              {renderStat(styles, 'Çocuk', classChildren.length)}
-              {renderStat(styles, 'Rapor', todayReports)}
-              {renderStat(styles, 'Yoklama', todayAttendance)}
+      <ThemedBackground>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.topBar}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.title} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
+              <Text style={styles.panelLabel}>Öğretmen Paneli</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <AppNotificationButton navigation={navigation} />
+              <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
             </View>
           </View>
-        ) : (
-          <EmptyState icon="🏫" title="Sınıf ataması bulunamadı" desc="Yönetici öğretmeni bir sınıfa bağladığında panel aktifleşir." />
-        )}
 
-        <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
-        <View style={styles.grid}>
-          {MENU.map((item) => (
-            <TouchableOpacity key={item.title} style={styles.menuCard} onPress={() => navigation.navigate(item.route)} activeOpacity={0.85}>
-              <Text style={styles.menuIcon}>{item.icon}</Text>
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuDesc}>{item.desc}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+          {currentClass ? (
+            <View style={styles.hero}>
+              <Text style={styles.heroTitle}>{currentClass.ad || 'Sınıfım'}</Text>
+              <Text style={styles.heroSub}>Bugünkü sınıf özeti</Text>
+              <View style={styles.statsRow}>
+                {renderStat(styles, 'Çocuk', classChildren.length)}
+                {renderStat(styles, 'Rapor', todayReports)}
+                {renderStat(styles, 'Yoklama', todayAttendance)}
+              </View>
+            </View>
+          ) : (
+            <EmptyState icon="🏫" title="Sınıf ataması bulunamadı" desc="Yönetici öğretmeni bir sınıfa bağladığında panel aktifleşir." />
+          )}
+
+          <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
+          <View style={styles.grid}>
+            {MENU.map((item) => (
+              <TouchableOpacity key={item.title} style={styles.menuCard} onPress={() => navigation.navigate(item.route)} activeOpacity={0.85}>
+                <Text style={styles.menuIcon}>{item.icon}</Text>
+                <Text style={styles.menuTitle}>{item.title}</Text>
+                <Text style={styles.menuDesc}>{item.desc}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </ThemedBackground>
     </SafeAreaView>
   );
 }
@@ -94,10 +97,10 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.bg,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
-  screen: { flex: 1, backgroundColor: theme.bg },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: 18, paddingBottom: 56 },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 10 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   title: { fontSize: 23, fontWeight: '900', color: theme.primary },
   panelLabel: { marginTop: 2, fontSize: 12, color: theme.muted, fontWeight: '800' },
   subtitle: { marginTop: 4, fontSize: 14, color: theme.muted, fontWeight: '700' },
