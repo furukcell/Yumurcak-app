@@ -155,7 +155,20 @@ export default function ParentProfileScreen({ navigation }) {
         <InfoRow icon="🏫" label="Sınıf" value={sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifId} />
         <InfoRow icon="👩‍🏫" label="Öğretmen" value={`${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim()} />
       </View>
+      <View style={styles.card}>
+  <Text style={styles.cardTitle}>⚖️ Yasal Metinler</Text>
+  <Text style={styles.cardText}>
+    Kullanım şartları, gizlilik politikası ve KVKK aydınlatma metni.
+  </Text>
 
+  <TouchableOpacity
+    style={styles.secondaryButton}
+    onPress={() => navigation.navigate('LegalDocuments')}
+    activeOpacity={0.85}
+  >
+    <Text style={styles.secondaryButtonText}>Yasal Metinleri Gör</Text>
+  </TouchableOpacity>
+</View>
       <TouchableOpacity style={styles.secondaryButton} onPress={cikisYap} activeOpacity={0.85}>
         <Text style={styles.secondaryButtonText}>↩ Çıkış Yap</Text>
       </TouchableOpacity>
