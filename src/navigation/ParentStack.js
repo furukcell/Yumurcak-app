@@ -29,6 +29,7 @@ import ParentPaymentsScreen from '../screens/parent/ParentPaymentsScreen';
 import ParentPollsScreen from '../screens/parent/ParentPollsScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import { useAppTheme } from '../theme/ThemeProvider';
+import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -111,6 +112,7 @@ export default function ParentStack() {
         <Stack.Screen name="ParentPayments" component={ParentPaymentsScreen} />
         <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
         <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
+        <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
       </Stack.Navigator>
     </View>
   );
