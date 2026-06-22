@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — TeacherStack.js
-// Öğretmen navigasyon stack'i - FAZ 1 mesajlaşma
+// Öğretmen navigasyon stack'i
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -16,6 +16,7 @@ import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
 import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
+import TeacherGalleryScreen from '../screens/teacher/TeacherGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 
 const Stack = createNativeStackNavigator();
@@ -33,6 +34,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
       <Stack.Screen name="TeacherAnnouncements" component={TeacherAnnouncementsScreen} />
       <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
+      <Stack.Screen name="TeacherGallery" component={TeacherGalleryScreen} />
       <Stack.Screen name="TeacherProfile" component={TeacherProfileScreen} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
     </Stack.Navigator>
