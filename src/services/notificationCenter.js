@@ -1,5 +1,6 @@
-import { onValue, push, ref, serverTimestamp, update } from 'firebase/database';
+import { get, onValue, push, ref, serverTimestamp, update } from 'firebase/database';
 import { database } from '../config/firebase';
+import { sendNotification } from '../utils/notifications';
 
 const PATH = 'bildirimler';
 
@@ -19,6 +20,28 @@ function cleanObject(value = {}) {
     if (item !== undefined && item !== null && item !== '') acc[key] = item;
     return acc;
   }, {});
+}
+
+function unique(values = []) {
+  return Array.from(new Set(values.filter(Boolean).map(String)));
+}
+
+function normalizeRole(role) {
+  const value = String(role || '').trim().toLowerCase();
+  if (!value) return '';
+  if (value === 'admin') return 'yonetici';
+  if (value === 'yönetici') return 'yonetici';
+  if (value === 'öğretmen') return 'ogretmen';
+  if (value === 'teacher') return 'ogretmen';
+  if (value === 'parent') return 'veli';
+  return value;
+}
+
+function roleMatches(userRole, targetRoles = []) {
+  const normalizedTargets = targetRoles.map(normalizeRole).filter(Boolean);
+  if (!normalizedTargets.length) return false;
+  if (normalizedTargets.includes('all') || normalizedTargets.includes('herkes')) return true;
+  return normalizedTargets.includes(normalizeRole(userRole));
 }
 
 function item(id, data = {}) {
@@ -48,7 +71,7 @@ export function visibleToUser(bildirim, kullanici = {}) {
   if (userIds.length) return userIds.includes(String(userKey)) || (authKey && userIds.includes(String(authKey)));
 
   const roles = [...arr(bildirim.hedefRol), ...arr(bildirim.hedefRoller)];
-  if (roles.length && !roles.includes('all') && !roles.includes('herkes') && !roles.includes(String(role))) return false;
+  if (roles.length && !roles.includes('all') && !roles.includes('herkes') && !roles.map(normalizeRole).includes(normalizeRole(role))) return false;
 
   const sinifIds = [...arr(bildirim.hedefSinifIds), ...arr(bildirim.sinifIds)];
   if (sinifIds.length && sinifId && !sinifIds.includes(String(sinifId))) return false;
@@ -73,6 +96,66 @@ export function listenNotifications(kullanici, callback) {
   });
 }
 
+async function getTargetPushTokens(payload = {}) {
+  const usersSnap = await get(ref(database, 'kullanicilar'));
+  const users = usersSnap.val() || {};
+  const targetUserIds = unique([...arr(payload.hedefUserIds), ...arr(payload.kullaniciIds)]);
+  const targetRoles = unique([...arr(payload.hedefRol), ...arr(payload.hedefRoller)]);
+  const targetSinifIds = unique([...arr(payload.hedefSinifIds), ...arr(payload.sinifIds)]);
+  const creatorId = String(payload.createdBy || '');
+  const kresId = String(payload.kresId || '');
+  const tokens = [];
+
+  Object.entries(users).forEach(([id, user = {}]) => {
+    const userId = String(id);
+    const authUid = String(user.authUid || '');
+    const userRole = user.rol || '';
+    const userKresId = String(user.kresId || '');
+    const userSinifId = String(user.sinifId || user.sinif || '');
+
+    if (kresId && userKresId && userKresId !== kresId) return;
+    if (creatorId && (creatorId === userId || creatorId === authUid)) return;
+
+    if (targetUserIds.length) {
+      const isTargetUser = targetUserIds.includes(userId) || (authUid && targetUserIds.includes(authUid));
+      if (!isTargetUser) return;
+    } else if (targetRoles.length) {
+      if (!roleMatches(userRole, targetRoles)) return;
+    } else if (targetSinifIds.length) {
+      if (!userSinifId || !targetSinifIds.includes(userSinifId)) return;
+    } else {
+      return;
+    }
+
+    if (targetSinifIds.length && userSinifId && !targetSinifIds.includes(userSinifId)) return;
+
+    const token = user.pushToken || user.expoPushToken || user.notificationToken;
+    if (token) tokens.push(String(token));
+  });
+
+  return unique(tokens);
+}
+
+export async function sendPushForNotification(notificationId, payload = {}) {
+  try {
+    const tokens = await getTargetPushTokens(payload);
+    if (!tokens.length) return;
+
+    const title = payload.baslik || payload.title || 'Bildirim';
+    const body = payload.mesaj || payload.aciklama || '';
+    const data = {
+      notificationId,
+      tip: payload.tip || 'genel',
+      routeName: payload.routeName || '',
+      routeParams: payload.routeParams || {},
+    };
+
+    await Promise.all(tokens.map((token) => sendNotification(token, title, body, data)));
+  } catch (error) {
+    console.warn('Push bildirim gönderilemedi:', error?.message || error);
+  }
+}
+
 export async function createNotification(payload = {}) {
   const now = Date.now();
   const data = cleanObject({
@@ -93,7 +176,9 @@ export async function createNotification(payload = {}) {
     okunduBy: {},
   });
 
-  await push(ref(database, PATH), data);
+  const notificationRef = await push(ref(database, PATH), data);
+  await sendPushForNotification(notificationRef.key, data);
+  return notificationRef.key;
 }
 
 export async function createRoleNotification({ kresId, role, roles, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
