@@ -31,58 +31,101 @@ const THEME = {
   border: '#EEEAF8',
 };
 
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function toList(data) {
+  return Object.entries(safeObject(data)).map(([id, item]) => ({ id, ...safeObject(item) }));
+}
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
+
 function cleanOptions(raw) {
-  return raw
+  return String(raw || '')
     .split('\n')
     .map((x) => x.trim())
     .filter(Boolean);
 }
 
+function normalizeOptions(value) {
+  if (typeof value === 'string') return cleanOptions(value);
+  return asArray(value).map((option, index) => getOptionLabel(option, index)).filter(Boolean);
+}
+
 function formatDate(value) {
   if (!value) return '';
   if (typeof value === 'number') {
-    try {
-      return new Date(value).toLocaleDateString('tr-TR');
-    } catch (e) {
-      return '';
-    }
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('tr-TR');
   }
   return String(value);
 }
 
 function getOptionLabel(option, index) {
   if (typeof option === 'string') return option;
-  return option?.label || option?.text || `Seçenek ${index + 1}`;
+  const obj = safeObject(option);
+  return obj.label || obj.text || obj.value || obj.baslik || `Seçenek ${index + 1}`;
+}
+
+function getAnswerValue(answer) {
+  if (typeof answer === 'string') return answer;
+  const obj = safeObject(answer);
+  return obj.secenek || obj.cevap || obj.answer || obj.value || obj.label || '';
 }
 
 export default function PollManagementScreen() {
   const { kullanici } = useAuth();
-  const kresId = kullanici?.kresId || 'default-kres';
+  const kresId = kullanici?.kresId || kullanici?.kurumId || null;
 
   const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  const [errorText, setErrorText] = useState('');
 
   const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [seceneklerText, setSeceneklerText] = useState('Evet\nHayır');
 
   useEffect(() => {
-    const unsub = onValue(ref(database, 'anketler'), (snap) => {
-      const data = snap.val() || {};
-      const list = Object.entries(data)
-        .map(([id, item]) => ({ id, ...item }))
-        .filter((item) => !item.kresId || item.kresId === kresId)
-        .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-      setPolls(list);
-      setLoading(false);
-    });
+    setLoading(true);
+    const unsub = onValue(
+      ref(database, 'anketler'),
+      (snap) => {
+        const list = toList(snap.val())
+          .filter((item) => {
+            if (!kresId) return true;
+            return !item.kresId || item.kresId === kresId || item.kurumId === kresId;
+          })
+          .map((item) => ({
+            ...item,
+            baslik: item.baslik || item.title || 'Anket',
+            aciklama: item.aciklama || item.description || '',
+            secenekler: normalizeOptions(item.secenekler || item.options || item.choices),
+            cevaplar: safeObject(item.cevaplar || item.answers || item.responses),
+          }))
+          .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0));
+        setPolls(list);
+        setErrorText('');
+        setLoading(false);
+      },
+      () => {
+        setPolls([]);
+        setErrorText('Anket kayıtları okunamadı.');
+        setLoading(false);
+      }
+    );
     return () => unsub();
   }, [kresId]);
 
   const toplamAktif = useMemo(() => polls.filter((x) => x.aktif !== false).length, [polls]);
-  const toplamCevap = useMemo(() => polls.reduce((sum, p) => sum + Object.keys(p.cevaplar || {}).length, 0), [polls]);
+  const toplamCevap = useMemo(() => polls.reduce((sum, p) => sum + Object.keys(safeObject(p.cevaplar)).length, 0), [polls]);
 
   async function createPoll() {
     const title = baslik.trim();
@@ -95,9 +138,13 @@ export default function PollManagementScreen() {
     try {
       await push(ref(database, 'anketler'), {
         kresId,
+        kurumId: kresId,
         baslik: title,
+        title,
         aciklama: aciklama.trim() || '',
+        description: aciklama.trim() || '',
         secenekler: options,
+        options,
         aktif: true,
         cevaplar: {},
         createdAt: Date.now(),
@@ -115,7 +162,7 @@ export default function PollManagementScreen() {
   }
 
   async function toggleActive(item) {
-    if (!item?.id) return;
+    if (!item?.id || busyId) return;
     setBusyId(item.id);
     try {
       await update(ref(database, `anketler/${item.id}`), {
@@ -130,7 +177,7 @@ export default function PollManagementScreen() {
   }
 
   async function deletePoll(item) {
-    if (!item?.id) return;
+    if (!item?.id || busyId) return;
     Alert.alert(
       'Anket silinsin mi?',
       'Bu işlem anketi ve cevaplarını tamamen siler.',
@@ -155,17 +202,16 @@ export default function PollManagementScreen() {
   }
 
   function renderResults(item) {
-    const options = item.secenekler || item.options || [];
-    const cevaplar = Object.values(item.cevaplar || {});
+    const options = normalizeOptions(item.secenekler || item.options || item.choices);
+    const cevaplar = Object.values(safeObject(item.cevaplar || item.answers || item.responses));
     const total = cevaplar.length;
 
     if (options.length === 0) {
-      return <Text style={styles.resultEmpty}>Seçenek yok</Text>;
+      return <Text style={styles.resultEmpty}>Bu anket için seçenek eklenmemiş</Text>;
     }
 
-    return options.map((option, index) => {
-      const label = getOptionLabel(option, index);
-      const count = cevaplar.filter((c) => c?.secenek === label || c?.cevap === label).length;
+    return options.map((label, index) => {
+      const count = cevaplar.filter((c) => getAnswerValue(c) === label).length;
       const percent = total > 0 ? Math.round((count / total) * 100) : 0;
 
       return (
@@ -183,12 +229,13 @@ export default function PollManagementScreen() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={THEME.primary} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={THEME.primary} /><Text style={styles.loadingText}>Anketler yükleniyor...</Text></View>;
   }
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
         <View style={styles.summaryRow}>
           <View style={styles.summaryBox}>
             <Text style={styles.summaryNumber}>{polls.length}</Text>
@@ -247,7 +294,7 @@ export default function PollManagementScreen() {
           </View>
         ) : (
           polls.map((item) => {
-            const cevapSayisi = Object.keys(item.cevaplar || {}).length;
+            const cevapSayisi = Object.keys(safeObject(item.cevaplar)).length;
             const active = item.aktif !== false;
             const busy = busyId === item.id;
 
@@ -255,8 +302,8 @@ export default function PollManagementScreen() {
               <View key={item.id} style={styles.pollCard}>
                 <View style={styles.pollHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.pollTitle}>{item.baslik || item.title || 'Anket'}</Text>
-                    {item.aciklama || item.description ? <Text style={styles.pollDesc}>{item.aciklama || item.description}</Text> : null}
+                    <Text style={styles.pollTitle}>{item.baslik || 'Anket'}</Text>
+                    {item.aciklama ? <Text style={styles.pollDesc}>{item.aciklama}</Text> : null}
                     <Text style={styles.pollMeta}>{formatDate(item.createdAt)} · {cevapSayisi} cevap</Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: active ? '#E8F9EF' : '#F1F1F4' }]}>
@@ -298,6 +345,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: THEME.bg },
+  loadingText: { marginTop: 10, color: THEME.muted, fontWeight: '800' },
+  errorText: { backgroundColor: '#FFF1F3', color: THEME.red, padding: 10, borderRadius: 12, marginBottom: 12, fontWeight: '800' },
   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   summaryBox: { flex: 1, backgroundColor: THEME.card, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   summaryNumber: { fontSize: 22, fontWeight: '900', color: THEME.primary },
@@ -312,27 +361,27 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 18 },
   saveText: { color: '#fff', fontWeight: '900', fontSize: 14 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
-  emptyCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 26, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  emptyCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   emptyIcon: { fontSize: 42, marginBottom: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '900', color: THEME.text },
-  emptyDesc: { fontSize: 13, color: THEME.muted, fontWeight: '700', marginTop: 4, textAlign: 'center' },
-  pollCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
-  pollHeader: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
+  emptyDesc: { color: THEME.muted, fontWeight: '700', marginTop: 6, textAlign: 'center' },
+  pollCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  pollHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   pollTitle: { fontSize: 16, fontWeight: '900', color: THEME.text },
-  pollDesc: { fontSize: 12.5, lineHeight: 18, color: THEME.muted, fontWeight: '700', marginTop: 5 },
-  pollMeta: { fontSize: 11, color: THEME.muted, fontWeight: '800', marginTop: 7 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  pollDesc: { fontSize: 13, color: THEME.muted, fontWeight: '700', marginTop: 4, lineHeight: 18 },
+  pollMeta: { fontSize: 11, color: THEME.muted, fontWeight: '700', marginTop: 6 },
+  statusBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8 },
   statusText: { fontSize: 11, fontWeight: '900' },
-  resultsBox: { marginTop: 14, gap: 9 },
-  resultRow: { gap: 5 },
-  resultTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  resultLabel: { flex: 1, fontSize: 12.5, fontWeight: '900', color: THEME.text },
-  resultCount: { fontSize: 11, fontWeight: '800', color: THEME.muted },
-  resultEmpty: { color: THEME.muted, fontWeight: '700' },
-  barBg: { height: 8, borderRadius: 10, backgroundColor: '#F0EEF8', overflow: 'hidden' },
-  barFill: { height: 8, borderRadius: 10, backgroundColor: THEME.primary },
-  actionsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  actionBtn: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  resultsBox: { backgroundColor: '#FAF9FF', borderRadius: 14, padding: 12, marginBottom: 12 },
+  resultEmpty: { color: THEME.muted, fontWeight: '800', textAlign: 'center' },
+  resultRow: { marginBottom: 10 },
+  resultTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  resultLabel: { color: THEME.text, fontWeight: '900', flex: 1, paddingRight: 8 },
+  resultCount: { color: THEME.muted, fontWeight: '800', fontSize: 12 },
+  barBg: { height: 8, borderRadius: 999, backgroundColor: '#ECE8F8', overflow: 'hidden' },
+  barFill: { height: 8, borderRadius: 999, backgroundColor: THEME.primary },
+  actionsRow: { flexDirection: 'row', gap: 10 },
+  actionBtn: { flex: 1, borderRadius: 13, paddingVertical: 12, alignItems: 'center' },
   deleteBtn: { backgroundColor: THEME.red },
-  actionText: { color: '#fff', fontWeight: '900', fontSize: 13 },
+  actionText: { color: '#fff', fontWeight: '900' },
 });
