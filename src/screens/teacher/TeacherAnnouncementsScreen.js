@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — TeacherAnnouncementsScreen.js
 // FAZ 3: Öğretmen kendi sınıfı velilerine duyuru oluşturabilir
+// Hedef filtreleme eklendi
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import {
@@ -30,10 +31,38 @@ export default function TeacherAnnouncementsScreen() {
 
   const visible = useMemo(() => {
     if (!currentClass?.id) return [];
+
     return announcements
       .filter((item) => item.aktif !== false)
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
-      .filter((item) => !item.sinifId || item.sinifId === currentClass.id)
+      .filter((item) => {
+        const targetRole = item.targetRole || item.hedefRol || item.hedefTipi || 'all';
+        const itemClassId = item.sinifId || item.classId || '';
+
+        // Öğretmenin kendi oluşturduğu sınıf velisi duyuruları listede kalsın
+        if (item.olusturanRol === 'ogretmen' && itemClassId === currentClass.id) {
+          return true;
+        }
+
+        // Admin sadece velilere gönderdiyse öğretmen görmesin
+        if (targetRole === 'veli') {
+          return false;
+        }
+
+        // Admin sadece öğretmenlere gönderdiyse öğretmen görsün
+        if (targetRole === 'ogretmen') {
+          return true;
+        }
+
+        // Sınıf bazlı duyuru ise sadece öğretmenin kendi sınıfıysa görsün
+        if (targetRole === 'sinif') {
+          return itemClassId === currentClass.id;
+        }
+
+        // Eski/tüm kurum duyuruları:
+        // sinifId yoksa tüm kurum, varsa sadece kendi sınıfı
+        return !itemClassId || itemClassId === currentClass.id;
+      })
       .sort((a, b) => String(b.createdAt || b.tarih || '').localeCompare(String(a.createdAt || a.tarih || '')));
   }, [announcements, currentClass?.id, kresId]);
 
@@ -51,8 +80,11 @@ export default function TeacherAnnouncementsScreen() {
         olusturanId: teacherId || '',
         olusturanRol: 'ogretmen',
         hedefRol: 'veli',
+        targetRole: 'veli',
         baslik: baslik.trim(),
+        title: baslik.trim(),
         icerik: icerik.trim(),
+        message: icerik.trim(),
         tarih: new Date().toISOString().split('T')[0],
         aktif: true,
         createdAt: Date.now(),
@@ -68,6 +100,16 @@ export default function TeacherAnnouncementsScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const getBadgeText = (item) => {
+    const targetRole = item.targetRole || item.hedefRol || item.hedefTipi || 'all';
+
+    if (item.olusturanRol === 'ogretmen') return 'Sınıf Velilerine';
+    if (targetRole === 'ogretmen') return 'Öğretmen Duyurusu';
+    if (targetRole === 'sinif') return 'Sınıf Duyurusu';
+
+    return 'Kurum Duyurusu';
   };
 
   return (
@@ -111,11 +153,11 @@ export default function TeacherAnnouncementsScreen() {
           visible.map((item) => (
             <View key={item.id} style={styles.card}>
               <View style={styles.cardTop}>
-                <Text style={styles.badge}>{item.olusturanRol === 'ogretmen' ? 'Sınıf Duyurusu' : 'Kurum Duyurusu'}</Text>
+                <Text style={styles.badge}>{getBadgeText(item)}</Text>
                 <Text style={styles.date}>{formatDate(item.tarih)}</Text>
               </View>
               <Text style={styles.title}>{item.baslik || item.title || 'Duyuru'}</Text>
-              <Text style={styles.body}>{item.icerik || item.metin || item.aciklama || '-'}</Text>
+              <Text style={styles.body}>{item.icerik || item.message || item.metin || item.aciklama || '-'}</Text>
             </View>
           ))
         )}
