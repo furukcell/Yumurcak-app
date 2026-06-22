@@ -99,6 +99,18 @@ export function safeObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
+export function getProfilePhotoUrl(user) {
+  return (
+    user?.profilFotoUrl ||
+    user?.profilePhotoUrl ||
+    user?.photoURL ||
+    user?.photoUrl ||
+    user?.avatarUrl ||
+    user?.avatar ||
+    ''
+  );
+}
+
 export function toList(data) {
   if (!data || typeof data !== 'object') return [];
   return Object.entries(data).map(([id, item]) => ({ id, ...safeObject(item) }));
@@ -166,8 +178,17 @@ export function useParentBase() {
     return () => unsub();
   }, []);
 
+  const parentRecord = parentId ? safeObject(kullanicilar[parentId]) : {};
+  const mergedKullanici = {
+    ...safeObject(kullanici),
+    ...parentRecord,
+    uid: kullanici?.uid || parentRecord.uid || parentId,
+    id: kullanici?.id || parentRecord.id || parentId,
+  };
+  const parentPhotoUrl = getProfilePhotoUrl(mergedKullanici);
+
   const selectedChild = children[0] || null;
-  const kresId = selectedChild?.kresId || kullanici?.kresId || null;
+  const kresId = selectedChild?.kresId || mergedKullanici?.kresId || null;
   const sinifId = selectedChild?.sinifId || null;
   const sinif = sinifId ? safeObject(siniflar[sinifId]) : null;
   const kres = kresId ? safeObject(kresler[kresId]) : null;
@@ -188,13 +209,15 @@ export function useParentBase() {
     : 'Çocuğum';
 
   const parentName =
-    `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() ||
-    kullanici?.kullaniciAdi ||
-    kullanici?.email ||
+    `${mergedKullanici?.ad || ''} ${mergedKullanici?.soyad || ''}`.trim() ||
+    mergedKullanici?.kullaniciAdi ||
+    mergedKullanici?.email ||
     'Veli';
 
   return {
-    kullanici,
+    kullanici: mergedKullanici,
+    parentRecord,
+    parentPhotoUrl,
     cikisYap,
     parentId,
     children,
