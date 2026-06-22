@@ -5,7 +5,7 @@ import { useAppTheme } from '../theme/ThemeProvider';
 export default function ThemedBackground(props) {
   const { theme } = useAppTheme();
   const backgroundImage = theme?.patternEnabled === false ? null : theme?.backgroundImage;
-  const imageOpacity = typeof theme?.patternOpacity === 'number' ? theme.patternOpacity : 0.2;
+  const imageOpacity = typeof theme?.patternOpacity === 'number' ? theme.patternOpacity : 0.85;
 
   if (!backgroundImage) {
     return React.createElement(
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: {
-    opacity: 0.2,
+    opacity: 0.85,
   },
   content: {
     flex: 1,
