@@ -1,7 +1,7 @@
 // ============================================================
 // DashboardScreen.js
 // Admin ana ekran
-// Tema arka planı + kompakt dashboard
+// Tema arka planı + kompakt dashboard + kurum adı vitrini
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -137,9 +137,14 @@ export default function DashboardScreen() {
               </View>
 
               <View style={styles.topTitleBlock}>
-                <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
-                  {kresAdi}
+                <Text style={styles.brandLabel} numberOfLines={1} ellipsizeMode="tail">
+                  YUMURCAK KREŞ
                 </Text>
+                <View style={styles.brandNamePill}>
+                  <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
+                    {kresAdi}
+                  </Text>
+                </View>
                 <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">
                   Yönetim Paneli
                 </Text>
@@ -201,7 +206,7 @@ export default function DashboardScreen() {
               onPress={() => navigation.navigate(item.screen)}
               activeOpacity={0.8}
             >
-              <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}>
+              <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
                 <Text style={styles.menuIcon}>{item.icon}</Text>
               </View>
 
@@ -231,223 +236,71 @@ function getSubscriptionText(sub) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  scrollContent: {
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 34,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    gap: 8,
-  },
-  topBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    minWidth: 0,
-  },
-  topActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexShrink: 0,
-  },
-  topTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
+  safeArea: { flex: 1, backgroundColor: 'transparent' },
+  screen: { flex: 1, backgroundColor: 'transparent' },
+  scrollContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 34 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
+  topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
+  topTitleBlock: { flex: 1, minWidth: 0 },
   logoCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-    flexShrink: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(108,61,235,0.12)',
-  },
-  logoEmoji: {
-    fontSize: 20,
-  },
-  appName: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: THEME.primary,
-    flexShrink: 1,
-    letterSpacing: 0.2,
-  },
-  panelLabel: {
-    fontSize: 11,
-    color: THEME.muted,
-    fontWeight: '700',
-    flexShrink: 1,
-  },
-  cikisBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderWidth: 1,
-    borderColor: THEME.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  cikisBtnText: {
-    color: THEME.primary,
-    fontWeight: '900',
-    fontSize: 18,
-  },
-  welcomeCard: {
-    backgroundColor: 'rgba(108,61,235,0.96)',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  welcomeLeft: {
-    flex: 1,
-    minWidth: 0,
-  },
-  welcomeGreeting: {
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  welcomeName: {
-    color: '#fff',
-    fontSize: 21,
-    fontWeight: '900',
-    marginTop: 3,
-    flexShrink: 1,
-  },
-  welcomeSub: {
-    color: 'rgba(255,255,255,0.78)',
-    marginTop: 3,
-    fontWeight: '700',
-    fontSize: 12,
-    flexShrink: 1,
-  },
-  welcomeIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-    flexShrink: 0,
-  },
-  welcomeIconText: {
-    fontSize: 27,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: THEME.text,
-    marginBottom: 9,
-    marginTop: 2,
-  },
-  loadingBox: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  ozetGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  ozetKart: {
-    width: '48.5%',
-    minWidth: 0,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    marginBottom: 9,
-    borderWidth: 1,
-    borderColor: 'rgba(238,234,248,0.92)',
-    alignItems: 'center',
-  },
-  ozetIcon: {
-    fontSize: 23,
-  },
-  ozetSayi: {
-    fontSize: 22,
-    fontWeight: '900',
-    marginTop: 3,
-    maxWidth: '100%',
-  },
-  ozetLabel: {
-    color: THEME.muted,
-    fontWeight: '800',
-    marginTop: 1,
-    maxWidth: '100%',
-    fontSize: 12,
-  },
-  menuKart: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 9,
-    borderWidth: 1,
-    borderColor: 'rgba(238,234,248,0.94)',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuIconWrapper: {
     width: 44,
     height: 44,
-    borderRadius: 15,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.94)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 9,
     flexShrink: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(108,61,235,0.16)',
+    shadowColor: '#6C3DEB',
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  menuIcon: {
-    fontSize: 22,
-  },
-  menuTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  menuTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: THEME.text,
-    flexShrink: 1,
-  },
-  menuDesc: {
+  logoEmoji: { fontSize: 22 },
+  brandLabel: {
     color: THEME.muted,
-    marginTop: 2,
-    fontWeight: '600',
-    fontSize: 12,
-    lineHeight: 16,
-    flexShrink: 1,
-  },
-  menuArrow: {
-    fontSize: 26,
     fontWeight: '900',
-    marginLeft: 6,
-    flexShrink: 0,
+    fontSize: 9,
+    letterSpacing: 1.1,
+    marginBottom: 2,
   },
+  brandNamePill: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(108,61,235,0.14)',
+  },
+  appName: { fontSize: 18, fontWeight: '900', color: THEME.primary, flexShrink: 1, letterSpacing: 0.1 },
+  panelLabel: { fontSize: 11, color: THEME.muted, fontWeight: '700', flexShrink: 1, marginTop: 2 },
+  cikisBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.95)', borderWidth: 1, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  cikisBtnText: { color: THEME.primary, fontWeight: '900', fontSize: 18 },
+  welcomeCard: { backgroundColor: 'rgba(108,61,235,0.96)', borderRadius: 20, padding: 16, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  welcomeLeft: { flex: 1, minWidth: 0 },
+  welcomeGreeting: { color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 13 },
+  welcomeName: { color: '#fff', fontSize: 21, fontWeight: '900', marginTop: 3, flexShrink: 1 },
+  welcomeSub: { color: 'rgba(255,255,255,0.78)', marginTop: 3, fontWeight: '700', fontSize: 12, flexShrink: 1 },
+  welcomeIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginLeft: 10, flexShrink: 0 },
+  welcomeIconText: { fontSize: 27 },
+  sectionTitle: { fontSize: 16, fontWeight: '900', color: THEME.text, marginBottom: 9, marginTop: 2 },
+  loadingBox: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 14 },
+  ozetGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 },
+  ozetKart: { width: '48.5%', minWidth: 0, backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 10, marginBottom: 9, borderWidth: 1, borderColor: 'rgba(238,234,248,0.92)', alignItems: 'center' },
+  ozetIcon: { fontSize: 23 },
+  ozetSayi: { fontSize: 22, fontWeight: '900', marginTop: 3, maxWidth: '100%' },
+  ozetLabel: { color: THEME.muted, fontWeight: '800', marginTop: 1, maxWidth: '100%', fontSize: 12 },
+  menuKart: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 16, padding: 12, marginBottom: 9, borderWidth: 1, borderColor: 'rgba(238,234,248,0.94)', flexDirection: 'row', alignItems: 'center' },
+  menuIconWrapper: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 },
+  menuIcon: { fontSize: 22 },
+  menuTextBlock: { flex: 1, minWidth: 0 },
+  menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, flexShrink: 1 },
+  menuDesc: { color: THEME.muted, marginTop: 2, fontWeight: '600', fontSize: 12, lineHeight: 16, flexShrink: 1 },
+  menuArrow: { fontSize: 26, fontWeight: '900', marginLeft: 6, flexShrink: 0 },
 });
