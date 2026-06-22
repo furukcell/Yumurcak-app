@@ -1,8 +1,6 @@
 // ============================================================
-// YUMURCAK — DashboardScreen.js
-// FAZ 10: Firebase Auth Geçişi menüsü eklendi
-// TEMA: Tema Ayarları menüsü eklendi
-// FAZ 1: Admin ana ekran taşma/sığma düzeltmeleri
+// DashboardScreen.js
+// Admin ana ekran
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
@@ -65,7 +63,7 @@ export default function DashboardScreen() {
     ogretmenSayisi: 0,
     veliSayisi: 0,
   });
-  const [kresAdi, setKresAdi] = useState('Yumurcak');
+  const [kresAdi, setKresAdi] = useState('Kurum');
   const [abonelik, setAbonelik] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
 
@@ -128,7 +126,7 @@ export default function DashboardScreen() {
                 {kresAdi}
               </Text>
               <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">
-                Yumurcak Yönetim Paneli
+                Yönetim Paneli
               </Text>
             </View>
           </View>
@@ -181,7 +179,7 @@ export default function DashboardScreen() {
             onPress={() => navigation.navigate(item.screen)}
             activeOpacity={0.8}
           >
-            <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}>
+            <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
               <Text style={styles.menuIcon}>{item.icon}</Text>
             </View>
             <View style={styles.menuTextBlock}>
