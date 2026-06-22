@@ -3,9 +3,10 @@
 // Veli navigasyon stack'i + alt tab bar
 // ============================================================
 import React, { useMemo } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ParentSummaryScreen from '../screens/parent/ParentSummaryScreen';
 import ParentDashboardScreen from '../screens/parent/ParentDashboard';
@@ -32,41 +33,56 @@ import { useAppTheme } from '../theme/ThemeProvider';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function TabIcon({ icon, focused, color }) {
+function TabIcon({ icon, focused, color, compact }) {
   return (
-    <Text style={{ fontSize: focused ? 22 : 20, color }}>{icon}</Text>
+    <Text style={{ fontSize: compact ? (focused ? 20 : 18) : (focused ? 22 : 20), color }}>{icon}</Text>
   );
 }
 
 function ParentTabs() {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const bottomInset = Math.max(insets.bottom || 0, 8);
 
   const tabOptions = useMemo(() => ({
     headerShown: false,
     tabBarActiveTintColor: theme.primary,
     tabBarInactiveTintColor: theme.muted,
+    tabBarHideOnKeyboard: true,
     tabBarStyle: {
-      height: 70,
-      paddingTop: 6,
-      paddingBottom: 8,
+      height: 58 + bottomInset,
+      paddingTop: compact ? 3 : 5,
+      paddingBottom: bottomInset,
       backgroundColor: theme.card,
       borderTopColor: theme.border,
       borderTopWidth: 1,
+      elevation: 10,
+    },
+    tabBarItemStyle: {
+      paddingVertical: 2,
+    },
+    tabBarIconStyle: {
+      marginTop: 1,
     },
     tabBarLabelStyle: {
-      fontSize: 10,
+      fontSize: compact ? 9 : 10,
       fontWeight: '900',
-      marginTop: 2,
+      marginTop: compact ? 0 : 1,
+      marginBottom: 1,
     },
-  }), [theme]);
+  }), [theme, bottomInset, compact]);
+
+  const iconProps = (icon) => ({ focused, color }) => <TabIcon icon={icon} focused={focused} color={color} compact={compact} />;
 
   return (
     <Tab.Navigator initialRouteName="ParentSummary" screenOptions={tabOptions}>
-      <Tab.Screen name="ParentSummary" component={ParentSummaryScreen} options={{ title: 'Özet', tabBarIcon: ({ focused, color }) => <TabIcon icon="📊" focused={focused} color={color} /> }} />
-      <Tab.Screen name="ParentDashboard" component={ParentDashboardScreen} options={{ title: 'Anasayfa', tabBarIcon: ({ focused, color }) => <TabIcon icon="🏠" focused={focused} color={color} /> }} />
-      <Tab.Screen name="ParentReportsTab" component={ParentReportsScreen} options={{ title: 'Raporlar', tabBarIcon: ({ focused, color }) => <TabIcon icon="📋" focused={focused} color={color} /> }} />
-      <Tab.Screen name="ParentDevelopmentTab" component={ParentDevelopmentScreen} options={{ title: 'Gelişim', tabBarIcon: ({ focused, color }) => <TabIcon icon="📈" focused={focused} color={color} /> }} />
-      <Tab.Screen name="ParentMessagesTab" component={ParentMessagesScreen} options={{ title: 'Mesaj', tabBarIcon: ({ focused, color }) => <TabIcon icon="💬" focused={focused} color={color} /> }} />
+      <Tab.Screen name="ParentSummary" component={ParentSummaryScreen} options={{ title: 'Özet', tabBarIcon: iconProps('📊') }} />
+      <Tab.Screen name="ParentDashboard" component={ParentDashboardScreen} options={{ title: compact ? 'Ana' : 'Anasayfa', tabBarIcon: iconProps('🏠') }} />
+      <Tab.Screen name="ParentReportsTab" component={ParentReportsScreen} options={{ title: 'Rapor', tabBarIcon: iconProps('📋') }} />
+      <Tab.Screen name="ParentDevelopmentTab" component={ParentDevelopmentScreen} options={{ title: 'Gelişim', tabBarIcon: iconProps('📈') }} />
+      <Tab.Screen name="ParentMessagesTab" component={ParentMessagesScreen} options={{ title: 'Mesaj', tabBarIcon: iconProps('💬') }} />
     </Tab.Navigator>
   );
 }
