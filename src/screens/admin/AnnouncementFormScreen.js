@@ -13,6 +13,7 @@ import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { createRoleNotification } from '../../services/notificationCenter';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function AnnouncementFormScreen() {
   const route = useRoute();
@@ -25,6 +26,7 @@ export default function AnnouncementFormScreen() {
   const [isUrgent, setIsUrgent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!announcementId);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     if (announcementId) {
@@ -86,9 +88,10 @@ export default function AnnouncementFormScreen() {
     createdBy: kullanici?.uid || kullanici?.id || '',
   });
 }
-      Alert.alert('Başarılı', 'Duyuru gönderildi!', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setSuccessToast(true);
+      setTimeout(() => {
+    navigation.goBack();
+    }, 900);
     } catch (err) {
       Alert.alert('Hata', 'Bir sorun oluştu.');
       console.error(err);
@@ -106,6 +109,13 @@ export default function AnnouncementFormScreen() {
   }
 
   return (
+  <View style={styles.screen}>
+    <AppSuccessToast
+      visible={successToast}
+      message={announcementId ? 'Duyuru güncellendi' : 'Duyuru gönderildi'}
+      onHide={() => setSuccessToast(false)}
+    />
+
     <ScrollView style={styles.container}>
       <View style={styles.form}>
         <View style={styles.field}>
@@ -159,11 +169,13 @@ export default function AnnouncementFormScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+  </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
+  screen: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   form: { padding: 20 },
   field: { marginBottom: 20 },
