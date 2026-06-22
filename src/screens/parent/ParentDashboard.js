@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Pla
 import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
+import AppNotificationButton from '../../components/AppNotificationButton';
 
 export default function ParentDashboardScreen({ navigation }) {
   const base = useParentBase();
@@ -56,14 +57,16 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={styles.logo} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
             <Text style={styles.brandSub}>Veli Paneli</Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton}>
-            {parentPhotoUrl ? (
-              <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
-            ) : (
-              <Text style={styles.profileButtonText}>👤</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+         <View style={styles.headerActions}>
+         <AppNotificationButton navigation={navigation} />
+         <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton}>
+         {parentPhotoUrl ? (
+         <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
+       ) : (
+         <Text style={styles.profileButtonText}>👤</Text>
+       )}
+      </TouchableOpacity>
+   </View>
 
         <Text style={styles.greeting}>Merhaba, {parentName} 👋</Text>
         <Text style={styles.greetingSub}>Bilgi ve işlemlere buradan hızlıca ulaşabilirsin.</Text>
@@ -142,6 +145,7 @@ const createStyles = (theme) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 96 },
   topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo: { color: theme.primary, fontSize: 23, fontWeight: '900' },
   brandSub: { color: theme.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
   profileButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border, overflow: 'hidden' },
