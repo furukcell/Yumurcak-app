@@ -46,15 +46,19 @@ export default function ParentDevelopmentScreen({ navigation }) {
 
     const reports = reportsRaw.filter((item) => item.cocukId === selectedChild.id && isInMonth(item, monthKey));
     const attendance = attendanceRaw.filter((item) => item.cocukId === selectedChild.id && isInMonth(item, monthKey));
-    const physical = physicalRaw
-      .filter((item) => item.cocukId === selectedChild.id && isInMonth(item, monthKey))
-      .sort((a, b) => String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || '')));
+    const physicalAll = physicalRaw
+      .filter((item) => item.cocukId === selectedChild.id)
+      .sort((a, b) => getSortableDate(b) - getSortableDate(a));
+    const physical = physicalAll.filter((item) => isInMonth(item, monthKey));
+    const physicalChart = physicalAll.slice(0, 6).reverse();
+    const lastPhysical = physicalAll[0] || null;
+    const previousPhysical = physicalAll[1] || null;
 
     const events = eventsRaw.filter((item) => {
       if (item.aktif === false) return false;
       if (item.kresId && kresId && item.kresId !== kresId) return false;
-      if (Array.isArray(item.sinifIds) && sinifId) return item.sinifIds.includes(sinifId);
-      if (item.sinifId && sinifId) return item.sinifId === sinifId;
+      if (Array.isArray(item.sinifIds) && sinifId) return item.sinifIds.includes(sinifId) && isInMonth(item, monthKey);
+      if (item.sinifId && sinifId) return item.sinifId === sinifId && isInMonth(item, monthKey);
       return isInMonth(item, monthKey);
     });
 
@@ -93,6 +97,12 @@ export default function ParentDevelopmentScreen({ navigation }) {
       reports,
       attendance,
       physical,
+      physicalAll,
+      physicalChart,
+      lastPhysical,
+      previousPhysical,
+      heightDelta: buildDelta(lastPhysical, previousPhysical, 'boy'),
+      weightDelta: buildDelta(lastPhysical, previousPhysical, 'kilo'),
       events,
       menuDays,
       presentDays,
@@ -198,14 +208,38 @@ export default function ParentDevelopmentScreen({ navigation }) {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Fiziksel Gelişim</Text>
-            {monthly.physical.length === 0 ? (
-              <Text style={styles.cardText}>Bu ay boy/kilo ölçümü girilmemiş.</Text>
+            {monthly.physicalAll.length === 0 ? (
+              <Text style={styles.cardText}>Henüz boy/kilo ölçümü girilmemiş.</Text>
             ) : (
               <>
-                <Text style={styles.cardText}>Son ölçüm: {monthly.physical[0].tarih || '-'}</Text>
-                <Text style={styles.cardText}>Boy: {monthly.physical[0].boy || '-'} cm</Text>
-                <Text style={styles.cardText}>Kilo: {monthly.physical[0].kilo || '-'} kg</Text>
-                {monthly.physical[0].basCevresi ? <Text style={styles.cardText}>Baş çevresi: {monthly.physical[0].basCevresi} cm</Text> : null}
+                <View style={localStyles.physicalSummary}>
+                  <View style={localStyles.physicalBox}>
+                    <Text style={localStyles.physicalLabel}>Son boy</Text>
+                    <Text style={localStyles.physicalValue}>{formatMeasurement(monthly.lastPhysical, 'boy', 'cm')}</Text>
+                    <Text style={localStyles.physicalDelta}>{monthly.heightDelta}</Text>
+                  </View>
+                  <View style={localStyles.physicalBox}>
+                    <Text style={localStyles.physicalLabel}>Son kilo</Text>
+                    <Text style={localStyles.physicalValue}>{formatMeasurement(monthly.lastPhysical, 'kilo', 'kg')}</Text>
+                    <Text style={localStyles.physicalDelta}>{monthly.weightDelta}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.cardText}>Son ölçüm: {formatDate(monthly.lastPhysical)}</Text>
+                {monthly.lastPhysical?.basCevresi ? <Text style={styles.cardText}>Baş çevresi: {monthly.lastPhysical.basCevresi} cm</Text> : null}
+                {monthly.physical.length === 0 ? (
+                  <Text style={localStyles.miniNote}>Bu ay yeni ölçüm yok; aşağıda son kayıtlar gösteriliyor.</Text>
+                ) : (
+                  <Text style={localStyles.miniNote}>Bu ay {monthly.physical.length} fiziksel ölçüm kaydı var.</Text>
+                )}
+
+                <Text style={localStyles.subTitle}>Gelişim görünümü</Text>
+                <PhysicalGrowthChart measurements={monthly.physicalChart} />
+
+                <Text style={localStyles.subTitle}>Son ölçümler</Text>
+                {monthly.physicalAll.slice(0, 6).map((item) => (
+                  <MeasurementRow key={item.id || `${item.tarih}-${item.createdAt}`} item={item} />
+                ))}
               </>
             )}
           </View>
@@ -261,6 +295,58 @@ function ProgressLine({ label, percent: progressPercent, color }) {
   );
 }
 
+function PhysicalGrowthChart({ measurements }) {
+  const clean = (measurements || []).filter((item) => getPhysicalValue(item, 'boy') || getPhysicalValue(item, 'kilo'));
+  if (clean.length === 0) return <Text style={styles.cardText}>Grafik için yeterli ölçüm kaydı yok.</Text>;
+
+  const maxHeight = Math.max(...clean.map((item) => getPhysicalValue(item, 'boy') || 0), 1);
+  const maxWeight = Math.max(...clean.map((item) => getPhysicalValue(item, 'kilo') || 0), 1);
+
+  return (
+    <View style={localStyles.chartBox}>
+      {clean.map((item) => {
+        const height = getPhysicalValue(item, 'boy');
+        const weight = getPhysicalValue(item, 'kilo');
+        return (
+          <View key={item.id || `${item.tarih}-${item.createdAt}`} style={localStyles.chartItem}>
+            <Text style={localStyles.chartDate}>{shortDate(item)}</Text>
+            <MiniBar label="Boy" value={height} max={maxHeight} suffix="cm" color={THEME.primary} />
+            <MiniBar label="Kilo" value={weight} max={maxWeight} suffix="kg" color={THEME.green} />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function MiniBar({ label, value, max, suffix, color }) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  const safePercent = safeValue > 0 && max > 0 ? Math.max(8, Math.round((safeValue / max) * 100)) : 0;
+  return (
+    <View style={localStyles.miniBarRow}>
+      <Text style={localStyles.miniBarLabel}>{label}</Text>
+      <View style={localStyles.miniBarTrack}>
+        <View style={[localStyles.miniBarFill, { width: `${safePercent}%`, backgroundColor: color }]} />
+      </View>
+      <Text style={localStyles.miniBarValue}>{safeValue ? `${safeValue}${suffix}` : '-'}</Text>
+    </View>
+  );
+}
+
+function MeasurementRow({ item }) {
+  return (
+    <View style={localStyles.measurementRow}>
+      <View style={localStyles.measurementDatePill}>
+        <Text style={localStyles.measurementDate}>{shortDate(item)}</Text>
+      </View>
+      <View style={localStyles.measurementInfo}>
+        <Text style={localStyles.measurementMain}>Boy: {formatMeasurement(item, 'boy', 'cm')} · Kilo: {formatMeasurement(item, 'kilo', 'kg')}</Text>
+        {item.basCevresi ? <Text style={localStyles.measurementSub}>Baş çevresi: {item.basCevresi} cm</Text> : null}
+      </View>
+    </View>
+  );
+}
+
 function isInMonth(item, monthKey) {
   const dateKey = getItemDateKey(item);
   return dateKey ? dateKey.startsWith(monthKey) : false;
@@ -279,6 +365,13 @@ function getItemDateKey(item) {
   }
 
   return '';
+}
+
+function getSortableDate(item) {
+  const key = getItemDateKey(item);
+  if (key) return new Date(key).getTime();
+  const raw = Number(item?.createdAt || item?.updatedAt || 0);
+  return Number.isFinite(raw) ? raw : 0;
 }
 
 function normalizeMood(value) {
@@ -331,6 +424,43 @@ function formatSleep(value) {
   if (hours <= 0) return `${minutes} dk`;
   if (minutes <= 0) return `${hours} sa`;
   return `${hours} sa ${minutes} dk`;
+}
+
+function getPhysicalValue(item, key) {
+  const value = item?.[key];
+  if (typeof value === 'number') return value;
+  const text = String(value || '').replace(',', '.');
+  const match = text.match(/\d+(\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function formatMeasurement(item, key, suffix) {
+  const value = getPhysicalValue(item, key);
+  if (!value) return '-';
+  return `${value}${suffix}`;
+}
+
+function buildDelta(current, previous, key) {
+  const now = getPhysicalValue(current, key);
+  const before = getPhysicalValue(previous, key);
+  if (!now || !before) return 'Önceki kayıt yok';
+  const diff = Number((now - before).toFixed(1));
+  if (diff > 0) return `+${diff}`;
+  if (diff < 0) return `${diff}`;
+  return 'Değişim yok';
+}
+
+function formatDate(item) {
+  const key = getItemDateKey(item);
+  return key || '-';
+}
+
+function shortDate(item) {
+  const key = getItemDateKey(item);
+  if (!key) return '-';
+  const parts = key.split('-');
+  if (parts.length < 3) return key;
+  return `${parts[2]}.${parts[1]}`;
 }
 
 function getMoodColor(key) {
@@ -402,4 +532,25 @@ const localStyles = StyleSheet.create({
   progressValue: { color: THEME.muted, fontWeight: '900', fontSize: 12 },
   progressTrack: { height: 9, backgroundColor: THEME.primarySoft, borderRadius: 99, marginTop: 7, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 99 },
+  physicalSummary: { flexDirection: 'row', gap: 10, marginTop: 8, marginBottom: 10 },
+  physicalBox: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: THEME.border },
+  physicalLabel: { color: THEME.muted, fontSize: 12, fontWeight: '800' },
+  physicalValue: { color: THEME.text, fontSize: 20, fontWeight: '900', marginTop: 4 },
+  physicalDelta: { color: THEME.primary, fontSize: 12, fontWeight: '900', marginTop: 4 },
+  miniNote: { color: THEME.muted, fontSize: 12, fontWeight: '700', marginTop: 8, lineHeight: 18 },
+  subTitle: { color: THEME.text, fontWeight: '900', fontSize: 14, marginTop: 16, marginBottom: 8 },
+  chartBox: { backgroundColor: '#FFFFFFAA', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: THEME.border },
+  chartItem: { marginBottom: 12 },
+  chartDate: { color: THEME.text, fontWeight: '900', fontSize: 12, marginBottom: 6 },
+  miniBarRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  miniBarLabel: { width: 32, color: THEME.muted, fontWeight: '900', fontSize: 11 },
+  miniBarTrack: { flex: 1, height: 8, backgroundColor: THEME.primarySoft, borderRadius: 99, overflow: 'hidden' },
+  miniBarFill: { height: '100%', borderRadius: 99 },
+  miniBarValue: { width: 48, textAlign: 'right', color: THEME.text, fontWeight: '900', fontSize: 11 },
+  measurementRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: THEME.border },
+  measurementDatePill: { backgroundColor: THEME.primarySoft, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10 },
+  measurementDate: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  measurementInfo: { flex: 1 },
+  measurementMain: { color: THEME.text, fontWeight: '900', fontSize: 13 },
+  measurementSub: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 2 },
 });
