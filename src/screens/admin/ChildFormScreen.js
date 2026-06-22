@@ -12,6 +12,7 @@ import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function ChildFormScreen() {
   const route = useRoute();
@@ -27,6 +28,7 @@ export default function ChildFormScreen() {
   const [veliler, setVeliler] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     const yukle = async () => {
@@ -88,9 +90,10 @@ export default function ChildFormScreen() {
         createdAt: Date.now(),
       });
 
-      Alert.alert('Başarılı', 'Çocuk kaydedildi', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setSuccessToast(true);
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (error) {
       Alert.alert('Hata', 'Çocuk kaydedilemedi');
       console.error(error);
@@ -108,86 +111,95 @@ export default function ChildFormScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.form}>
+    <View style={styles.screen}>
+      <AppSuccessToast
+        visible={successToast}
+        message={childId ? 'Çocuk bilgileri güncellendi' : 'Çocuk kaydedildi'}
+        onHide={() => setSuccessToast(false)}
+      />
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Çocuk Adı *</Text>
-          <TextInput
-            style={styles.input}
-            value={ad}
-            onChangeText={setAd}
-            placeholder="Örn: Ali Yılmaz"
-            placeholderTextColor="#999"
-          />
+      <ScrollView style={styles.container}>
+        <View style={styles.form}>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Çocuk Adı *</Text>
+            <TextInput
+              style={styles.input}
+              value={ad}
+              onChangeText={setAd}
+              placeholder="Örn: Ali Yılmaz"
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Doğum Tarihi *</Text>
+            <TextInput
+              style={styles.input}
+              value={dogumTarihi}
+              onChangeText={setDogumTarihi}
+              placeholder="2022-05-15"
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Sınıf *</Text>
+            {siniflar.length === 0 ? (
+              <Text style={styles.bilgi}>Önce sınıf oluşturun</Text>
+            ) : (
+              siniflar.map((s) => (
+                <TouchableOpacity
+                  key={s.id}
+                  style={[styles.seciBtn, sinifId === s.id && styles.seciBtnAktif]}
+                  onPress={() => setSinifId(s.id)}
+                >
+                  <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYaziAktif]}>
+                    {s.ad} — {s.yasGrubu}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Veli Bağla (opsiyonel)</Text>
+            {veliler.length === 0 ? (
+              <Text style={styles.bilgi}>Henüz veli yok</Text>
+            ) : (
+              veliler.map((v) => (
+                <TouchableOpacity
+                  key={v.id}
+                  style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtnAktif]}
+                  onPress={() => veliToggle(v.id)}
+                >
+                  <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYaziAktif]}>
+                    {v.ad} ({v.kullaniciAdi})
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.saveButtonText}>{childId ? 'Güncelle' : 'Oluştur'}</Text>
+            }
+          </TouchableOpacity>
+
         </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Doğum Tarihi *</Text>
-          <TextInput
-            style={styles.input}
-            value={dogumTarihi}
-            onChangeText={setDogumTarihi}
-            placeholder="2022-05-15"
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Sınıf *</Text>
-          {siniflar.length === 0 ? (
-            <Text style={styles.bilgi}>Önce sınıf oluşturun</Text>
-          ) : (
-            siniflar.map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.seciBtn, sinifId === s.id && styles.seciBtnAktif]}
-                onPress={() => setSinifId(s.id)}
-              >
-                <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYaziAktif]}>
-                  {s.ad} — {s.yasGrubu}
-                </Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Veli Bağla (opsiyonel)</Text>
-          {veliler.length === 0 ? (
-            <Text style={styles.bilgi}>Henüz veli yok</Text>
-          ) : (
-            veliler.map((v) => (
-              <TouchableOpacity
-                key={v.id}
-                style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtnAktif]}
-                onPress={() => veliToggle(v.id)}
-              >
-                <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYaziAktif]}>
-                  {v.ad} ({v.kullaniciAdi})
-                </Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveButtonText}>{childId ? 'Güncelle' : 'Oluştur'}</Text>
-          }
-        </TouchableOpacity>
-
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   form: { padding: 20 },
