@@ -142,7 +142,13 @@ export default function AdminInstitutionSettingsScreen() {
             <Text style={styles.heroTitle}>Kurum Bilgileri</Text>
             <Text style={styles.heroDesc}>Bu bilgiler veli iletişim ekranına direkt düşer.</Text>
           </View>
-
+          <TouchableOpacity
+           style={styles.legalButton}
+           onPress={() => navigation.navigate('LegalDocuments')}
+           activeOpacity={0.85}
+       >
+          <Text style={styles.legalButtonText}>⚖️ Yasal Metinleri Gör</Text>
+       </TouchableOpacity>
           <FormInput label="Kurum Adı" value={form.ad} onChangeText={(v) => setValue('ad', v)} placeholder="Yumurcak Kreş" />
           <FormInput label="Adres" value={form.adres} onChangeText={(v) => setValue('adres', v)} placeholder="Mahalle, cadde, no..." multiline />
           <FormInput label="Kurum Telefonu" value={form.telefon} onChangeText={(v) => setValue('telefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
