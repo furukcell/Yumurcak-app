@@ -24,7 +24,6 @@ import EventFormScreen from '../screens/admin/EventFormScreen';
 import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSettingsScreen';
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
-import AdminAuthMigrationScreen from '../screens/admin/AdminAuthMigrationScreen';
 import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
@@ -40,7 +39,7 @@ export default function AdminStack() {
     Stack.Navigator,
     { screenOptions: { headerStyle: { backgroundColor: '#3C3489' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: '700' } } },
     stackScreen('Dashboard', DashboardScreen, { headerShown: false }),
-    stackScreen('AuthMigration', AdminAuthMigrationScreen, { headerShown: false }),
+    stackScreen('AdminStatistics', AdminStatisticsScreen, { title: 'Kurum İstatistikleri' }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
