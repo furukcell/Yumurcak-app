@@ -49,7 +49,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemePatternBackground opacity={0.13} />
+      <ThemePatternBackground />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
