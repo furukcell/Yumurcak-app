@@ -2,16 +2,22 @@
 
 Yumurcak Kreş; yönetici, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır.
 
-Proje çalışan MVP seviyesindedir. Build öncesi ana odak; gerçek cihaz testi, yasal metin bağlantıları, galeri akışı, ödeme/abonelik entegrasyonu, bildirimler, RevenueCat ve Firebase güvenlik kurallarıdır.
+Proje çalışan MVP seviyesindedir. Güncel odak; gerçek cihaz testi, kapalı test / production build hazırlığı, Google Play abonelik ürünleri, Firebase güvenlik kuralları ve sonraki faz olarak aylık yemek listesi akışıdır.
+
+> Son durum: 22 Haziran 2026
+
+---
 
 ## Roller
 
 | Rol | Yetki |
 | --- | --- |
 | `superadmin` | Platform ve kreş yönetimi |
-| `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, anket, galeri, yasal metin, abonelik ve istatistik yönetimi |
-| `ogretmen` | Sınıf çocukları, yoklama, günlük rapor, mesaj, galeri paylaşımı, medikal bilgi görüntüleme/güncelleme ve yasal metin görüntüleme |
-| `veli` | Çocuğa ait özet, rapor, ödeme, anket, mesaj, galeri, medikal bilgi ve yasal metin görüntüleme |
+| `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, anket, galeri, tema, abonelik, bildirim, yasal metin ve istatistik yönetimi |
+| `ogretmen` | Sınıf çocukları, yoklama, günlük rapor, mesaj, galeri paylaşımı, yemek listesi, medikal bilgi ve bildirim ekranları |
+| `veli` | Çocuğa ait özet, rapor, ödeme, anket, mesaj, galeri, yemek listesi, medikal bilgi, bildirim ve yasal metin ekranları |
+
+---
 
 ## Güncel Modüller
 
@@ -25,16 +31,84 @@ Proje çalışan MVP seviyesindedir. Build öncesi ana odak; gerçek cihaz testi
 - Yönetici kurum istatistikleri
 - Öğretmen ve çocuk bazlı istatistik/risk ekranı
 - Kurum Zili
+- Duyuru sistemi
 - Ödeme takibi
+- Admin ödeme listesi ve ödeme formu
 - Veli son 12 ay ödeme ekranı
 - Veli günlük / aylık rapor ekranı
-- Admin ödeme listesi ve ödeme formu
+- Öğretmen günlük rapor oluşturma ekranı
+- Yemek listesi görüntüleme / öğretmen günlük yemek listesi girişi
 - Admin abonelik ekranı
 - RevenueCat SDK altyapısı
 - Anket / oylama
 - Mesajlaşma
 - Galeri
+- Uygulama içi bildirim merkezi
+- Expo push notification altyapısı
+- Başarı toast sistemi
 - Uygulama içi yasal metinler: Kullanım Şartları, Gizlilik Politikası, KVKK Aydınlatma Metni
+
+---
+
+## Bildirim Sistemi
+
+Bildirim sistemi 3 katmanlı olacak şekilde hazırlanmıştır.
+
+### FAZ 1 — Uygulama içi bildirim merkezi
+
+Tamamlandı.
+
+- Bildirim merkezi servisi eklendi.
+- Admin, öğretmen ve veli panellerine bildirim butonu eklendi.
+- Ortak bildirim ekranı eklendi.
+- Rol / kullanıcı / kurum bazlı bildirim okuma mantığı eklendi.
+
+### FAZ 2 — Uygulama içi olay bildirimleri
+
+Tamamlandı.
+
+Aşağıdaki işlemler Firebase içine bildirim kaydı oluşturur:
+
+- Admin duyuru oluşturunca veli / öğretmen bildirimleri
+- Admin ödeme kaydı oluşturunca ilgili veliye bildirim
+- Veli kurum zili gönderince admin / öğretmen bildirimi
+- Mesaj gönderilince alıcı kullanıcıya bildirim
+
+### FAZ 3 — Push notification altyapısı
+
+Kod altyapısı hazırlandı; gerçek cihaz testi gerekir.
+
+- Expo push token alma akışı eklendi.
+- Token kullanıcı kaydına yazılacak hale getirildi.
+- Bildirim kaydı oluşturulurken uygun tokenlara Expo push gönderme mantığı eklendi.
+- Fiziksel cihazda izin, token ve push bildirimi test edilmelidir.
+
+---
+
+## Başarı Toast Sistemi
+
+Klasik `Alert.alert('Başarılı')` kullanımını azaltmak için ortak başarı toast componenti eklendi.
+
+Dosya:
+
+```txt
+src/components/AppSuccessToast.js
+```
+
+Toast eklenen ekranlar:
+
+- Admin duyuru formu
+- Admin ödeme formu
+- Admin çocuk formu
+- Admin sınıf formu
+- Admin veli formu
+- Veli medikal bilgi ekranı
+- Veli profil fotoğrafı ekranı
+- Öğretmen günlük rapor ekranı
+
+Bu sistem kayıt/güncelleme sonrası üstten kısa süreli başarılı işlem bildirimi gösterir.
+
+---
 
 ## Abonelik ve RevenueCat
 
@@ -73,7 +147,7 @@ RevenueCat SDK bağımlılığı:
 react-native-purchases
 ```
 
-Şu an kod tarafında yapılanlar:
+Kod tarafında yapılanlar:
 
 - Android public SDK key eklendi.
 - RevenueCat configure altyapısı eklendi.
@@ -100,6 +174,8 @@ RevenueCat bağlantısı:
 ```
 
 Not: Google Play ürünleri ve RevenueCat service account bağlantısı tamamlanmadan gerçek satın alma çalışmaz. Şu an RevenueCat iskeleti ve kod entegrasyonu hazırdır.
+
+---
 
 ## Galeri Modülü
 
@@ -137,6 +213,31 @@ Kurallar:
 - Yönetici / öğretmen galeri ekranı açıldığında süresi dolan kayıtlar temizlenmeye çalışılır.
 - Storage’dan garantili otomatik silme için ileride Firebase Cloud Functions scheduled cleanup önerilir.
 
+---
+
+## Yemek Listesi
+
+Mevcut durum:
+
+- Veli panelinde yemek listesi görüntüleme ekranı vardır.
+- Öğretmen tarafında günlük yemek listesi girişi vardır.
+- Yemek kayıtları `yemekListeleri` node’u üzerinden okunur.
+- Bugünün menüsü tarih eşleşmesiyle veli ekranına çekilebilir.
+
+Önerilen sıradaki geliştirme:
+
+- Admin için aylık yemek listesi ekranı.
+- Admin ay seçip 30/31 günlük kahvaltı / öğle / ara öğün planı girebilir.
+- Yayınla butonu ile her gün için `yemekListeleri` altına günlük kayıt basılır.
+- Böylece mevcut veli günlük yemek ekranı büyük değişiklik istemeden çalışır.
+
+A4/PDF yükleme notu:
+
+- İlk aşamada A4/PDF dosyası ek belge olarak yüklenebilir.
+- Belgeden otomatik menü çıkarma için OCR/AI gerekir; tablo ve fotoğraf kalitesi nedeniyle sonraki faza bırakılması önerilir.
+
+---
+
 ## Yasal Metinler
 
 Uygulama içine aşağıdaki yasal metinler eklenmiştir:
@@ -155,6 +256,8 @@ Yasal metinlere erişim noktaları:
 - Yönetici kurum bilgileri / ayarlar ekranı
 
 Yasal metinlerde galeri içeriklerinin fotoğraf/video içerebileceği ve uygulama içinde 24 saat görünür olacak şekilde tasarlandığı belirtilmiştir. Fiziksel Storage temizliği için sonraki fazda Cloud Functions önerilir.
+
+---
 
 ## Veli Paneli
 
@@ -200,6 +303,8 @@ Veli rapor ekranı:
 - Günlük rapor sekmesi vardır.
 - Aylık özet sekmesi vardır.
 - Aylık özet; öğretmen raporlarından otomatik özet çıkarır, tıbbi/psikolojik tanı değildir.
+
+---
 
 ## Admin Ödeme Modülü
 
@@ -249,6 +354,8 @@ odemeler/{paymentId}
   updatedAt
 ```
 
+---
+
 ## Build Öncesi Test
 
 ```bash
@@ -269,34 +376,46 @@ Test edilecek temel akış:
 1. Admin giriş yapar.
 2. Sınıf, öğretmen, veli ve çocuk bağlantıları kontrol edilir.
 3. Öğretmen günlük rapor ve yoklama girer.
-4. Öğretmen medikal bilgi alanını görüntüler/günceller.
-5. Admin / öğretmen galeriye fotoğraf veya video yükler.
-6. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
-7. Admin ödeme kaydı oluşturur.
-8. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
-9. Admin abonelik ekranında demo/promo/manual abonelik akışını kontrol eder.
-10. RevenueCat ekranında ürün yokken güvenli uyarı geldiği kontrol edilir.
-11. Ödeme, anket ve kurum zili ekranları açılır.
-12. Veli özet ekranında günlük veriler görünür.
-13. Tema değişimi veli / öğretmen ekranlarına yansır.
-14. Giriş ekranından Kullanım Şartları, Gizlilik Politikası ve KVKK metni açılır.
-15. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
+4. Öğretmen günlük rapor kaydedince başarı toastı görünür.
+5. Öğretmen medikal bilgi alanını görüntüler/günceller.
+6. Admin / öğretmen galeriye fotoğraf veya video yükler.
+7. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
+8. Admin ödeme kaydı oluşturur.
+9. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
+10. Admin abonelik ekranında demo/promo/manual abonelik akışını kontrol eder.
+11. RevenueCat ekranında ürün yokken güvenli uyarı geldiği kontrol edilir.
+12. Ödeme, anket ve kurum zili ekranları açılır.
+13. Veli özet ekranında günlük veriler görünür.
+14. Tema değişimi veli / öğretmen ekranlarına yansır.
+15. Admin / öğretmen / veli bildirim ekranları açılır.
+16. Fiziksel cihazda push token ve push bildirim testi yapılır.
+17. Giriş ekranından Kullanım Şartları, Gizlilik Politikası ve KVKK metni açılır.
+18. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
+
+---
 
 ## Kalan Büyük İşler
 
 - Google Play Console abonelik ürünlerini oluşturma
 - RevenueCat Google Play service account bağlantısı
 - RevenueCat ürünlerini gerçek Google Play ürünlerine bağlama
-- Push notification altyapısı
+- Push notification gerçek cihaz uçtan uca testi
 - Firebase Rules production güvenliği
 - Cloud Functions ile 24 saatten eski galeri medyasını garantili silme
+- Admin aylık yemek listesi ekranı
+- A4/PDF yemek listesi ek dosya yükleme
+- A4/PDF içinden otomatik menü çıkarma için sonraki faz OCR/AI değerlendirmesi
 - Gerçek cihazda uçtan uca test
 - Play Store kapalı test / üretim build süreci
+
+---
 
 ## Geliştirici
 
 Faruk Kurtuluş
 
+---
+
 ## Durum
 
-Yumurcak aktif geliştirme / MVP stabilizasyon aşamasındadır. Galeri hedefleme, ödeme takibi, veli günlük/aylık rapor ekranı, medikal bilgi akışı, yasal metinler, tema sistemi, admin ödeme modülü ve RevenueCat kod altyapısı eklenmiştir. Sıradaki kritik işler Google Play abonelik ürünlerini açmak, RevenueCat ürün bağlama, bildirimler ve Firebase güvenlik kurallarıdır.
+Yumurcak aktif geliştirme / MVP stabilizasyon aşamasındadır. Galeri hedefleme, ödeme takibi, veli günlük/aylık rapor ekranı, medikal bilgi akışı, yasal metinler, tema sistemi, admin ödeme modülü, RevenueCat kod altyapısı, uygulama içi bildirim merkezi, push notification altyapısı ve başarı toast sistemi eklenmiştir. Sıradaki kritik işler gerçek cihaz testleri, Google Play abonelik bağlantıları, Firebase Rules production güvenliği ve admin aylık yemek listesi modülüdür.
