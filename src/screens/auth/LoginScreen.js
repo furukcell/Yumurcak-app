@@ -20,7 +20,7 @@ import {
   findLegacyUserByUsernameAndPassword,
 } from '../../utils/authHelpers';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const { girisYap } = useAuth();
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
@@ -176,6 +176,23 @@ export default function LoginScreen() {
               Hesabınız yoksa okul yöneticinizle iletişime geçin.
             </Text>
           </View>
+              <View style={s.legalLinks}>
+              <TouchableOpacity onPress={() => navigation.navigate('LegalDocuments', { docKey: 'terms' })}>
+              <Text style={s.legalText}>Kullanım Şartları</Text>
+          </TouchableOpacity>
+
+         <Text style={s.legalSep}>•</Text>
+
+         <TouchableOpacity onPress={() => navigation.navigate('LegalDocuments', { docKey: 'privacy' })}>
+         <Text style={s.legalText}>Gizlilik</Text>
+     </TouchableOpacity>
+
+         <Text style={s.legalSep}>•</Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate('LegalDocuments', { docKey: 'kvkk' })}>
+        <Text style={s.legalText}>KVKK</Text>
+     </TouchableOpacity>
+    </View>
 
           <Text style={s.versiyon}>© 2026 Yumurcak v1.0</Text>
 
@@ -202,4 +219,7 @@ const s = StyleSheet.create({
   btnYazi:    { color: '#FFF', fontWeight: '800', fontSize: 16, letterSpacing: 1 },
   altBilgi:   { textAlign: 'center', color: RENKLER.altMetin, fontSize: 12, marginTop: 16, lineHeight: 18 },
   versiyon:   { textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 24 },
+  legalLinks: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  legalText: { color: RENKLER.turuncu, fontSize: 12, fontWeight: '900' },
+  legalSep: { color: RENKLER.altMetin, fontSize: 12, fontWeight: '900' },
 });
