@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { get, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +35,7 @@ const THEME = {
 };
 
 export default function AdminInstitutionSettingsScreen() {
+  const navigation = useNavigation();
   const { kullanici } = useAuth();
 
   const kresId = kullanici?.kresId || 'kres001';
@@ -142,13 +144,23 @@ export default function AdminInstitutionSettingsScreen() {
             <Text style={styles.heroTitle}>Kurum Bilgileri</Text>
             <Text style={styles.heroDesc}>Bu bilgiler veli iletişim ekranına direkt düşer.</Text>
           </View>
-          <TouchableOpacity
-           style={styles.legalButton}
-           onPress={() => navigation.navigate('LegalDocuments')}
-           activeOpacity={0.85}
-       >
-          <Text style={styles.legalButtonText}>⚖️ Yasal Metinleri Gör</Text>
-       </TouchableOpacity>
+
+          <View style={styles.legalCard}>
+            <Text style={styles.legalTitle}>⚖️ Yasal Bilgiler</Text>
+            <Text style={styles.legalDesc}>Kullanım şartları, gizlilik politikası ve KVKK metinleri.</Text>
+            <View style={styles.legalGrid}>
+              <TouchableOpacity style={styles.legalButton} onPress={() => navigation.navigate('LegalDocuments', { docKey: 'terms' })} activeOpacity={0.85}>
+                <Text style={styles.legalButtonText}>📄 Kullanım Şartları</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.legalButton} onPress={() => navigation.navigate('LegalDocuments', { docKey: 'privacy' })} activeOpacity={0.85}>
+                <Text style={styles.legalButtonText}>🔐 Gizlilik Politikası</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.legalButton} onPress={() => navigation.navigate('LegalDocuments', { docKey: 'kvkk' })} activeOpacity={0.85}>
+                <Text style={styles.legalButtonText}>🛡️ KVKK Metni</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <FormInput label="Kurum Adı" value={form.ad} onChangeText={(v) => setValue('ad', v)} placeholder="Yumurcak Kreş" />
           <FormInput label="Adres" value={form.adres} onChangeText={(v) => setValue('adres', v)} placeholder="Mahalle, cadde, no..." multiline />
           <FormInput label="Kurum Telefonu" value={form.telefon} onChangeText={(v) => setValue('telefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
@@ -196,6 +208,12 @@ const styles = StyleSheet.create({
   heroIcon: { fontSize: 42, marginBottom: 8 },
   heroTitle: { color: '#FFF', fontWeight: '900', fontSize: 22 },
   heroDesc: { color: 'rgba(255,255,255,0.82)', marginTop: 5, fontWeight: '700', textAlign: 'center' },
+  legalCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, borderWidth: 1, borderColor: THEME.border, marginBottom: 16 },
+  legalTitle: { color: THEME.text, fontWeight: '900', fontSize: 17 },
+  legalDesc: { color: THEME.muted, fontWeight: '700', marginTop: 5, marginBottom: 10, lineHeight: 18 },
+  legalGrid: { gap: 8 },
+  legalButton: { backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 13, borderWidth: 1, borderColor: THEME.border },
+  legalButtonText: { color: THEME.primaryDark, fontWeight: '900' },
   inputBlock: { marginBottom: 12 },
   label: { color: THEME.text, fontWeight: '900', marginBottom: 7 },
   input: { backgroundColor: THEME.card, borderRadius: 14, padding: 13, color: THEME.text, borderWidth: 1, borderColor: THEME.border, fontWeight: '700' },
