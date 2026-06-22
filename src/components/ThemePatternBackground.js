@@ -8,7 +8,7 @@ export default function ThemePatternBackground({ opacity }) {
 
   const imageOpacity = typeof opacity === 'number'
     ? opacity
-    : (typeof theme?.patternOpacity === 'number' ? theme.patternOpacity : 0.2);
+    : (typeof theme?.patternOpacity === 'number' ? theme.patternOpacity : 0.85);
 
   return (
     <ImageBackground
@@ -27,6 +27,6 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   image: {
-    opacity: 0.2,
+    opacity: 0.85,
   },
 });
