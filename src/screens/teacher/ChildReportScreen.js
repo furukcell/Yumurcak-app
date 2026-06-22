@@ -21,6 +21,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { MOOD_LISTESI } from '../../constants';
 import { THEME, ScreenHeader, getChildName, todayString } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const MEAL_OPTIONS = [
   { key: 'yemedi', label: 'Yemedi' },
@@ -51,9 +52,11 @@ export default function ChildReportScreen() {
   const [toiletCount, setToiletCount] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   const handleSave = async () => {
     if (!child?.id) return Alert.alert('Hata', 'Çocuk bilgisi bulunamadı.');
+
     if (!sleepDuration || !toiletCount) {
       return Alert.alert('Eksik Bilgi', 'Uyku süresi ve tuvalet sayısı zorunludur.');
     }
@@ -64,6 +67,7 @@ export default function ChildReportScreen() {
     }
 
     setSaving(true);
+
     try {
       const childRef = ref(database, `cocuklar/${child.id}`);
       const childSnap = await get(childRef);
@@ -85,9 +89,11 @@ export default function ChildReportScreen() {
         createdAt: Date.now(),
       });
 
-      Alert.alert('Başarılı', 'Rapor kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setSuccessToast(true);
+
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Rapor kaydedilemedi.');
@@ -108,8 +114,19 @@ export default function ChildReportScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Rapor kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScreenHeader navigation={navigation} title="Günlük Rapor" subtitle={getChildName(child)} />
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.sectionTitle}>Ruh Hali</Text>
         <View style={styles.moodContainer}>
           {MOOD_LISTESI.map((m) => (
@@ -131,6 +148,7 @@ export default function ChildReportScreen() {
             <View style={styles.mealOptions}>
               {MEAL_OPTIONS.map((option) => {
                 const active = yemek[meal.key]?.durum === option.key;
+
                 return (
                   <TouchableOpacity
                     key={option.key}
@@ -138,7 +156,9 @@ export default function ChildReportScreen() {
                     onPress={() => setMealStatus(meal.key, option.key)}
                     activeOpacity={0.85}
                   >
-                    <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>{option.label}</Text>
+                    <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>
+                      {option.label}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -177,8 +197,16 @@ export default function ChildReportScreen() {
           placeholderTextColor="#999"
         />
 
-        <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveButtonText}>Raporu Kaydet</Text>}
+        <TouchableOpacity
+          style={[styles.saveButton, saving && { opacity: 0.6 }]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Raporu Kaydet</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
