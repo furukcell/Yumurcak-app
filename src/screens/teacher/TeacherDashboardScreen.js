@@ -16,6 +16,7 @@ const MENU = [
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule' },
   { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents' },
   { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals' },
+  { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery' },
   { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical' },
   { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements' },
   { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages' },
