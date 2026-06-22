@@ -69,7 +69,7 @@ export function getMonthKey(date = new Date()) {
 export function getMonthLabel(monthKey) {
   const [year, month] = String(monthKey || '').split('-');
   const monthIndex = Number(month) - 1;
-  return `${MONTH_LABELS[monthIndex] || monthKey} ${year || ''}`.trim();
+  return `${MONTH_LABELS[monthIndex] || monthKey || 'Ay'} ${year || ''}`.trim();
 }
 
 export function getDayKey(date = new Date()) {
@@ -78,13 +78,29 @@ export function getDayKey(date = new Date()) {
 }
 
 export function isAbsentStatus(status) {
-  const value = String(status || '').toLowerCase();
+  const value = String(status || '').toLowerCase().trim();
   return value === 'gelmedi' || value === 'devamsiz' || value === 'devamsız' || value === 'yok';
 }
 
+export function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
+
+export function includesId(value, id) {
+  if (!id) return false;
+  return asArray(value).map((item) => String(item)).includes(String(id));
+}
+
+export function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
 export function toList(data) {
-  if (!data) return [];
-  return Object.entries(data).map(([id, item]) => ({ id, ...item }));
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data).map(([id, item]) => ({ id, ...safeObject(item) }));
 }
 
 export function useParentBase() {
@@ -99,70 +115,81 @@ export function useParentBase() {
 
   useEffect(() => {
     if (!parentId) {
+      setChildren([]);
       setLoading(false);
       return undefined;
     }
 
+    setLoading(true);
     const childrenRef = ref(database, 'cocuklar');
-    const unsubscribe = onValue(childrenRef, (snapshot) => {
-      const data = snapshot.val();
-      const myChildren = [];
-      if (data) {
-        Object.entries(data).forEach(([id, childData]) => {
-          if (childData?.veliIds?.includes(parentId)) {
-            myChildren.push({ id, ...childData });
-          }
-        });
+    const unsubscribe = onValue(
+      childrenRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        const myChildren = [];
+        if (data && typeof data === 'object') {
+          Object.entries(data).forEach(([id, childData]) => {
+            const child = safeObject(childData);
+            if (includesId(child.veliIds, parentId) || child.veliId === parentId || child.parentId === parentId) {
+              myChildren.push({ id, ...child });
+            }
+          });
+        }
+        setChildren(myChildren);
+        setLoading(false);
+      },
+      () => {
+        setChildren([]);
+        setLoading(false);
       }
-      setChildren(myChildren);
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, [parentId]);
 
   useEffect(() => {
     const r = ref(database, 'siniflar');
-    const unsub = onValue(r, (snap) => setSiniflar(snap.val() || {}));
+    const unsub = onValue(r, (snap) => setSiniflar(safeObject(snap.val())), () => setSiniflar({}));
     return () => unsub();
   }, []);
 
   useEffect(() => {
     const r = ref(database, 'kullanicilar');
-    const unsub = onValue(r, (snap) => setKullanicilar(snap.val() || {}));
+    const unsub = onValue(r, (snap) => setKullanicilar(safeObject(snap.val())), () => setKullanicilar({}));
     return () => unsub();
   }, []);
 
   useEffect(() => {
     const r = ref(database, 'kresler');
-    const unsub = onValue(r, (snap) => setKresler(snap.val() || {}));
+    const unsub = onValue(r, (snap) => setKresler(safeObject(snap.val())), () => setKresler({}));
     return () => unsub();
   }, []);
 
   const selectedChild = children[0] || null;
   const kresId = selectedChild?.kresId || kullanici?.kresId || null;
   const sinifId = selectedChild?.sinifId || null;
-  const sinif = sinifId ? siniflar[sinifId] : null;
-  const kres = kresId ? kresler[kresId] : null;
-  const kresAdi = kres?.ad || 'Yumurcak';
+  const sinif = sinifId ? safeObject(siniflar[sinifId]) : null;
+  const kres = kresId ? safeObject(kresler[kresId]) : null;
+  const kresAdi = kres?.ad || kres?.adi || 'Yumurcak';
 
   const ogretmenId = useMemo(() => {
     if (selectedChild?.ogretmenId) return selectedChild.ogretmenId;
-    if (sinif?.ogretmenIds?.[0]) return sinif.ogretmenIds[0];
+    if (asArray(sinif?.ogretmenIds)[0]) return asArray(sinif?.ogretmenIds)[0];
     if (sinif?.ogretmenId) return sinif.ogretmenId;
     return null;
   }, [selectedChild, sinif]);
 
-  const ogretmen = ogretmenId ? kullanicilar[ogretmenId] : null;
-  const yonetici = kres?.yoneticiId ? kullanicilar[kres.yoneticiId] : null;
+  const ogretmen = ogretmenId ? safeObject(kullanicilar[ogretmenId]) : null;
+  const yonetici = kres?.yoneticiId ? safeObject(kullanicilar[kres.yoneticiId]) : null;
 
   const childName = selectedChild
-    ? `${selectedChild.ad || selectedChild.adSoyad || 'Çocuğum'} ${selectedChild.soyad || ''}`.trim()
+    ? `${selectedChild.ad || selectedChild.adSoyad || selectedChild.isim || 'Çocuğum'} ${selectedChild.soyad || ''}`.trim()
     : 'Çocuğum';
 
   const parentName =
     `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() ||
     kullanici?.kullaniciAdi ||
+    kullanici?.email ||
     'Veli';
 
   return {
@@ -190,8 +217,13 @@ export function useNodeList(node) {
   const [list, setList] = useState([]);
 
   useEffect(() => {
+    if (!node) {
+      setList([]);
+      return undefined;
+    }
+
     const r = ref(database, node);
-    const unsub = onValue(r, (snap) => setList(toList(snap.val())));
+    const unsub = onValue(r, (snap) => setList(toList(snap.val())), () => setList([]));
     return () => unsub();
   }, [node]);
 
@@ -200,11 +232,12 @@ export function useNodeList(node) {
 
 export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   const themedStyles = useParentSharedStyles();
+  const canGoBack = !!navigation?.canGoBack?.();
 
   return (
     <SafeAreaView style={themedStyles.safeArea}>
       <View style={themedStyles.header}>
-        {navigation ? (
+        {navigation && canGoBack ? (
           <TouchableOpacity style={themedStyles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
             <Text style={themedStyles.backArrow}>‹</Text>
             <Text style={themedStyles.backLabel}>Geri</Text>
@@ -275,65 +308,66 @@ export function PlaceholderScreen({ navigation, icon, title, description }) {
 }
 
 function createStyles(theme) {
+  const t = { ...THEME, ...(theme || {}) };
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: theme.bg,
+      backgroundColor: t.bg,
       paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
     },
-    screen: { flex: 1, backgroundColor: theme.bg },
+    screen: { flex: 1, backgroundColor: t.bg },
     scrollContent: { padding: 16, paddingBottom: 52 },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg },
-    loadingText: { marginTop: 12, color: theme.muted, fontWeight: '700' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg },
+    loadingText: { marginTop: 12, color: t.muted, fontWeight: '700' },
     header: {
       paddingHorizontal: 16,
       paddingTop: 8,
       paddingBottom: 12,
-      backgroundColor: theme.bg,
+      backgroundColor: t.bg,
       flexDirection: 'row',
       alignItems: 'center',
     },
     backButton: { width: 74, flexDirection: 'row', alignItems: 'center' },
-    backArrow: { fontSize: 28, color: theme.primary, fontWeight: '800', marginRight: 3 },
-    backLabel: { color: theme.primary, fontWeight: '800' },
+    backArrow: { fontSize: 28, color: t.primary, fontWeight: '800', marginRight: 3 },
+    backLabel: { color: t.primary, fontWeight: '800' },
     backSpacer: { width: 74 },
     headerTitleWrap: { flex: 1, alignItems: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: theme.primary },
-    headerSubtitle: { fontSize: 11, color: theme.muted, marginTop: 2, fontWeight: '700' },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: t.primary },
+    headerSubtitle: { fontSize: 11, color: t.muted, marginTop: 2, fontWeight: '700' },
     headerEmoji: { width: 36, textAlign: 'right', fontSize: 21 },
     emptyStateCard: {
-      backgroundColor: theme.card,
+      backgroundColor: t.card,
       borderRadius: 22,
       padding: 22,
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: t.border,
     },
     emptyIcon: { fontSize: 40, marginBottom: 8 },
-    emptyTitle: { fontSize: 17, fontWeight: '900', color: theme.text, textAlign: 'center' },
-    emptyDesc: { fontSize: 13, color: theme.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
-    card: { backgroundColor: theme.card, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.border },
-    cardTitle: { fontSize: 17, fontWeight: '900', color: theme.text },
-    cardText: { color: theme.muted, marginTop: 6, fontWeight: '700', lineHeight: 19 },
+    emptyTitle: { fontSize: 17, fontWeight: '900', color: t.text, textAlign: 'center' },
+    emptyDesc: { fontSize: 13, color: t.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
+    card: { backgroundColor: t.card, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: t.border },
+    cardTitle: { fontSize: 17, fontWeight: '900', color: t.text },
+    cardText: { color: t.muted, marginTop: 6, fontWeight: '700', lineHeight: 19 },
     badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
-    sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginTop: 8, marginBottom: 12 },
-    infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border },
+    sectionTitle: { fontSize: 18, fontWeight: '900', color: t.text, marginTop: 8, marginBottom: 12 },
+    infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.border },
     infoIcon: { width: 26, fontSize: 17 },
-    infoLabel: { width: 116, color: theme.muted, fontWeight: '800' },
-    infoValue: { flex: 1, color: theme.text, fontWeight: '800' },
-    secondaryButton: { backgroundColor: theme.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 12 },
-    secondaryButtonText: { color: theme.primary, fontWeight: '900' },
+    infoLabel: { width: 116, color: t.muted, fontWeight: '800' },
+    infoValue: { flex: 1, color: t.text, fontWeight: '800' },
+    secondaryButton: { backgroundColor: t.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 12 },
+    secondaryButtonText: { color: t.primary, fontWeight: '900' },
     placeholderCard: {
-      backgroundColor: theme.card,
+      backgroundColor: t.card,
       borderRadius: 22,
       padding: 24,
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: t.border,
     },
     placeholderIcon: { fontSize: 44, marginBottom: 10 },
-    placeholderTitle: { fontSize: 18, fontWeight: '900', color: theme.text },
-    placeholderDesc: { color: theme.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
+    placeholderTitle: { fontSize: 18, fontWeight: '900', color: t.text },
+    placeholderDesc: { color: t.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
   });
 }
 
