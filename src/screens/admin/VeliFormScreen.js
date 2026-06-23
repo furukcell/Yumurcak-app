@@ -1,3 +1,4 @@
+```js
 // ============================================================
 // YUMURCAK — VeliFormScreen.js
 // Veli ekleme/düzenleme formu
@@ -7,12 +8,14 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator
 } from 'react-native';
-import { ref, set, get } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { ref, get, update } from 'firebase/database';
+import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
+import { getApps, initializeApp } from 'firebase/app';
+import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
+import { usernameToEmail } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function VeliFormScreen() {
   const route = useRoute();
@@ -22,31 +25,31 @@ export default function VeliFormScreen() {
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
   const [sifre, setSifre] = useState('');
+  const [sifreGoster, setSifreGoster] = useState(false);
   const [ad, setAd] = useState('');
   const [telefon, setTelefon] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!veliId);
-  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
-    if (veliId) {
-      get(ref(database, `kullanicilar/${veliId}`))
-        .then((snap) => {
-          if (snap.exists()) {
-            const data = snap.val();
-            setKullaniciAdi(data.kullaniciAdi || '');
-            setAd(data.ad || '');
-            setTelefon(data.telefon || '');
-          }
+    if (!veliId) return;
 
-          setFetching(false);
-        })
-        .catch((error) => {
-          console.error(error);
-          setFetching(false);
-          Alert.alert('Hata', 'Veli bilgileri yüklenemedi');
-        });
-    }
+    get(ref(database, `kullanicilar/${veliId}`))
+      .then((snap) => {
+        if (snap.exists()) {
+          const data = snap.val();
+          setKullaniciAdi(data.kullaniciAdi || '');
+          setAd(data.ad || '');
+          setTelefon(data.telefon || '');
+        }
+
+        setFetching(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        setFetching(false);
+        Alert.alert('Hata', 'Veli bilgileri yüklenemedi');
+      });
   }, [veliId]);
 
   const handleSave = async () => {
@@ -59,25 +62,81 @@ export default function VeliFormScreen() {
 
     try {
       const id = veliId || generateId();
+      const now = Date.now();
 
-      await set(ref(database, `kullanicilar/${id}`), {
+      const veliSnap = await get(ref(database, `kullanicilar/${id}`));
+      const oldVeli = veliSnap.exists() ? (veliSnap.val() || {}) : {};
+      const kaydedilenSifre = sifre.trim() || oldVeli.sifre || '123456';
+
+      if (kaydedilenSifre.length < 6) {
+        Alert.alert('Hata', 'Şifre en az 6 karakter olmalı');
+        setLoading(false);
+        return;
+      }
+
+      if (veliId && oldVeli.authUid && sifre.trim()) {
+        Alert.alert(
+          'Şifre Değiştirilemez',
+          'Bu veli Firebase Auth hesabına bağlı. Mevcut kullanıcı şifresi bu ekrandan değiştirilemez.'
+        );
+        setLoading(false);
+        return;
+      }
+
+      const email = oldVeli.email || usernameToEmail(kullaniciAdi.trim());
+      let authUid = oldVeli.authUid || null;
+      let authYeniOlustu = false;
+
+      if (!authUid) {
+        const secondaryAuth = getSecondaryAuth();
+        const credential = await createUserWithEmailAndPassword(secondaryAuth, email, kaydedilenSifre);
+        authUid = credential.user.uid;
+        authYeniOlustu = true;
+        await signOut(secondaryAuth).catch(() => {});
+      }
+
+      const updates = {};
+
+      updates[`kullanicilar/${id}`] = {
+        ...oldVeli,
         kullaniciAdi: kullaniciAdi.trim(),
-        sifre: sifre.trim() || '123456',
+        sifre: kaydedilenSifre,
         ad: ad.trim(),
         telefon: telefon.trim(),
         rol: 'veli',
-        kresId: kullanici?.kresId || 'default-kres',
-        createdAt: Date.now(),
-      });
+        kresId: oldVeli.kresId || kullanici?.kresId || 'default-kres',
+        authUid,
+        email,
+        authProvider: 'firebase',
+        authCreatedAt: oldVeli.authCreatedAt || now,
+        authUpdatedAt: now,
+        createdAt: oldVeli.createdAt || now,
+        updatedAt: now,
+      };
 
-      setSuccessToast(true);
+      updates[`authKullaniciIndex/${authUid}`] = id;
 
-      setTimeout(() => {
-        navigation.goBack();
-      }, 900);
+      await update(ref(database), updates);
+
+      const mesaj = veliId
+        ? `Veli güncellendi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: Değişmedi\nAuth: ${authYeniOlustu ? 'Yeni oluşturuldu' : 'Mevcut'}`
+        : `Veli kaydedildi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${kaydedilenSifre}\nAuth hesabı oluşturuldu.`;
+
+      Alert.alert('Başarılı', mesaj, [
+        { text: 'Tamam', onPress: () => navigation.goBack() },
+      ]);
     } catch (error) {
-      Alert.alert('Hata', 'Veli kaydedilemedi');
       console.error(error);
+
+      if (error?.code === 'auth/email-already-in-use') {
+        Alert.alert(
+          'Auth Hatası',
+          'Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı dene veya Auth Geçiş ekranından eşleştirme kontrolü yap.'
+        );
+        return;
+      }
+
+      Alert.alert('Hata', `Veli kaydedilemedi.\n\n${error?.code || error?.message || ''}`);
     } finally {
       setLoading(false);
     }
@@ -93,12 +152,6 @@ export default function VeliFormScreen() {
 
   return (
     <View style={s.screen}>
-      <AppSuccessToast
-        visible={successToast}
-        message={veliId ? 'Veli bilgileri güncellendi' : 'Veli kaydedildi'}
-        onHide={() => setSuccessToast(false)}
-      />
-
       <ScrollView style={s.container}>
         <View style={s.form}>
 
@@ -139,14 +192,35 @@ export default function VeliFormScreen() {
 
           <View style={s.field}>
             <Text style={s.label}>Şifre {!veliId && '*'}</Text>
-            <TextInput
-              style={s.input}
-              value={sifre}
-              onChangeText={setSifre}
-              placeholder={veliId ? 'Boş bırakılırsa değişmez' : '123456'}
-              secureTextEntry
-              placeholderTextColor="#999"
-            />
+
+            <View style={s.passwordRow}>
+              <TextInput
+                style={s.passwordInput}
+                value={sifre}
+                onChangeText={setSifre}
+                placeholder={veliId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'}
+                secureTextEntry={!sifreGoster}
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <TouchableOpacity
+                style={s.passwordToggle}
+                onPress={() => setSifreGoster(!sifreGoster)}
+                activeOpacity={0.75}
+              >
+                <Text style={s.passwordToggleText}>
+                  {sifreGoster ? 'Gizle' : 'Göster'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={s.sifreNotu}>
+              {veliId
+                ? 'Boş bırakırsan mevcut şifre korunur.'
+                : 'Boş bırakırsan varsayılan şifre 123456 olur.'}
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -169,6 +243,13 @@ export default function VeliFormScreen() {
   );
 }
 
+function getSecondaryAuth() {
+  const name = 'yumurcak-parent-create';
+  const existing = getApps().find((app) => app.name === name);
+  const app = existing || initializeApp(firebaseConfig, name);
+  return getAuth(app);
+}
+
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1, backgroundColor: '#f5f5f5' },
@@ -184,6 +265,32 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    overflow: 'hidden',
+  },
+  passwordInput: {
+    flex: 1,
+    minWidth: 0,
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  passwordToggle: {
+    paddingHorizontal: 14,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    backgroundColor: '#eeeaff',
+    borderLeftWidth: 1,
+    borderLeftColor: '#ddd',
+  },
+  passwordToggleText: { color: '#3C3489', fontWeight: '700' },
+  sifreNotu: { marginTop: 6, color: '#777', fontSize: 13 },
   btn: {
     backgroundColor: '#3C3489',
     borderRadius: 8,
@@ -194,3 +301,4 @@ const s = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   btnYazi: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
+```
