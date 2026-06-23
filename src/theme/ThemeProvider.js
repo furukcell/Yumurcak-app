@@ -10,8 +10,7 @@ export function ThemeProvider(props) {
   const kresId = props.kresId;
   const classThemeSinifId = props.classThemeSinifId || null;
   const userId = props.userId || null;
-  const classThemeSinifId = props.classThemeSinifId || null;
-  const userId = props.userId || null;
+ 
 
   const state1 = useState(DEFAULT_THEME_ID);
   const themeId = state1[0];
