@@ -10,6 +10,7 @@ import { ref, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName, todayString } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherAttendanceScreen() {
   const navigation = useNavigation();
@@ -17,6 +18,7 @@ export default function TeacherAttendanceScreen() {
   const [saving, setSaving] = useState(false);
   const [localStatus, setLocalStatus] = useState({});
   const [initialStatus, setInitialStatus] = useState({});
+  const [successToast, setSuccessToast] = useState(false);
 
   const today = todayString();
 
@@ -77,7 +79,7 @@ export default function TeacherAttendanceScreen() {
       );
 
       setInitialStatus(localStatus);
-      Alert.alert('Başarılı', 'Yoklama kaydedildi.');
+      setSuccessToast(true);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Yoklama kaydedilemedi.');
@@ -88,6 +90,12 @@ export default function TeacherAttendanceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Yoklama kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScreenHeader navigation={navigation} title="Yoklama" subtitle={today} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {classChildren.length === 0 ? (
