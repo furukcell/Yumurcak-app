@@ -1,8 +1,11 @@
 // ============================================================
 // YUMURCAK — messageHelpers.js
-// Build fix + FAZ 16 message helper
+// Build fix + FAZ 16 message helper + FAZ 17 toplam okunmamış sayaç
 // Konum: src/utils/messageHelpers.js
 // ============================================================
+import { useEffect, useState } from 'react';
+import { onValue, ref } from 'firebase/database';
+import { database } from '../config/firebase';
 
 export const MESSAGE_PAGE_SIZE = 20;
 
@@ -104,4 +107,37 @@ export function normalizeConversationMeta(meta = {}) {
     ...(meta || {}),
     aktif: true,
   });
+}
+
+// ============================================================
+// FAZ 17: Toplam okunmamış mesaj sayacı (ana sayfa badge'leri için)
+// 'mesajKonusmalari' düğümünü dinler, kullanıcının katıldığı
+// her görüşmedeki okunmamisSayac/{userId} değerlerini toplar.
+// Admin / Öğretmen / Veli dashboard'larında "Mesajlar" kartına
+// badge basmak için kullanılır.
+// ============================================================
+export function useUnreadMessagesCount(userId) {
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    if (!userId) {
+      setTotal(0);
+      return undefined;
+    }
+
+    const unsub = onValue(ref(database, 'mesajKonusmalari'), (snapshot) => {
+      const data = snapshot.val() || {};
+      let sum = 0;
+
+      Object.values(data).forEach((meta) => {
+        sum += safeUnread(meta, userId);
+      });
+
+      setTotal(sum);
+    });
+
+    return () => unsub();
+  }, [userId]);
+
+  return total;
 }
