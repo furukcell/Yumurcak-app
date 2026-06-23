@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — TeacherMealsScreen.js
-// FAZ 3: Öğretmen kendi sınıfı için günlük yemek listesi girebilir
+// Öğretmen günlük yemek girişi + aylık kurum listesi görünümü
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
@@ -9,16 +9,33 @@ import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
 
+function getCurrentMonthKey() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${date.getFullYear()}-${month}`;
+}
+
+function formatMonthLabel(monthKey) {
+  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const parts = String(monthKey || '').split('-');
+  const year = parts[0];
+  const monthIndex = Number(parts[1]) - 1;
+  return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
+}
+
 export default function TeacherMealsScreen() {
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, meals } = useTeacherData();
 
   const [showForm, setShowForm] = useState(false);
+  const [tab, setTab] = useState('daily');
   const [tarih, setTarih] = useState(todayString());
   const [kahvalti, setKahvalti] = useState('');
   const [ogle, setOgle] = useState('');
   const [araOgun, setAraOgun] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
   const visibleMeals = useMemo(() => {
     return meals
@@ -27,6 +44,17 @@ export default function TeacherMealsScreen() {
       .filter((item) => !item.sinifId || item.sinifId === currentClass?.id)
       .sort((a, b) => String(b.tarih || b.baslangicTarihi || b.createdAt || '').localeCompare(String(a.tarih || a.baslangicTarihi || a.createdAt || '')));
   }, [meals, kresId, currentClass?.id]);
+
+  const dailyMeals = useMemo(() => {
+    return visibleMeals.filter((item) => item.kaynak !== 'admin_aylik');
+  }, [visibleMeals]);
+
+  const monthlyMeals = useMemo(() => {
+    return visibleMeals
+      .filter((item) => item.kaynak === 'admin_aylik')
+      .filter((item) => item.ayKey === currentMonthKey)
+      .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
+  }, [visibleMeals, currentMonthKey]);
 
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
 
@@ -93,20 +121,49 @@ export default function TeacherMealsScreen() {
           </View>
         ) : null}
 
-        {visibleMeals.length === 0 ? (
+        <View style={styles.tabRow}>
+          <TouchableOpacity style={[styles.tab, tab === 'daily' && styles.tabActive]} onPress={() => setTab('daily')} activeOpacity={0.85}>
+            <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Günlük Liste</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tab, tab === 'monthly' && styles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
+            <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık Liste</Text>
+          </TouchableOpacity>
+        </View>
+
+        {tab === 'monthly' ? (
+          monthlyMeals.length === 0 ? (
+            <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
+          ) : (
+            <>
+              <View style={styles.monthInfoCard}>
+                <Text style={styles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
+                <Text style={styles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
+              </View>
+              {monthlyMeals.map((item) => (
+                <MealCard key={item.id} item={item} />
+              ))}
+            </>
+          )
+        ) : dailyMeals.length === 0 ? (
           <EmptyState icon="🍽️" title="Yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
         ) : (
-          visibleMeals.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <Text style={styles.type}>{item.sinifId ? '👩‍🏫 Sınıf Listesi' : '🏫 Kurum Listesi'}</Text>
-              <Text style={styles.title}>{item.baslik || 'Yemek Listesi'}</Text>
-              <Text style={styles.date}>{formatDate(item.tarih || item.baslangicTarihi)} {item.bitisTarihi ? `- ${formatDate(item.bitisTarihi)}` : ''}</Text>
-              {renderMeals(item)}
-            </View>
+          dailyMeals.map((item) => (
+            <MealCard key={item.id} item={item} />
           ))
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function MealCard({ item }) {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.type}>{item.kaynak === 'admin_aylik' ? '📅 Aylık Liste' : item.sinifId ? '👩‍🏫 Sınıf Listesi' : '🏫 Kurum Listesi'}</Text>
+      <Text style={styles.title}>{item.baslik || 'Yemek Listesi'}</Text>
+      <Text style={styles.date}>{formatDate(item.tarih || item.baslangicTarihi)} {item.bitisTarihi ? `- ${formatDate(item.bitisTarihi)}` : ''}</Text>
+      {renderMeals(item)}
+    </View>
   );
 }
 
@@ -129,6 +186,14 @@ const styles = StyleSheet.create({
   input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border },
   saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
   saveText: { color: '#FFF', fontWeight: '900' },
+  tabRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  tab: { flex: 1, backgroundColor: THEME.card, borderRadius: 14, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  tabActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  tabText: { color: THEME.text, fontWeight: '900', fontSize: 12 },
+  tabTextActive: { color: '#FFF' },
+  monthInfoCard: { backgroundColor: THEME.primarySoft, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
+  monthInfoTitle: { color: THEME.primary, fontWeight: '900', fontSize: 15 },
+  monthInfoText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 4 },
   card: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
   type: { color: THEME.primary, fontWeight: '900', marginBottom: 7 },
   title: { fontSize: 17, fontWeight: '900', color: THEME.text },
