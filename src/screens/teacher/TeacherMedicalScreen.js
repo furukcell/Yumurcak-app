@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherMedicalScreen() {
   const navigation = useNavigation();
@@ -24,6 +25,8 @@ export default function TeacherMedicalScreen() {
 
   const [drafts, setDrafts] = useState({});
   const [savingChildId, setSavingChildId] = useState(null);
+  const [successToast, setSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Bilgiler güncellendi');
 
   useEffect(() => {
     const nextDrafts = {};
@@ -70,7 +73,8 @@ export default function TeacherMedicalScreen() {
         updatedAt: Date.now(),
       });
 
-      Alert.alert('Kaydedildi', `${getChildName(child)} için bilgiler güncellendi.`);
+      setSuccessMessage(`${getChildName(child)} için bilgiler güncellendi`);
+      setSuccessToast(true);
     } catch (error) {
       console.error('Medikal bilgi kaydetme hatası:', error);
       Alert.alert('Hata', 'Bilgiler kaydedilemedi.');
@@ -83,6 +87,12 @@ export default function TeacherMedicalScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message={successMessage}
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScreenHeader navigation={navigation} title="Medikal Bilgiler" subtitle="Alerji, ilaç ve öğretmen gözlem notları" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {classChildren.length === 0 ? (
