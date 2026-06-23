@@ -1,7 +1,7 @@
 ```js
 // ============================================================
 // YUMURCAK — SuperAdminKresCreateScreen.js
-// FAZ 17: Yeni kreş oluştururken index + Auth kayıtları yazılır
+// FAZ 17: Yeni kreş oluştururken index kayıtları helper ile yazılır
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import {
@@ -18,12 +18,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { push, ref, update } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
+import { push, ref, update } from 'firebase/database';
 import { database, firebaseConfig } from '../../config/firebase';
-import { addUserIndexUpdates } from '../../utils/firebaseIndexHelpers';
 import { usernameToEmail } from '../../utils/authHelpers';
+import { addUserIndexUpdates } from '../../utils/firebaseIndexHelpers';
 
 const THEME = {
   bg: '#0F172A',
@@ -57,7 +57,6 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
   const generatedPreview = useMemo(() => {
     const username = form.kullaniciAdi.trim();
     const password = form.sifre.trim();
-
     return {
       username: username || 'otomatik girilecek',
       password: password || 'en az 6 karakter',
@@ -75,16 +74,13 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
     if (form.kullaniciAdi.trim().length < 3) return 'Kullanıcı adı en az 3 karakter olmalı.';
     if (!form.sifre.trim()) return 'Yönetici şifresi zorunlu.';
     if (form.sifre.trim().length < 6) return 'Şifre en az 6 karakter olmalı.';
-
     const demoGun = Number(form.demoGun);
     if (!demoGun || demoGun < 1) return 'Demo gün sayısı en az 1 olmalı.';
-
     return null;
   };
 
   const createKres = async () => {
     const error = validate();
-
     if (error) {
       Alert.alert('Eksik Bilgi', error);
       return;
@@ -92,7 +88,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
 
     Alert.alert(
       'Yeni Kreş Oluştur',
-      `${form.ad.trim()} için kreş, Firebase Auth yönetici hesabı ve demo abonelik oluşturulacak. Devam edilsin mi?`,
+      `${form.ad.trim()} için kreş, yönetici hesabı ve demo abonelik oluşturulacak. Devam edilsin mi?`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Oluştur', onPress: saveKres },
@@ -102,7 +98,6 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
 
   const saveKres = async () => {
     if (saving) return;
-
     setSaving(true);
 
     try {
@@ -117,13 +112,16 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
       const yoneticiId = userRef.key;
 
       const cleanUsername = normalizeUsername(form.kullaniciAdi);
-      const password = form.sifre.trim();
-      const authEmail = usernameToEmail(cleanUsername);
+      const adminEmail = usernameToEmail(cleanUsername);
+      const adminPassword = form.sifre.trim();
 
       const secondaryAuth = getSecondaryAuth();
-      const credential = await createUserWithEmailAndPassword(secondaryAuth, authEmail, password);
+      const credential = await createUserWithEmailAndPassword(
+        secondaryAuth,
+        adminEmail,
+        adminPassword
+      );
       const authUid = credential.user.uid;
-
       await signOut(secondaryAuth).catch(() => {});
 
       const kresRecord = {
@@ -147,7 +145,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         uid: yoneticiId,
         id: yoneticiId,
         authUid,
-        email: authEmail,
+        email: adminEmail,
         authProvider: 'firebase',
         authCreatedAt: now,
         authUpdatedAt: now,
@@ -156,7 +154,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         soyad: form.yoneticiSoyad.trim(),
         telefon: form.yoneticiTelefon.trim(),
         kullaniciAdi: cleanUsername,
-        sifre: password,
+        sifre: adminPassword,
         rol: 'yonetici',
         aktif: true,
         createdAt: now,
@@ -188,7 +186,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
 
       Alert.alert(
         'Kreş Oluşturuldu',
-        `Kreş: ${form.ad.trim()}\nKullanıcı adı: ${cleanUsername}\nŞifre: ${password}\nAuth hesabı: oluşturuldu\nDemo: ${demoDays} gün`,
+        `Kreş: ${form.ad.trim()}\nKullanıcı adı: ${cleanUsername}\nŞifre: ${adminPassword}\nAuth hesabı oluşturuldu.\nDemo: ${demoDays} gün`,
         [
           {
             text: 'Tamam',
@@ -202,7 +200,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
       if (err?.code === 'auth/email-already-in-use') {
         Alert.alert(
           'Auth Hatası',
-          'Bu yönetici kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı dene.'
+          'Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı dene.'
         );
         return;
       }
@@ -228,9 +226,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
           <View style={styles.hero}>
             <Text style={styles.kicker}>KREŞ ONBOARDING</Text>
             <Text style={styles.heroTitle}>Kurum + Yönetici Hesabı</Text>
-            <Text style={styles.heroDesc}>
-              Yeni kreşi sisteme ekle, Firebase Auth yönetici hesabını oluştur ve demo aboneliği başlat.
-            </Text>
+            <Text style={styles.heroDesc}>Yeni kreşi sisteme ekle, yönetici hesabını oluştur ve demo aboneliği başlat.</Text>
           </View>
 
           <Section title="Kreş Bilgileri">
@@ -265,7 +261,7 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
           </TouchableOpacity>
 
           <Text style={styles.note}>
-            Yeni kayıt oluşturulunca Firebase Auth hesabı, authKullaniciIndex ve kreş indexleri otomatik yazılır.
+            Yeni kayıt oluşturulunca Auth hesabı, auth indexleri ve kresKullanicilari/kullaniciKresleri indexleri otomatik yazılır.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -275,5 +271,76 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
 
 function getSecondaryAuth() {
   const name = 'yumurcak-superadmin-create';
-  const existing
+  const existing = getApps().find((app) => app.name === name);
+  const app = existing || initializeApp(firebaseConfig, name);
+  return getAuth(app);
+}
+
+function normalizeUsername(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+}
+
+function Section({ title, children }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function Input({ label, value, onChangeText, placeholder, multiline, keyboardType, autoCapitalize }) {
+  return (
+    <View style={styles.inputWrap}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TextInput
+        style={[styles.input, multiline && styles.inputMulti]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor="#64748B"
+        multiline={multiline}
+        keyboardType={keyboardType || 'default'}
+        autoCapitalize={autoCapitalize || 'sentences'}
+        textAlignVertical={multiline ? 'top' : 'center'}
+        underlineColorAndroid="transparent"
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  safeArea: { flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+  content: { padding: 16, paddingBottom: 40 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  backButton: { width: 70 },
+  backText: { color: THEME.blue, fontWeight: '900', fontSize: 16 },
+  headerTitle: { color: THEME.text, fontWeight: '900', fontSize: 18 },
+  hero: { backgroundColor: THEME.panel, borderRadius: 24, padding: 18, borderWidth: 1, borderColor: THEME.line, marginBottom: 14 },
+  kicker: { color: THEME.blue, fontWeight: '900', letterSpacing: 1.6, fontSize: 11 },
+  heroTitle: { color: THEME.text, fontSize: 25, fontWeight: '900', marginTop: 5 },
+  heroDesc: { color: THEME.muted, fontWeight: '700', marginTop: 7, lineHeight: 20 },
+  section: { backgroundColor: THEME.panel, borderRadius: 20, padding: 15, borderWidth: 1, borderColor: THEME.line, marginBottom: 14 },
+  sectionTitle: { color: THEME.text, fontSize: 18, fontWeight: '900', marginBottom: 10 },
+  inputWrap: { marginBottom: 12 },
+  inputLabel: { color: THEME.muted, fontWeight: '900', marginBottom: 7 },
+  input: { minHeight: 48, backgroundColor: '#0B1220', borderWidth: 1, borderColor: THEME.line, borderRadius: 15, paddingHorizontal: 13, color: THEME.text, fontWeight: '800' },
+  inputMulti: { minHeight: 86, paddingTop: 12 },
+  previewCard: { backgroundColor: '#0B1220', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: THEME.line },
+  previewTitle: { color: THEME.blue, fontWeight: '900', marginBottom: 8 },
+  previewLine: { color: THEME.text, fontWeight: '800', marginBottom: 4 },
+  saveButton: { backgroundColor: THEME.green, borderRadius: 18, padding: 17, alignItems: 'center', marginTop: 2 },
+  saveText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
+  note: { color: THEME.muted, lineHeight: 20, fontWeight: '700', marginTop: 14, textAlign: 'center' },
+});
 ```
