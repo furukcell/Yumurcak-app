@@ -1,4 +1,4 @@
-```js
+
 // ============================================================
 // YUMURCAK — TeacherFormScreen.js
 // Öğretmen ekleme/düzenleme formu
