@@ -25,6 +25,8 @@ export default function RootNavigator() {
 
   const role = kullanici?.rol;
   const kresId = kullanici?.kresId;
+  const userId = kullanici?.uid || kullanici?.id;
+  const userSinifId = kullanici?.sinifId || null;
 
   useEffect(() => {
     if (!kullanici || role === ROLLER.SUPERADMIN || !kresId) {
@@ -53,7 +55,11 @@ export default function RootNavigator() {
   const subscriptionStatus = useMemo(() => getSubscriptionStatus(subscription), [subscription]);
 
   const withTheme = (screen) => (
-    <ThemeProvider kresId={kresId}>
+    <ThemeProvider
+      kresId={kresId}
+      classThemeSinifId={userSinifId}
+      userId={userId}
+    >
       {screen}
     </ThemeProvider>
   );
