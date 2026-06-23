@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.18.0
-          cache: npm
+          
 
       - name: Setup EAS CLI
         uses: expo/expo-github-action@v8
