@@ -4,13 +4,15 @@ import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentS
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
+import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 export default function ParentDashboardScreen({ navigation }) {
   const base = useParentBase();
   const reports = useNodeList('gunlukRaporlar');
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl } = base;
+  const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl, parentId } = base;
+  const unreadMessages = useUnreadMessagesCount(parentId);
 
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
@@ -111,12 +113,24 @@ export default function ParentDashboardScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Diğer İşlemler</Text>
         <View style={styles.quickGrid}>
-          {quickActions.map(([icon, label, route, bg, border]) => (
-            <TouchableOpacity key={route} style={[styles.quickAction, { backgroundColor: bg, borderColor: border }]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
-              <Text style={styles.quickIcon}>{icon}</Text>
-              <Text style={styles.quickLabel}>{label}</Text>
-            </TouchableOpacity>
-          ))}
+          {quickActions.map(([icon, label, route, bg, border]) => {
+            const isMessages = route === 'ParentMessages';
+            const badgeCount = isMessages ? unreadMessages : 0;
+
+            return (
+              <TouchableOpacity key={route} style={[styles.quickAction, { backgroundColor: bg, borderColor: border }]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
+                <View style={styles.quickIconRow}>
+                  <Text style={styles.quickIcon}>{icon}</Text>
+                  {badgeCount > 0 ? (
+                    <View style={styles.quickBadge}>
+                      <Text style={styles.quickBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[styles.quickLabel, badgeCount > 0 && styles.quickLabelUnread]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={cikisYap} activeOpacity={0.85}>
@@ -171,7 +185,11 @@ const createStyles = (theme) => StyleSheet.create({
   quickAction: { width: '48%', borderRadius: 22, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1.5, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   featuredAction: { minHeight: 118, justifyContent: 'center' },
   quickIcon: { fontSize: 29, marginBottom: 8 },
+  quickIconRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  quickBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginLeft: 6, marginBottom: 8 },
+  quickBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 11 },
   quickLabel: { fontSize: 13, color: theme.text, fontWeight: '900', textAlign: 'center' },
+  quickLabelUnread: { color: theme.primary },
   quickDesc: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 5, textAlign: 'center', lineHeight: 15 },
   logoutButton: { backgroundColor: theme.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
   logoutText: { color: theme.primary, fontWeight: '900', fontSize: 15 },
