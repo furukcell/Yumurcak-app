@@ -185,14 +185,14 @@ function ContactCard({ icon, title, desc, sub, unread, onPress }) {
       </View>
       <View style={{ flex: 1 }}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={[styles.title, unread > 0 && styles.titleUnread]} numberOfLines={1}>{title}</Text>
           {unread > 0 ? (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadText}>{unread > 99 ? '99+' : unread}</Text>
             </View>
           ) : null}
         </View>
-        <Text style={styles.desc} numberOfLines={1}>{desc}</Text>
+        <Text style={[styles.desc, unread > 0 && styles.descUnread]} numberOfLines={1}>{desc}</Text>
         <Text style={styles.sub}>{sub}</Text>
       </View>
       <Text style={styles.arrow}>›</Text>
@@ -226,7 +226,9 @@ const styles = StyleSheet.create({
   icon: { fontSize: 25 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { flex: 1, color: THEME.text, fontSize: 16, fontWeight: '900' },
+  titleUnread: { color: THEME.primary },
   desc: { color: THEME.muted, marginTop: 3, fontWeight: '700' },
+  descUnread: { color: THEME.text, fontWeight: '900' },
   sub: { color: THEME.muted, marginTop: 3, fontSize: 12, fontWeight: '600' },
   arrow: { color: THEME.primary, fontSize: 30, fontWeight: '900', marginLeft: 8 },
   unreadBadge: { minWidth: 24, height: 24, borderRadius: 12, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
