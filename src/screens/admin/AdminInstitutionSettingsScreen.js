@@ -21,6 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { get, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -42,6 +43,7 @@ export default function AdminInstitutionSettingsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   const [form, setForm] = useState({
     ad: '',
@@ -117,7 +119,7 @@ export default function AdminInstitutionSettingsScreen() {
         updatedAt: Date.now(),
       });
 
-      Alert.alert('Başarılı', 'Kurum bilgileri kaydedildi.');
+      setSuccessToast(true);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Kurum bilgileri kaydedilemedi.');
@@ -137,6 +139,12 @@ export default function AdminInstitutionSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Kurum bilgileri kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.hero}>
