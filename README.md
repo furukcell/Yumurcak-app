@@ -2,9 +2,24 @@
 
 Yumurcak Kreş; yönetici, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır.
 
-Proje çalışan MVP seviyesindedir. Güncel odak; gerçek cihaz testi, kapalı test / production build hazırlığı, Google Play abonelik ürünleri, Firebase güvenlik kuralları ve sonraki faz olarak aylık yemek listesi akışıdır.
+Proje çalışan MVP + stabilizasyon seviyesindedir. Kod tarafında ana modüller büyük ölçüde tamamlanmıştır. Güncel odak; gerçek cihaz testi, Firebase güvenlik kuralları, RevenueCat / Google Play abonelik testi, push notification fiziksel cihaz testi ve Play Store kapalı test hazırlığıdır.
 
-> Son durum: 22 Haziran 2026
+> Son güncelleme: 23 Haziran 2026
+
+---
+
+## Teknoloji
+
+```txt
+Expo SDK: 54
+React Native: 0.81.5
+React: 19.1.0
+Firebase: 12.0.0
+RevenueCat: react-native-purchases 9.0.0
+Push: expo-notifications
+Storage / fotoğraf: expo-image-picker + Firebase Storage
+Android sistem bar: expo-navigation-bar
+```
 
 ---
 
@@ -12,10 +27,10 @@ Proje çalışan MVP seviyesindedir. Güncel odak; gerçek cihaz testi, kapalı 
 
 | Rol | Yetki |
 | --- | --- |
-| `superadmin` | Platform ve kreş yönetimi |
+| `superadmin` | Platform / kreş yönetimi ve üst seviye işlemler |
 | `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, anket, galeri, tema, abonelik, bildirim, yasal metin ve istatistik yönetimi |
-| `ogretmen` | Sınıf çocukları, yoklama, günlük rapor, mesaj, galeri paylaşımı, yemek listesi, medikal bilgi ve bildirim ekranları |
-| `veli` | Çocuğa ait özet, rapor, ödeme, anket, mesaj, galeri, yemek listesi, medikal bilgi, bildirim ve yasal metin ekranları |
+| `ogretmen` | Sınıf çocukları, yoklama, günlük rapor, fiziksel gelişim, mesaj, galeri, yemek listesi, medikal bilgi, sınıf teması ve bildirim ekranları |
+| `veli` | Çocuğa ait özet, rapor, ödeme, anket, mesaj, galeri, yemek listesi, gelişim, medikal bilgi, bildirim ve yasal metin ekranları |
 
 ---
 
@@ -24,35 +39,84 @@ Proje çalışan MVP seviyesindedir. Güncel odak; gerçek cihaz testi, kapalı 
 - Rol bazlı giriş ve yönlendirme
 - Firebase Realtime Database bağlantısı
 - Firebase Storage profil fotoğrafı ve galeri altyapısı
-- Kreş bazlı tema sistemi
+- Kreş bazlı genel tema sistemi
+- Sınıf bazlı tema altyapısı ve öğretmen sınıf tema ekranı
+- Admin tema ekranında desenli / temalı arka plan
+- Veli ve öğretmen anasayfa kartlarında pastel renkli görünüm
 - Veli alt tab yapısı ve safe-area uyumu
 - Veli günlük özet ekranı
-- Veli profil fotoğrafının anasayfa/özet alanlarına yansıması
+- Veli profil fotoğrafının anasayfa ve özet alanlarına yansıması
 - Yönetici kurum istatistikleri
-- Öğretmen ve çocuk bazlı istatistik/risk ekranı
+- Öğretmen ve çocuk bazlı istatistik / risk ekranı
 - Kurum Zili
-- Duyuru sistemi
+- Hedefli duyuru sistemi: tüm kurum, veli, öğretmen, sınıf
 - Ödeme takibi
 - Admin ödeme listesi ve ödeme formu
 - Veli son 12 ay ödeme ekranı
 - Veli günlük / aylık rapor ekranı
 - Öğretmen günlük rapor oluşturma ekranı
+- Öğretmen fiziksel gelişim girişi: boy, kilo, baş çevresi, not
 - Yemek listesi görüntüleme / öğretmen günlük yemek listesi girişi
 - Admin abonelik ekranı
 - RevenueCat SDK altyapısı
 - Anket / oylama
 - Mesajlaşma
+- Mesaj meta verisinde `undefined` temizleme ile yanlış hata alerti riskinin azaltılması
 - Galeri
 - Uygulama içi bildirim merkezi
 - Expo push notification altyapısı
 - Başarı toast sistemi
 - Uygulama içi yasal metinler: Kullanım Şartları, Gizlilik Politikası, KVKK Aydınlatma Metni
+- Android navigation bar gizleme altyapısı
+
+---
+
+## Tema Sistemi
+
+Tema sistemi iki katmanlıdır.
+
+### 1. Kreş genel teması
+
+Yönetici tarafından seçilir ve Firebase tarafında kreş kaydına yazılır.
+
+```txt
+kresler/{kresId}/temaAyarlari
+  temaId
+  patternEnabled
+  updatedAt
+```
+
+Bu tema, sınıf özel teması olmayan kullanıcılar için varsayılan görünüm olarak kullanılır.
+
+### 2. Sınıf teması
+
+Öğretmen tarafından kendi sınıfı için seçilir.
+
+```txt
+kresler/{kresId}/sinifTemalari/{sinifId}
+  temaId
+  patternEnabled
+  updatedAt
+  updatedBy
+```
+
+Amaç:
+
+```txt
+Öğretmen tema seçer
+↓
+Sadece o sınıfın öğretmenleri ve velileri aynı sınıf temasını görür
+↓
+Diğer sınıflar etkilenmez
+```
+
+Not: `ThemeProvider` sınıf temasını okuyacak altyapıya sahiptir. `RootNavigator` şu an `kullanici.sinifId` bilgisini `ThemeProvider` içine aktarır. Öğretmen veya veli kullanıcı kayıtlarında `sinifId` her zaman dolu değilse, sınıf teması yayılımı için sonraki kontrolde RootNavigator sınıf tespit mantığı güçlendirilmelidir.
 
 ---
 
 ## Bildirim Sistemi
 
-Bildirim sistemi 3 katmanlı olacak şekilde hazırlanmıştır.
+Bildirim sistemi 3 katmanlıdır.
 
 ### FAZ 1 — Uygulama içi bildirim merkezi
 
@@ -69,7 +133,7 @@ Tamamlandı.
 
 Aşağıdaki işlemler Firebase içine bildirim kaydı oluşturur:
 
-- Admin duyuru oluşturunca veli / öğretmen bildirimleri
+- Admin duyuru oluşturunca seçili hedefe göre veli / öğretmen / sınıf bildirimi
 - Admin ödeme kaydı oluşturunca ilgili veliye bildirim
 - Veli kurum zili gönderince admin / öğretmen bildirimi
 - Mesaj gönderilince alıcı kullanıcıya bildirim
@@ -106,8 +170,6 @@ Toast eklenen ekranlar:
 - Veli profil fotoğrafı ekranı
 - Öğretmen günlük rapor ekranı
 
-Bu sistem kayıt/güncelleme sonrası üstten kısa süreli başarılı işlem bildirimi gösterir.
-
 ---
 
 ## Abonelik ve RevenueCat
@@ -141,12 +203,6 @@ Kod tarafında eklenen RevenueCat dosyası:
 src/services/revenueCat.js
 ```
 
-RevenueCat SDK bağımlılığı:
-
-```txt
-react-native-purchases
-```
-
 Kod tarafında yapılanlar:
 
 - Android public SDK key eklendi.
@@ -156,7 +212,7 @@ Kod tarafında yapılanlar:
 - Satın alma fonksiyonu eklendi.
 - Satın alma geri yükleme fonksiyonu eklendi.
 - RevenueCat sonucu başarılı olursa Firebase `abonelikler/{kresId}` kaydı güncellenecek şekilde hazırlandı.
-- Admin abonelik ekranında RevenueCat durumu, paket okuma, satın alma ve restore akışı bağlandı.
+- Admin abonelik ekranında RevenueCat debug kartları kaldırıldı; kullanıcıya sade abonelik deneyimi bırakıldı.
 - Google Play ürünleri henüz bağlanmadıysa ekran güvenli şekilde uyarı verir; manuel/demo kullanım korunur.
 
 Google Play kapalı test / ürün bağlama aşamasında unutulmaması gerekenler:
@@ -211,7 +267,7 @@ Kurallar:
 - Veli sadece kendi çocuğuna, çocuğunun sınıfına veya tüm kuruma ait aktif galeri kayıtlarını görür.
 - Medyalar 24 saat sonra uygulamada görünmez.
 - Yönetici / öğretmen galeri ekranı açıldığında süresi dolan kayıtlar temizlenmeye çalışılır.
-- Storage’dan garantili otomatik silme için ileride Firebase Cloud Functions scheduled cleanup önerilir.
+- Storage’dan garantili otomatik silme için ileride Firebase Cloud Functions scheduled cleanup gerekir.
 
 ---
 
@@ -238,6 +294,43 @@ A4/PDF yükleme notu:
 
 ---
 
+## Veli Paneli
+
+Alt tab yapısı:
+
+```txt
+📊 Özet
+🏠 Anasayfa
+📋 Raporlar
+📈 Gelişim
+💬 Mesaj
+```
+
+Güncel durum:
+
+- Anasayfa kartları pastel renkli hale getirildi.
+- Özet ekranındaki profil / avatar alanları veli profil fotoğrafı ile uyumlu hale getirildi.
+- Ödeme ekranında son 12 ay ve tüm kayıtlar görünür.
+- Rapor ekranında günlük ve aylık özet sekmeleri vardır.
+- Aylık özet öğretmen raporlarından otomatik özet çıkarır; tıbbi/psikolojik tanı değildir.
+
+---
+
+## Öğretmen Paneli
+
+Güncel durum:
+
+- Öğretmen anasayfa kartları pastel renkli hale getirildi.
+- Öğretmen günlük rapor oluşturur.
+- Öğretmen yoklama girer.
+- Öğretmen medikal bilgileri görür/günceller.
+- Öğretmen fiziksel gelişim bilgisi girer.
+- Öğretmen kendi sınıfına galeri paylaşımı yapabilir.
+- Öğretmen sınıf teması seçebilir.
+- Öğretmen mesajlaşma ve bildirim ekranlarına erişir.
+
+---
+
 ## Yasal Metinler
 
 Uygulama içine aşağıdaki yasal metinler eklenmiştir:
@@ -259,103 +352,6 @@ Yasal metinlerde galeri içeriklerinin fotoğraf/video içerebileceği ve uygula
 
 ---
 
-## Veli Paneli
-
-Alt tab yapısı:
-
-```txt
-📊 Özet
-🏠 Anasayfa
-📋 Raporlar
-📈 Gelişim
-💬 Mesaj
-```
-
-Anasayfadaki kartlar:
-
-```txt
-🔔 Kurum Zili
-💳 Ödeme Takibi
-🗳️ Anketler
-☎️ Kurum İletişim
-📋 Günlük Rapor
-✅ Yoklama
-🍽️ Yemek Listesi
-🎉 Etkinlikler
-📈 Gelişim
-🩺 Medikal
-🚌 Servis
-📣 Duyurular
-💬 Mesajlar
-🖼️ Galeri
-📁 Belgeler
-```
-
-Veli ödeme ekranı:
-
-- Son 12 ay ödeme takibi gösterir.
-- Tüm ödeme kayıtları ayrıca listelenir.
-- Açık tutar, toplam tutar, ödenen ve geciken kayıt özeti gösterilir.
-- Kayıt yoksa ay bazında `Kayıt yok` durumu gösterilir.
-
-Veli rapor ekranı:
-
-- Günlük rapor sekmesi vardır.
-- Aylık özet sekmesi vardır.
-- Aylık özet; öğretmen raporlarından otomatik özet çıkarır, tıbbi/psikolojik tanı değildir.
-
----
-
-## Admin Ödeme Modülü
-
-Admin ödeme ekranı:
-
-- Ödemeleri listeler.
-- Tümü / Bekliyor / Gecikti / Ödendi filtreleri vardır.
-- Açık tutar, bu ay toplam, ödenen ve geciken özetleri gösterir.
-- Ödeme kartından düzenleme ve `Ödendi Yap` işlemi yapılabilir.
-
-Admin ödeme formu:
-
-- Çocuk seçimi
-- Dönem / ay / yıl seçimi
-- Tutar
-- Durum
-- Son ödeme tarihi
-- Ödeme tarihi
-- Açıklama
-- Bu ay / gelecek ay hızlı seçimleri
-
-Firebase node:
-
-```txt
-odemeler/{paymentId}
-  kresId
-  cocukId
-  childId
-  veliId
-  parentId
-  veliIds
-  parentIds
-  baslik
-  title
-  aciklama
-  ay
-  yil
-  donem
-  tarih
-  tutar
-  amount
-  durum: bekliyor | odendi | gecikti
-  status
-  sonOdemeTarihi
-  odemeTarihi
-  createdAt
-  updatedAt
-```
-
----
-
 ## Build Öncesi Test
 
 ```bash
@@ -364,33 +360,30 @@ npx expo-doctor
 npx expo start --clear
 ```
 
-RevenueCat eklendiği için build öncesi özellikle kontrol edilecekler:
-
-```bash
-npm install
-npx expo-doctor
-```
-
 Test edilecek temel akış:
 
 1. Admin giriş yapar.
 2. Sınıf, öğretmen, veli ve çocuk bağlantıları kontrol edilir.
 3. Öğretmen günlük rapor ve yoklama girer.
-4. Öğretmen günlük rapor kaydedince başarı toastı görünür.
-5. Öğretmen medikal bilgi alanını görüntüler/günceller.
-6. Admin / öğretmen galeriye fotoğraf veya video yükler.
-7. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
-8. Admin ödeme kaydı oluşturur.
-9. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
-10. Admin abonelik ekranında demo/promo/manual abonelik akışını kontrol eder.
-11. RevenueCat ekranında ürün yokken güvenli uyarı geldiği kontrol edilir.
-12. Ödeme, anket ve kurum zili ekranları açılır.
-13. Veli özet ekranında günlük veriler görünür.
-14. Tema değişimi veli / öğretmen ekranlarına yansır.
-15. Admin / öğretmen / veli bildirim ekranları açılır.
-16. Fiziksel cihazda push token ve push bildirim testi yapılır.
-17. Giriş ekranından Kullanım Şartları, Gizlilik Politikası ve KVKK metni açılır.
-18. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
+4. Öğretmen fiziksel gelişim kaydı girer.
+5. Öğretmen sınıf teması seçer.
+6. Aynı sınıftaki öğretmen/veli sınıf temasını görür.
+7. Admin / öğretmen galeriye fotoğraf veya video yükler.
+8. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
+9. Admin ödeme kaydı oluşturur.
+10. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
+11. Admin abonelik ekranında demo/promo/manual abonelik akışı kontrol edilir.
+12. RevenueCat ekranında ürün yokken güvenli uyarı geldiği kontrol edilir.
+13. Ödeme, anket ve kurum zili ekranları açılır.
+14. Veli özet ekranında günlük veriler ve profil fotoğrafı görünür.
+15. Veli ve öğretmen anasayfa kartları pastel görünür.
+16. Tema değişimi admin / veli / öğretmen ekranlarına yansır.
+17. Admin / öğretmen / veli bildirim ekranları açılır.
+18. Mesaj gönderimi sonrası mesaj gitmesine rağmen yanlış hata alerti çıkmadığı test edilir.
+19. Fiziksel cihazda push token ve push bildirim testi yapılır.
+20. Android navigation bar davranışı gerçek cihazda test edilir.
+21. Giriş ekranından Kullanım Şartları, Gizlilik Politikası ve KVKK metni açılır.
+22. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
 
 ---
 
@@ -399,12 +392,15 @@ Test edilecek temel akış:
 - Google Play Console abonelik ürünlerini oluşturma
 - RevenueCat Google Play service account bağlantısı
 - RevenueCat ürünlerini gerçek Google Play ürünlerine bağlama
+- Gerçek satın alma / restore testi
 - Push notification gerçek cihaz uçtan uca testi
 - Firebase Rules production güvenliği
 - Cloud Functions ile 24 saatten eski galeri medyasını garantili silme
 - Admin aylık yemek listesi ekranı
 - A4/PDF yemek listesi ek dosya yükleme
 - A4/PDF içinden otomatik menü çıkarma için sonraki faz OCR/AI değerlendirmesi
+- Öğretmen sınıf temasının veli tarafına yansımasının gerçek kullanıcı verisiyle test edilmesi
+- Mesaj gönderim hatası düzeltmesinin gerçek cihazda doğrulanması
 - Gerçek cihazda uçtan uca test
 - Play Store kapalı test / üretim build süreci
 
@@ -418,4 +414,4 @@ Faruk Kurtuluş
 
 ## Durum
 
-Yumurcak aktif geliştirme / MVP stabilizasyon aşamasındadır. Galeri hedefleme, ödeme takibi, veli günlük/aylık rapor ekranı, medikal bilgi akışı, yasal metinler, tema sistemi, admin ödeme modülü, RevenueCat kod altyapısı, uygulama içi bildirim merkezi, push notification altyapısı ve başarı toast sistemi eklenmiştir. Sıradaki kritik işler gerçek cihaz testleri, Google Play abonelik bağlantıları, Firebase Rules production güvenliği ve admin aylık yemek listesi modülüdür.
+Yumurcak aktif geliştirme / MVP stabilizasyon aşamasındadır. Ana admin, öğretmen ve veli modülleri çalışır durumdadır. Galeri hedefleme, ödeme takibi, veli günlük/aylık rapor ekranı, medikal bilgi akışı, fiziksel gelişim girişi, yasal metinler, tema sistemi, sınıf teması altyapısı, admin ödeme modülü, RevenueCat kod altyapısı, uygulama içi bildirim merkezi, push notification altyapısı, başarı toast sistemi ve görsel/pastel arayüz iyileştirmeleri eklenmiştir. Sıradaki kritik işler gerçek cihaz testleri, Google Play abonelik bağlantıları, Firebase Rules production güvenliği, push testi ve admin aylık yemek listesi modülüdür.
