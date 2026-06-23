@@ -3,6 +3,7 @@ import { Alert, FlatList, SafeAreaView, StyleSheet, Switch, Text, TouchableOpaci
 import { THEME_LIST } from '../../theme/themes';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function AdminThemeScreen() {
   const themeData = useAppTheme();
@@ -23,13 +24,17 @@ export default function AdminThemeScreen() {
   const saving = savingState[0];
   const setSaving = savingState[1];
 
+  const successToastState = useState(false);
+  const successToast = successToastState[0];
+  const setSuccessToast = successToastState[1];
+
   const selectedTheme = THEME_LIST.find(function (item) { return item.id === selectedThemeId; }) || theme;
 
   async function handleSave() {
     try {
       setSaving(true);
       await saveSchoolTheme(selectedThemeId, localPatternEnabled);
-      Alert.alert('Tamamlandı', 'Kreş teması güncellendi.');
+      setSuccessToast(true);
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Tema kaydedilemedi.');
@@ -85,6 +90,11 @@ export default function AdminThemeScreen() {
     React.createElement(
       SafeAreaView,
       { style: styles.safeArea },
+      React.createElement(AppSuccessToast, {
+        visible: successToast,
+        message: 'Kreş teması güncellendi',
+        onHide: function () { setSuccessToast(false); },
+      }),
       React.createElement(
         View,
         { style: styles.container },
