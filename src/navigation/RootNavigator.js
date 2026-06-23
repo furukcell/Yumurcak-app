@@ -64,12 +64,30 @@ export default function RootNavigator() {
     </ThemeProvider>
   );
 
-  if (yukleniyor || subLoading) {
+    if (yukleniyor || subLoading) {
     return (
       <View style={s.yuklemeEkrani}>
-        <Text style={s.logo}>🌟</Text>
-        <Text style={s.logoYazi}>YUMURCAK</Text>
-        <ActivityIndicator color="#FFF" size="large" style={{ marginTop: 20 }} />
+        <View style={s.cloudLeft} />
+        <View style={s.cloudRight} />
+
+        <Text style={s.sun}>☀️</Text>
+        <Text style={s.starLeft}>⭐</Text>
+        <Text style={s.starRight}>✨</Text>
+
+        <View style={s.logoCard}>
+          <Text style={s.logo}>🌈</Text>
+          <Text style={s.logoYazi}>YUMURCAK</Text>
+          <Text style={s.logoAltYazi}>Kreşin hazırlanıyor</Text>
+        </View>
+
+        <View style={s.loadingRow}>
+          <View style={[s.dot, s.dotBlue]} />
+          <View style={[s.dot, s.dotOrange]} />
+          <View style={[s.dot, s.dotGreen]} />
+        </View>
+
+        <ActivityIndicator color="#0B5EAD" size="large" style={s.spinner} />
+        <Text style={s.loadingText}>Yükleniyor...</Text>
       </View>
     );
   }
@@ -105,10 +123,117 @@ export default function RootNavigator() {
 const s = StyleSheet.create({
   yuklemeEkrani: {
     flex: 1,
-    backgroundColor: '#FF8C42',
+    backgroundColor: '#FFF7E8',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    paddingHorizontal: 28,
   },
-  logo: { fontSize: 72, marginBottom: 10 },
-  logoYazi: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 4 },
+
+  cloudLeft: {
+    position: 'absolute',
+    left: -70,
+    top: 90,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(177, 222, 255, 0.42)',
+  },
+
+  cloudRight: {
+    position: 'absolute',
+    right: -80,
+    bottom: 120,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: 'rgba(255, 203, 164, 0.38)',
+  },
+
+  sun: {
+    position: 'absolute',
+    right: 42,
+    top: 92,
+    fontSize: 46,
+    opacity: 0.9,
+  },
+
+  starLeft: {
+    position: 'absolute',
+    left: 34,
+    top: 170,
+    fontSize: 25,
+    opacity: 0.78,
+  },
+
+  starRight: {
+    position: 'absolute',
+    right: 48,
+    bottom: 190,
+    fontSize: 26,
+    opacity: 0.75,
+  },
+
+  logoCard: {
+    width: 230,
+    minHeight: 230,
+    borderRadius: 115,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 2,
+    borderColor: 'rgba(11,94,173,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0B5EAD',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+
+  logo: {
+    fontSize: 72,
+    marginBottom: 6,
+  },
+
+  logoYazi: {
+    fontSize: 30,
+    fontWeight: '900',
+    color: '#0B5EAD',
+    letterSpacing: 2,
+  },
+
+  logoAltYazi: {
+    marginTop: 8,
+    color: '#728197',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 34,
+  },
+
+  dot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+
+  dotBlue: { backgroundColor: '#32A8F2' },
+  dotOrange: { backgroundColor: '#FF9F1C' },
+  dotGreen: { backgroundColor: '#71C94D' },
+
+  spinner: {
+    marginTop: 18,
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: '#0B5EAD',
+    fontSize: 18,
+    fontWeight: '900',
+  },
 });
