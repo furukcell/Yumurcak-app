@@ -3,20 +3,18 @@
 // SafeAreaProvider + StatusBar + Push token + Android navigation bar
 // ============================================================
 import { useEffect } from 'react';
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Updates from 'expo-updates';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToDatabase,
 } from './src/utils/notifications';
-import { auth } from './src/config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
   useEffect(() => {
@@ -49,30 +47,44 @@ export default function App() {
     hideAndroidNavigationBar();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const token = await registerForPushNotificationsAsync();
-          if (token) {
-            await savePushTokenToDatabase(token, user.uid);
-          }
-        } catch (error) {
-          console.warn('Bildirim token kaydedilemedi:', error);
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <NavigationContainer>
+          <PushTokenSync />
           <StatusBar style="dark" backgroundColor="#F8F6FF" />
           <RootNavigator />
         </NavigationContainer>
       </AuthProvider>
     </SafeAreaProvider>
   );
+}
+
+function PushTokenSync() {
+  const { kullanici } = useAuth();
+
+  useEffect(() => {
+    if (!kullanici?.id && !kullanici?.uid) return;
+
+    let cancelled = false;
+
+    const syncToken = async () => {
+      try {
+        const token = await registerForPushNotificationsAsync();
+        if (!token || cancelled) return;
+
+        await savePushTokenToDatabase(token, kullanici.id || kullanici.uid);
+      } catch (error) {
+        console.warn('Bildirim token kaydedilemedi:', error);
+      }
+    };
+
+    syncToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [kullanici?.id, kullanici?.uid]);
+
+  return null;
 }
