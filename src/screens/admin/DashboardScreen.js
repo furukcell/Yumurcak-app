@@ -37,6 +37,7 @@ const MENU_ITEMS = [
   { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
   { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum gelişim özeti', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', desc: 'Fotoğraf / video', color: THEME.teal, bgColor: '#E0F7FA' },
+  { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', desc: 'Ay bazlı kurum menüsü', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Çocuk kayıtları', color: THEME.orange, bgColor: '#FFF6E8' },
   { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
