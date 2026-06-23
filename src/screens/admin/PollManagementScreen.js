@@ -17,6 +17,7 @@ import {
 import { ref, onValue, push, update, remove } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
   primary: '#3C3489',
@@ -88,6 +89,7 @@ export default function PollManagementScreen() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [errorText, setErrorText] = useState('');
+  const [successToast, setSuccessToast] = useState(false);
 
   const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
@@ -153,7 +155,7 @@ export default function PollManagementScreen() {
       setBaslik('');
       setAciklama('');
       setSeceneklerText('Evet\nHayır');
-      Alert.alert('Tamam', 'Anket velilere açıldı.');
+      setSuccessToast(true);
     } catch (e) {
       Alert.alert('Hata', 'Anket oluşturulamadı.');
     } finally {
@@ -234,6 +236,12 @@ export default function PollManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Anket velilere açıldı"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
         <View style={styles.summaryRow}>
