@@ -10,15 +10,12 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import {
@@ -34,6 +31,7 @@ import {
   update,
 } from 'firebase/database';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -60,6 +58,7 @@ export default function MessageDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { kullanici } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const currentUserId = kullanici?.uid || kullanici?.id;
   const currentRole = kullanici?.rol || 'kullanici';
@@ -281,11 +280,11 @@ export default function MessageDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
@@ -301,9 +300,8 @@ export default function MessageDetailScreen() {
           <View style={styles.headerRight} />
         </View>
 
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={styles.messagesArea}>
-            {loading ? (
+        <View style={styles.messagesArea}>
+          {loading ? (
               <View style={styles.center}>
                 <ActivityIndicator size="large" color={THEME.primary} />
                 <Text style={styles.loadingText}>Mesajlar hazırlanıyor...</Text>
@@ -316,8 +314,8 @@ export default function MessageDetailScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
                 keyboardShouldPersistTaps="handled"
-                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
-                maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                keyboardDismissMode="on-drag"
+                removeClippedSubviews={false}
                 ListHeaderComponent={
                   hasMore ? (
                     <TouchableOpacity style={styles.loadMoreButton} onPress={loadOlderMessages} disabled={loadingMore} activeOpacity={0.85}>
@@ -375,10 +373,9 @@ export default function MessageDetailScreen() {
                 }}
               />
             )}
-          </View>
-        </TouchableWithoutFeedback>
+        </View>
 
-        <View style={styles.inputOuter} pointerEvents="box-none">
+        <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
           <View style={styles.inputBar}>
             <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
               <TextInput
@@ -408,7 +405,7 @@ export default function MessageDetailScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
