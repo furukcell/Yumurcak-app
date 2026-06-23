@@ -13,6 +13,7 @@ import {
 import { useNodeList, useParentBase, LoadingScreen, EmptyState, toDateKey } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
+import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const MEAL_LABELS = {
   kahvalti: 'Kahvaltı',
@@ -52,6 +53,7 @@ export default function ParentSummaryScreen({ navigation }) {
     parentId,
     parentPhotoUrl,
   } = base;
+  const unreadMessages = useUnreadMessagesCount(parentId);
   const today = toDateKey(new Date());
 
   const todayReport = useMemo(() => {
@@ -199,9 +201,16 @@ export default function ParentSummaryScreen({ navigation }) {
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('ParentMessages')} activeOpacity={0.82}>
-            <View style={[styles.quickActionIcon, styles.iconBlue]}><Text style={styles.quickActionIconText}>💬</Text></View>
+            <View style={[styles.quickActionIcon, styles.iconBlue]}>
+              <Text style={styles.quickActionIconText}>💬</Text>
+              {unreadMessages > 0 ? (
+                <View style={styles.quickActionBadge}>
+                  <Text style={styles.quickActionBadgeText}>{unreadMessages > 99 ? '99+' : unreadMessages}</Text>
+                </View>
+              ) : null}
+            </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.quickActionTitle}>Mesaj</Text>
+              <Text style={[styles.quickActionTitle, unreadMessages > 0 && styles.quickActionTitleUnread]}>Mesaj</Text>
               <Text style={styles.quickActionDesc}>Öğretmene yaz</Text>
             </View>
           </TouchableOpacity>
@@ -302,9 +311,16 @@ export default function ParentSummaryScreen({ navigation }) {
         </View>
 
         <TouchableOpacity style={styles.wideCard} onPress={() => navigation.navigate('ParentMessages')} activeOpacity={0.82}>
-          <View style={[styles.bigIcon, styles.iconPink]}><Text style={styles.bigIconText}>💬</Text></View>
+          <View style={[styles.bigIcon, styles.iconPink]}>
+            <Text style={styles.bigIconText}>💬</Text>
+            {unreadMessages > 0 ? (
+              <View style={styles.wideCardBadge}>
+                <Text style={styles.wideCardBadgeText}>{unreadMessages > 99 ? '99+' : unreadMessages}</Text>
+              </View>
+            ) : null}
+          </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Mesajlar</Text>
+            <Text style={[styles.cardTitle, unreadMessages > 0 && styles.cardTitleUnread]}>Mesajlar</Text>
             <Text style={styles.cardDesc}>Öğretmen ve kurum mesajlarını buradan takip edebilirsin.</Text>
           </View>
           <Text style={styles.arrow}>›</Text>
@@ -446,9 +462,12 @@ const createStyles = (theme) => StyleSheet.create({
   pillOrange: { color: theme.orange, backgroundColor: '#FFF3DF' },
   quickActionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   quickActionCard: { width: '48.7%', backgroundColor: theme.card, borderRadius: 19, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: theme.border },
-  quickActionIcon: { width: 38, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  quickActionIcon: { width: 38, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   quickActionIconText: { fontSize: 20 },
+  quickActionBadge: { position: 'absolute', top: -6, right: -6, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: theme.card },
+  quickActionBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 9 },
   quickActionTitle: { color: theme.text, fontSize: 13, fontWeight: '900' },
+  quickActionTitleUnread: { color: theme.primary },
   quickActionDesc: { color: theme.muted, fontSize: 10.5, fontWeight: '700', marginTop: 2 },
   commentCard: { backgroundColor: theme.card, borderRadius: 22, padding: 15, marginBottom: 12, borderLeftWidth: 5, borderLeftColor: theme.primary, borderWidth: 1, borderColor: theme.border },
   commentHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
@@ -465,8 +484,10 @@ const createStyles = (theme) => StyleSheet.create({
   sectionAction: { color: theme.primary, fontSize: 11.5, fontWeight: '900' },
   card: { backgroundColor: theme.card, borderRadius: 21, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.border },
   cardRowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  bigIcon: { width: 45, height: 45, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  bigIcon: { width: 45, height: 45, borderRadius: 16, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   bigIconText: { fontSize: 22 },
+  wideCardBadge: { position: 'absolute', top: -6, right: -6, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 2, borderColor: theme.card },
+  wideCardBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
   iconOrange: { backgroundColor: '#FFF3DF' },
   iconBlue: { backgroundColor: '#EAF0FF' },
   iconPink: { backgroundColor: '#FFE9F8' },
@@ -476,6 +497,7 @@ const createStyles = (theme) => StyleSheet.create({
   pollAlert: { borderLeftWidth: 5, borderLeftColor: theme.primary, backgroundColor: '#FBF8FF' },
   amountText: { color: theme.orange, fontSize: 13, fontWeight: '900', marginTop: 6 },
   cardTitle: { color: theme.text, fontSize: 14.5, fontWeight: '900' },
+  cardTitleUnread: { color: theme.primary },
   cardDesc: { color: theme.muted, fontSize: 11.8, fontWeight: '650', lineHeight: 16, marginTop: 4 },
   mealBox: { marginTop: 10, gap: 8 },
   mealLine: { backgroundColor: theme.bg, borderRadius: 15, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.border },
