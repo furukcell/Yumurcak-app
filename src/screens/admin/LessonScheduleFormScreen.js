@@ -11,6 +11,7 @@ import { ref, onValue, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -45,6 +46,7 @@ export default function LessonScheduleFormScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [kaydediliyor, setKaydediliyor] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     if (!sinifId) {
@@ -76,9 +78,10 @@ export default function LessonScheduleFormScreen() {
         gunler: gunVerileri,
         updatedAt: Date.now(),
       });
-      Alert.alert('Başarılı', 'Ders programı kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setSuccessToast(true);
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (err) {
       Alert.alert('Hata', 'Kaydedilirken bir sorun oluştu: ' + err.message);
     } finally {
@@ -96,6 +99,12 @@ export default function LessonScheduleFormScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Ders programı kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.baslik}>🏫 {sinifAd}</Text>
         <Text style={styles.altBaslik}>Her gün için programı serbest metin olarak yazabilirsin. Örn: 09:00 Serbest Oyun, 10:00 İngilizce</Text>
