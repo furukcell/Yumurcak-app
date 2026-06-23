@@ -164,14 +164,14 @@ function ContactCard({ icon, title, desc, sub, unread, onPress }) {
       </View>
       <View style={{ flex: 1 }}>
         <View style={local.titleRow}>
-          <Text style={local.title} numberOfLines={1}>{title}</Text>
+          <Text style={[local.title, unread > 0 && local.titleUnread]} numberOfLines={1}>{title}</Text>
           {unread > 0 ? (
             <View style={local.unreadBadge}>
               <Text style={local.unreadText}>{unread > 99 ? '99+' : unread}</Text>
             </View>
           ) : null}
         </View>
-        <Text style={local.desc} numberOfLines={1}>{desc}</Text>
+        <Text style={[local.desc, unread > 0 && local.descUnread]} numberOfLines={1}>{desc}</Text>
         <Text style={local.sub}>{sub}</Text>
       </View>
       <Text style={local.arrow}>›</Text>
@@ -207,7 +207,9 @@ const local = {
   icon: { fontSize: 25 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { flex: 1, color: THEME.text, fontSize: 16, fontWeight: '900' },
+  titleUnread: { color: THEME.primary },
   desc: { color: THEME.muted, marginTop: 3, fontWeight: '700' },
+  descUnread: { color: THEME.text, fontWeight: '900' },
   sub: { color: THEME.muted, marginTop: 3, fontSize: 12, fontWeight: '600' },
   arrow: { color: THEME.primary, fontSize: 30, fontWeight: '900', marginLeft: 8 },
   unreadBadge: {
