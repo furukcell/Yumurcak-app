@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — TeacherAttendanceScreen.js
 // FAZ 2: Seç / Kaydet sistemi + aynı çocuk aynı gün tek kayıt
+// FAZ 3: "Yoklaması alındı" rozeti eklendi
 // Firebase path: yoklamalar/{tarih}_{cocukId}
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
@@ -100,9 +101,19 @@ export default function TeacherAttendanceScreen() {
 
             {classChildren.map((child) => {
               const status = localStatus[child.id] || '';
+              // Bu çocuk için bugün zaten kaydedilmiş (sunucudaki) bir yoklama var mı?
+              const alreadySaved = Boolean(todayMap[child.id]);
+
               return (
                 <View key={child.id} style={styles.card}>
-                  <Text style={styles.childName}>{getChildName(child)}</Text>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={styles.childName}>{getChildName(child)}</Text>
+                    {alreadySaved ? (
+                      <View style={styles.savedBadge}>
+                        <Text style={styles.savedBadgeText}>✓ Yoklaması alındı</Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <View style={styles.buttons}>
                     {renderButton(child, 'geldi', 'Geldi', status)}
                     {renderButton(child, 'gelmedi', 'Gelmedi', status)}
@@ -146,7 +157,15 @@ const styles = StyleSheet.create({
   infoTitle: { fontSize: 16, fontWeight: '900', color: THEME.primaryDark },
   infoDesc: { color: THEME.muted, marginTop: 4, fontWeight: '600' },
   card: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
-  childName: { fontSize: 16, fontWeight: '900', color: THEME.text, marginBottom: 12 },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 },
+  childName: { fontSize: 16, fontWeight: '900', color: THEME.text, flexShrink: 1 },
+  savedBadge: {
+    backgroundColor: '#E7F8D8',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  savedBadgeText: { color: '#3C8C2A', fontSize: 11, fontWeight: '900' },
   buttons: { flexDirection: 'row', gap: 8 },
   statusButton: { flex: 1, paddingVertical: 11, borderRadius: 13, backgroundColor: THEME.bg, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   statusButtonActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
