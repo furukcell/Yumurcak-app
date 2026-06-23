@@ -8,6 +8,7 @@ import { ref, push } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -34,6 +35,7 @@ export default function TeacherMealsScreen() {
   const [ogle, setOgle] = useState('');
   const [araOgun, setAraOgun] = useState('');
   const [saving, setSaving] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
@@ -89,7 +91,7 @@ export default function TeacherMealsScreen() {
       setAraOgun('');
       setTarih(todayString());
       setShowForm(false);
-      Alert.alert('Başarılı', 'Yemek listesi kaydedildi.');
+      setSuccessToast(true);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Yemek listesi kaydedilemedi.');
@@ -100,6 +102,12 @@ export default function TeacherMealsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Yemek listesi kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScreenHeader
         navigation={navigation}
         title="Yemek Listesi"
