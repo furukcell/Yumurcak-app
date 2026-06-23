@@ -73,6 +73,7 @@ export default function MessageDetailScreen() {
 
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const isFirstLoadRef = useRef(true);
 
   const [liveMessages, setLiveMessages] = useState([]);
   const [olderMessages, setOlderMessages] = useState([]);
@@ -111,9 +112,15 @@ export default function MessageDetailScreen() {
       setHasMore(list.length === MESSAGE_PAGE_SIZE);
       setLoading(false);
 
-      requestAnimationFrame(() => {
-        setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 120);
-      });
+      // Sadece ilk yüklemede en alta kaydır.
+      // (Eski mesajlar yüklenirken veya canlı güncellemelerde otomatik
+      // en alta zıplamasın; kullanıcı yukarı bakarken ekran kaymasın.)
+      if (isFirstLoadRef.current) {
+        isFirstLoadRef.current = false;
+        requestAnimationFrame(() => {
+          setTimeout(() => listRef.current?.scrollToEnd?.({ animated: false }), 120);
+        });
+      }
     });
 
     return () => {
@@ -209,8 +216,17 @@ export default function MessageDetailScreen() {
         },
       });
 
+      // ÖNEMLİ: mergedMeta içindeki nested "okunmamisSayac" / "sonOkuma"
+      // objelerini spread ETMİYORUZ. Aynı update() çağrısında hem nested
+      // obje hem flat path ("okunmamisSayac/uid") birlikte gönderilirse
+      // Firebase RTDB bu path çakışmasını reddedip update'i tamamen
+      // başarısız sayabiliyor — mesaj (push) zaten gitmiş olsa da kullanıcı
+      // "Mesaj gönderilemedi" hatası görüyordu. Çözüm: meta'dan o iki alanı
+      // çıkarıp sadece flat path key'leri ile güncellemek.
+      const { okunmamisSayac, sonOkuma, ...metaWithoutCounters } = mergedMeta;
+
       const updates = {
-        ...mergedMeta,
+        ...metaWithoutCounters,
         id: conversationId,
         sonMesaj: clean,
         sonMesajAt: now,
@@ -229,32 +245,32 @@ export default function MessageDetailScreen() {
       await update(ref(database, `mesajKonusmalari/${conversationId}`), updates);
 
       const receiverIds = participants.filter(
-     (participantId) => participantId && participantId !== currentUserId
-   );
+        (participantId) => participantId && participantId !== currentUserId
+      );
 
-     if (receiverIds.length > 0) {
-   try {
-        await createUserNotification({
-        kresId: kullanici?.kresId || mergedMeta.kresId || '',
-        userIds: receiverIds,
-        baslik: '💬 Yeni mesaj',
-        mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
-        tip: 'mesaj',
-        routeName: 'MessageDetail',
-        routeParams: {
-        conversationId,
-        conversationMeta: mergedMeta,
-        title,
-        subtitle,
-      },
-      createdBy: currentUserId,
-      });
-    } catch (notificationError) {
-     console.warn('Mesaj gönderildi ama bildirim oluşturulamadı:', notificationError);
-    }
-  }
+      if (receiverIds.length > 0) {
+        try {
+          await createUserNotification({
+            kresId: kullanici?.kresId || mergedMeta.kresId || '',
+            userIds: receiverIds,
+            baslik: '💬 Yeni mesaj',
+            mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
+            tip: 'mesaj',
+            routeName: 'MessageDetail',
+            routeParams: {
+              conversationId,
+              conversationMeta: mergedMeta,
+              title,
+              subtitle,
+            },
+            createdBy: currentUserId,
+          });
+        } catch (notificationError) {
+          console.warn('Mesaj gönderildi ama bildirim oluşturulamadı:', notificationError);
+        }
+      }
 
-    setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 80);
+      setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 80);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Mesaj gönderilemedi.');
@@ -301,7 +317,7 @@ export default function MessageDetailScreen() {
                 contentContainerStyle={styles.listContent}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
-                onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
+                maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                 ListHeaderComponent={
                   hasMore ? (
                     <TouchableOpacity style={styles.loadMoreButton} onPress={loadOlderMessages} disabled={loadingMore} activeOpacity={0.85}>
