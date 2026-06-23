@@ -72,9 +72,36 @@ export function mergeMessages(...groups) {
   return Array.from(map.values()).sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
 }
 
+function cleanFirebaseValue(value) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => cleanFirebaseValue(item))
+      .filter((item) => item !== undefined);
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value).reduce((acc, entry) => {
+      const key = entry[0];
+      const item = entry[1];
+      const cleaned = cleanFirebaseValue(item);
+
+      if (cleaned !== undefined) {
+        acc[key] = cleaned;
+      }
+
+      return acc;
+    }, {});
+  }
+
+  return value;
+}
+
 export function normalizeConversationMeta(meta = {}) {
-  return {
+  return cleanFirebaseValue({
     ...(meta || {}),
     aktif: true,
-  };
+  });
 }
