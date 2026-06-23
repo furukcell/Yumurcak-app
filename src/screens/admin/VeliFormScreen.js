@@ -16,6 +16,7 @@ import { generateId } from '../../utils/id';
 import { usernameToEmail } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function VeliFormScreen() {
   const route = useRoute();
@@ -30,6 +31,7 @@ export default function VeliFormScreen() {
   const [telefon, setTelefon] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!veliId);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     if (!veliId) return;
@@ -118,13 +120,11 @@ export default function VeliFormScreen() {
 
       await update(ref(database), updates);
 
-      const mesaj = veliId
-        ? `Veli güncellendi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: Değişmedi\nAuth: ${authYeniOlustu ? 'Yeni oluşturuldu' : 'Mevcut'}`
-        : `Veli kaydedildi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${kaydedilenSifre}\nAuth hesabı oluşturuldu.`;
+      setSuccessToast(true);
 
-      Alert.alert('Başarılı', mesaj, [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (error) {
       console.error(error);
 
@@ -152,6 +152,12 @@ export default function VeliFormScreen() {
 
   return (
     <View style={s.screen}>
+      <AppSuccessToast
+        visible={successToast}
+        message={veliId ? 'Veli güncellendi' : 'Veli kaydedildi'}
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScrollView style={s.container}>
         <View style={s.form}>
 
