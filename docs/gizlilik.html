@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gizlilik Politikası – Yumurcak Kreş</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #4A90D9, #F5A623);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .logo-text { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+    .logo-sub { font-size: 13px; color: #888; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; color: #1a1a2e; }
+    .date { font-size: 13px; color: #aaa; margin-bottom: 32px; }
+    h2 { font-size: 16px; font-weight: 700; margin: 28px 0 10px; color: #2c3e7a; }
+    p, li { font-size: 15px; line-height: 1.75; color: #444; }
+    ul { padding-left: 20px; margin-top: 8px; }
+    li { margin-bottom: 6px; }
+    .highlight {
+      background: #eef4ff;
+      border-left: 4px solid #4A90D9;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: #2c3e7a;
+    }
+    .contact-box {
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 32px;
+    }
+    .contact-box p { font-size: 14px; }
+    footer { margin-top: 40px; font-size: 12px; color: #bbb; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">🐣</div>
+      <div>
+        <div class="logo-text">Yumurcak Kreş</div>
+        <div class="logo-sub">Veli & Kurum Takip Uygulaması</div>
+      </div>
+    </div>
+
+    <h1>Gizlilik Politikası</h1>
+    <div class="date">Son güncelleme: 23 Haziran 2026</div>
+
+    <div class="highlight">
+      Yumurcak Kreş uygulaması; çocukların ve ailelerinin gizliliğini en üst düzeyde korumayı taahhüt eder. Bu politika, hangi verileri topladığımızı, nasıl kullandığımızı ve nasıl koruduğumuzu açıklar.
+    </div>
+
+    <h2>1. Toplanan Veriler</h2>
+    <p>Uygulama aşağıdaki verileri toplar:</p>
+    <ul>
+      <li>Kullanıcı adı ve şifre (Firebase Authentication)</li>
+      <li>Çocuğa ait ad, soyad, doğum tarihi, sınıf bilgisi</li>
+      <li>Veli ve öğretmen iletişim bilgileri</li>
+      <li>Günlük raporlar, yoklama ve gelişim kayıtları</li>
+      <li>Fotoğraf ve video (galeri yüklemeleri)</li>
+      <li>Ödeme takip kayıtları (tutar, tarih, durum)</li>
+      <li>Push bildirim token'ı (Expo Notifications)</li>
+    </ul>
+
+    <h2>2. Verilerin Kullanım Amacı</h2>
+    <ul>
+      <li>Kreş yönetimi ve veli–öğretmen iletişimini sağlamak</li>
+      <li>Günlük rapor, yoklama ve gelişim takibini sunmak</li>
+      <li>Ödeme durumunu kayıt altına almak</li>
+      <li>Push bildirim göndermek</li>
+      <li>Uygulama güvenliğini sağlamak</li>
+    </ul>
+
+    <h2>3. Verilerin Saklanması</h2>
+    <p>Tüm veriler Google Firebase Realtime Database ve Firebase Storage altyapısında saklanır. Veriler Türkiye dışındaki Google sunucularında barındırılabilir. Firebase'in güvenlik standartları hakkında bilgi için <a href="https://firebase.google.com/support/privacy" target="_blank">firebase.google.com/support/privacy</a> adresini ziyaret edebilirsiniz.</p>
+
+    <h2>4. Üçüncü Taraf Hizmetler</h2>
+    <ul>
+      <li><strong>Google Firebase</strong> — Kimlik doğrulama, veritabanı, depolama</li>
+      <li><strong>Expo / Expo Notifications</strong> — Push bildirim altyapısı</li>
+      <li><strong>RevenueCat</strong> — Abonelik yönetimi</li>
+    </ul>
+
+    <h2>5. Galeri İçerikleri</h2>
+    <p>Öğretmen veya yönetici tarafından yüklenen fotoğraf ve videolar yalnızca ilgili veli ve öğretmenler tarafından görüntülenebilir. Galeri içerikleri 24 saat sonra uygulama içinde görünmez hale gelir.</p>
+
+    <h2>6. Çocuk Gizliliği</h2>
+    <p>Uygulama 13 yaşın altındaki çocukları doğrudan kullanıcı olarak kayıt etmez. Çocuklara ait veriler yalnızca yetkili veli ve kurum yöneticileri tarafından girilir ve yönetilir.</p>
+
+    <h2>7. Veri Güvenliği</h2>
+    <p>Verileriniz Firebase güvenlik kuralları ile korunmaktadır. Her kullanıcı yalnızca kendi kurumuna ve rolüne ait verilere erişebilir.</p>
+
+    <h2>8. Hesap ve Veri Silme</h2>
+    <p>Hesap bilgilerinin silinmesini talep etmek için kreş yöneticinizle veya aşağıdaki iletişim adresiyle bizimle iletişime geçebilirsiniz. Talepler en geç 30 gün içinde işleme alınır.</p>
+
+    <h2>9. Politika Değişiklikleri</h2>
+    <p>Bu gizlilik politikası zaman zaman güncellenebilir. Önemli değişiklikler uygulama içi bildirimle duyurulur.</p>
+
+    <div class="contact-box">
+      <h2 style="margin-top:0">İletişim</h2>
+      <p>Gizlilik ile ilgili sorularınız için:</p>
+      <p><strong>Geliştirici:</strong> Faruk Kurtuluş</p>
+      <p><strong>E-posta:</strong> destek.fkdigital@gmail.com</p>
+    </div>
+
+    <footer>© 2026 Yumurcak Kreş Uygulaması. Tüm hakları saklıdır.</footer>
+  </div>
+</body>
+</html>
