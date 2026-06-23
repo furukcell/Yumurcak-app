@@ -8,6 +8,7 @@ import { ref, push } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherEventsScreen() {
   const navigation = useNavigation();
@@ -18,6 +19,7 @@ export default function TeacherEventsScreen() {
   const [saat, setSaat] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [saving, setSaving] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   const classEvents = useMemo(() => {
     if (!currentClass?.id) return [];
@@ -58,7 +60,7 @@ export default function TeacherEventsScreen() {
       setSaat('');
       setAciklama('');
       setShowForm(false);
-      Alert.alert('Başarılı', 'Etkinlik sınıf velilerine eklendi.');
+      setSuccessToast(true);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Etkinlik kaydedilemedi.');
@@ -69,6 +71,12 @@ export default function TeacherEventsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Etkinlik sınıf velilerine eklendi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScreenHeader
         navigation={navigation}
         title="Etkinlikler"
