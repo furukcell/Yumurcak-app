@@ -8,9 +8,12 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator
 } from 'react-native';
-import { ref, get, update } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { ref, get, set, update } from 'firebase/database';
+import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
+import { getApps, initializeApp } from 'firebase/app';
+import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
+import { usernameToEmail } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 
@@ -71,6 +74,24 @@ export default function TeacherFormScreen() {
       const oldTeacher = teacherSnap.exists() ? (teacherSnap.val() || {}) : {};
       const kaydedilenSifre = sifre.trim() || oldTeacher.sifre || '123456';
 
+      if (kaydedilenSifre.length < 6) {
+        Alert.alert('Hata', 'Şifre en az 6 karakter olmalı');
+        setLoading(false);
+        return;
+      }
+
+      const email = oldTeacher.email || usernameToEmail(kullaniciAdi.trim());
+      let authUid = oldTeacher.authUid || null;
+      let authYeniOlustu = false;
+
+      if (!authUid) {
+        const secondaryAuth = getSecondaryAuth();
+        const credential = await createUserWithEmailAndPassword(secondaryAuth, email, kaydedilenSifre);
+        authUid = credential.user.uid;
+        authYeniOlustu = true;
+        await signOut(secondaryAuth).catch(() => {});
+      }
+
       const siniflarSnap = await get(ref(database, 'siniflar'));
       const siniflarData = siniflarSnap.exists() ? (siniflarSnap.val() || {}) : {};
 
@@ -84,9 +105,16 @@ export default function TeacherFormScreen() {
         rol: 'ogretmen',
         sinifId: nextSinifId,
         kresId: oldTeacher.kresId || kullanici?.kresId || 'default-kres',
+        authUid,
+        email,
+        authProvider: 'firebase',
+        authCreatedAt: oldTeacher.authCreatedAt || now,
+        authUpdatedAt: now,
         createdAt: oldTeacher.createdAt || now,
         updatedAt: now,
       };
+
+      updates[`authKullaniciIndex/${authUid}`] = id;
 
       Object.entries(siniflarData).forEach(([classId, classData]) => {
         const mevcutIds = Array.isArray(classData?.ogretmenIds)
@@ -118,15 +146,24 @@ export default function TeacherFormScreen() {
       await update(ref(database), updates);
 
       const mesaj = teacherId
-        ? `Öğretmen güncellendi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${sifre.trim() ? kaydedilenSifre : 'Değişmedi'}`
-        : `Öğretmen kaydedildi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${kaydedilenSifre}`;
+        ? `Öğretmen güncellendi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${sifre.trim() ? kaydedilenSifre : 'Değişmedi'}\nAuth: ${authYeniOlustu ? 'Yeni oluşturuldu' : 'Mevcut'}`
+        : `Öğretmen kaydedildi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${kaydedilenSifre}\nAuth hesabı oluşturuldu.`;
 
       Alert.alert('Başarılı', mesaj, [
         { text: 'Tamam', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      Alert.alert('Hata', 'Öğretmen kaydedilemedi');
       console.error(error);
+
+      if (error?.code === 'auth/email-already-in-use') {
+        Alert.alert(
+          'Auth Hatası',
+          'Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı dene veya Auth Geçiş ekranından eşleştirme kontrolü yap.'
+        );
+        return;
+      }
+
+      Alert.alert('Hata', `Öğretmen kaydedilemedi.\n\n${error?.code || error?.message || ''}`);
     } finally {
       setLoading(false);
     }
@@ -233,6 +270,13 @@ export default function TeacherFormScreen() {
       </View>
     </ScrollView>
   );
+}
+
+function getSecondaryAuth() {
+  const name = 'yumurcak-teacher-create';
+  const existing = getApps().find((app) => app.name === name);
+  const app = existing || initializeApp(firebaseConfig, name);
+  return getAuth(app);
 }
 
 const styles = StyleSheet.create({
