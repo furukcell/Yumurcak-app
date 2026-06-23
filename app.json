@@ -9,6 +9,12 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/522bbf0b-0a2c-4198-93b8-429848df9a43"
+    },
     "extra": {
       "eas": {
         "projectId": "522bbf0b-0a2c-4198-93b8-429848df9a43"
