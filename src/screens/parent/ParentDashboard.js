@@ -28,24 +28,24 @@ export default function ParentDashboardScreen({ navigation }) {
   const getSleep = () => todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || 'İyi');
 
   const featuredActions = [
-    ['🔔', 'Kurum Zili', 'ParentBell', 'Geliyorum / kapıdayım bildir'],
-    ['💳', 'Ödeme Takibi', 'ParentPayments', 'Aidat ve ücret kayıtları'],
-    ['🗳️', 'Anketler', 'ParentPolls', 'Kurum anketleri ve oylamalar'],
-    ['☎️', 'Kurum İletişim', 'ParentContact', 'Telefon, adres ve yetkili'],
+    ['🔔', 'Kurum Zili', 'ParentBell', 'Geliyorum / kapıdayım bildir', '#FFF4C7', '#F5C84B'],
+    ['💳', 'Ödeme Takibi', 'ParentPayments', 'Aidat ve ücret kayıtları', '#E8FBEA', '#7DDC8C'],
+    ['🗳️', 'Anketler', 'ParentPolls', 'Kurum anketleri ve oylamalar', '#DFF4FF', '#7CCAF0'],
+    ['☎️', 'Kurum İletişim', 'ParentContact', 'Telefon, adres ve yetkili', '#F1E6FF', '#C69AF6'],
   ];
 
   const quickActions = [
-    ['📋', 'Günlük Rapor', 'ParentReports'],
-    ['✅', 'Yoklama', 'ParentAttendance'],
-    ['🍽️', 'Yemek Listesi', 'ParentMeals'],
-    ['🎉', 'Etkinlikler', 'ParentEvents'],
-    ['📈', 'Gelişim', 'ParentDevelopment'],
-    ['🩺', 'Medikal', 'ParentMedical'],
-    ['🚌', 'Servis', 'ParentService'],
-    ['📣', 'Duyurular', 'ParentAnnouncements'],
-    ['💬', 'Mesajlar', 'ParentMessages'],
-    ['🖼️', 'Galeri', 'ParentGallery'],
-    ['📁', 'Belgeler', 'ParentDocuments'],
+    ['📋', 'Günlük Rapor', 'ParentReports', '#FFF0DD', '#F3B36C'],
+    ['✅', 'Yoklama', 'ParentAttendance', '#E7FAD9', '#8ED36A'],
+    ['🍽️', 'Yemek Listesi', 'ParentMeals', '#FFE4EA', '#F5A0B3'],
+    ['🎉', 'Etkinlikler', 'ParentEvents', '#EFE4FF', '#B99BF6'],
+    ['📈', 'Gelişim', 'ParentDevelopment', '#E0F5FF', '#81CFF1'],
+    ['🩺', 'Medikal', 'ParentMedical', '#DDF8F4', '#67D6C9'],
+    ['🚌', 'Servis', 'ParentService', '#FFF1D5', '#EDBA5E'],
+    ['📣', 'Duyurular', 'ParentAnnouncements', '#FFE6F5', '#EE99D0'],
+    ['💬', 'Mesajlar', 'ParentMessages', '#E9F0FF', '#94AFFF'],
+    ['🖼️', 'Galeri', 'ParentGallery', '#E8F8E9', '#86D78B'],
+    ['📁', 'Belgeler', 'ParentDocuments', '#F2EAFE', '#BA9BEA'],
   ];
 
   return (
@@ -100,8 +100,8 @@ export default function ParentDashboardScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Hızlı Aksiyonlar</Text>
         <View style={styles.quickGrid}>
-          {featuredActions.map(([icon, label, route, desc]) => (
-            <TouchableOpacity key={route} style={[styles.quickAction, styles.featuredAction]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
+          {featuredActions.map(([icon, label, route, desc, bg, border]) => (
+            <TouchableOpacity key={route} style={[styles.quickAction, styles.featuredAction, { backgroundColor: bg, borderColor: border }]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
               <Text style={styles.quickIcon}>{icon}</Text>
               <Text style={styles.quickLabel}>{label}</Text>
               <Text style={styles.quickDesc}>{desc}</Text>
@@ -111,8 +111,8 @@ export default function ParentDashboardScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Diğer İşlemler</Text>
         <View style={styles.quickGrid}>
-          {quickActions.map(([icon, label, route]) => (
-            <TouchableOpacity key={route} style={styles.quickAction} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
+          {quickActions.map(([icon, label, route, bg, border]) => (
+            <TouchableOpacity key={route} style={[styles.quickAction, { backgroundColor: bg, borderColor: border }]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
               <Text style={styles.quickIcon}>{icon}</Text>
               <Text style={styles.quickLabel}>{label}</Text>
             </TouchableOpacity>
@@ -168,9 +168,9 @@ const createStyles = (theme) => StyleSheet.create({
   summaryValue: { color: '#fff', fontSize: 13, fontWeight: '900', marginTop: 2, textAlign: 'center' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12, marginTop: 2 },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10 },
-  quickAction: { width: '48%', backgroundColor: theme.card, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: theme.border },
+  quickAction: { width: '48%', borderRadius: 22, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1.5, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   featuredAction: { minHeight: 118, justifyContent: 'center' },
-  quickIcon: { fontSize: 27, marginBottom: 8 },
+  quickIcon: { fontSize: 29, marginBottom: 8 },
   quickLabel: { fontSize: 13, color: theme.text, fontWeight: '900', textAlign: 'center' },
   quickDesc: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 5, textAlign: 'center', lineHeight: 15 },
   logoutButton: { backgroundColor: theme.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
