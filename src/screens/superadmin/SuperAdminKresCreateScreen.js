@@ -343,4 +343,3 @@ const styles = StyleSheet.create({
   saveText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
   note: { color: THEME.muted, lineHeight: 20, fontWeight: '700', marginTop: 14, textAlign: 'center' },
 });
-```
