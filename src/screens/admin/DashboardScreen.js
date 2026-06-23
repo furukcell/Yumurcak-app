@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppNotificationButton from '../../components/AppNotificationButton';
 import ThemedBackground from '../../components/ThemedBackground';
+import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -72,6 +73,8 @@ export default function DashboardScreen() {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const kresId = kullanici?.kresId || 'kres001';
+  const adminId = kullanici?.uid || kullanici?.id;
+  const unreadMessages = useUnreadMessagesCount(adminId);
 
   useEffect(() => {
     const kresUnsub = onValue(ref(database, `kresler/${kresId}`), (snap) => {
@@ -200,29 +203,39 @@ export default function DashboardScreen() {
 
           <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
 
-          {MENU_ITEMS.map((item) => (
-            <TouchableOpacity
-              key={item.title}
-              style={styles.menuKart}
-              onPress={() => navigation.navigate(item.screen)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
-                <Text style={styles.menuIcon}>{item.icon}</Text>
-              </View>
+          {MENU_ITEMS.map((item) => {
+            const isMessages = item.screen === 'AdminMessages';
+            const badgeCount = isMessages ? unreadMessages : 0;
 
-              <View style={styles.menuTextBlock}>
-                <Text style={styles.menuTitle} numberOfLines={1} ellipsizeMode="tail">
-                  {item.title}
-                </Text>
-                <Text style={styles.menuDesc} numberOfLines={1} ellipsizeMode="tail">
-                  {item.desc}
-                </Text>
-              </View>
+            return (
+              <TouchableOpacity
+                key={item.title}
+                style={styles.menuKart}
+                onPress={() => navigation.navigate(item.screen)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
+                  <Text style={styles.menuIcon}>{item.icon}</Text>
+                  {badgeCount > 0 ? (
+                    <View style={styles.menuBadge}>
+                      <Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
 
-              <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.menuTextBlock}>
+                  <Text style={[styles.menuTitle, badgeCount > 0 && styles.menuTitleUnread]} numberOfLines={1} ellipsizeMode="tail">
+                    {item.title}
+                  </Text>
+                  <Text style={styles.menuDesc} numberOfLines={1} ellipsizeMode="tail">
+                    {item.desc}
+                  </Text>
+                </View>
+
+                <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
     </ThemedBackground>
@@ -298,10 +311,13 @@ const styles = StyleSheet.create({
   ozetSayi: { fontSize: 22, fontWeight: '900', marginTop: 3, maxWidth: '100%' },
   ozetLabel: { color: THEME.muted, fontWeight: '800', marginTop: 1, maxWidth: '100%', fontSize: 12 },
   menuKart: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 16, padding: 12, marginBottom: 9, borderWidth: 1, borderColor: 'rgba(238,234,248,0.94)', flexDirection: 'row', alignItems: 'center' },
-  menuIconWrapper: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 },
+  menuIconWrapper: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0, position: 'relative' },
   menuIcon: { fontSize: 22 },
+  menuBadge: { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 2, borderColor: '#FFFFFF' },
+  menuBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
   menuTextBlock: { flex: 1, minWidth: 0 },
   menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, flexShrink: 1 },
+  menuTitleUnread: { color: THEME.primary },
   menuDesc: { color: THEME.muted, marginTop: 2, fontWeight: '600', fontSize: 12, lineHeight: 16, flexShrink: 1 },
   menuArrow: { fontSize: 26, fontWeight: '900', marginLeft: 6, flexShrink: 0 },
 });
