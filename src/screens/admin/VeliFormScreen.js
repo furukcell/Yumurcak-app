@@ -301,4 +301,3 @@ const s = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   btnYazi: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
-```
