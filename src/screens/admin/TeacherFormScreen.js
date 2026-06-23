@@ -1,3 +1,4 @@
+```js
 // ============================================================
 // YUMURCAK — TeacherFormScreen.js
 // Öğretmen ekleme/düzenleme formu
@@ -21,6 +22,7 @@ export default function TeacherFormScreen() {
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
   const [sifre, setSifre] = useState('');
+  const [sifreGoster, setSifreGoster] = useState(false);
   const [ad, setAd] = useState('');
   const [sinifId, setSinifId] = useState('');
   const [siniflar, setSiniflar] = useState([]);
@@ -29,7 +31,6 @@ export default function TeacherFormScreen() {
 
   useEffect(() => {
     const yukle = async () => {
-      // Sınıfları çek
       const sinifSnap = await get(ref(database, 'siniflar'));
       if (sinifSnap.exists()) {
         const data = sinifSnap.val();
@@ -37,7 +38,6 @@ export default function TeacherFormScreen() {
         setSiniflar(liste);
       }
 
-      // Düzenleme modunda öğretmen bilgilerini çek
       if (teacherId) {
         const snap = await get(ref(database, `kullanicilar/${teacherId}`));
         if (snap.exists()) {
@@ -47,8 +47,10 @@ export default function TeacherFormScreen() {
           setSinifId(data.sinifId || '');
         }
       }
+
       setFetching(false);
     };
+
     yukle();
   }, [teacherId]);
 
@@ -59,14 +61,15 @@ export default function TeacherFormScreen() {
     }
 
     setLoading(true);
+
     try {
       const id = teacherId || generateId();
-
-           const now = Date.now();
+      const now = Date.now();
       const nextSinifId = sinifId || '';
 
       const teacherSnap = await get(ref(database, `kullanicilar/${id}`));
       const oldTeacher = teacherSnap.exists() ? (teacherSnap.val() || {}) : {};
+      const kaydedilenSifre = sifre.trim() || oldTeacher.sifre || '123456';
 
       const siniflarSnap = await get(ref(database, 'siniflar'));
       const siniflarData = siniflarSnap.exists() ? (siniflarSnap.val() || {}) : {};
@@ -76,7 +79,7 @@ export default function TeacherFormScreen() {
       updates[`kullanicilar/${id}`] = {
         ...oldTeacher,
         kullaniciAdi: kullaniciAdi.trim(),
-        sifre: sifre.trim() || oldTeacher.sifre || '123456',
+        sifre: kaydedilenSifre,
         ad: ad.trim(),
         rol: 'ogretmen',
         sinifId: nextSinifId,
@@ -91,7 +94,9 @@ export default function TeacherFormScreen() {
           : [];
 
         if (mevcutIds.includes(String(id)) && classId !== nextSinifId) {
-          updates[`siniflar/${classId}/ogretmenIds`] = mevcutIds.filter((teacherItemId) => teacherItemId !== String(id));
+          updates[`siniflar/${classId}/ogretmenIds`] = mevcutIds.filter(
+            (teacherItemId) => teacherItemId !== String(id)
+          );
           updates[`siniflar/${classId}/updatedAt`] = now;
         }
       });
@@ -102,16 +107,21 @@ export default function TeacherFormScreen() {
           ? targetClass.ogretmenIds.map(String)
           : [];
 
-        const nextTeacherIds = Array.from(new Set([...targetIds, String(id)]));
-
-        updates[`siniflar/${nextSinifId}/ogretmenIds`] = nextTeacherIds;
-        updates[`siniflar/${nextSinifId}/kresId`] = targetClass.kresId || kullanici?.kresId || oldTeacher.kresId || 'default-kres';
+        updates[`siniflar/${nextSinifId}/ogretmenIds`] = Array.from(
+          new Set([...targetIds, String(id)])
+        );
+        updates[`siniflar/${nextSinifId}/kresId`] =
+          targetClass.kresId || kullanici?.kresId || oldTeacher.kresId || 'default-kres';
         updates[`siniflar/${nextSinifId}/updatedAt`] = now;
       }
 
       await update(ref(database), updates);
 
-      Alert.alert('Başarılı', 'Öğretmen kaydedildi', [
+      const mesaj = teacherId
+        ? `Öğretmen güncellendi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${sifre.trim() ? kaydedilenSifre : 'Değişmedi'}`
+        : `Öğretmen kaydedildi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${kaydedilenSifre}`;
+
+      Alert.alert('Başarılı', mesaj, [
         { text: 'Tamam', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
@@ -159,14 +169,35 @@ export default function TeacherFormScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Şifre {!teacherId && '*'}</Text>
-          <TextInput
-            style={styles.input}
-            value={sifre}
-            onChangeText={setSifre}
-            placeholder={teacherId ? 'Boş bırakılırsa değişmez' : '123456'}
-            secureTextEntry
-            placeholderTextColor="#999"
-          />
+
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={styles.passwordInput}
+              value={sifre}
+              onChangeText={setSifre}
+              placeholder={teacherId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'}
+              secureTextEntry={!sifreGoster}
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TouchableOpacity
+              style={styles.passwordToggle}
+              onPress={() => setSifreGoster(!sifreGoster)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.passwordToggleText}>
+                {sifreGoster ? 'Gizle' : 'Göster'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.sifreNotu}>
+            {teacherId
+              ? 'Boş bırakırsan mevcut şifre korunur.'
+              : 'Boş bırakırsan varsayılan şifre 123456 olur.'}
+          </Text>
         </View>
 
         <View style={styles.field}>
@@ -214,6 +245,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 8, padding: 12,
     fontSize: 16, borderWidth: 1, borderColor: '#ddd',
   },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    overflow: 'hidden',
+  },
+  passwordInput: {
+    flex: 1,
+    minWidth: 0,
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  passwordToggle: {
+    paddingHorizontal: 14,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    backgroundColor: '#fff3e0',
+    borderLeftWidth: 1,
+    borderLeftColor: '#ddd',
+  },
+  passwordToggleText: { color: '#633806', fontWeight: '700' },
+  sifreNotu: { marginTop: 6, color: '#777', fontSize: 13 },
   bilgi: { color: '#999', fontStyle: 'italic' },
   sinifBtn: {
     padding: 12, borderRadius: 8, borderWidth: 1,
@@ -229,3 +286,4 @@ const styles = StyleSheet.create({
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
+```
