@@ -9,6 +9,7 @@ import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
+import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
@@ -29,6 +30,8 @@ const MENU = [
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
   const { loading, kullanici, kresAdi, currentClass, classChildren, reports, attendance } = useTeacherData();
+  const teacherId = kullanici?.uid || kullanici?.id;
+  const unreadMessages = useUnreadMessagesCount(teacherId);
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -70,18 +73,30 @@ export default function TeacherDashboardScreen() {
 
           <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
           <View style={styles.grid}>
-            {MENU.map((item) => (
-             <TouchableOpacity
-               key={item.title}
-               style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]}
-               onPress={() => navigation.navigate(item.route)}
-               activeOpacity={0.85}
-             >
-                <Text style={styles.menuIcon}>{item.icon}</Text>
-                <Text style={styles.menuTitle}>{item.title}</Text>
-                <Text style={styles.menuDesc}>{item.desc}</Text>
-              </TouchableOpacity>
-            ))}
+            {MENU.map((item) => {
+              const isMessages = item.route === 'TeacherMessages';
+              const badgeCount = isMessages ? unreadMessages : 0;
+
+              return (
+                <TouchableOpacity
+                  key={item.title}
+                  style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]}
+                  onPress={() => navigation.navigate(item.route)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.menuIconRow}>
+                    <Text style={styles.menuIcon}>{item.icon}</Text>
+                    {badgeCount > 0 ? (
+                      <View style={styles.menuBadge}>
+                        <Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={[styles.menuTitle, badgeCount > 0 && styles.menuTitleUnread]}>{item.title}</Text>
+                  <Text style={styles.menuDesc}>{item.desc}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </ScrollView>
       </ThemedBackground>
@@ -135,6 +150,10 @@ const createStyles = (theme) => StyleSheet.create({
   elevation: 2,
 },
   menuIcon: { fontSize: 28, marginBottom: 8 },
+  menuIconRow: { flexDirection: 'row', alignItems: 'center' },
+  menuBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginLeft: 8, marginBottom: 8 },
+  menuBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 11 },
   menuTitle: { fontSize: 15, fontWeight: '900', color: theme.text },
+  menuTitleUnread: { color: theme.primary },
   menuDesc: { fontSize: 12, color: theme.muted, marginTop: 4, lineHeight: 17 },
 });
