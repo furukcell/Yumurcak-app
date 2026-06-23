@@ -27,6 +27,7 @@ import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
 import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import AdminGalleryScreen from '../screens/admin/AdminGalleryScreen';
+import AdminMonthlyMealScreen from '../screens/admin/AdminMonthlyMealScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
@@ -45,6 +46,7 @@ export default function AdminStack() {
     stackScreen('Notifications', NotificationsScreen, { headerShown: false }),
     stackScreen('AdminStatistics', AdminStatisticsScreen, { title: 'Kurum İstatistikleri' }),
     stackScreen('AdminGallery', AdminGalleryScreen, { headerShown: false }),
+    stackScreen('AdminMonthlyMeal', AdminMonthlyMealScreen, { title: 'Aylık Yemek Listesi' }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
