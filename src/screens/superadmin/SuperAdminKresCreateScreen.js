@@ -1,4 +1,4 @@
-```js
+
 // ============================================================
 // YUMURCAK — SuperAdminKresCreateScreen.js
 // FAZ 17: Yeni kreş oluştururken index kayıtları helper ile yazılır
