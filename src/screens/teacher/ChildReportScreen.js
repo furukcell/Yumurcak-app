@@ -2,8 +2,9 @@
 // YUMURCAK — ChildReportScreen.js
 // FAZ 2: Öğün detayları eklendi
 // Kahvaltı / Öğle / Ara Öğün: yemedi, az_yedi, bitirdi
+// FAZ 3: Bugün için zaten rapor girilmişse uyarı banner'ı
 // ============================================================
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -15,7 +16,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { ref, push, get } from 'firebase/database';
+import { ref, push, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -54,6 +55,48 @@ export default function ChildReportScreen() {
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
 
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [alreadyReportedToday, setAlreadyReportedToday] = useState(false);
+
+  // Ekrana girince bugün için bu çocuğa ait rapor var mı kontrol ediyoruz.
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkExistingReport = async () => {
+      if (!child?.id) {
+        setCheckingExisting(false);
+        return;
+      }
+
+      try {
+        const today = todayString();
+        const reportsRef = query(
+          ref(database, 'gunlukRaporlar'),
+          orderByChild('cocukId'),
+          equalTo(child.id)
+        );
+        const snap = await get(reportsRef);
+        const data = snap.val() || {};
+
+        const hasToday = Object.values(data).some((item) => item.tarih === today);
+
+        if (!cancelled) {
+          setAlreadyReportedToday(hasToday);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setCheckingExisting(false);
+      }
+    };
+
+    checkExistingReport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [child?.id]);
+
   const handleSave = async () => {
     if (!child?.id) return Alert.alert('Hata', 'Çocuk bilgisi bulunamadı.');
 
@@ -90,6 +133,7 @@ export default function ChildReportScreen() {
       });
 
       setSuccessToast(true);
+      setAlreadyReportedToday(true);
 
       setTimeout(() => {
         navigation.goBack();
@@ -127,6 +171,14 @@ export default function ChildReportScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {!checkingExisting && alreadyReportedToday ? (
+          <View style={styles.warningBanner}>
+            <Text style={styles.warningText}>
+              ⚠️ Bugün bu çocuk için zaten bir rapor girilmiş. Yine de yeni bir rapor kaydedebilirsin.
+            </Text>
+          </View>
+        ) : null}
+
         <Text style={styles.sectionTitle}>Ruh Hali</Text>
         <View style={styles.moodContainer}>
           {MOOD_LISTESI.map((m) => (
@@ -217,6 +269,15 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   screen: { flex: 1 },
   content: { padding: 16, paddingBottom: 38 },
+  warningBanner: {
+    backgroundColor: '#FFF6CF',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E8C94F',
+  },
+  warningText: { color: '#7A6418', fontWeight: '800', fontSize: 13, lineHeight: 18 },
   sectionTitle: { fontSize: 16, fontWeight: '900', color: THEME.text, marginTop: 18, marginBottom: 10 },
   moodContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   moodButton: {
