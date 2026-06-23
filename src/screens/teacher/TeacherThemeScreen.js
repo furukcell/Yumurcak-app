@@ -4,6 +4,7 @@ import { THEME_LIST } from '../../theme/themes';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
 import { useTeacherData, LoadingState } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherThemeScreen({ navigation }) {
   const { loading, currentClass } = useTeacherData();
@@ -25,6 +26,10 @@ export default function TeacherThemeScreen({ navigation }) {
   const saving = savingState[0];
   const setSaving = savingState[1];
 
+  const successToastState = useState(false);
+  const successToast = successToastState[0];
+  const setSuccessToast = successToastState[1];
+
   const selectedTheme = THEME_LIST.find(function (item) { return item.id === selectedThemeId; }) || theme;
 
   async function handleSave() {
@@ -36,7 +41,7 @@ export default function TeacherThemeScreen({ navigation }) {
     try {
       setSaving(true);
       await saveClassTheme(currentClass.id, selectedThemeId, localPatternEnabled);
-      Alert.alert('Tamamlandı', 'Sınıf teması güncellendi.');
+      setSuccessToast(true);
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Sınıf teması kaydedilemedi.');
@@ -78,6 +83,12 @@ export default function TeacherThemeScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
+        <AppSuccessToast
+          visible={successToast}
+          message="Sınıf teması güncellendi"
+          onHide={() => setSuccessToast(false)}
+        />
+
         <View style={styles.container}>
           <View style={styles.headerRow}>
             <TouchableOpacity style={[styles.backButton, { borderColor: theme.border, backgroundColor: theme.card }]} onPress={() => navigation.goBack()} activeOpacity={0.8}>
