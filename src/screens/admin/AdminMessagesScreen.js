@@ -170,7 +170,7 @@ export default function AdminMessagesScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.row}>
-                  <Text style={styles.name} numberOfLines={1}>{getUserName(contact)}</Text>
+                  <Text style={[styles.name, contact.unread > 0 && styles.nameUnread]} numberOfLines={1}>{getUserName(contact)}</Text>
                   {contact.unread > 0 ? (
                     <View style={styles.unreadBadge}>
                       <Text style={styles.unreadText}>{contact.unread > 99 ? '99+' : contact.unread}</Text>
@@ -178,7 +178,7 @@ export default function AdminMessagesScreen() {
                   ) : null}
                 </View>
                 <Text style={styles.desc} numberOfLines={1}>{contact.childInfo || 'Kurum kullanıcısı'}</Text>
-                <Text style={styles.lastMessage} numberOfLines={1}>{contact.sonMesaj || 'Henüz mesaj yok'}</Text>
+                <Text style={[styles.lastMessage, contact.unread > 0 && styles.lastMessageUnread]} numberOfLines={1}>{contact.sonMesaj || 'Henüz mesaj yok'}</Text>
               </View>
               <Text style={styles.arrow}>›</Text>
             </TouchableOpacity>
@@ -241,8 +241,10 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 23 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { flex: 1, color: THEME.text, fontWeight: '900', fontSize: 16 },
+  nameUnread: { color: THEME.primary },
   desc: { color: THEME.muted, marginTop: 4, fontWeight: '700' },
   lastMessage: { color: THEME.muted, marginTop: 5, fontSize: 12, fontWeight: '600' },
+  lastMessageUnread: { color: THEME.text, fontWeight: '900' },
   arrow: { color: THEME.primary, fontSize: 28, fontWeight: '900', marginLeft: 8 },
   unreadBadge: { minWidth: 24, height: 24, borderRadius: 12, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
   unreadText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
