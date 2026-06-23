@@ -8,7 +8,7 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator
 } from 'react-native';
-import { ref, get, set, update } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
@@ -16,6 +16,7 @@ import { generateId } from '../../utils/id';
 import { usernameToEmail } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherFormScreen() {
   const route = useRoute();
@@ -31,6 +32,7 @@ export default function TeacherFormScreen() {
   const [siniflar, setSiniflar] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     const yukle = async () => {
@@ -145,13 +147,11 @@ export default function TeacherFormScreen() {
 
       await update(ref(database), updates);
 
-      const mesaj = teacherId
-        ? `Öğretmen güncellendi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${sifre.trim() ? kaydedilenSifre : 'Değişmedi'}\nAuth: ${authYeniOlustu ? 'Yeni oluşturuldu' : 'Mevcut'}`
-        : `Öğretmen kaydedildi.\n\nKullanıcı adı: ${kullaniciAdi.trim()}\nŞifre: ${kaydedilenSifre}\nAuth hesabı oluşturuldu.`;
+      setSuccessToast(true);
 
-      Alert.alert('Başarılı', mesaj, [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (error) {
       console.error(error);
 
@@ -178,97 +178,105 @@ export default function TeacherFormScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.form}>
+    <View style={styles.screen}>
+      <AppSuccessToast
+        visible={successToast}
+        message={teacherId ? 'Öğretmen güncellendi' : 'Öğretmen kaydedildi'}
+        onHide={() => setSuccessToast(false)}
+      />
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Kullanıcı Adı *</Text>
-          <TextInput
-            style={styles.input}
-            value={kullaniciAdi}
-            onChangeText={setKullaniciAdi}
-            placeholder="Örn: ogretmen1"
-            placeholderTextColor="#999"
-            autoCapitalize="none"
-          />
-        </View>
+      <ScrollView style={styles.container}>
+        <View style={styles.form}>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Ad Soyad *</Text>
-          <TextInput
-            style={styles.input}
-            value={ad}
-            onChangeText={setAd}
-            placeholder="Örn: Ayşe Yılmaz"
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Şifre {!teacherId && '*'}</Text>
-
-          <View style={styles.passwordRow}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Kullanıcı Adı *</Text>
             <TextInput
-              style={styles.passwordInput}
-              value={sifre}
-              onChangeText={setSifre}
-              placeholder={teacherId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'}
-              secureTextEntry={!sifreGoster}
+              style={styles.input}
+              value={kullaniciAdi}
+              onChangeText={setKullaniciAdi}
+              placeholder="Örn: ogretmen1"
               placeholderTextColor="#999"
               autoCapitalize="none"
-              autoCorrect={false}
             />
-
-            <TouchableOpacity
-              style={styles.passwordToggle}
-              onPress={() => setSifreGoster(!sifreGoster)}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.passwordToggleText}>
-                {sifreGoster ? 'Gizle' : 'Göster'}
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          <Text style={styles.sifreNotu}>
-            {teacherId
-              ? 'Boş bırakırsan mevcut şifre korunur.'
-              : 'Boş bırakırsan varsayılan şifre 123456 olur.'}
-          </Text>
-        </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Ad Soyad *</Text>
+            <TextInput
+              style={styles.input}
+              value={ad}
+              onChangeText={setAd}
+              placeholder="Örn: Ayşe Yılmaz"
+              placeholderTextColor="#999"
+            />
+          </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Sınıf Ata (opsiyonel)</Text>
-          {siniflar.length === 0 ? (
-            <Text style={styles.bilgi}>Önce sınıf oluşturun</Text>
-          ) : (
-            siniflar.map((s) => (
+          <View style={styles.field}>
+            <Text style={styles.label}>Şifre {!teacherId && '*'}</Text>
+
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                value={sifre}
+                onChangeText={setSifre}
+                placeholder={teacherId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'}
+                secureTextEntry={!sifreGoster}
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
               <TouchableOpacity
-                key={s.id}
-                style={[styles.sinifBtn, sinifId === s.id && styles.sinifBtnAktif]}
-                onPress={() => setSinifId(sinifId === s.id ? '' : s.id)}
+                style={styles.passwordToggle}
+                onPress={() => setSifreGoster(!sifreGoster)}
+                activeOpacity={0.75}
               >
-                <Text style={[styles.sinifBtnYazi, sinifId === s.id && styles.sinifBtnYaziAktif]}>
-                  {s.ad} — {s.yasGrubu}
+                <Text style={styles.passwordToggleText}>
+                  {sifreGoster ? 'Gizle' : 'Göster'}
                 </Text>
               </TouchableOpacity>
-            ))
-          )}
+            </View>
+
+            <Text style={styles.sifreNotu}>
+              {teacherId
+                ? 'Boş bırakırsan mevcut şifre korunur.'
+                : 'Boş bırakırsan varsayılan şifre 123456 olur.'}
+            </Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Sınıf Ata (opsiyonel)</Text>
+            {siniflar.length === 0 ? (
+              <Text style={styles.bilgi}>Önce sınıf oluşturun</Text>
+            ) : (
+              siniflar.map((s) => (
+                <TouchableOpacity
+                  key={s.id}
+                  style={[styles.sinifBtn, sinifId === s.id && styles.sinifBtnAktif]}
+                  onPress={() => setSinifId(sinifId === s.id ? '' : s.id)}
+                >
+                  <Text style={[styles.sinifBtnYazi, sinifId === s.id && styles.sinifBtnYaziAktif]}>
+                    {s.ad} — {s.yasGrubu}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.saveButtonText}>{teacherId ? 'Güncelle' : 'Oluştur'}</Text>
+            }
+          </TouchableOpacity>
+
         </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveButtonText}>{teacherId ? 'Güncelle' : 'Oluştur'}</Text>
-          }
-        </TouchableOpacity>
-
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -280,6 +288,7 @@ function getSecondaryAuth() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   form: { padding: 20 },
