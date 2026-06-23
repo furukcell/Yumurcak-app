@@ -13,6 +13,7 @@ import TeacherScheduleScreen from '../screens/teacher/TeacherScheduleScreen';
 import TeacherEventsScreen from '../screens/teacher/TeacherEventsScreen';
 import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
 import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
+import TeacherPhysicalDevelopmentScreen from '../screens/teacher/TeacherPhysicalDevelopmentScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
 import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
@@ -20,6 +21,7 @@ import TeacherGalleryScreen from '../screens/teacher/TeacherGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +37,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherEvents" component={TeacherEventsScreen} />
       <Stack.Screen name="TeacherMeals" component={TeacherMealsScreen} />
       <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
+      <Stack.Screen name="TeacherPhysicalDevelopment" component={TeacherPhysicalDevelopmentScreen} />
       <Stack.Screen name="TeacherAnnouncements" component={TeacherAnnouncementsScreen} />
       <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
       <Stack.Screen name="TeacherGallery" component={TeacherGalleryScreen} />
