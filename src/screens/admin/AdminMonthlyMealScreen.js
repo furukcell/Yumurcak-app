@@ -6,6 +6,7 @@ import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
@@ -54,6 +55,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   const monthLabel = useMemo(function () { return getMonthLabel(monthDate); }, [monthDate]);
   const [meals, setMeals] = useState(function () { return createInitialMeals(days); });
   const [saving, setSaving] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   const kresId = kullanici?.kresId;
   const adminId = kullanici?.uid || kullanici?.id || null;
@@ -167,7 +169,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       });
 
       await update(ref(database), updates);
-      Alert.alert('Tamamlandı', `${monthLabel} yemek listesi yayınlandı.`);
+      setSuccessToast(true);
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Aylık yemek listesi yayınlanamadı.');
@@ -179,6 +181,12 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
+        <AppSuccessToast
+          visible={successToast}
+          message={`${monthLabel} yemek listesi yayınlandı`}
+          onHide={() => setSuccessToast(false)}
+        />
+
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
