@@ -7,7 +7,7 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator
 } from 'react-native';
-import { ref, set, get, update } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -62,30 +62,54 @@ export default function TeacherFormScreen() {
     try {
       const id = teacherId || generateId();
 
-      // Kullanıcıyı kaydet
-      await set(ref(database, `kullanicilar/${id}`), {
+           const now = Date.now();
+      const nextSinifId = sinifId || '';
+
+      const teacherSnap = await get(ref(database, `kullanicilar/${id}`));
+      const oldTeacher = teacherSnap.exists() ? (teacherSnap.val() || {}) : {};
+
+      const siniflarSnap = await get(ref(database, 'siniflar'));
+      const siniflarData = siniflarSnap.exists() ? (siniflarSnap.val() || {}) : {};
+
+      const updates = {};
+
+      updates[`kullanicilar/${id}`] = {
+        ...oldTeacher,
         kullaniciAdi: kullaniciAdi.trim(),
-        sifre: sifre.trim() || '123456',
+        sifre: sifre.trim() || oldTeacher.sifre || '123456',
         ad: ad.trim(),
         rol: 'ogretmen',
-        sinifId: sinifId || '',
-        kresId: kullanici?.kresId || 'default-kres',
-        createdAt: Date.now(),
+        sinifId: nextSinifId,
+        kresId: oldTeacher.kresId || kullanici?.kresId || 'default-kres',
+        createdAt: oldTeacher.createdAt || now,
+        updatedAt: now,
+      };
+
+      Object.entries(siniflarData).forEach(([classId, classData]) => {
+        const mevcutIds = Array.isArray(classData?.ogretmenIds)
+          ? classData.ogretmenIds.map(String)
+          : [];
+
+        if (mevcutIds.includes(String(id)) && classId !== nextSinifId) {
+          updates[`siniflar/${classId}/ogretmenIds`] = mevcutIds.filter((teacherItemId) => teacherItemId !== String(id));
+          updates[`siniflar/${classId}/updatedAt`] = now;
+        }
       });
 
-      // Seçilen sınıfın ogretmenIds listesine ekle
-      if (sinifId) {
-        const sinifSnap = await get(ref(database, `siniflar/${sinifId}`));
-        if (sinifSnap.exists()) {
-          const sinifData = sinifSnap.val();
-          const mevcutIds = sinifData.ogretmenIds || [];
-          if (!mevcutIds.includes(id)) {
-            await update(ref(database, `siniflar/${sinifId}`), {
-              ogretmenIds: [...mevcutIds, id],
-            });
-          }
-        }
+      if (nextSinifId) {
+        const targetClass = siniflarData[nextSinifId] || {};
+        const targetIds = Array.isArray(targetClass.ogretmenIds)
+          ? targetClass.ogretmenIds.map(String)
+          : [];
+
+        const nextTeacherIds = Array.from(new Set([...targetIds, String(id)]));
+
+        updates[`siniflar/${nextSinifId}/ogretmenIds`] = nextTeacherIds;
+        updates[`siniflar/${nextSinifId}/kresId`] = targetClass.kresId || kullanici?.kresId || oldTeacher.kresId || 'default-kres';
+        updates[`siniflar/${nextSinifId}/updatedAt`] = now;
       }
+
+      await update(ref(database), updates);
 
       Alert.alert('Başarılı', 'Öğretmen kaydedildi', [
         { text: 'Tamam', onPress: () => navigation.goBack() },
