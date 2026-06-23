@@ -8,6 +8,7 @@ import { ref, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const DAYS = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma'];
 const LABELS = { pazartesi: 'Pazartesi', sali: 'Salı', carsamba: 'Çarşamba', persembe: 'Perşembe', cuma: 'Cuma' };
@@ -18,6 +19,7 @@ export default function TeacherScheduleScreen() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
   const [saving, setSaving] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   const program = useMemo(() => {
     if (!currentClass?.id) return null;
@@ -44,7 +46,7 @@ export default function TeacherScheduleScreen() {
         updatedAt: Date.now(),
       });
       setEditing(false);
-      Alert.alert('Başarılı', 'Ders programı kaydedildi.');
+      setSuccessToast(true);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Ders programı kaydedilemedi.');
@@ -57,6 +59,12 @@ export default function TeacherScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Ders programı kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScreenHeader
         navigation={navigation}
         title="Ders Programı"
