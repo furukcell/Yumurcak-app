@@ -50,8 +50,8 @@ export default function ParentSummaryScreen({ navigation }) {
     sinifId,
     kullanici,
     parentId,
+    parentPhotoUrl,
   } = base;
-
   const today = toDateKey(new Date());
 
   const todayReport = useMemo(() => {
@@ -163,16 +163,22 @@ export default function ParentSummaryScreen({ navigation }) {
             <Text style={styles.brandSub}>{kresAdi || 'Yumurcak'} · {formatDate(today)}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton} activeOpacity={0.82}>
-            {kullanici?.profilFotoUrl ? (
-              <Image source={{ uri: kullanici.profilFotoUrl }} style={styles.profileImage} />
-            ) : (
-              <Text style={styles.profileButtonText}>👤</Text>
+          {parentPhotoUrl ? (
+           <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
+        ) : (
+           <Text style={styles.profileButtonText}>👤</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.childCard}>
-          <View style={styles.avatar}><Text style={styles.avatarText}>👧</Text></View>
+                    <View style={styles.avatar}>
+            {parentPhotoUrl ? (
+              <Image source={{ uri: parentPhotoUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>👧</Text>
+            )}
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.childName}>{childName}</Text>
             <Text style={styles.childSub}>Merhaba {parentName}, bugün olanları tek ekranda topladık.</Text>
@@ -429,7 +435,8 @@ const createStyles = (theme) => StyleSheet.create({
   profileButtonText: { fontSize: 20 },
   profileImage: { width: 44, height: 44, borderRadius: 22 },
   childCard: { backgroundColor: theme.card, borderRadius: 24, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: theme.border, marginBottom: 12 },
-  avatar: { width: 66, height: 66, borderRadius: 22, backgroundColor: theme.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 66, height: 66, borderRadius: 22, backgroundColor: theme.primarySoft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImage: { width: 66, height: 66, borderRadius: 22 },
   avatarText: { fontSize: 34 },
   childName: { color: theme.text, fontSize: 18, fontWeight: '900' },
   childSub: { color: theme.muted, fontSize: 12, fontWeight: '700', lineHeight: 17, marginTop: 3 },
