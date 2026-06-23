@@ -28,4 +28,4 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Publish OTA update (preview)
-        run: eas update --auto --branch main --message "${{ github.event.head_commit.message }}"
+        run: eas update --channel preview --message "${{ github.event.head_commit.message }}" --non-interactive
