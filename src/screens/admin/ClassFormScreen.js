@@ -11,11 +11,13 @@ import { ref, set, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function ClassFormScreen() {
   const route = useRoute();
   const navigation = useNavigation();
+  const { kullanici } = useAuth();
   const { classId } = route.params || {};
 
   const [ad, setAd] = useState('');
@@ -54,16 +56,23 @@ export default function ClassFormScreen() {
 
     try {
       const id = classId || generateId();
+      const classRef = ref(database, `siniflar/${id}`);
+      const existingSnap = await get(classRef);
+      const existingData = existingSnap.exists() ? (existingSnap.val() || {}) : {};
+      const existingTeacherIds = Array.isArray(existingData.ogretmenIds) ? existingData.ogretmenIds : [];
+      const now = Date.now();
 
       const classData = {
+        ...existingData,
         ad: ad.trim(),
         yasGrubu: yasGrubu.trim(),
-        ogretmenIds: [],
-        kresId: 'default-kres',
-        createdAt: Date.now(),
+        ogretmenIds: existingTeacherIds,
+        kresId: existingData.kresId || kullanici?.kresId || 'default-kres',
+        createdAt: existingData.createdAt || now,
+        updatedAt: now,
       };
 
-      await set(ref(database, `siniflar/${id}`), classData);
+      await set(classRef, classData);
 
       setSuccessToast(true);
 
