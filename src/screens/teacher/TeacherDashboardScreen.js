@@ -11,18 +11,18 @@ import ThemedBackground from '../../components/ThemedBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
 
 const MENU = [
-  { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren' },
-  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren' },
-  { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance' },
-  { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule' },
-  { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents' },
-  { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals' },
-  { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery' },
-  { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical' },
-  { icon: '📈', title: 'Fiziksel Gelişim', desc: 'Boy ve kilo ölçümü gir', route: 'TeacherPhysicalDevelopment' },
-  { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements' },
-  { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages' },
-  { icon: '👤', title: 'Profil', desc: 'Bilgiler ve çıkış', route: 'TeacherProfile' },
+  { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
+  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', bg: '#FFF0D9', border: '#F0B86A' },
+  { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
+  { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
+  { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
+  { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals', bg: '#FFE8DC', border: '#F4A47E' },
+  { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery', bg: '#E8F5F0', border: '#7CC8AA' },
+  { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical', bg: '#E4FAF7', border: '#6DD3C8' },
+  { icon: '📈', title: 'Fiziksel Gelişim', desc: 'Boy ve kilo ölçümü gir', route: 'TeacherPhysicalDevelopment', bg: '#E9EEFF', border: '#9AAEF5' },
+  { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements', bg: '#FFF6CF', border: '#E8C94F' },
+  { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages', bg: '#EAF7FF', border: '#77C7EA' },
+  { icon: '👤', title: 'Profil', desc: 'Bilgiler ve çıkış', route: 'TeacherProfile', bg: '#F2EDE7', border: '#CDB8A6' },
 ];
 
 export default function TeacherDashboardScreen() {
@@ -70,7 +70,12 @@ export default function TeacherDashboardScreen() {
           <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
           <View style={styles.grid}>
             {MENU.map((item) => (
-              <TouchableOpacity key={item.title} style={styles.menuCard} onPress={() => navigation.navigate(item.route)} activeOpacity={0.85}>
+             <TouchableOpacity
+               key={item.title}
+               style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]}
+               onPress={() => navigation.navigate(item.route)}
+               activeOpacity={0.85}
+             >
                 <Text style={styles.menuIcon}>{item.icon}</Text>
                 <Text style={styles.menuTitle}>{item.title}</Text>
                 <Text style={styles.menuDesc}>{item.desc}</Text>
@@ -116,7 +121,18 @@ const createStyles = (theme) => StyleSheet.create({
   statLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '700' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  menuCard: { width: '48%', backgroundColor: theme.card, borderRadius: 20, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: theme.border },
+  menuCard: {
+  width: '48%',
+  borderRadius: 22,
+  padding: 15,
+  marginBottom: 12,
+  borderWidth: 1.2,
+  shadowColor: '#000',
+  shadowOpacity: 0.08,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 2,
+},
   menuIcon: { fontSize: 28, marginBottom: 8 },
   menuTitle: { fontSize: 15, fontWeight: '900', color: theme.text },
   menuDesc: { fontSize: 12, color: theme.muted, marginTop: 4, lineHeight: 17 },
