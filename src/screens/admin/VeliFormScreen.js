@@ -1,4 +1,4 @@
-```js
+
 // ============================================================
 // YUMURCAK — VeliFormScreen.js
 // Veli ekleme/düzenleme formu
