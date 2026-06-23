@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hesap Silme – Yumurcak Kreş</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #4A90D9, #F5A623);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .logo-text { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+    .logo-sub { font-size: 13px; color: #888; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; color: #1a1a2e; }
+    .date { font-size: 13px; color: #aaa; margin-bottom: 32px; }
+    h2 { font-size: 16px; font-weight: 700; margin: 28px 0 10px; color: #2c3e7a; }
+    p, li { font-size: 15px; line-height: 1.75; color: #444; }
+    ul { padding-left: 20px; margin-top: 8px; }
+    li { margin-bottom: 6px; }
+    .info-box {
+      background: #fff8ee;
+      border-left: 4px solid #F5A623;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: #7a5200;
+    }
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin-top: 12px;
+    }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .steps li::before {
+      content: counter(step);
+      min-width: 28px;
+      height: 28px;
+      background: #4A90D9;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .contact-box {
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 32px;
+    }
+    .contact-box p { font-size: 14px; margin-bottom: 6px; }
+    .mail-btn {
+      display: inline-block;
+      margin-top: 14px;
+      background: linear-gradient(135deg, #4A90D9, #2c3e7a);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    footer { margin-top: 40px; font-size: 12px; color: #bbb; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">🐣</div>
+      <div>
+        <div class="logo-text">Yumurcak Kreş</div>
+        <div class="logo-sub">Veli & Kurum Takip Uygulaması</div>
+      </div>
+    </div>
+
+    <h1>Hesap Silme Talebi</h1>
+    <div class="date">Son güncelleme: 23 Haziran 2026</div>
+
+    <div class="info-box">
+      Yumurcak Kreş uygulamasında kullanıcı hesapları, kreş yöneticisi tarafından oluşturulur ve yönetilir. Bu nedenle hesap silme işlemi doğrudan kreş yöneticiniz aracılığıyla veya uygulama yöneticisine e-posta ile talep edilebilir.
+    </div>
+
+    <h2>Hesabınızı Nasıl Silebilirsiniz?</h2>
+    <ul class="steps">
+      <li>Kreş yöneticinizle iletişime geçin ve hesabınızın silinmesini talep edin.</li>
+      <li>Yöneticiniz talebinizi işleme alamıyorsa aşağıdaki e-posta adresine yazın.</li>
+      <li>Talebiniz en geç <strong>30 gün</strong> içinde işleme alınır.</li>
+    </ul>
+
+    <h2>Silinen Veriler</h2>
+    <p>Hesap silme talebinin ardından aşağıdaki veriler kalıcı olarak silinir:</p>
+    <ul>
+      <li>Kullanıcı adı ve şifre</li>
+      <li>Profil bilgileri</li>
+      <li>Push bildirim token'ı</li>
+      <li>Mesajlaşma geçmişi</li>
+    </ul>
+
+    <h2>Korunan Veriler</h2>
+    <p>Aşağıdaki veriler yasal yükümlülükler nedeniyle belirli bir süre saklanmaya devam edebilir:</p>
+    <ul>
+      <li>Ödeme kayıtları (muhasebe ve vergi yükümlülükleri)</li>
+      <li>Çocuğa ait gelişim ve sağlık kayıtları (kurum tarafından yönetilir)</li>
+    </ul>
+
+    <div class="contact-box">
+      <h2 style="margin-top:0">İletişim</h2>
+      <p>Hesap silme talebiniz için:</p>
+      <p><strong>Geliştirici:</strong> Faruk Kurtuluş</p>
+      <p><strong>E-posta:</strong> destek.fkdigital@gmail.com</p>
+      <p><strong>Konu satırı:</strong> Yumurcak Hesap Silme Talebi</p>
+      <a class="mail-btn" href="mailto:destek.fkdigital@gmail.com?subject=Yumurcak%20Hesap%20Silme%20Talebi">
+        ✉️ E-posta Gönder
+      </a>
+    </div>
+
+    <footer>© 2026 Yumurcak Kreş Uygulaması. Tüm hakları saklıdır.</footer>
+  </div>
+</body>
+</html>
