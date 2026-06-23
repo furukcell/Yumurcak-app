@@ -342,10 +342,21 @@ export default function MessageDetailScreen() {
                   const mine = item.gonderenId === currentUserId;
                   const read = isReadByOtherParticipant(item, conversation, currentUserId);
 
+                  // Karşı taraftan gelen mesaj, benim son okuma zamanımdan
+                  // sonra gönderilmişse "henüz okumadım" sayılır → kalın gösterilir.
+                  const myLastSeenAt = Number(conversation?.sonOkuma?.[currentUserId] || 0);
+                  const isUnreadByMe = !mine && Number(item.createdAt || 0) > myLastSeenAt;
+
                   return (
                     <View style={[styles.messageRow, mine ? styles.messageRowMine : styles.messageRowOther]}>
                       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
-                        <Text style={[styles.messageText, mine ? styles.messageTextMine : styles.messageTextOther]}>
+                        <Text
+                          style={[
+                            styles.messageText,
+                            mine ? styles.messageTextMine : styles.messageTextOther,
+                            isUnreadByMe && styles.messageTextUnread,
+                          ]}
+                        >
                           {item.metin}
                         </Text>
                         <View style={styles.metaRow}>
@@ -461,6 +472,7 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 15, lineHeight: 20, fontWeight: '600' },
   messageTextMine: { color: '#FFF' },
   messageTextOther: { color: THEME.text },
+  messageTextUnread: { fontWeight: '900' },
   metaRow: { flexDirection: 'row', alignSelf: 'flex-end', alignItems: 'center', gap: 8, marginTop: 4 },
   timeText: { fontSize: 10, fontWeight: '700' },
   timeTextMine: { color: 'rgba(255,255,255,0.72)' },
