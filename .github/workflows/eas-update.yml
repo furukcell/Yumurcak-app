@@ -16,7 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.18.0
-          
 
       - name: Setup EAS CLI
         uses: expo/expo-github-action@v8
@@ -28,4 +27,4 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Publish OTA update (preview)
-        run: eas update --channel preview --message "${{ github.event.head_commit.message }}" --non-interactive
+        run: eas update --branch preview --message "${{ github.event.head_commit.message }}" --non-interactive
