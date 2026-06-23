@@ -3,9 +3,10 @@
 // SafeAreaProvider + StatusBar + Push token + Android navigation bar
 // ============================================================
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as Updates from 'expo-updates';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
@@ -19,8 +20,22 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
+    const checkForUpdates = async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (error) {
+        console.warn('OTA güncelleme hatası:', error);
+      }
+    };
+    checkForUpdates();
+  }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
     const hideAndroidNavigationBar = async () => {
       try {
         await NavigationBar.setBehaviorAsync('overlay-swipe');
@@ -31,7 +46,6 @@ export default function App() {
         console.warn('Android navigation bar gizlenemedi:', error);
       }
     };
-
     hideAndroidNavigationBar();
   }, []);
 
@@ -40,7 +54,6 @@ export default function App() {
       if (user) {
         try {
           const token = await registerForPushNotificationsAsync();
-
           if (token) {
             await savePushTokenToDatabase(token, user.uid);
           }
@@ -49,7 +62,6 @@ export default function App() {
         }
       }
     });
-
     return () => unsubscribe();
   }, []);
 
