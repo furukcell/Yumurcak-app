@@ -11,6 +11,7 @@ import { ref, onValue, push, set, update, remove } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -41,6 +42,7 @@ export default function EventFormScreen() {
   const [siniflar, setSiniflar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [kaydediliyor, setKaydediliyor] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
@@ -118,9 +120,11 @@ export default function EventFormScreen() {
         await set(yeniRef, { ...veri, createdAt: Date.now() });
       }
 
-      Alert.alert('Başarılı', 'Etkinlik kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
-      ]);
+      setSuccessToast(true);
+
+      setTimeout(() => {
+        navigation.goBack();
+      }, 900);
     } catch (err) {
       Alert.alert('Hata', 'Kaydedilirken bir sorun oluştu: ' + err.message);
     } finally {
@@ -160,6 +164,12 @@ export default function EventFormScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast}
+        message="Etkinlik kaydedildi"
+        onHide={() => setSuccessToast(false)}
+      />
+
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
 
         <Text style={styles.label}>Etkinlik Başlığı</Text>
