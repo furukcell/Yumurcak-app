@@ -1,16 +1,17 @@
 // ============================================================
 // YUMURCAK — TeacherMealsScreen.js
-// Öğretmen günlük yemek girişi + aylık kurum listesi görünümü
+// Öğretmen parça parça günlük yemek girişi + aylık kurum listesi görünümü
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
-import { ref, push, remove } from 'firebase/database';
+import { ref, push, remove, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -67,17 +68,6 @@ function isRecentDailyMeal(item) {
 
 function isExpiredDailyMeal(item) {
   return item?.kaynak !== 'admin_aylik' && isDateExpired(getMealDateKey(item));
-}
-
-function getMealText(value) {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  return value.text || value.aciklama || '';
-}
-
-function getMealPhoto(value) {
-  if (!value || typeof value === 'string') return '';
-  return value.fotoUrl || value.photoUrl || value.imageUrl || '';
 }
 
 function getMealPhotoPath(value) {
@@ -145,21 +135,35 @@ async function deleteMealPhoto(value) {
   }
 }
 
+function buildEmptyTodayMeal(kresId, classItem) {
+  const today = todayString();
+  return {
+    kresId: kresId || classItem?.kresId || '',
+    sinifId: classItem?.id || '',
+    tip: 'gunluk',
+    tarih: today,
+    baslik: `${classItem?.ad || 'Sınıf'} Günlük Yemek Listesi`,
+    ogunler: {},
+    aktif: true,
+    createdAt: Date.now(),
+  };
+}
+
+function getMealConfig(key) {
+  return MEALS.find((item) => item.key === key) || MEALS[0];
+}
+
 export default function TeacherMealsScreen() {
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, meals } = useTeacherData();
 
-  const [showForm, setShowForm] = useState(false);
-  const [tab, setTab] = useState('daily');
-  const [tarih, setTarih] = useState(todayString());
-  const [kahvalti, setKahvalti] = useState('');
-  const [ogle, setOgle] = useState('');
-  const [araOgun, setAraOgun] = useState('');
-  const [kahvaltiFoto, setKahvaltiFoto] = useState(null);
-  const [ogleFoto, setOgleFoto] = useState(null);
-  const [araOgunFoto, setAraOgunFoto] = useState(null);
+  const [tab, setTab] = useState('today');
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
+  const [selectedMealKey, setSelectedMealKey] = useState('kahvalti');
+  const [mealText, setMealText] = useState('');
+  const [mealPhoto, setMealPhoto] = useState(null);
+  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
@@ -181,6 +185,11 @@ export default function TeacherMealsScreen() {
       .filter((item) => item.ayKey === currentMonthKey)
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [visibleMeals, currentMonthKey]);
+
+  const todayMeal = useMemo(() => {
+    const today = todayString();
+    return visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || buildEmptyTodayMeal(kresId, currentClass);
+  }, [currentClass, kresId, visibleMeals]);
 
   useEffect(() => {
     if (loading) return;
@@ -215,9 +224,16 @@ export default function TeacherMealsScreen() {
     };
   }, [loading, visibleMeals]);
 
+  useEffect(() => {
+    const value = todayMeal?.ogunler?.[selectedMealKey];
+    setMealText(getMealText(value));
+    setMealPhoto(null);
+    setRemoveExistingPhoto(false);
+  }, [selectedMealKey, todayMeal?.id, todayMeal?.updatedAt, todayMeal?.createdAt]);
+
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
 
-  const pickMealPhoto = async (mealKey, source) => {
+  const pickMealPhoto = async (source) => {
     try {
       if (source === 'camera') {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -235,76 +251,92 @@ export default function TeacherMealsScreen() {
       });
 
       if (result.canceled || !result.assets?.[0]?.uri) return;
-      const photo = result.assets[0];
-
-      if (mealKey === 'kahvalti') setKahvaltiFoto(photo);
-      if (mealKey === 'ogle') setOgleFoto(photo);
-      if (mealKey === 'araOgun') setAraOgunFoto(photo);
+      setMealPhoto(result.assets[0]);
+      setRemoveExistingPhoto(false);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Fotoğraf seçilemedi.');
     }
   };
 
-  const removeMealPhoto = (mealKey) => {
-    if (mealKey === 'kahvalti') setKahvaltiFoto(null);
-    if (mealKey === 'ogle') setOgleFoto(null);
-    if (mealKey === 'araOgun') setAraOgunFoto(null);
+  const openMealEditor = (mealKey) => {
+    const value = todayMeal?.ogunler?.[mealKey];
+    setSelectedMealKey(mealKey);
+    setMealText(getMealText(value));
+    setMealPhoto(null);
+    setRemoveExistingPhoto(false);
+    setTab('today');
   };
 
-  const saveMeal = async () => {
+  const saveSelectedMeal = async () => {
     if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
-    if (!tarih.trim()) return Alert.alert('Eksik Bilgi', 'Tarih zorunludur.');
-    if (!kahvalti.trim() && !ogle.trim() && !araOgun.trim() && !kahvaltiFoto && !ogleFoto && !araOgunFoto) {
-      return Alert.alert('Eksik Bilgi', 'En az bir öğün veya fotoğraf eklemelisin.');
+    if (!mealText.trim() && !mealPhoto && !getMealPhoto(todayMeal?.ogunler?.[selectedMealKey])) {
+      return Alert.alert('Eksik Bilgi', 'Bu öğün için yazı veya fotoğraf eklemelisin.');
     }
 
     setSaving(true);
     try {
       const finalKresId = kresId || currentClass.kresId || '';
-      const kahvaltiPhoto = await uploadMealPhoto(kahvaltiFoto, finalKresId, currentClass.id, 'kahvalti');
-      const oglePhoto = await uploadMealPhoto(ogleFoto, finalKresId, currentClass.id, 'ogle');
-      const araOgunPhoto = await uploadMealPhoto(araOgunFoto, finalKresId, currentClass.id, 'araOgun');
+      const currentValue = todayMeal?.ogunler?.[selectedMealKey] || {};
+      let photoData = {
+        url: removeExistingPhoto ? '' : getMealPhoto(currentValue),
+        path: removeExistingPhoto ? '' : getMealPhotoPath(currentValue),
+      };
 
-      await push(ref(database, 'yemekListeleri'), {
-        kresId: finalKresId,
-        sinifId: currentClass.id,
-        olusturanId: teacherId || '',
-        olusturanRol: 'ogretmen',
-        tip: 'gunluk',
-        tarih: tarih.trim(),
-        baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
-        ogunler: {
-          kahvalti: { text: kahvalti.trim(), fotoUrl: kahvaltiPhoto.url, fotoPath: kahvaltiPhoto.path },
-          ogle: { text: ogle.trim(), fotoUrl: oglePhoto.url, fotoPath: oglePhoto.path },
-          araOgun: { text: araOgun.trim(), fotoUrl: araOgunPhoto.url, fotoPath: araOgunPhoto.path },
-        },
-        aktif: true,
-        createdAt: Date.now(),
-      });
+      if (mealPhoto?.uri) {
+        photoData = await uploadMealPhoto(mealPhoto, finalKresId, currentClass.id, selectedMealKey);
+      }
 
-      setKahvalti('');
-      setOgle('');
-      setAraOgun('');
-      setKahvaltiFoto(null);
-      setOgleFoto(null);
-      setAraOgunFoto(null);
-      setTarih(todayString());
-      setShowForm(false);
+      const mealPayload = {
+        text: mealText.trim(),
+        fotoUrl: photoData.url,
+        fotoPath: photoData.path,
+        updatedAt: Date.now(),
+      };
+
+      const now = Date.now();
+      if (todayMeal?.id) {
+        await update(ref(database, `yemekListeleri/${todayMeal.id}`), {
+          [`ogunler/${selectedMealKey}`]: mealPayload,
+          updatedAt: now,
+        });
+      } else {
+        const newRef = push(ref(database, 'yemekListeleri'));
+        await update(newRef, {
+          kresId: finalKresId,
+          sinifId: currentClass.id,
+          olusturanId: teacherId || '',
+          olusturanRol: 'ogretmen',
+          tip: 'gunluk',
+          tarih: todayString(),
+          baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
+          ogunler: { [selectedMealKey]: mealPayload },
+          aktif: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+
+      setMealPhoto(null);
+      setRemoveExistingPhoto(false);
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Yemek listesi kaydedilemedi. Fotoğraf yükleme izni veya internet bağlantısını kontrol et.');
+      Alert.alert('Hata', 'Öğün kaydedilemedi. Fotoğraf yükleme izni veya internet bağlantısını kontrol et.');
     } finally {
       setSaving(false);
     }
   };
 
+  const selectedMeal = getMealConfig(selectedMealKey);
+  const existingPhoto = getMealPhoto(todayMeal?.ogunler?.[selectedMealKey]);
+  const previewPhoto = mealPhoto?.uri || (!removeExistingPhoto ? existingPhoto : '');
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast
         visible={successToast}
-        message="Yemek listesi kaydedildi"
+        message={`${selectedMeal.title} kaydedildi`}
         onHide={() => setSuccessToast(false)}
       />
 
@@ -312,57 +344,75 @@ export default function TeacherMealsScreen() {
         navigation={navigation}
         title="Yemek Listesi"
         subtitle={currentClass?.ad || 'Sınıfım'}
-        rightText={showForm ? 'Kapat' : '+ Ekle'}
-        onRightPress={() => setShowForm((v) => !v)}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {showForm ? (
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Sınıf İçin Günlük Yemek</Text>
-            <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder="2026-06-20" placeholderTextColor="#999" />
-            <MealInput
-              label="Kahvaltı"
-              value={kahvalti}
-              onChangeText={setKahvalti}
-              photo={kahvaltiFoto}
-              onGallery={() => pickMealPhoto('kahvalti', 'gallery')}
-              onCamera={() => pickMealPhoto('kahvalti', 'camera')}
-              onRemovePhoto={() => removeMealPhoto('kahvalti')}
-            />
-            <MealInput
-              label="Öğle yemeği"
-              value={ogle}
-              onChangeText={setOgle}
-              photo={ogleFoto}
-              onGallery={() => pickMealPhoto('ogle', 'gallery')}
-              onCamera={() => pickMealPhoto('ogle', 'camera')}
-              onRemovePhoto={() => removeMealPhoto('ogle')}
-            />
-            <MealInput
-              label="Ara öğün"
-              value={araOgun}
-              onChangeText={setAraOgun}
-              photo={araOgunFoto}
-              onGallery={() => pickMealPhoto('araOgun', 'gallery')}
-              onCamera={() => pickMealPhoto('araOgun', 'camera')}
-              onRemovePhoto={() => removeMealPhoto('araOgun')}
-            />
-            <TouchableOpacity style={styles.saveButton} onPress={saveMeal} disabled={saving}>
-              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Yemek Listesini Kaydet</Text>}
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
         <View style={styles.tabRow}>
+          <TouchableOpacity style={[styles.tab, tab === 'today' && styles.tabActive]} onPress={() => setTab('today')} activeOpacity={0.85}>
+            <Text style={[styles.tabText, tab === 'today' && styles.tabTextActive]}>Bugün</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.tab, tab === 'daily' && styles.tabActive]} onPress={() => setTab('daily')} activeOpacity={0.85}>
-            <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Günlük Liste</Text>
+            <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Liste</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.tab, tab === 'monthly' && styles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
-            <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık Liste</Text>
+            <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık</Text>
           </TouchableOpacity>
         </View>
 
-        {tab === 'monthly' ? (
+        {tab === 'today' ? (
+          <>
+            <MealTodayCard
+              item={todayMeal}
+              className={currentClass?.ad || ''}
+              title="Günlük Yemek Listesi"
+              editable
+              onMealPress={openMealEditor}
+            />
+
+            <View style={styles.editorCard}>
+              <Text style={styles.editorTitle}>{selectedMeal.icon} {selectedMeal.title} ekle / güncelle</Text>
+              <Text style={styles.editorDesc}>Öğretmen öğünleri tek tek girebilir. Kaydettiğin anda veli ekranında Bugün sekmesine düşer.</Text>
+
+              <View style={styles.mealSelectorRow}>
+                {MEALS.map((meal) => (
+                  <TouchableOpacity key={meal.key} style={[styles.mealSelector, selectedMealKey === meal.key && styles.mealSelectorActive]} onPress={() => openMealEditor(meal.key)} activeOpacity={0.85}>
+                    <Text style={[styles.mealSelectorText, selectedMealKey === meal.key && styles.mealSelectorTextActive]}>{meal.icon} {meal.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TextInput
+                style={styles.input}
+                value={mealText}
+                onChangeText={setMealText}
+                placeholder={`${selectedMeal.title} açıklaması`}
+                placeholderTextColor="#999"
+                multiline
+              />
+
+              {previewPhoto ? (
+                <View style={styles.photoPreviewWrap}>
+                  <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
+                  <TouchableOpacity style={styles.removePhotoButton} onPress={() => { setMealPhoto(null); setRemoveExistingPhoto(true); }} activeOpacity={0.85}>
+                    <Text style={styles.removePhotoText}>Fotoğrafı kaldır</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <View style={styles.photoButtonRow}>
+                <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('gallery')} activeOpacity={0.85}>
+                  <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('camera')} activeOpacity={0.85}>
+                  <Text style={styles.photoButtonText}>📷 Kamera</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.saveButton} onPress={saveSelectedMeal} disabled={saving} activeOpacity={0.85}>
+                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{selectedMeal.title} Kaydet</Text>}
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : tab === 'monthly' ? (
           monthlyMeals.length === 0 ? (
             <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
           ) : (
@@ -385,30 +435,6 @@ export default function TeacherMealsScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function MealInput({ label, value, onChangeText, photo, onGallery, onCamera, onRemovePhoto }) {
-  return (
-    <View style={styles.mealInputBox}>
-      <TextInput style={styles.input} value={value} onChangeText={onChangeText} placeholder={label} placeholderTextColor="#999" />
-      {photo?.uri ? (
-        <View style={styles.photoPreviewWrap}>
-          <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
-          <TouchableOpacity style={styles.removePhotoButton} onPress={onRemovePhoto} activeOpacity={0.85}>
-            <Text style={styles.removePhotoText}>Fotoğrafı kaldır</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-      <View style={styles.photoButtonRow}>
-        <TouchableOpacity style={styles.photoButton} onPress={onGallery} activeOpacity={0.85}>
-          <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.photoButton} onPress={onCamera} activeOpacity={0.85}>
-          <Text style={styles.photoButtonText}>📷 Kamera</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
   );
 }
 
@@ -451,24 +477,29 @@ function renderMeals(item) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   content: { padding: 16, paddingBottom: 32 },
-  formCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
-  formTitle: { color: THEME.primary, fontWeight: '900', fontSize: 16, marginBottom: 10 },
-  mealInputBox: { marginBottom: 10 },
-  input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border },
-  photoButtonRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  photoButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
-  photoButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
-  photoPreviewWrap: { marginBottom: 10 },
-  photoPreview: { width: '100%', height: 150, borderRadius: 14, backgroundColor: THEME.bg },
-  removePhotoButton: { marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#FFE4E8', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 10 },
-  removePhotoText: { color: THEME.red, fontWeight: '900', fontSize: 12 },
-  saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
-  saveText: { color: '#FFF', fontWeight: '900' },
   tabRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tab: { flex: 1, backgroundColor: THEME.card, borderRadius: 14, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   tabActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
   tabText: { color: THEME.text, fontWeight: '900', fontSize: 12 },
   tabTextActive: { color: '#FFF' },
+  editorCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
+  editorTitle: { color: THEME.primary, fontWeight: '900', fontSize: 17 },
+  editorDesc: { color: THEME.muted, fontWeight: '700', fontSize: 12, lineHeight: 17, marginTop: 4, marginBottom: 12 },
+  mealSelectorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  mealSelector: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 99, backgroundColor: THEME.primarySoft, borderWidth: 1, borderColor: THEME.border },
+  mealSelectorActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  mealSelectorText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  mealSelectorTextActive: { color: '#FFF' },
+  input: { minHeight: 54, backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border, textAlignVertical: 'top', fontWeight: '700' },
+  photoButtonRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  photoButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  photoButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  photoPreviewWrap: { marginBottom: 10 },
+  photoPreview: { width: '100%', height: 160, borderRadius: 16, backgroundColor: THEME.bg },
+  removePhotoButton: { marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#FFE4E8', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 10 },
+  removePhotoText: { color: THEME.red, fontWeight: '900', fontSize: 12 },
+  saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
+  saveText: { color: '#FFF', fontWeight: '900' },
   monthInfoCard: { backgroundColor: THEME.primarySoft, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
   monthInfoTitle: { color: THEME.primary, fontWeight: '900', fontSize: 15 },
   monthInfoText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 4 },
