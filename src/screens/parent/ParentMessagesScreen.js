@@ -1,19 +1,38 @@
 // ============================================================
 // YUMURCAK — ParentMessagesScreen.js
-// FAZ 16: Okunmamış badge + son mesaj desteği
+// Veli mesaj merkezi - kurum ve öğretmen sohbetleri
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, TouchableOpacity, View, Text } from 'react-native';
+import { Alert, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, EmptyState, LoadingScreen, THEME, useParentBase } from './parentShared';
 import { safeUnread } from '../../utils/messageHelpers';
+
+function formatMessageTime(value) {
+  if (!value) return '';
+  const date = new Date(Number(value));
+  if (Number.isNaN(date.getTime())) return '';
+
+  const today = new Date();
+  const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const startYesterday = startToday - 24 * 60 * 60 * 1000;
+
+  if (date.getTime() >= startToday) return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  if (date.getTime() >= startYesterday) return 'Dün';
+  return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+}
+
+function getLastTime(meta) {
+  return formatMessageTime(meta?.sonMesajAt || meta?.updatedAt || meta?.createdAt || 0);
+}
 
 export default function ParentMessagesScreen({ navigation }) {
   const base = useParentBase();
   const { loading, parentId, selectedChild, childName, kresId, kres, sinif, ogretmen, yonetici, parentName } = base;
 
   const [conversations, setConversations] = useState({});
+  const [showInfo, setShowInfo] = useState(true);
 
   useEffect(() => {
     const unsub = onValue(ref(database, 'mesajKonusmalari'), (snap) => {
@@ -127,6 +146,8 @@ export default function ParentMessagesScreen({ navigation }) {
 
   const adminMeta = adminConversationId ? conversations[adminConversationId] || {} : {};
   const teacherMeta = teacherConversationId ? conversations[teacherConversationId] || {} : {};
+  const adminUnread = safeUnread(adminMeta, parentId);
+  const teacherUnread = safeUnread(teacherMeta, parentId);
 
   return (
     <ScreenShell title="Mesajlar" emoji="💬" navigation={navigation}>
@@ -134,47 +155,82 @@ export default function ParentMessagesScreen({ navigation }) {
         <EmptyState icon="👧" title="Çocuk bağlantısı yok" desc="Mesajlaşma için çocuğunuzun hesaba bağlı olması gerekir." />
       ) : (
         <>
+          {showInfo ? (
+            <View style={local.infoBanner}>
+              <View style={local.infoIconBox}><Text style={local.infoIcon}>💬</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={local.infoText}>Öğretmeniniz ve kurum yönetimi ile güvenli şekilde mesajlaşabilirsiniz.</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowInfo(false)} activeOpacity={0.85}>
+                <Text style={local.infoClose}>♡</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
           <ContactCard
             icon="🏫"
             title="Kurum Yönetimi"
             desc={adminMeta.sonMesaj || kres?.ad || 'Kurum ile yazış'}
             sub="Aidat, kayıt ve genel konular"
-            unread={safeUnread(adminMeta, parentId)}
+            unread={adminUnread}
+            time={getLastTime(adminMeta)}
+            tag="Resmi"
+            highlight
             onPress={openAdminChat}
           />
+
+          <View style={local.sectionRow}>
+            <Text style={local.sectionTitle}>Öğretmenler</Text>
+            <Text style={local.sectionAction}>{childName || 'Çocuk'} için</Text>
+          </View>
+
           <ContactCard
             icon="👩‍🏫"
             title={getName(ogretmen) || 'Öğretmen'}
-            desc={teacherMeta.sonMesaj || childName}
-            sub="Günlük durum ve sınıf konuları"
-            unread={safeUnread(teacherMeta, parentId)}
+            desc={teacherMeta.sonMesaj || 'Öğretmenle güvenli sohbet başlat'}
+            sub="Sınıf öğretmeni"
+            unread={teacherUnread}
+            time={getLastTime(teacherMeta)}
             onPress={openTeacherChat}
           />
+
+          <View style={local.securityCard}>
+            <View style={local.securityIconBox}><Text style={local.securityIcon}>🔒</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={local.securityTitle}>Güvenli İletişim</Text>
+              <Text style={local.securityText}>Mesajlar sadece ilgili veli, öğretmen ve kurum yönetimi tarafından görüntülenir.</Text>
+            </View>
+            <Text style={local.securityDecor}>🛡️</Text>
+          </View>
         </>
       )}
     </ScreenShell>
   );
 }
 
-function ContactCard({ icon, title, desc, sub, unread, onPress }) {
+function ContactCard({ icon, title, desc, sub, unread, time, tag, highlight, onPress }) {
   return (
-    <TouchableOpacity style={local.card} onPress={onPress} activeOpacity={0.85}>
-      <View style={local.iconBox}>
+    <TouchableOpacity style={[local.card, highlight && local.managementCard]} onPress={onPress} activeOpacity={0.85}>
+      <View style={[local.iconBox, highlight && local.managementIconBox]}>
         <Text style={local.icon}>{icon}</Text>
       </View>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
         <View style={local.titleRow}>
           <Text style={[local.title, unread > 0 && local.titleUnread]} numberOfLines={1}>{title}</Text>
-          {unread > 0 ? (
-            <View style={local.unreadBadge}>
-              <Text style={local.unreadText}>{unread > 99 ? '99+' : unread}</Text>
-            </View>
-          ) : null}
+          {tag ? <Text style={local.tagPill}>{tag}</Text> : null}
         </View>
+        <Text style={local.sub} numberOfLines={1}>{sub}</Text>
         <Text style={[local.desc, unread > 0 && local.descUnread]} numberOfLines={1}>{desc}</Text>
-        <Text style={local.sub}>{sub}</Text>
       </View>
-      <Text style={local.arrow}>›</Text>
+      <View style={local.rightCol}>
+        {time ? <Text style={local.timeText}>{time}</Text> : null}
+        {unread > 0 ? (
+          <View style={local.unreadBadge}>
+            <Text style={local.unreadText}>{unread > 99 ? '99+' : unread}</Text>
+          </View>
+        ) : null}
+        <Text style={local.arrow}>›</Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -184,42 +240,95 @@ function getName(user) {
   return `${user.ad || ''} ${user.soyad || ''}`.trim() || user.kullaniciAdi || '';
 }
 
-const local = {
-  card: {
-    backgroundColor: THEME.card,
-    borderRadius: 18,
-    padding: 15,
-    marginBottom: 12,
+const local = StyleSheet.create({
+  infoBanner: {
+    backgroundColor: 'rgba(255,255,255,0.88)',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: '#D9D3FF',
+    borderRadius: 24,
+    padding: 14,
+    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  iconBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 17,
+  infoIconBox: {
+    width: 68,
+    height: 68,
+    borderRadius: 24,
     backgroundColor: THEME.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  icon: { fontSize: 25 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { flex: 1, color: THEME.text, fontSize: 16, fontWeight: '900' },
-  titleUnread: { color: THEME.primary },
-  desc: { color: THEME.muted, marginTop: 3, fontWeight: '700' },
-  descUnread: { color: THEME.text, fontWeight: '900' },
-  sub: { color: THEME.muted, marginTop: 3, fontSize: 12, fontWeight: '600' },
-  arrow: { color: THEME.primary, fontSize: 30, fontWeight: '900', marginLeft: 8 },
-  unreadBadge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FF4D6D',
+  infoIcon: { fontSize: 36 },
+  infoText: { color: THEME.text, fontSize: 15, lineHeight: 23, fontWeight: '700' },
+  infoClose: { color: THEME.primary, fontSize: 28, fontWeight: '900', paddingHorizontal: 8 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, marginBottom: 10 },
+  sectionTitle: { flex: 1, fontSize: 21, fontWeight: '900', color: THEME.text },
+  sectionAction: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  card: {
+    backgroundColor: THEME.card,
+    borderRadius: 24,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 11,
+    elevation: 2,
+  },
+  managementCard: { minHeight: 108, marginBottom: 20 },
+  iconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: THEME.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 7,
+    marginRight: 13,
   },
+  managementIconBox: { width: 74, height: 74, borderRadius: 24 },
+  icon: { fontSize: 33 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { flex: 1, color: THEME.text, fontSize: 18, fontWeight: '900' },
+  titleUnread: { color: THEME.primary },
+  tagPill: { backgroundColor: THEME.primarySoft, color: THEME.primary, borderRadius: 99, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontWeight: '900', fontSize: 11 },
+  sub: { color: THEME.primary, marginTop: 5, fontWeight: '900', fontSize: 14 },
+  desc: { color: THEME.muted, marginTop: 6, fontWeight: '700', fontSize: 13 },
+  descUnread: { color: THEME.text, fontWeight: '900' },
+  rightCol: { alignItems: 'flex-end', justifyContent: 'center', marginLeft: 8, minWidth: 44 },
+  timeText: { color: THEME.muted, fontWeight: '900', fontSize: 12, marginBottom: 7 },
+  arrow: { color: THEME.primary, fontSize: 32, fontWeight: '900', marginTop: 2 },
+  unreadBadge: { minWidth: 28, height: 28, borderRadius: 14, backgroundColor: THEME.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, marginBottom: 3 },
   unreadText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
-};
+  securityCard: {
+    backgroundColor: '#F3FAFF',
+    borderWidth: 1,
+    borderColor: '#BEE3FF',
+    borderRadius: 24,
+    padding: 14,
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  securityIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    backgroundColor: '#DCEFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  securityIcon: { fontSize: 31 },
+  securityTitle: { color: THEME.primary, fontWeight: '900', fontSize: 16 },
+  securityText: { color: THEME.text, fontWeight: '700', lineHeight: 19, marginTop: 4 },
+  securityDecor: { color: THEME.primary, fontSize: 28, marginLeft: 8 },
+});
