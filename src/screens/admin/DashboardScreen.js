@@ -4,7 +4,7 @@
 // Tema arka planı + kompakt dashboard + kurum adı vitrini
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -251,7 +251,11 @@ function getSubscriptionText(sub) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: 'transparent' },
-  screen: { flex: 1, backgroundColor: 'transparent' },
+  screen: {
+  flex: 1,
+  backgroundColor: 'transparent',
+  paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0,
+},
   scrollContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 34 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
   topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
