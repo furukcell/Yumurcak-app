@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -148,8 +149,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       if (!currentClass?.id) return [];
       return children.filter((child) => child.sinifId === currentClass.id);
     }
-    const kresId = kullanici?.kresId || children[0]?.kresId || null;
-    return children.filter((child) => !kresId || child.kresId === kresId);
+    const userKresId = kullanici?.kresId || children[0]?.kresId || null;
+    return children.filter((child) => !userKresId || child.kresId === userKresId);
   }, [children, currentClass?.id, kullanici?.kresId, mode, userId]);
 
   const kresId = useMemo(() => {
@@ -338,6 +339,21 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     }
   }
 
+  async function openMedia(item) {
+    if (!item?.url) return;
+    try {
+      const supported = await Linking.canOpenURL(item.url);
+      if (!supported) {
+        Alert.alert('Video açılamadı', 'Bu video bağlantısı cihazda açılamıyor.');
+        return;
+      }
+      await Linking.openURL(item.url);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Video açılamadı', 'Video oynatıcı açılırken hata oluştu.');
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -460,10 +476,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         ) : visibleGallery.map((item) => (
           <View key={item.id} style={styles.mediaCard}>
             {item.type === 'video' ? (
-              <View style={styles.videoBox}>
+              <TouchableOpacity style={styles.videoBox} onPress={() => openMedia(item)} activeOpacity={0.86}>
                 <Text style={styles.videoIcon}>▶️</Text>
-                <Text style={styles.videoText}>Video</Text>
-              </View>
+                <Text style={styles.videoText}>Videoyu Aç</Text>
+              </TouchableOpacity>
             ) : (
               <Image source={{ uri: item.url }} style={styles.mediaImage} resizeMode="cover" />
             )}
