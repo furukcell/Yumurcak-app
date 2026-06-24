@@ -1,9 +1,9 @@
 // ============================================================
 // YUMURCAK — TeacherMessagesScreen.js
-// Öğretmen mesaj merkezi - modern inbox görünümü
+// Öğretmen mesaj merkezi - çekmeceli yeni mesaj seçimi
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -35,6 +35,8 @@ export default function TeacherMessagesScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [showInfo, setShowInfo] = useState(true);
+  const [newMessageOpen, setNewMessageOpen] = useState(false);
+  const [drawerQuery, setDrawerQuery] = useState('');
 
   useEffect(() => {
     const unsub = onValue(ref(database, 'mesajKonusmalari'), (snap) => {
@@ -100,6 +102,16 @@ export default function TeacherMessagesScreen() {
     });
   }, [parentContacts, query, filter]);
 
+  const drawerContacts = useMemo(() => {
+    const search = normalizeText(drawerQuery);
+    if (!search) return parentContacts;
+
+    return parentContacts.filter((contact) => {
+      const haystack = normalizeText(`${contact.title} ${contact.childName} ${contact.desc}`);
+      return haystack.includes(search);
+    });
+  }, [parentContacts, drawerQuery]);
+
   const unreadTotal = useMemo(() => {
     return adminUnread + parentContacts.reduce((sum, item) => sum + Number(item.unread || 0), 0);
   }, [adminUnread, parentContacts]);
@@ -137,6 +149,7 @@ export default function TeacherMessagesScreen() {
     };
 
     await update(ref(database, `mesajKonusmalari/${conversationId}`), conversationMeta);
+    setNewMessageOpen(false);
 
     navigation.navigate('MessageDetail', {
       conversationId,
@@ -178,6 +191,8 @@ export default function TeacherMessagesScreen() {
     };
 
     await update(ref(database, `mesajKonusmalari/${conversationId}`), conversationMeta);
+    setNewMessageOpen(false);
+    setDrawerQuery('');
 
     navigation.navigate('MessageDetail', {
       conversationId,
@@ -189,7 +204,7 @@ export default function TeacherMessagesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader navigation={navigation} title="Mesajlar" subtitle={currentClass?.ad || 'Sınıfım'} rightText="✎ Yeni" onRightPress={() => setFilter('parents')} />
+      <ScreenHeader navigation={navigation} title="Mesajlar" subtitle={currentClass?.ad || 'Sınıfım'} rightText="✎ Yeni" onRightPress={() => setNewMessageOpen(true)} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>⌕</Text>
@@ -273,6 +288,76 @@ export default function TeacherMessagesScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal visible={newMessageOpen} transparent animationType="slide" onRequestClose={() => setNewMessageOpen(false)}>
+        <View style={styles.drawerOverlay}>
+          <TouchableOpacity style={styles.drawerBackdrop} activeOpacity={1} onPress={() => setNewMessageOpen(false)} />
+          <View style={styles.drawerSheet}>
+            <View style={styles.drawerHandle} />
+            <View style={styles.drawerHeader}>
+              <View>
+                <Text style={styles.drawerTitle}>Yeni Mesaj Başlat</Text>
+                <Text style={styles.drawerSubtitle}>Veli seç, sohbete direkt başla</Text>
+              </View>
+              <TouchableOpacity style={styles.drawerCloseButton} onPress={() => setNewMessageOpen(false)} activeOpacity={0.85}>
+                <Text style={styles.drawerCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.drawerSearchBox}>
+              <Text style={styles.searchIcon}>⌕</Text>
+              <TextInput
+                style={styles.searchInput}
+                value={drawerQuery}
+                onChangeText={setDrawerQuery}
+                placeholder="Veli veya çocuk ara..."
+                placeholderTextColor="#8A8EA3"
+              />
+              {drawerQuery ? (
+                <TouchableOpacity onPress={() => setDrawerQuery('')} activeOpacity={0.85}>
+                  <Text style={styles.clearSearch}>×</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <TouchableOpacity style={styles.drawerAdminCard} onPress={openAdminChat} activeOpacity={0.85}>
+              <View style={styles.drawerIconBox}><Text style={styles.drawerIcon}>🏫</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.drawerContactTitle}>Kurum Yönetimi</Text>
+                <Text style={styles.drawerContactSub}>İdari ve sınıf konuları</Text>
+              </View>
+              <Text style={styles.drawerArrow}>›</Text>
+            </TouchableOpacity>
+
+            <View style={styles.drawerSectionRow}>
+              <Text style={styles.drawerSectionTitle}>Sınıf Velileri</Text>
+              <Text style={styles.drawerCount}>{drawerContacts.length} kişi</Text>
+            </View>
+
+            <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {drawerContacts.length === 0 ? (
+                <View style={styles.drawerEmpty}>
+                  <Text style={styles.drawerEmptyIcon}>🔎</Text>
+                  <Text style={styles.drawerEmptyTitle}>Veli bulunamadı</Text>
+                  <Text style={styles.drawerEmptyText}>Arama kelimesini değiştirerek tekrar dene.</Text>
+                </View>
+              ) : (
+                drawerContacts.map((contact) => (
+                  <TouchableOpacity key={`${contact.veliId}_${contact.child.id}_drawer`} style={styles.drawerContactRow} onPress={() => openParentChat(contact)} activeOpacity={0.85}>
+                    <View style={styles.drawerParentIconBox}><Text style={styles.drawerParentIcon}>👨‍👩‍👧</Text></View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.drawerContactTitle} numberOfLines={1}>{contact.title}</Text>
+                      <Text style={styles.drawerContactSub} numberOfLines={1}>{contact.childName} velisi</Text>
+                    </View>
+                    {contact.unread > 0 ? <Text style={styles.drawerUnread}>{contact.unread > 99 ? '99+' : contact.unread}</Text> : null}
+                    <Text style={styles.drawerArrow}>›</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -356,4 +441,32 @@ const styles = StyleSheet.create({
   securityIcon: { fontSize: 30 },
   securityTitle: { color: THEME.primary, fontWeight: '900', fontSize: 16 },
   securityText: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: 4 },
+  drawerOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.35)' },
+  drawerBackdrop: { ...StyleSheet.absoluteFillObject },
+  drawerSheet: { maxHeight: '86%', backgroundColor: THEME.bg, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 16, paddingBottom: 24, borderWidth: 1, borderColor: THEME.border },
+  drawerHandle: { width: 52, height: 5, borderRadius: 99, backgroundColor: '#D5D9E8', alignSelf: 'center', marginBottom: 12 },
+  drawerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  drawerTitle: { color: THEME.text, fontWeight: '900', fontSize: 21 },
+  drawerSubtitle: { color: THEME.muted, fontWeight: '700', marginTop: 3 },
+  drawerCloseButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.card, borderWidth: 1, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  drawerCloseText: { color: THEME.text, fontSize: 26, fontWeight: '700', marginTop: -2 },
+  drawerSearchBox: { backgroundColor: THEME.card, borderRadius: 18, paddingHorizontal: 12, minHeight: 54, borderWidth: 1, borderColor: THEME.border, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  drawerAdminCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, flexDirection: 'row', alignItems: 'center' },
+  drawerIconBox: { width: 58, height: 58, borderRadius: 19, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  drawerIcon: { fontSize: 29 },
+  drawerSectionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  drawerSectionTitle: { flex: 1, color: THEME.text, fontWeight: '900', fontSize: 17 },
+  drawerCount: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  drawerList: { maxHeight: 430 },
+  drawerContactRow: { backgroundColor: THEME.card, borderRadius: 18, padding: 11, marginBottom: 9, borderWidth: 1, borderColor: THEME.border, flexDirection: 'row', alignItems: 'center' },
+  drawerParentIconBox: { width: 52, height: 52, borderRadius: 17, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  drawerParentIcon: { fontSize: 25 },
+  drawerContactTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  drawerContactSub: { color: THEME.muted, fontWeight: '700', marginTop: 4, fontSize: 12 },
+  drawerUnread: { minWidth: 26, height: 26, borderRadius: 13, backgroundColor: THEME.primary, color: '#FFF', overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', fontWeight: '900', fontSize: 12, marginRight: 6 },
+  drawerArrow: { color: THEME.primary, fontSize: 28, fontWeight: '900', marginLeft: 6 },
+  drawerEmpty: { alignItems: 'center', paddingVertical: 24 },
+  drawerEmptyIcon: { fontSize: 36, marginBottom: 8 },
+  drawerEmptyTitle: { color: THEME.text, fontWeight: '900', fontSize: 16 },
+  drawerEmptyText: { color: THEME.muted, fontWeight: '700', marginTop: 4, textAlign: 'center' },
 });
