@@ -2,10 +2,10 @@
 // YUMURCAK — TeacherMealsScreen.js
 // Öğretmen günlük yemek girişi + aylık kurum listesi görünümü
 // ============================================================
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
-import { ref, push } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, push, remove } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -26,6 +26,49 @@ function formatMonthLabel(monthKey) {
   return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
 }
 
+function getMealDateKey(item) {
+  return String(item?.tarih || item?.baslangicTarihi || '').slice(0, 10);
+}
+
+function getTodayStart() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
+function getLast7DaysStart() {
+  const minDate = getTodayStart();
+  minDate.setDate(minDate.getDate() - 6);
+  return minDate;
+}
+
+function parseDateKey(dateKey) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return null;
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function isDateInLast7Days(dateKey) {
+  const targetDate = parseDateKey(dateKey);
+  if (!targetDate) return false;
+  return targetDate >= getLast7DaysStart() && targetDate <= getTodayStart();
+}
+
+function isDateExpired(dateKey) {
+  const targetDate = parseDateKey(dateKey);
+  if (!targetDate) return false;
+  return targetDate < getLast7DaysStart();
+}
+
+function isRecentDailyMeal(item) {
+  return item?.kaynak !== 'admin_aylik' && isDateInLast7Days(getMealDateKey(item));
+}
+
+function isExpiredDailyMeal(item) {
+  return item?.kaynak !== 'admin_aylik' && isDateExpired(getMealDateKey(item));
+}
+
 function getMealText(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -37,14 +80,31 @@ function getMealPhoto(value) {
   return value.fotoUrl || value.photoUrl || value.imageUrl || '';
 }
 
+function getMealPhotoPath(value) {
+  if (!value || typeof value === 'string') return '';
+  return value.fotoPath || value.photoPath || value.imagePath || value.storagePath || '';
+}
+
 async function uploadMealPhoto(uri, kresId, sinifId, mealKey) {
-  if (!uri) return '';
+  if (!uri) return { url: '', path: '' };
   const response = await fetch(uri);
   const blob = await response.blob();
   const path = `yemekFotograflari/${kresId || 'kres'}/${sinifId || 'sinif'}/${Date.now()}_${mealKey}.jpg`;
   const fileRef = storageRef(storage, path);
   await uploadBytes(fileRef, blob);
-  return getDownloadURL(fileRef);
+  const url = await getDownloadURL(fileRef);
+  return { url, path };
+}
+
+async function deleteMealPhoto(value) {
+  const path = getMealPhotoPath(value);
+  if (!path) return;
+
+  try {
+    await deleteObject(storageRef(storage, path));
+  } catch (err) {
+    console.warn('Yemek fotoğrafı silinemedi:', err?.message || err);
+  }
 }
 
 export default function TeacherMealsScreen() {
@@ -74,7 +134,7 @@ export default function TeacherMealsScreen() {
   }, [meals, kresId, currentClass?.id]);
 
   const dailyMeals = useMemo(() => {
-    return visibleMeals.filter((item) => item.kaynak !== 'admin_aylik');
+    return visibleMeals.filter((item) => isRecentDailyMeal(item));
   }, [visibleMeals]);
 
   const monthlyMeals = useMemo(() => {
@@ -83,6 +143,39 @@ export default function TeacherMealsScreen() {
       .filter((item) => item.ayKey === currentMonthKey)
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [visibleMeals, currentMonthKey]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const expiredMeals = visibleMeals.filter((item) => item.id && isExpiredDailyMeal(item));
+    if (expiredMeals.length === 0) return;
+
+    let cancelled = false;
+
+    const cleanupExpiredMeals = async () => {
+      for (const item of expiredMeals) {
+        if (cancelled) return;
+
+        try {
+          const ogunler = item.ogunler || {};
+          await Promise.all([
+            deleteMealPhoto(ogunler.kahvalti),
+            deleteMealPhoto(ogunler.ogle),
+            deleteMealPhoto(ogunler.araOgun),
+          ]);
+          await remove(ref(database, `yemekListeleri/${item.id}`));
+        } catch (err) {
+          console.warn('Süresi geçen yemek listesi temizlenemedi:', err?.message || err);
+        }
+      }
+    };
+
+    cleanupExpiredMeals();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, visibleMeals]);
 
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
 
@@ -131,9 +224,9 @@ export default function TeacherMealsScreen() {
     setSaving(true);
     try {
       const finalKresId = kresId || currentClass.kresId || '';
-      const kahvaltiFotoUrl = await uploadMealPhoto(kahvaltiFoto?.uri, finalKresId, currentClass.id, 'kahvalti');
-      const ogleFotoUrl = await uploadMealPhoto(ogleFoto?.uri, finalKresId, currentClass.id, 'ogle');
-      const araOgunFotoUrl = await uploadMealPhoto(araOgunFoto?.uri, finalKresId, currentClass.id, 'araOgun');
+      const kahvaltiPhoto = await uploadMealPhoto(kahvaltiFoto?.uri, finalKresId, currentClass.id, 'kahvalti');
+      const oglePhoto = await uploadMealPhoto(ogleFoto?.uri, finalKresId, currentClass.id, 'ogle');
+      const araOgunPhoto = await uploadMealPhoto(araOgunFoto?.uri, finalKresId, currentClass.id, 'araOgun');
 
       await push(ref(database, 'yemekListeleri'), {
         kresId: finalKresId,
@@ -144,9 +237,9 @@ export default function TeacherMealsScreen() {
         tarih: tarih.trim(),
         baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
         ogunler: {
-          kahvalti: { text: kahvalti.trim(), fotoUrl: kahvaltiFotoUrl },
-          ogle: { text: ogle.trim(), fotoUrl: ogleFotoUrl },
-          araOgun: { text: araOgun.trim(), fotoUrl: araOgunFotoUrl },
+          kahvalti: { text: kahvalti.trim(), fotoUrl: kahvaltiPhoto.url, fotoPath: kahvaltiPhoto.path },
+          ogle: { text: ogle.trim(), fotoUrl: oglePhoto.url, fotoPath: oglePhoto.path },
+          araOgun: { text: araOgun.trim(), fotoUrl: araOgunPhoto.url, fotoPath: araOgunPhoto.path },
         },
         aktif: true,
         createdAt: Date.now(),
@@ -246,7 +339,7 @@ export default function TeacherMealsScreen() {
             </>
           )
         ) : dailyMeals.length === 0 ? (
-          <EmptyState icon="🍽️" title="Yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
+          <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
         ) : (
           dailyMeals.map((item) => (
             <MealCard key={item.id} item={item} />
