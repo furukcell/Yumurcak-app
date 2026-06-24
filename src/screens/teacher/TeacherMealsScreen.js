@@ -63,11 +63,11 @@ function isDateExpired(dateKey) {
 }
 
 function isRecentDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && isDateInLast7Days(getMealDateKey(item));
+  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateInLast7Days(getMealDateKey(item));
 }
 
 function isExpiredDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && isDateExpired(getMealDateKey(item));
+  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateExpired(getMealDateKey(item));
 }
 
 function getMealPhotoPath(value) {
@@ -149,6 +149,38 @@ function buildEmptyTodayMeal(kresId, classItem) {
   };
 }
 
+function hasMealValue(value) {
+  return !!(getMealText(value) || getMealPhoto(value));
+}
+
+function mergeMealValue(monthlyValue, dailyValue) {
+  return hasMealValue(dailyValue) ? dailyValue : (monthlyValue || {});
+}
+
+function mergeTodayMeal({ kresId, classItem, monthlyMeal, dailyMeal }) {
+  const emptyMeal = buildEmptyTodayMeal(kresId, classItem);
+  const base = monthlyMeal || emptyMeal;
+  const dailyOguns = dailyMeal?.ogunler || {};
+  const monthlyOguns = monthlyMeal?.ogunler || {};
+
+  return {
+    ...base,
+    ...(dailyMeal || {}),
+    id: dailyMeal?.id || '',
+    dailySourceId: dailyMeal?.id || '',
+    monthlySourceId: monthlyMeal?.id || '',
+    kaynak: dailyMeal?.kaynak || (monthlyMeal ? 'aylik_plan' : ''),
+    tip: dailyMeal?.tip || 'gunluk',
+    tarih: todayString(),
+    baslik: dailyMeal?.baslik || monthlyMeal?.baslik || emptyMeal.baslik,
+    ogunler: {
+      kahvalti: mergeMealValue(monthlyOguns.kahvalti, dailyOguns.kahvalti),
+      ogle: mergeMealValue(monthlyOguns.ogle, dailyOguns.ogle),
+      araOgun: mergeMealValue(monthlyOguns.araOgun, dailyOguns.araOgun),
+    },
+  };
+}
+
 function getMealConfig(key) {
   return MEALS.find((item) => item.key === key) || MEALS[0];
 }
@@ -186,10 +218,17 @@ export default function TeacherMealsScreen() {
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [visibleMeals, currentMonthKey]);
 
+  const today = todayString();
+  const todayDailyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || null;
+  const todayMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'admin_aylik') || null;
   const todayMeal = useMemo(() => {
-    const today = todayString();
-    return visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || buildEmptyTodayMeal(kresId, currentClass);
-  }, [currentClass, kresId, visibleMeals]);
+    return mergeTodayMeal({
+      kresId,
+      classItem: currentClass,
+      monthlyMeal: todayMonthlyMeal,
+      dailyMeal: todayDailyMeal,
+    });
+  }, [currentClass, kresId, todayDailyMeal, todayMonthlyMeal]);
 
   useEffect(() => {
     if (loading) return;
@@ -229,7 +268,7 @@ export default function TeacherMealsScreen() {
     setMealText(getMealText(value));
     setMealPhoto(null);
     setRemoveExistingPhoto(false);
-  }, [selectedMealKey, todayMeal?.id, todayMeal?.updatedAt, todayMeal?.createdAt]);
+  }, [selectedMealKey, todayMeal?.dailySourceId, todayMeal?.monthlySourceId, todayMeal?.updatedAt, todayMeal?.createdAt]);
 
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
 
@@ -295,8 +334,9 @@ export default function TeacherMealsScreen() {
       };
 
       const now = Date.now();
-      if (todayMeal?.id) {
-        await update(ref(database, `yemekListeleri/${todayMeal.id}`), {
+      const dailyId = todayMeal?.dailySourceId || todayMeal?.id;
+      if (dailyId) {
+        await update(ref(database, `yemekListeleri/${dailyId}`), {
           [`ogunler/${selectedMealKey}`]: mealPayload,
           updatedAt: now,
         });
@@ -308,9 +348,11 @@ export default function TeacherMealsScreen() {
           olusturanId: teacherId || '',
           olusturanRol: 'ogretmen',
           tip: 'gunluk',
+          kaynak: 'ogretmen_gunluk',
           tarih: todayString(),
           baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
           ogunler: { [selectedMealKey]: mealPayload },
+          monthlySourceId: todayMeal?.monthlySourceId || '',
           aktif: true,
           createdAt: now,
           updatedAt: now,
@@ -370,7 +412,7 @@ export default function TeacherMealsScreen() {
 
             <View style={styles.editorCard}>
               <Text style={styles.editorTitle}>{selectedMeal.icon} {selectedMeal.title} ekle / güncelle</Text>
-              <Text style={styles.editorDesc}>Öğretmen öğünleri tek tek girebilir. Kaydettiğin anda veli ekranında Bugün sekmesine düşer.</Text>
+              <Text style={styles.editorDesc}>Aylık menü varsa bilgiler otomatik gelir. Değişiklik veya fotoğraf eklediğinde sadece seçili öğün güncellenir ve veli ekranında görünür.</Text>
 
               <View style={styles.mealSelectorRow}>
                 {MEALS.map((meal) => (
