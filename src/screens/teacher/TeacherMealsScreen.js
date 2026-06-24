@@ -85,15 +85,53 @@ function getMealPhotoPath(value) {
   return value.fotoPath || value.photoPath || value.imagePath || value.storagePath || '';
 }
 
-async function uploadMealPhoto(uri, kresId, sinifId, mealKey) {
-  if (!uri) return { url: '', path: '' };
-  const response = await fetch(uri);
+function getPhotoFileInfo(asset, mealKey) {
+  const contentType = asset?.mimeType || 'image/jpeg';
+  const uriPart = String(asset?.uri || '').split('?')[0];
+  const rawExt = uriPart.includes('.') ? uriPart.split('.').pop() : '';
+  let extension = String(rawExt || '').toLowerCase();
+
+  if (!extension || extension.length > 5) {
+    if (contentType.includes('png')) extension = 'png';
+    else if (contentType.includes('webp')) extension = 'webp';
+    else if (contentType.includes('heic') || contentType.includes('heif')) extension = 'heic';
+    else extension = 'jpg';
+  }
+
+  const fileName = `${Date.now()}_${mealKey}.${extension}`;
+  return { contentType, fileName };
+}
+
+async function uploadMealPhoto(asset, kresId, sinifId, mealKey) {
+  if (!asset?.uri) return { url: '', path: '' };
+
+  const response = await fetch(asset.uri);
+  if (!response.ok) throw new Error('Yemek fotoğrafı okunamadı.');
+
   const blob = await response.blob();
-  const path = `yemekFotograflari/${kresId || 'kres'}/${sinifId || 'sinif'}/${Date.now()}_${mealKey}.jpg`;
-  const fileRef = storageRef(storage, path);
-  await uploadBytes(fileRef, blob);
-  const url = await getDownloadURL(fileRef);
-  return { url, path };
+  const { contentType, fileName } = getPhotoFileInfo(asset, mealKey);
+  const safeKresId = kresId || 'kres';
+  const safeSinifId = sinifId || 'sinif';
+  const paths = [
+    `yemekFotograflari/${safeKresId}/${safeSinifId}/${fileName}`,
+    `galeri/${safeKresId}/yemekFotograflari/${safeSinifId}/${fileName}`,
+  ];
+
+  let lastError = null;
+
+  for (const path of paths) {
+    try {
+      const fileRef = storageRef(storage, path);
+      await uploadBytes(fileRef, blob, { contentType });
+      const url = await getDownloadURL(fileRef);
+      return { url, path };
+    } catch (err) {
+      lastError = err;
+      console.warn('Yemek fotoğrafı yükleme denemesi başarısız:', path, err?.code || err?.message || err);
+    }
+  }
+
+  throw lastError || new Error('Yemek fotoğrafı yüklenemedi.');
 }
 
 async function deleteMealPhoto(value) {
@@ -224,9 +262,9 @@ export default function TeacherMealsScreen() {
     setSaving(true);
     try {
       const finalKresId = kresId || currentClass.kresId || '';
-      const kahvaltiPhoto = await uploadMealPhoto(kahvaltiFoto?.uri, finalKresId, currentClass.id, 'kahvalti');
-      const oglePhoto = await uploadMealPhoto(ogleFoto?.uri, finalKresId, currentClass.id, 'ogle');
-      const araOgunPhoto = await uploadMealPhoto(araOgunFoto?.uri, finalKresId, currentClass.id, 'araOgun');
+      const kahvaltiPhoto = await uploadMealPhoto(kahvaltiFoto, finalKresId, currentClass.id, 'kahvalti');
+      const oglePhoto = await uploadMealPhoto(ogleFoto, finalKresId, currentClass.id, 'ogle');
+      const araOgunPhoto = await uploadMealPhoto(araOgunFoto, finalKresId, currentClass.id, 'araOgun');
 
       await push(ref(database, 'yemekListeleri'), {
         kresId: finalKresId,
@@ -256,7 +294,7 @@ export default function TeacherMealsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Yemek listesi kaydedilemedi.');
+      Alert.alert('Hata', 'Yemek listesi kaydedilemedi. Fotoğraf yükleme izni veya internet bağlantısını kontrol et.');
     } finally {
       setSaving(false);
     }
