@@ -21,10 +21,12 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
   primary: '#3C3489',
+  purple: '#6C3DEB',
   primarySoft: '#EFE8FF',
   green: '#20B45B',
   orange: '#FF9F1C',
   red: '#FF4D6D',
+  blue: '#1976F3',
   text: '#191A23',
   muted: '#707386',
   bg: '#F8F6FF',
@@ -48,6 +50,7 @@ function asArray(value) {
 }
 
 function cleanOptions(raw) {
+  if (Array.isArray(raw)) return raw.map((x) => String(x || '').trim()).filter(Boolean);
   return String(raw || '')
     .split('\n')
     .map((x) => x.trim())
@@ -80,6 +83,18 @@ function getAnswerValue(answer) {
   return obj.secenek || obj.cevap || obj.answer || obj.value || obj.label || '';
 }
 
+function getOptionPercent(item, label) {
+  const cevaplar = Object.values(safeObject(item.cevaplar || item.answers || item.responses));
+  const total = cevaplar.length;
+  const count = cevaplar.filter((c) => getAnswerValue(c) === label).length;
+  const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+  return { count, percent };
+}
+
+function makeOptionId() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export default function PollManagementScreen() {
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || kullanici?.kurumId || null;
@@ -93,7 +108,10 @@ export default function PollManagementScreen() {
 
   const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
-  const [seceneklerText, setSeceneklerText] = useState('Evet\nHayır');
+  const [optionInputs, setOptionInputs] = useState([
+    { id: makeOptionId(), value: 'Evet' },
+    { id: makeOptionId(), value: 'Hayır' },
+  ]);
 
   useEffect(() => {
     setLoading(true);
@@ -129,12 +147,28 @@ export default function PollManagementScreen() {
   const toplamAktif = useMemo(() => polls.filter((x) => x.aktif !== false).length, [polls]);
   const toplamCevap = useMemo(() => polls.reduce((sum, p) => sum + Object.keys(safeObject(p.cevaplar)).length, 0), [polls]);
 
+  const updateOption = (id, value) => {
+    setOptionInputs((prev) => prev.map((item) => item.id === id ? { ...item, value } : item));
+  };
+
+  const addOption = () => {
+    setOptionInputs((prev) => [...prev, { id: makeOptionId(), value: '' }]);
+  };
+
+  const removeOption = (id) => {
+    if (optionInputs.length <= 2) {
+      Alert.alert('Uyarı', 'Anket için en az 2 seçenek olmalı.');
+      return;
+    }
+    setOptionInputs((prev) => prev.filter((item) => item.id !== id));
+  };
+
   async function createPoll() {
     const title = baslik.trim();
-    const options = cleanOptions(seceneklerText);
+    const options = cleanOptions(optionInputs.map((item) => item.value));
 
     if (!title) return Alert.alert('Eksik bilgi', 'Anket başlığı yazmalısın.');
-    if (options.length < 2) return Alert.alert('Eksik bilgi', 'En az 2 seçenek olmalı. Her seçeneği ayrı satıra yaz.');
+    if (options.length < 2) return Alert.alert('Eksik bilgi', 'En az 2 seçenek olmalı.');
 
     setSaving(true);
     try {
@@ -154,7 +188,10 @@ export default function PollManagementScreen() {
       });
       setBaslik('');
       setAciklama('');
-      setSeceneklerText('Evet\nHayır');
+      setOptionInputs([
+        { id: makeOptionId(), value: 'Evet' },
+        { id: makeOptionId(), value: 'Hayır' },
+      ]);
       setSuccessToast(true);
     } catch (e) {
       Alert.alert('Hata', 'Anket oluşturulamadı.');
@@ -205,26 +242,22 @@ export default function PollManagementScreen() {
 
   function renderResults(item) {
     const options = normalizeOptions(item.secenekler || item.options || item.choices);
-    const cevaplar = Object.values(safeObject(item.cevaplar || item.answers || item.responses));
-    const total = cevaplar.length;
 
     if (options.length === 0) {
       return <Text style={styles.resultEmpty}>Bu anket için seçenek eklenmemiş</Text>;
     }
 
     return options.map((label, index) => {
-      const count = cevaplar.filter((c) => getAnswerValue(c) === label).length;
-      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      const { count, percent } = getOptionPercent(item, label);
 
       return (
         <View key={`${item.id}-${label}-${index}`} style={styles.resultRow}>
-          <View style={styles.resultTop}>
-            <Text style={styles.resultLabel}>{label}</Text>
-            <Text style={styles.resultCount}>{count} cevap · %{percent}</Text>
-          </View>
+          <Text style={styles.resultLabel}>{label}</Text>
           <View style={styles.barBg}>
             <View style={[styles.barFill, { width: `${percent}%` }]} />
           </View>
+          <Text style={styles.resultPercent}>%{percent}</Text>
+          <Text style={styles.resultCountPill}>{count}</Text>
         </View>
       );
     });
@@ -244,56 +277,90 @@ export default function PollManagementScreen() {
 
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+
         <View style={styles.summaryRow}>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryNumber}>{polls.length}</Text>
-            <Text style={styles.summaryLabel}>Toplam Anket</Text>
-          </View>
-          <View style={styles.summaryBox}>
-            <Text style={[styles.summaryNumber, { color: THEME.green }]}>{toplamAktif}</Text>
-            <Text style={styles.summaryLabel}>Aktif</Text>
-          </View>
-          <View style={styles.summaryBox}>
-            <Text style={[styles.summaryNumber, { color: THEME.orange }]}>{toplamCevap}</Text>
-            <Text style={styles.summaryLabel}>Cevap</Text>
-          </View>
+          <StatCard icon="👥" value={polls.length} label="Toplam Anket" color={THEME.primary} />
+          <StatCard icon="✅" value={toplamAktif} label="Aktif" color={THEME.green} />
+          <StatCard icon="💬" value={toplamCevap} label="Cevap" color={THEME.orange} />
         </View>
 
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>🗳️ Yeni Anket Oluştur</Text>
+          <View style={styles.formHeader}>
+            <View style={styles.formIconCircle}><Text style={styles.formIcon}>🗳️</Text></View>
+            <Text style={styles.formTitle}>Yeni Anket Oluştur</Text>
+          </View>
+
           <Text style={styles.label}>Başlık *</Text>
-          <TextInput
-            style={styles.input}
-            value={baslik}
-            onChangeText={setBaslik}
-            placeholder="Örn: Yıl sonu gösterisi hangi gün olsun?"
-          />
+          <View style={styles.inputShell}>
+            <TextInput
+              style={styles.input}
+              value={baslik}
+              onChangeText={setBaslik}
+              placeholder="Örn: Yıl sonu gösterisi hangi gün olsun?"
+              placeholderTextColor="#A5A3B8"
+            />
+            <Text style={styles.inputIcon}>T</Text>
+          </View>
 
           <Text style={styles.label}>Açıklama</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={aciklama}
-            onChangeText={setAciklama}
-            placeholder="Velilere kısa açıklama"
-            multiline
-          />
+          <View style={[styles.inputShell, styles.textAreaShell]}>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={aciklama}
+              onChangeText={setAciklama}
+              placeholder="Velilere kısa açıklama"
+              placeholderTextColor="#A5A3B8"
+              multiline
+            />
+            <Text style={styles.inputIcon}>📄</Text>
+          </View>
 
-          <Text style={styles.label}>Seçenekler *</Text>
-          <Text style={styles.help}>Her seçeneği ayrı satıra yaz.</Text>
-          <TextInput
-            style={[styles.input, styles.optionsInput]}
-            value={seceneklerText}
-            onChangeText={setSeceneklerText}
-            placeholder={'Evet\nHayır\nKararsız'}
-            multiline
-          />
+          <View style={styles.optionsHeaderRow}>
+            <Text style={styles.labelNoMargin}>Seçenekler *</Text>
+            <Text style={styles.helpInline}>Her seçeneği ayrı kutuya yaz.</Text>
+            <Text style={styles.helpCircle}>?</Text>
+          </View>
+
+          <View style={styles.optionList}>
+            {optionInputs.map((item, index) => (
+              <View key={item.id} style={styles.optionRow}>
+                <View style={styles.optionInputBox}>
+                  <Text style={styles.dragHandle}>⠿</Text>
+                  <TextInput
+                    style={styles.optionInput}
+                    value={item.value}
+                    onChangeText={(value) => updateOption(item.id, value)}
+                    placeholder={`Seçenek ${index + 1}`}
+                    placeholderTextColor="#A5A3B8"
+                  />
+                </View>
+                <TouchableOpacity style={styles.optionDeleteBtn} onPress={() => removeOption(item.id)} activeOpacity={0.85}>
+                  <Text style={styles.optionDeleteText}>🗑️</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.addOptionBox} onPress={addOption} activeOpacity={0.85}>
+              <Text style={styles.addOptionText}>＋ Seçenek ekle</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.settingsRow}>
+            <SettingCard icon="👥" label="Hedef Kitle" value="Kurum Geneli" />
+            <SettingCard icon="📅" label="Bitiş Süresi" value="2 gün aktif" />
+            <SettingCard icon="🛡️" label="Durum" value="Aktif" />
+          </View>
 
           <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={createPoll} disabled={saving} activeOpacity={0.85}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>✅ Aktif Olarak Yayınla</Text>}
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Anketler</Text>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Anketler</Text>
+          <View style={styles.filterPill}><Text style={styles.filterText}>Tümü⌄</Text></View>
+        </View>
+
         {polls.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>🗳️</Text>
@@ -309,42 +376,72 @@ export default function PollManagementScreen() {
             return (
               <View key={item.id} style={styles.pollCard}>
                 <View style={styles.pollHeader}>
+                  <View style={styles.pollIconCircle}><Text style={styles.pollIcon}>▮▮▮</Text></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.pollTitle}>{item.baslik || 'Anket'}</Text>
+                    <View style={styles.pollTitleRow}>
+                      <Text style={styles.pollTitle}>{item.baslik || 'Anket'}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: active ? '#E8F9EF' : '#F1F1F4' }]}> 
+                        <Text style={[styles.statusText, { color: active ? THEME.green : THEME.muted }]}>{active ? 'Aktif' : 'Pasif'}</Text>
+                      </View>
+                    </View>
                     {item.aciklama ? <Text style={styles.pollDesc}>{item.aciklama}</Text> : null}
-                    <Text style={styles.pollMeta}>{formatDate(item.createdAt)} · {cevapSayisi} cevap</Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: active ? '#E8F9EF' : '#F1F1F4' }]}>
-                    <Text style={[styles.statusText, { color: active ? THEME.green : THEME.muted }]}>{active ? 'Aktif' : 'Pasif'}</Text>
+                    <Text style={styles.pollMeta}>📅 {formatDate(item.createdAt)} · 💬 {cevapSayisi} cevap</Text>
                   </View>
                 </View>
 
                 <View style={styles.resultsBox}>{renderResults(item)}</View>
 
                 <View style={styles.actionsRow}>
+                  <TouchableOpacity style={styles.outlineActionBtn} activeOpacity={0.85}>
+                    <Text style={[styles.outlineActionText, { color: THEME.purple }]}>▮ Sonuçlar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.outlineActionBtn} activeOpacity={0.85}>
+                    <Text style={[styles.outlineActionText, { color: THEME.blue }]}>✎ Düzenle</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: active ? THEME.orange : THEME.green }, busy && { opacity: 0.6 }]}
+                    style={[styles.outlineActionBtn, busy && { opacity: 0.6 }]}
                     onPress={() => toggleActive(item)}
                     disabled={busy}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.actionText}>{active ? 'Pasife Al' : 'Aktif Et'}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.deleteBtn, busy && { opacity: 0.6 }]}
-                    onPress={() => deletePoll(item)}
-                    disabled={busy}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.actionText}>Sil</Text>
+                    <Text style={[styles.outlineActionText, { color: active ? THEME.red : THEME.green }]}>{active ? '⏸ Pasif Yap' : '✓ Aktif Et'}</Text>
                   </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity style={styles.deleteTextButton} onPress={() => deletePoll(item)} disabled={busy} activeOpacity={0.85}>
+                  <Text style={styles.deleteText}>Anketi tamamen sil</Text>
+                </TouchableOpacity>
               </View>
             );
           })
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function StatCard({ icon, value, label, color }) {
+  return (
+    <View style={styles.summaryBox}>
+      <View style={[styles.summaryIconCircle, { backgroundColor: `${color}18` }]}>
+        <Text style={styles.summaryIcon}>{icon}</Text>
+      </View>
+      <Text style={[styles.summaryNumber, { color }]}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function SettingCard({ icon, label, value }) {
+  return (
+    <View style={styles.settingCard}>
+      <Text style={styles.settingIcon}>{icon}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={styles.settingValue}>{value}</Text>
+      </View>
+      <Text style={styles.settingChevron}>⌄</Text>
+    </View>
   );
 }
 
@@ -355,41 +452,79 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: THEME.bg },
   loadingText: { marginTop: 10, color: THEME.muted, fontWeight: '800' },
   errorText: { backgroundColor: '#FFF1F3', color: THEME.red, padding: 10, borderRadius: 12, marginBottom: 12, fontWeight: '800' },
+
   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  summaryBox: { flex: 1, backgroundColor: THEME.card, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
-  summaryNumber: { fontSize: 22, fontWeight: '900', color: THEME.primary },
-  summaryLabel: { fontSize: 11, fontWeight: '800', color: THEME.muted, marginTop: 2 },
-  formCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 18 },
-  formTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 6 },
+  summaryBox: { flex: 1, backgroundColor: THEME.card, borderRadius: 20, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 9, elevation: 2 },
+  summaryIconCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
+  summaryIcon: { fontSize: 22 },
+  summaryNumber: { fontSize: 24, fontWeight: '900' },
+  summaryLabel: { fontSize: 11, fontWeight: '800', color: THEME.muted, marginTop: 2, textAlign: 'center' },
+
+  formCard: { backgroundColor: THEME.card, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 14, elevation: 3 },
+  formHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  formIconCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  formIcon: { fontSize: 22 },
+  formTitle: { fontSize: 20, fontWeight: '900', color: THEME.text },
   label: { fontSize: 13, fontWeight: '900', color: THEME.primary, marginTop: 14, marginBottom: 7 },
-  help: { fontSize: 11, color: THEME.muted, fontWeight: '700', marginBottom: 7 },
-  input: { backgroundColor: '#FAFAFC', borderWidth: 1, borderColor: THEME.border, borderRadius: 12, padding: 12, color: THEME.text, fontSize: 14, fontWeight: '700' },
-  textArea: { minHeight: 72, textAlignVertical: 'top' },
-  optionsInput: { minHeight: 92, textAlignVertical: 'top' },
-  saveBtn: { backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 18 },
-  saveText: { color: '#fff', fontWeight: '900', fontSize: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
+  labelNoMargin: { fontSize: 13, fontWeight: '900', color: THEME.primary },
+  inputShell: { minHeight: 50, backgroundColor: '#FAFAFC', borderWidth: 1, borderColor: THEME.border, borderRadius: 16, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
+  input: { flex: 1, color: THEME.text, fontSize: 14, fontWeight: '700', paddingVertical: 10 },
+  inputIcon: { color: '#9B99B0', fontWeight: '900', marginLeft: 8 },
+  textAreaShell: { minHeight: 78, alignItems: 'flex-start', paddingTop: 5 },
+  textArea: { minHeight: 68, textAlignVertical: 'top' },
+
+  optionsHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 8 },
+  helpInline: { color: THEME.muted, fontWeight: '800', fontSize: 11, flex: 1 },
+  helpCircle: { width: 22, height: 22, borderRadius: 11, textAlign: 'center', textAlignVertical: 'center', backgroundColor: THEME.primarySoft, color: THEME.purple, fontWeight: '900', overflow: 'hidden' },
+  optionList: { gap: 8 },
+  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  optionInputBox: { flex: 1, minHeight: 48, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: THEME.border, borderRadius: 15, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center' },
+  dragHandle: { color: '#AAA7C2', fontSize: 18, marginRight: 9 },
+  optionInput: { flex: 1, color: THEME.text, fontSize: 14, fontWeight: '800', paddingVertical: 8 },
+  optionDeleteBtn: { width: 48, height: 48, borderRadius: 15, backgroundColor: '#FFF', borderWidth: 1, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center' },
+  optionDeleteText: { fontSize: 18 },
+  addOptionBox: { height: 52, borderRadius: 16, borderWidth: 1.4, borderColor: '#BCA7FF', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FBF9FF', marginTop: 2 },
+  addOptionText: { color: THEME.purple, fontWeight: '900', fontSize: 15 },
+
+  settingsRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  settingCard: { flex: 1, minHeight: 62, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: THEME.border, borderRadius: 15, padding: 8, flexDirection: 'row', alignItems: 'center' },
+  settingIcon: { fontSize: 20, marginRight: 6 },
+  settingLabel: { color: THEME.muted, fontWeight: '800', fontSize: 10 },
+  settingValue: { color: THEME.text, fontWeight: '900', fontSize: 12, marginTop: 2 },
+  settingChevron: { color: THEME.muted, fontWeight: '900', marginLeft: 3 },
+  saveBtn: { backgroundColor: THEME.purple, borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 16 },
+  saveText: { color: '#fff', fontWeight: '900', fontSize: 15 },
+
+  sectionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: { flex: 1, fontSize: 21, fontWeight: '900', color: THEME.text },
+  filterPill: { backgroundColor: THEME.card, borderRadius: 15, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 14, paddingVertical: 9 },
+  filterText: { color: THEME.primary, fontWeight: '900' },
   emptyCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   emptyIcon: { fontSize: 42, marginBottom: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
   emptyDesc: { color: THEME.muted, fontWeight: '700', marginTop: 6, textAlign: 'center' },
-  pollCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
-  pollHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  pollTitle: { fontSize: 16, fontWeight: '900', color: THEME.text },
+
+  pollCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, elevation: 2 },
+  pollHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
+  pollIconCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  pollIcon: { color: THEME.purple, fontWeight: '900', fontSize: 18 },
+  pollTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  pollTitle: { flex: 1, fontSize: 17, fontWeight: '900', color: THEME.text },
   pollDesc: { fontSize: 13, color: THEME.muted, fontWeight: '700', marginTop: 4, lineHeight: 18 },
-  pollMeta: { fontSize: 11, color: THEME.muted, fontWeight: '700', marginTop: 6 },
-  statusBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8 },
+  pollMeta: { fontSize: 11, color: THEME.muted, fontWeight: '700', marginTop: 7 },
+  statusBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 4 },
   statusText: { fontSize: 11, fontWeight: '900' },
-  resultsBox: { backgroundColor: '#FAF9FF', borderRadius: 14, padding: 12, marginBottom: 12 },
+  resultsBox: { backgroundColor: '#FAF9FF', borderRadius: 15, padding: 12, marginBottom: 12 },
   resultEmpty: { color: THEME.muted, fontWeight: '800', textAlign: 'center' },
-  resultRow: { marginBottom: 10 },
-  resultTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  resultLabel: { color: THEME.text, fontWeight: '900', flex: 1, paddingRight: 8 },
-  resultCount: { color: THEME.muted, fontWeight: '800', fontSize: 12 },
-  barBg: { height: 8, borderRadius: 999, backgroundColor: '#ECE8F8', overflow: 'hidden' },
-  barFill: { height: 8, borderRadius: 999, backgroundColor: THEME.primary },
-  actionsRow: { flexDirection: 'row', gap: 10 },
-  actionBtn: { flex: 1, borderRadius: 13, paddingVertical: 12, alignItems: 'center' },
-  deleteBtn: { backgroundColor: THEME.red },
-  actionText: { color: '#fff', fontWeight: '900' },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  resultLabel: { color: THEME.text, fontWeight: '900', width: 60 },
+  resultPercent: { color: THEME.text, fontWeight: '900', width: 42, textAlign: 'right', fontSize: 12 },
+  resultCountPill: { minWidth: 34, textAlign: 'center', backgroundColor: THEME.primarySoft, color: THEME.primary, borderRadius: 999, overflow: 'hidden', paddingVertical: 4, paddingHorizontal: 8, fontWeight: '900', fontSize: 12 },
+  barBg: { flex: 1, height: 8, borderRadius: 999, backgroundColor: '#ECE8F8', overflow: 'hidden' },
+  barFill: { height: 8, borderRadius: 999, backgroundColor: THEME.purple },
+  actionsRow: { flexDirection: 'row', gap: 8 },
+  outlineActionBtn: { flex: 1, borderRadius: 13, paddingVertical: 10, alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: THEME.border },
+  outlineActionText: { fontWeight: '900', fontSize: 12 },
+  deleteTextButton: { alignSelf: 'center', marginTop: 10, paddingVertical: 4, paddingHorizontal: 8 },
+  deleteText: { color: THEME.red, fontWeight: '900', fontSize: 11 },
 });
