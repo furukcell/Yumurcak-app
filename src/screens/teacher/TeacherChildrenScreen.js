@@ -78,8 +78,6 @@ export default function TeacherChildrenScreen() {
     };
   }, []);
 
-  if (loading) return <LoadingState text="Çocuklar hazırlanıyor..." />;
-
   const today = todayString();
 
   // Bugün hangi çocuklar için rapor girilmiş — hızlı bakış için set oluşturuyoruz.
@@ -90,6 +88,8 @@ export default function TeacherChildrenScreen() {
     });
     return set;
   }, [reports, today]);
+
+  if (loading) return <LoadingState text="Çocuklar hazırlanıyor..." />;
 
   const toggleExpand = (childId) => {
     setExpandedId((prev) => (prev === childId ? null : childId));
