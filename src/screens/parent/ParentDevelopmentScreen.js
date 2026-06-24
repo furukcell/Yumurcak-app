@@ -12,6 +12,7 @@ import {
   getMonthLabel,
   isAbsentStatus,
 } from './parentShared';
+import { formatDisplayDate } from '../../utils/dateFormat';
 
 const MEAL_KEYS = ['kahvalti', 'ogle', 'araOgun'];
 const MOOD_LABELS = {
@@ -451,8 +452,8 @@ function buildDelta(current, previous, key) {
 }
 
 function formatDate(item) {
-  const key = getItemDateKey(item);
-  return key || '-';
+  if (!item) return '-';
+  return formatDisplayDate(getItemDateKey(item));
 }
 
 function shortDate(item) {
