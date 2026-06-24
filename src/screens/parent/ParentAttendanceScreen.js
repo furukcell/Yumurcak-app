@@ -98,7 +98,7 @@ function AttendanceDay({ item }) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{item.tarih}</Text>
+      <Text style={styles.cardTitle}>{formatDisplayDate(item.tarih)}</Text>
       <Text
         style={[
           styles.cardText,
