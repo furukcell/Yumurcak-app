@@ -6,6 +6,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
+import MealTodayCard, { getMealText, getMealPhoto } from '../../components/MealTodayCard';
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -44,15 +45,22 @@ function isRecentDailyMeal(item) {
   return item?.kaynak !== 'admin_aylik' && isDateInLast7Days(getMealDateKey(item));
 }
 
-function getMealText(value) {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  return value.text || value.aciklama || '';
+function getTodayKey() {
+  return new Date().toISOString().split('T')[0];
 }
 
-function getMealPhoto(value) {
-  if (!value || typeof value === 'string') return '';
-  return value.fotoUrl || value.photoUrl || value.imageUrl || '';
+function buildEmptyTodayMeal(kresId, sinifId, childName) {
+  const today = getTodayKey();
+  return {
+    kresId: kresId || '',
+    sinifId: sinifId || '',
+    tip: 'gunluk',
+    tarih: today,
+    baslik: `${childName || 'Sınıf'} Günlük Yemek Listesi`,
+    ogunler: {},
+    aktif: true,
+    createdAt: Date.now(),
+  };
 }
 
 export default function ParentMealsScreen({ navigation }) {
@@ -86,8 +94,8 @@ export default function ParentMealsScreen({ navigation }) {
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [visibleMeals, currentMonthKey]);
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayMeal = visibleMeals.find((item) => item.tarih === today) || null;
+  const today = getTodayKey();
+  const todayMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || buildEmptyTodayMeal(kresId, sinifId, selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim);
 
   if (loading) return <LoadingScreen text="Yemek listesi hazırlanıyor..." />;
 
@@ -119,11 +127,11 @@ export default function ParentMealsScreen({ navigation }) {
           </View>
 
           {tab === 'today' ? (
-            todayMeal ? (
-              <MealCard item={todayMeal} />
-            ) : (
-              <EmptyState icon="🍽️" title="Bugün için yemek yok" desc="Öğretmen veya yönetici yemek listesi eklediğinde burada görünür." />
-            )
+            <MealTodayCard
+              item={todayMeal}
+              className={todayMeal?.hedefAdi || todayMeal?.sinifAdi || selectedChild?.sinifAdi || ''}
+              title="Günlük Yemek Listesi"
+            />
           ) : tab === 'monthly' ? (
             monthlyMeals.length === 0 ? (
               <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
