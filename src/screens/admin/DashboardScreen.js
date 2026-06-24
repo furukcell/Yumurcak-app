@@ -250,12 +250,15 @@ function getSubscriptionText(sub) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: 'transparent' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0,
+  },
   screen: {
-  flex: 1,
-  backgroundColor: 'transparent',
-  paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0,
-},
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   scrollContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 34 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
   topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
