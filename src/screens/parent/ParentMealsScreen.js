@@ -5,6 +5,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
+import { formatDisplayDate } from '../../utils/dateFormat';
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -122,7 +123,7 @@ function MealCard({ item }) {
         {isMonthly ? 'Aylık Liste' : item.sinifId ? 'Sınıf Listesi' : 'Kurum Listesi'}
       </Text>
       <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.baslik || 'Yemek Listesi'}</Text>
-      <Text style={styles.cardText}>📅 {item.tarih || item.baslangicTarihi || '-'}</Text>
+      <Text style={styles.cardText}>📅 {formatDisplayDate(item.tarih || item.baslangicTarihi)}</Text>
       {ogunler.kahvalti ? <Text style={styles.cardText}>🥐 Kahvaltı: {ogunler.kahvalti}</Text> : null}
       {ogunler.ogle ? <Text style={styles.cardText}>🍲 Öğle: {ogunler.ogle}</Text> : null}
       {ogunler.araOgun ? <Text style={styles.cardText}>🍎 Ara Öğün: {ogunler.araOgun}</Text> : null}
