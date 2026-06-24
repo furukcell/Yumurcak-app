@@ -17,6 +17,7 @@ import { ref, onValue, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { formatDisplayMonth } from '../../utils/dateFormat';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -99,8 +100,8 @@ function getChildName(cocuk = {}, odeme = {}) {
 }
 
 function getDonem(o = {}) {
-  if (o.donem) return o.donem;
-  if (o.tarih && String(o.tarih).length >= 7) return String(o.tarih).slice(0, 7);
+  if (o.donem) return formatDisplayMonth(o.donem);
+  if (o.tarih && String(o.tarih).length >= 7) return formatDisplayMonth(String(o.tarih).slice(0, 7));
   const ayText = AY_ADLARI[Number(o.ay)] || o.ay || '';
   return `${ayText} ${o.yil || ''}`.trim() || 'Dönem yok';
 }
