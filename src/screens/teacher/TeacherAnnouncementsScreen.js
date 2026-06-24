@@ -171,6 +171,33 @@ export default function TeacherAnnouncementsScreen() {
     }
   };
 
+  const removeAnnouncement = (item) => {
+    if (item.olusturanRol !== 'ogretmen') {
+      Alert.alert('Bilgi', 'Kurum duyuruları öğretmen ekranından kaldırılamaz.');
+      return;
+    }
+
+    Alert.alert('Duyuru kaldırılsın mı?', 'Bu duyuru veli ekranında artık görünmez.', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Kaldır',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await update(ref(database, `duyurular/${item.id}`), {
+              aktif: false,
+              updatedAt: Date.now(),
+            });
+            setSuccessMessage('Duyuru kaldırıldı');
+            setSuccessToast(true);
+          } catch (err) {
+            Alert.alert('Hata', 'Duyuru kaldırılamadı.');
+          }
+        },
+      },
+    ]);
+  };
+
   const getBadgeText = (item) => {
     const targetRole = targetRoleOf(item);
     if (item.olusturanRol === 'ogretmen') return 'Sınıf Velilerine';
@@ -258,6 +285,9 @@ export default function TeacherAnnouncementsScreen() {
                   <TouchableOpacity style={[styles.editButton, !canEdit && styles.disabledAction]} onPress={() => openEditForm(item)} activeOpacity={0.85}>
                     <Text style={styles.editButtonText}>Düzenle</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity style={[styles.removeButton, !canEdit && styles.disabledAction]} onPress={() => removeAnnouncement(item)} activeOpacity={0.85}>
+                    <Text style={styles.removeButtonText}>Sil</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             );
@@ -318,9 +348,11 @@ const styles = StyleSheet.create({
   dateIcon: { fontSize: 23 },
   dateText: { color: THEME.text, fontWeight: '900', fontSize: 13 },
   timeText: { color: THEME.muted, fontWeight: '700', fontSize: 11, marginTop: 3 },
-  actionButtonSoft: { backgroundColor: '#EEF7FF', borderRadius: 15, paddingVertical: 11, paddingHorizontal: 12, marginLeft: 6 },
+  actionButtonSoft: { backgroundColor: '#EEF7FF', borderRadius: 15, paddingVertical: 11, paddingHorizontal: 10, marginLeft: 6 },
   actionButtonSoftText: { color: '#1976F3', fontWeight: '900', fontSize: 12 },
-  editButton: { borderWidth: 1, borderColor: '#1976F3', borderRadius: 15, paddingVertical: 11, paddingHorizontal: 12, marginLeft: 6, backgroundColor: '#FFF' },
+  editButton: { borderWidth: 1, borderColor: '#1976F3', borderRadius: 15, paddingVertical: 11, paddingHorizontal: 10, marginLeft: 6, backgroundColor: '#FFF' },
   editButtonText: { color: '#1976F3', fontWeight: '900', fontSize: 12 },
+  removeButton: { borderWidth: 1, borderColor: '#FFD0D8', borderRadius: 15, paddingVertical: 11, paddingHorizontal: 10, marginLeft: 6, backgroundColor: '#FFF5F7' },
+  removeButtonText: { color: '#E33355', fontWeight: '900', fontSize: 12 },
   disabledAction: { opacity: 0.45 },
 });
