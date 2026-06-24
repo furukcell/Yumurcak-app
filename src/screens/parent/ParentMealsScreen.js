@@ -42,7 +42,7 @@ function isDateInLast7Days(dateKey) {
 }
 
 function isRecentDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && isDateInLast7Days(getMealDateKey(item));
+  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateInLast7Days(getMealDateKey(item));
 }
 
 function getTodayKey() {
@@ -60,6 +60,38 @@ function buildEmptyTodayMeal(kresId, sinifId, childName) {
     ogunler: {},
     aktif: true,
     createdAt: Date.now(),
+  };
+}
+
+function hasMealValue(value) {
+  return !!(getMealText(value) || getMealPhoto(value));
+}
+
+function mergeMealValue(monthlyValue, dailyValue) {
+  return hasMealValue(dailyValue) ? dailyValue : (monthlyValue || {});
+}
+
+function mergeTodayMeal({ kresId, sinifId, childName, monthlyMeal, dailyMeal }) {
+  const emptyMeal = buildEmptyTodayMeal(kresId, sinifId, childName);
+  const base = monthlyMeal || emptyMeal;
+  const dailyOguns = dailyMeal?.ogunler || {};
+  const monthlyOguns = monthlyMeal?.ogunler || {};
+
+  return {
+    ...base,
+    ...(dailyMeal || {}),
+    id: dailyMeal?.id || '',
+    dailySourceId: dailyMeal?.id || '',
+    monthlySourceId: monthlyMeal?.id || '',
+    kaynak: dailyMeal?.kaynak || (monthlyMeal ? 'aylik_plan' : ''),
+    tip: dailyMeal?.tip || 'gunluk',
+    tarih: getTodayKey(),
+    baslik: dailyMeal?.baslik || monthlyMeal?.baslik || emptyMeal.baslik,
+    ogunler: {
+      kahvalti: mergeMealValue(monthlyOguns.kahvalti, dailyOguns.kahvalti),
+      ogle: mergeMealValue(monthlyOguns.ogle, dailyOguns.ogle),
+      araOgun: mergeMealValue(monthlyOguns.araOgun, dailyOguns.araOgun),
+    },
   };
 }
 
@@ -95,7 +127,15 @@ export default function ParentMealsScreen({ navigation }) {
   }, [visibleMeals, currentMonthKey]);
 
   const today = getTodayKey();
-  const todayMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || buildEmptyTodayMeal(kresId, sinifId, selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim);
+  const todayDailyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || null;
+  const todayMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'admin_aylik') || null;
+  const todayMeal = mergeTodayMeal({
+    kresId,
+    sinifId,
+    childName: selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim,
+    monthlyMeal: todayMonthlyMeal,
+    dailyMeal: todayDailyMeal,
+  });
 
   if (loading) return <LoadingScreen text="Yemek listesi hazırlanıyor..." />;
 
