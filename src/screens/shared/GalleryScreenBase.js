@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { onValue, push, ref as dbRef, remove, set } from 'firebase/database';
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
@@ -133,6 +134,44 @@ function normalizeMediaItems(item) {
 
 function getGalleryTitle(item) {
   return item?.baslik || item?.title || item?.aciklama || item?.hedefAdi || 'Galeri paylaşımı';
+}
+
+function GalleryVideoPlayer({ uri }) {
+  const player = useVideoPlayer(uri, (playerInstance) => {
+    playerInstance.loop = false;
+  });
+
+  useEffect(() => {
+    return () => {
+      try {
+        player?.pause?.();
+      } catch (error) {
+        // Player kapanırken hata olursa sessiz geç.
+      }
+    };
+  }, [player]);
+
+  if (!uri) {
+    return (
+      <View style={styles.videoPlayerFallback}>
+        <Text style={styles.videoViewerIcon}>▶</Text>
+        <Text style={styles.videoViewerTitle}>Video bulunamadı</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.videoPlayerFrame}>
+      <VideoView
+        player={player}
+        style={styles.videoPlayer}
+        nativeControls
+        allowsFullscreen
+        allowsPictureInPicture
+        contentFit="contain"
+      />
+    </View>
+  );
 }
 
 export default function GalleryScreenBase({ mode = 'parent', navigation }) {
@@ -489,14 +528,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
 
           <View style={styles.viewerStage}>
             {isVideo ? (
-              <View style={styles.videoViewerBox}>
-                <Text style={styles.videoViewerIcon}>▶</Text>
-                <Text style={styles.videoViewerTitle}>Video hazır</Text>
-                <Text style={styles.videoViewerDesc}>Bu bölüm uygulama içinde açılır. Video oynatma için cihazın medya oynatıcısı kullanılır.</Text>
-                <TouchableOpacity style={styles.viewerPlayButton} onPress={() => downloadMedia(media)}>
-                  <Text style={styles.viewerPlayButtonText}>Videoyu Oynat</Text>
-                </TouchableOpacity>
-              </View>
+              <GalleryVideoPlayer uri={media.url} />
             ) : (
               <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />
             )}
@@ -772,4 +804,24 @@ const styles = StyleSheet.create({
   viewerThumbActive: { borderColor: THEME.orange },
   viewerThumbImage: { width: '100%', height: '100%' },
   viewerThumbVideo: { color: '#fff', fontWeight: '900', fontSize: 20 },
+    videoPlayerFrame: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
+  },
+  videoPlayerFallback: {
+    width: '86%',
+    borderRadius: 28,
+    padding: 24,
+    backgroundColor: '#171821',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
 });
