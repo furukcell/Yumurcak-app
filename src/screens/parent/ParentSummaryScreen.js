@@ -165,16 +165,16 @@ export default function ParentSummaryScreen({ navigation }) {
             <Text style={styles.brandSub}>{kresAdi || 'Yumurcak'} · {formatDate(today)}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton} activeOpacity={0.82}>
-          {parentPhotoUrl ? (
-           <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
-        ) : (
-           <Text style={styles.profileButtonText}>👤</Text>
+            {parentPhotoUrl ? (
+              <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
+            ) : (
+              <Text style={styles.profileButtonText}>👤</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.childCard}>
-                    <View style={styles.avatar}>
+          <View style={styles.avatar}>
             {parentPhotoUrl ? (
               <Image source={{ uri: parentPhotoUrl }} style={styles.avatarImage} />
             ) : (
@@ -360,6 +360,13 @@ function SectionHead({ styles, title, action, onPress }) {
   );
 }
 
+function getMealMenuText(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') return value.text || value.aciklama || '';
+  return String(value);
+}
+
 function buildMealSummary(report, mealList) {
   const reportMeal = report?.yemek || {};
   const menu = mealList?.ogunler || {};
@@ -369,7 +376,7 @@ function buildMealSummary(report, mealList) {
     return {
       key,
       label: MEAL_LABELS[key],
-      menu: menu?.[key] || '',
+      menu: getMealMenuText(menu?.[key]),
       status: rawStatus,
       statusLabel: MEAL_STATUS_LABELS[rawStatus] || rawStatus || 'Bekleniyor',
     };
