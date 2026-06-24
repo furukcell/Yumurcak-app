@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   Linking,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -34,6 +35,7 @@ const THEME = {
   bg: '#F8F6FF',
   card: '#FFFFFF',
   border: '#EEEAF8',
+  dark: '#171821',
 };
 
 function safeObject(value) {
@@ -86,7 +88,9 @@ function remainingText(expiresAt, now) {
 
 function getFileInfo(asset) {
   const isVideo = asset?.type === 'video';
-  const extension = isVideo ? 'mp4' : 'jpg';
+  const uriPart = String(asset?.uri || '').split('?')[0];
+  const rawExt = uriPart.includes('.') ? uriPart.split('.').pop() : '';
+  const extension = (rawExt || (isVideo ? 'mp4' : 'jpg')).toLowerCase();
   const contentType = asset?.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg');
   return { isVideo, extension, contentType };
 }
@@ -99,6 +103,36 @@ function normalizeTargetType(item) {
   if (item?.studentId || item?.cocukId || asArray(item?.cocukIds).length > 0) return 'student';
   if (item?.classId || item?.sinifId) return 'class';
   return 'school';
+}
+
+function normalizeMediaItems(item) {
+  const mediaItems = asArray(item?.mediaItems)
+    .map((media, index) => safeObject(media))
+    .filter((media) => media.url)
+    .map((media, index) => ({
+      id: media.id || `${item?.id || 'media'}-${index}`,
+      type: media.type === 'video' ? 'video' : 'image',
+      url: media.url,
+      thumbnailUrl: media.thumbnailUrl || '',
+      storagePath: media.storagePath || '',
+      fileName: media.fileName || '',
+    }));
+
+  if (mediaItems.length > 0) return mediaItems;
+  if (!item?.url) return [];
+
+  return [{
+    id: `${item?.id || 'legacy'}-0`,
+    type: item.type === 'video' ? 'video' : 'image',
+    url: item.url,
+    thumbnailUrl: item.thumbnailUrl || '',
+    storagePath: item.storagePath || '',
+    fileName: item.fileName || '',
+  }];
+}
+
+function getGalleryTitle(item) {
+  return item?.baslik || item?.title || item?.aciklama || item?.hedefAdi || 'Galeri paylaşımı';
 }
 
 export default function GalleryScreenBase({ mode = 'parent', navigation }) {
@@ -115,6 +149,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedChildId, setSelectedChildId] = useState('');
   const [now, setNow] = useState(Date.now());
+  const [viewerItem, setViewerItem] = useState(null);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const canUpload = mode === 'admin' || mode === 'teacher';
   const title = mode === 'parent' ? 'Galeri' : mode === 'teacher' ? 'Sınıf Galerisi' : 'Galeri Yönetimi';
@@ -172,6 +208,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     return gallery
       .filter((item) => Number(item.expiresAt || 0) > now)
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+      .filter((item) => normalizeMediaItems(item).length > 0)
       .filter((item) => {
         if (mode === 'admin') return true;
 
@@ -272,25 +309,40 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: false,
-        quality: 0.75,
-        videoMaxDuration: 60,
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
+        quality: 0.78,
+        videoMaxDuration: 90,
       });
 
-      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
+      if (assets.length === 0) return;
 
       setUploading(true);
-      const asset = result.assets[0];
-      const { isVideo, extension, contentType } = getFileInfo(asset);
       const itemRef = push(dbRef(database, 'galeri'));
-      const mediaId = itemRef.key;
+      const galleryId = itemRef.key;
       const createdAt = Date.now();
-      const storagePath = `galeri/${kresId}/${mediaId}.${extension}`;
+      const mediaItems = [];
 
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-      const fileRef = storageRef(storage, storagePath);
-      await uploadBytes(fileRef, blob, { contentType });
-      const url = await getDownloadURL(fileRef);
+      for (let index = 0; index < assets.length; index += 1) {
+        const asset = assets[index];
+        const { isVideo, extension, contentType } = getFileInfo(asset);
+        const mediaId = `${galleryId}-${index}`;
+        const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        const fileRef = storageRef(storage, storagePath);
+        await uploadBytes(fileRef, blob, { contentType });
+        const url = await getDownloadURL(fileRef);
+        mediaItems.push({
+          id: mediaId,
+          type: isVideo ? 'video' : 'image',
+          url,
+          thumbnailUrl: '',
+          storagePath,
+          fileName: asset.fileName || `${mediaId}.${extension}`,
+        });
+      }
 
       await set(itemRef, {
         kresId,
@@ -302,9 +354,11 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         cocukIds: uploadTarget.cocukIds || [],
         hedef: uploadTarget.hedef,
         hedefAdi: uploadTarget.label,
-        type: isVideo ? 'video' : 'image',
-        url,
-        storagePath,
+        type: mediaItems[0]?.type || 'image',
+        url: mediaItems[0]?.url || '',
+        storagePath: mediaItems[0]?.storagePath || '',
+        mediaItems,
+        mediaCount: mediaItems.length,
         aciklama: caption.trim(),
         yukleyenId: userId || '',
         yukleyenAd: getUserName(kullanici),
@@ -316,8 +370,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       setCaption('');
       setSelectedClassId('');
       setSelectedChildId('');
-      setTargetType(mode === 'teacher' ? 'all' : 'all');
-      Alert.alert('Yüklendi', `${uploadTarget.label} için medya 24 saat boyunca galeride görünecek.`);
+      setTargetType('all');
+      Alert.alert('Yüklendi', `${uploadTarget.label} için ${mediaItems.length} medya 24 saat boyunca galeride görünecek.`);
     } catch (error) {
       console.error(error);
       Alert.alert('Hata', 'Galeri yüklemesi yapılamadı. Storage ayarlarını kontrol et.');
@@ -328,10 +382,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
 
   async function removeMedia(item, showAlert = true) {
     try {
+      const mediaItems = normalizeMediaItems(item);
       await remove(dbRef(database, `galeri/${item.id}`));
-      if (item.storagePath) {
-        await deleteObject(storageRef(storage, item.storagePath)).catch(() => null);
-      }
+      await Promise.all(mediaItems.map((media) => media.storagePath ? deleteObject(storageRef(storage, media.storagePath)).catch(() => null) : Promise.resolve(null)));
+      if (item.storagePath) await deleteObject(storageRef(storage, item.storagePath)).catch(() => null);
       if (showAlert) Alert.alert('Silindi', 'Galeri kaydı kaldırıldı.');
     } catch (error) {
       console.error(error);
@@ -339,19 +393,144 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     }
   }
 
-  async function openMedia(item) {
-    if (!item?.url) return;
+  function openViewer(item, index = 0) {
+    setViewerItem(item);
+    setViewerIndex(index);
+  }
+
+  function closeViewer() {
+    setViewerItem(null);
+    setViewerIndex(0);
+  }
+
+  async function downloadMedia(media) {
+    if (!media?.url) return;
     try {
-      const supported = await Linking.canOpenURL(item.url);
-      if (!supported) {
-        Alert.alert('Video açılamadı', 'Bu video bağlantısı cihazda açılamıyor.');
-        return;
-      }
-      await Linking.openURL(item.url);
+      await Linking.openURL(media.url);
     } catch (error) {
       console.error(error);
-      Alert.alert('Video açılamadı', 'Video oynatıcı açılırken hata oluştu.');
+      Alert.alert('İndirilemedi', 'Medya bağlantısı açılamadı.');
     }
+  }
+
+  function renderMediaTile(item, media, index, total) {
+    const hiddenCount = total > 4 && index === 3 ? total - 4 : 0;
+    const isVideo = media.type === 'video';
+    return (
+      <TouchableOpacity
+        key={media.id || `${item.id}-${index}`}
+        style={[styles.gridTile, total === 1 && styles.singleTile, total === 3 && index === 0 && styles.largeTile]}
+        onPress={() => openViewer(item, index)}
+        activeOpacity={0.88}
+      >
+        {isVideo ? (
+          <View style={styles.videoTile}>
+            <Text style={styles.playIcon}>▶</Text>
+            <Text style={styles.videoTileText}>Video</Text>
+          </View>
+        ) : (
+          <Image source={{ uri: media.thumbnailUrl || media.url }} style={styles.tileImage} resizeMode="cover" />
+        )}
+        {hiddenCount > 0 ? (
+          <View style={styles.moreOverlay}>
+            <Text style={styles.moreText}>+{hiddenCount}</Text>
+          </View>
+        ) : null}
+      </TouchableOpacity>
+    );
+  }
+
+  function renderPreviewGrid(item) {
+    const mediaItems = normalizeMediaItems(item);
+    const previewItems = mediaItems.slice(0, 4);
+    const count = mediaItems.length;
+
+    if (count === 1) {
+      return <View style={styles.singleGrid}>{renderMediaTile(item, previewItems[0], 0, count)}</View>;
+    }
+
+    if (count === 3) {
+      return (
+        <View style={styles.threeGrid}>
+          <View style={styles.threeLeft}>{renderMediaTile(item, previewItems[0], 0, count)}</View>
+          <View style={styles.threeRight}>
+            {renderMediaTile(item, previewItems[1], 1, count)}
+            {renderMediaTile(item, previewItems[2], 2, count)}
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.gridWrap}>
+        {previewItems.map((media, index) => renderMediaTile(item, media, index, count))}
+      </View>
+    );
+  }
+
+  function renderViewer() {
+    const mediaItems = normalizeMediaItems(viewerItem);
+    const media = mediaItems[viewerIndex] || mediaItems[0];
+    if (!viewerItem || !media) return null;
+    const isVideo = media.type === 'video';
+
+    return (
+      <Modal visible={!!viewerItem} transparent animationType="fade" onRequestClose={closeViewer}>
+        <SafeAreaView style={styles.viewerBackdrop}>
+          <View style={styles.viewerHeader}>
+            <TouchableOpacity style={styles.viewerTopButton} onPress={closeViewer}>
+              <Text style={styles.viewerTopButtonText}>Kapat</Text>
+            </TouchableOpacity>
+            <Text style={styles.viewerCounter}>{viewerIndex + 1} / {mediaItems.length}</Text>
+            <TouchableOpacity style={styles.viewerTopButton} onPress={() => downloadMedia(media)}>
+              <Text style={styles.viewerTopButtonText}>İndir</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.viewerStage}>
+            {isVideo ? (
+              <View style={styles.videoViewerBox}>
+                <Text style={styles.videoViewerIcon}>▶</Text>
+                <Text style={styles.videoViewerTitle}>Video hazır</Text>
+                <Text style={styles.videoViewerDesc}>Bu bölüm uygulama içinde açılır. Video oynatma için cihazın medya oynatıcısı kullanılır.</Text>
+                <TouchableOpacity style={styles.viewerPlayButton} onPress={() => downloadMedia(media)}>
+                  <Text style={styles.viewerPlayButtonText}>Videoyu Oynat</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />
+            )}
+          </View>
+
+          {mediaItems.length > 1 ? (
+            <View style={styles.viewerNavRow}>
+              <TouchableOpacity
+                style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]}
+                disabled={viewerIndex === 0}
+                onPress={() => setViewerIndex((index) => Math.max(index - 1, 0))}
+              >
+                <Text style={styles.viewerNavText}>‹ Önceki</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]}
+                disabled={viewerIndex === mediaItems.length - 1}
+                onPress={() => setViewerIndex((index) => Math.min(index + 1, mediaItems.length - 1))}
+              >
+                <Text style={styles.viewerNavText}>Sonraki ›</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
+            {mediaItems.map((thumb, index) => (
+              <TouchableOpacity key={thumb.id || index} style={[styles.viewerThumb, viewerIndex === index && styles.viewerThumbActive]} onPress={() => setViewerIndex(index)}>
+                {thumb.type === 'video' ? <Text style={styles.viewerThumbVideo}>▶</Text> : <Image source={{ uri: thumb.thumbnailUrl || thumb.url }} style={styles.viewerThumbImage} />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+    );
   }
 
   if (loading) {
@@ -381,8 +560,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {canUpload ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Fotoğraf / Video Yükle</Text>
-            <Text style={styles.cardText}>Yüklenen medya 24 saat sonra otomatik gizlenir. Paylaşım hedefini tüm kurum, sınıf veya tek çocuk olarak seçebilirsin.</Text>
+            <Text style={styles.cardTitle}>Galeriye Paylaş</Text>
+            <Text style={styles.cardText}>Tek fotoğraf, çoklu fotoğraf veya video seçebilirsin. Paylaşımlar 24 saat sonra otomatik gizlenir.</Text>
 
             <View style={styles.segmentRow}>
               <TouchableOpacity
@@ -454,14 +633,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             <TextInput
               value={caption}
               onChangeText={setCaption}
-              placeholder="Açıklama ekle (opsiyonel)"
+              placeholder="Başlık / açıklama ekle (opsiyonel)"
               placeholderTextColor={THEME.muted}
               style={styles.input}
               multiline
             />
 
             <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>
-              {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Galeriden Seç ve Yükle</Text>}
+              {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>}
             </TouchableOpacity>
           </View>
         ) : null}
@@ -473,31 +652,36 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             <Text style={styles.emptyTitle}>Aktif galeri yok</Text>
             <Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text>
           </View>
-        ) : visibleGallery.map((item) => (
-          <View key={item.id} style={styles.mediaCard}>
-            {item.type === 'video' ? (
-              <TouchableOpacity style={styles.videoBox} onPress={() => openMedia(item)} activeOpacity={0.86}>
-                <Text style={styles.videoIcon}>▶️</Text>
-                <Text style={styles.videoText}>Videoyu Aç</Text>
-              </TouchableOpacity>
-            ) : (
-              <Image source={{ uri: item.url }} style={styles.mediaImage} resizeMode="cover" />
-            )}
-            <View style={styles.mediaBody}>
-              <Text style={styles.mediaTitle}>{item.aciklama || item.hedefAdi || 'Galeri paylaşımı'}</Text>
-              <Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || normalizeTargetType(item)}</Text>
-              <Text style={styles.mediaMeta}>Yükleyen: {item.yukleyenAd || getUserName(users[item.yukleyenId])}</Text>
-              <Text style={styles.mediaMeta}>Yüklenme: {formatDateTime(item.createdAt)}</Text>
-              <Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text>
-              {canUpload ? (
-                <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(item, true)}>
-                  <Text style={styles.deleteButtonText}>Sil</Text>
-                </TouchableOpacity>
-              ) : null}
+        ) : visibleGallery.map((item) => {
+          const mediaItems = normalizeMediaItems(item);
+          return (
+            <View key={item.id} style={styles.mediaCard}>
+              {renderPreviewGrid(item)}
+              <View style={styles.mediaBody}>
+                <View style={styles.mediaTitleRow}>
+                  <Text style={styles.mediaTitle} numberOfLines={2}>{getGalleryTitle(item)}</Text>
+                  <View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View>
+                </View>
+                <Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || normalizeTargetType(item)}</Text>
+                <Text style={styles.mediaMeta}>Yükleyen: {item.yukleyenAd || getUserName(users[item.yukleyenId])}</Text>
+                <Text style={styles.mediaMeta}>Yüklenme: {formatDateTime(item.createdAt)}</Text>
+                <View style={styles.actionRow}>
+                  <Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text>
+                  <TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}>
+                    <Text style={styles.openButtonText}>Aç</Text>
+                  </TouchableOpacity>
+                </View>
+                {canUpload ? (
+                  <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(item, true)}>
+                    <Text style={styles.deleteButtonText}>Sil</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
+      {renderViewer()}
     </SafeAreaView>
   );
 }
@@ -514,11 +698,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '900', color: THEME.primary },
   headerSub: { fontSize: 11, color: THEME.muted, marginTop: 2, fontWeight: '700' },
   headerIcon: { width: 36, textAlign: 'right', fontSize: 22 },
-  card: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 16 },
+  card: { backgroundColor: THEME.card, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   cardTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   cardText: { color: THEME.muted, fontWeight: '700', lineHeight: 19, marginTop: 6 },
-  segmentRow: { flexDirection: 'row', backgroundColor: THEME.primarySoft, padding: 4, borderRadius: 16, marginTop: 14, gap: 4 },
-  segment: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 13 },
+  segmentRow: { flexDirection: 'row', backgroundColor: THEME.primarySoft, padding: 4, borderRadius: 16, marginTop: 14 },
+  segment: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 13, marginHorizontal: 2 },
   segmentActive: { backgroundColor: THEME.primary },
   segmentText: { color: THEME.primary, fontWeight: '900', fontSize: 12, textAlign: 'center' },
   segmentTextActive: { color: '#fff' },
@@ -538,15 +722,54 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 42, marginBottom: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
   emptyDesc: { fontSize: 13, color: THEME.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
-  mediaCard: { backgroundColor: THEME.card, borderRadius: 22, borderWidth: 1, borderColor: THEME.border, marginBottom: 14, overflow: 'hidden' },
-  mediaImage: { width: '100%', height: 220, backgroundColor: THEME.primarySoft },
-  videoBox: { height: 180, alignItems: 'center', justifyContent: 'center', backgroundColor: '#191A23' },
-  videoIcon: { fontSize: 42 },
-  videoText: { color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 8 },
+  mediaCard: { backgroundColor: THEME.card, borderRadius: 26, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 12, elevation: 3 },
+  singleGrid: { height: 250, backgroundColor: THEME.primarySoft },
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', height: 250, backgroundColor: THEME.primarySoft },
+  threeGrid: { flexDirection: 'row', height: 250, backgroundColor: THEME.primarySoft },
+  threeLeft: { flex: 1.15, marginRight: 2 },
+  threeRight: { flex: 0.85 },
+  gridTile: { width: '50%', height: 125, borderWidth: 1, borderColor: '#fff', overflow: 'hidden', backgroundColor: THEME.dark },
+  singleTile: { width: '100%', height: '100%', borderWidth: 0 },
+  largeTile: { width: '100%', height: '100%' },
+  tileImage: { width: '100%', height: '100%' },
+  videoTile: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.dark },
+  playIcon: { color: '#fff', fontSize: 36, fontWeight: '900' },
+  videoTileText: { color: '#fff', fontWeight: '900', marginTop: 6 },
+  moreOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.48)' },
+  moreText: { color: '#fff', fontWeight: '900', fontSize: 34 },
   mediaBody: { padding: 14 },
-  mediaTitle: { color: THEME.text, fontWeight: '900', fontSize: 16 },
-  mediaMeta: { color: THEME.muted, fontWeight: '700', marginTop: 4 },
-  remainingBadge: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: THEME.primarySoft, color: THEME.primary, borderRadius: 99, overflow: 'hidden', fontWeight: '900' },
+  mediaTitleRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  mediaTitle: { flex: 1, color: THEME.text, fontWeight: '900', fontSize: 17, paddingRight: 8 },
+  countBadge: { backgroundColor: THEME.primarySoft, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99 },
+  countBadgeText: { color: THEME.primary, fontWeight: '900', fontSize: 11 },
+  mediaMeta: { color: THEME.muted, fontWeight: '700', marginTop: 5 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  remainingBadge: { paddingHorizontal: 10, paddingVertical: 7, backgroundColor: THEME.primarySoft, color: THEME.primary, borderRadius: 99, overflow: 'hidden', fontWeight: '900' },
+  openButton: { backgroundColor: THEME.primary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 9 },
+  openButtonText: { color: '#fff', fontWeight: '900' },
   deleteButton: { alignSelf: 'flex-start', backgroundColor: '#FFE8EC', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9, marginTop: 10 },
   deleteButtonText: { color: THEME.red, fontWeight: '900' },
+  viewerBackdrop: { flex: 1, backgroundColor: '#050508' },
+  viewerHeader: { paddingHorizontal: 14, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 8, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  viewerTopButton: { minWidth: 74, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center' },
+  viewerTopButtonText: { color: '#fff', fontWeight: '900' },
+  viewerCounter: { color: '#fff', fontWeight: '900' },
+  viewerStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  viewerImage: { width: '100%', height: '100%' },
+  videoViewerBox: { width: '86%', borderRadius: 28, padding: 24, backgroundColor: '#171821', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  videoViewerIcon: { color: '#fff', fontSize: 52, fontWeight: '900' },
+  videoViewerTitle: { color: '#fff', fontWeight: '900', fontSize: 22, marginTop: 14 },
+  videoViewerDesc: { color: '#B8B9C6', fontWeight: '700', textAlign: 'center', lineHeight: 20, marginTop: 8 },
+  viewerPlayButton: { marginTop: 18, backgroundColor: THEME.orange, borderRadius: 16, paddingHorizontal: 24, paddingVertical: 13 },
+  viewerPlayButtonText: { color: '#fff', fontWeight: '900' },
+  viewerNavRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
+  viewerNavButton: { backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14 },
+  viewerNavButtonDisabled: { opacity: 0.35 },
+  viewerNavText: { color: '#fff', fontWeight: '900' },
+  viewerThumbRow: { maxHeight: 78, paddingBottom: 14 },
+  viewerThumbContent: { paddingHorizontal: 12 },
+  viewerThumb: { width: 58, height: 58, borderRadius: 14, overflow: 'hidden', backgroundColor: '#171821', marginRight: 8, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  viewerThumbActive: { borderColor: THEME.orange },
+  viewerThumbImage: { width: '100%', height: '100%' },
+  viewerThumbVideo: { color: '#fff', fontWeight: '900', fontSize: 20 },
 });
