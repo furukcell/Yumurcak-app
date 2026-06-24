@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, SafeAreaView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { THEME_LIST } from '../../theme/themes';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
@@ -129,7 +129,11 @@ export default function TeacherThemeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, padding: 18, paddingTop: 18 },
+  container: {
+    flex: 1,
+    padding: 18,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 18 : 18,
+  },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   backButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   backText: { fontSize: 13, fontWeight: '900' },
