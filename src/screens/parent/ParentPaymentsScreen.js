@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { ScreenShell, useNodeList, useParentBase, LoadingScreen, EmptyState, includesId, MONTH_LABELS, pad2 } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { formatDisplayDate } from '../../utils/dateFormat';
 
 const STATUS_META = {
   odendi: { label: 'Ödendi', icon: '✅', color: '#20B45B', bg: '#E9FBEF' },
@@ -140,8 +141,8 @@ function MonthPaymentCard({ row, styles }) {
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.monthTitle}>{row.label}</Text>
         <Text style={styles.monthDesc} numberOfLines={1}>{record?.baslik || record?.title || record?.aciklama || 'Aylık ücret kaydı'}</Text>
-        {record?.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {record.sonOdemeTarihi}</Text> : null}
-        {record?.odemeTarihi ? <Text style={styles.paidDate}>Ödeme tarihi: {record.odemeTarihi}</Text> : null}
+        {record?.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {formatDisplayDate(record.sonOdemeTarihi)}</Text> : null}
+        {record?.odemeTarihi ? <Text style={styles.paidDate}>Ödeme tarihi: {formatDisplayDate(record.odemeTarihi)}</Text> : null}
       </View>
       <View style={styles.amountBlock}>
         <Text style={styles.amount}>{record ? formatMoney(record.tutar || record.amount) : '-'}</Text>
@@ -160,7 +161,7 @@ function PaymentCard({ item, styles }) {
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.paymentTitle} numberOfLines={1}>{item.baslik || item.aciklama || item.description || 'Ödeme'}</Text>
         <Text style={styles.paymentDesc}>{item.donem || item.tarih || `${item.ay || ''} ${item.yil || ''}`.trim() || 'Dönem bilgisi yok'}</Text>
-        {item.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {item.sonOdemeTarihi}</Text> : null}
+        {item.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {formatDisplayDate(item.sonOdemeTarihi)}</Text> : null}
       </View>
       <View style={styles.amountBlock}>
         <Text style={styles.amount}>{formatMoney(item.tutar || item.amount)}</Text>
