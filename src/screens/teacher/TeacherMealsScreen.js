@@ -3,9 +3,11 @@
 // Öğretmen günlük yemek girişi + aylık kurum listesi görünümü
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { ref, push } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import * as ImagePicker from 'expo-image-picker';
+import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -24,6 +26,27 @@ function formatMonthLabel(monthKey) {
   return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
 }
 
+function getMealText(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.text || value.aciklama || '';
+}
+
+function getMealPhoto(value) {
+  if (!value || typeof value === 'string') return '';
+  return value.fotoUrl || value.photoUrl || value.imageUrl || '';
+}
+
+async function uploadMealPhoto(uri, kresId, sinifId, mealKey) {
+  if (!uri) return '';
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const path = `yemekFotograflari/${kresId || 'kres'}/${sinifId || 'sinif'}/${Date.now()}_${mealKey}.jpg`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytes(fileRef, blob);
+  return getDownloadURL(fileRef);
+}
+
 export default function TeacherMealsScreen() {
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, meals } = useTeacherData();
@@ -34,6 +57,9 @@ export default function TeacherMealsScreen() {
   const [kahvalti, setKahvalti] = useState('');
   const [ogle, setOgle] = useState('');
   const [araOgun, setAraOgun] = useState('');
+  const [kahvaltiFoto, setKahvaltiFoto] = useState(null);
+  const [ogleFoto, setOgleFoto] = useState(null);
+  const [araOgunFoto, setAraOgunFoto] = useState(null);
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
 
@@ -60,17 +86,57 @@ export default function TeacherMealsScreen() {
 
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
 
+  const pickMealPhoto = async (mealKey, source) => {
+    try {
+      if (source === 'camera') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) return Alert.alert('İzin Gerekli', 'Kamera kullanımı için izin vermelisin.');
+      } else {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) return Alert.alert('İzin Gerekli', 'Galeriden fotoğraf seçmek için izin vermelisin.');
+      }
+
+      const picker = source === 'camera' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+      const result = await picker({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.75,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const photo = result.assets[0];
+
+      if (mealKey === 'kahvalti') setKahvaltiFoto(photo);
+      if (mealKey === 'ogle') setOgleFoto(photo);
+      if (mealKey === 'araOgun') setAraOgunFoto(photo);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+    }
+  };
+
+  const removeMealPhoto = (mealKey) => {
+    if (mealKey === 'kahvalti') setKahvaltiFoto(null);
+    if (mealKey === 'ogle') setOgleFoto(null);
+    if (mealKey === 'araOgun') setAraOgunFoto(null);
+  };
+
   const saveMeal = async () => {
     if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
     if (!tarih.trim()) return Alert.alert('Eksik Bilgi', 'Tarih zorunludur.');
-    if (!kahvalti.trim() && !ogle.trim() && !araOgun.trim()) {
-      return Alert.alert('Eksik Bilgi', 'En az bir öğün girmelisin.');
+    if (!kahvalti.trim() && !ogle.trim() && !araOgun.trim() && !kahvaltiFoto && !ogleFoto && !araOgunFoto) {
+      return Alert.alert('Eksik Bilgi', 'En az bir öğün veya fotoğraf eklemelisin.');
     }
 
     setSaving(true);
     try {
+      const finalKresId = kresId || currentClass.kresId || '';
+      const kahvaltiFotoUrl = await uploadMealPhoto(kahvaltiFoto?.uri, finalKresId, currentClass.id, 'kahvalti');
+      const ogleFotoUrl = await uploadMealPhoto(ogleFoto?.uri, finalKresId, currentClass.id, 'ogle');
+      const araOgunFotoUrl = await uploadMealPhoto(araOgunFoto?.uri, finalKresId, currentClass.id, 'araOgun');
+
       await push(ref(database, 'yemekListeleri'), {
-        kresId: kresId || currentClass.kresId || '',
+        kresId: finalKresId,
         sinifId: currentClass.id,
         olusturanId: teacherId || '',
         olusturanRol: 'ogretmen',
@@ -78,9 +144,9 @@ export default function TeacherMealsScreen() {
         tarih: tarih.trim(),
         baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
         ogunler: {
-          kahvalti: kahvalti.trim(),
-          ogle: ogle.trim(),
-          araOgun: araOgun.trim(),
+          kahvalti: { text: kahvalti.trim(), fotoUrl: kahvaltiFotoUrl },
+          ogle: { text: ogle.trim(), fotoUrl: ogleFotoUrl },
+          araOgun: { text: araOgun.trim(), fotoUrl: araOgunFotoUrl },
         },
         aktif: true,
         createdAt: Date.now(),
@@ -89,6 +155,9 @@ export default function TeacherMealsScreen() {
       setKahvalti('');
       setOgle('');
       setAraOgun('');
+      setKahvaltiFoto(null);
+      setOgleFoto(null);
+      setAraOgunFoto(null);
       setTarih(todayString());
       setShowForm(false);
       setSuccessToast(true);
@@ -120,9 +189,33 @@ export default function TeacherMealsScreen() {
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Sınıf İçin Günlük Yemek</Text>
             <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder="2026-06-20" placeholderTextColor="#999" />
-            <TextInput style={styles.input} value={kahvalti} onChangeText={setKahvalti} placeholder="Kahvaltı" placeholderTextColor="#999" />
-            <TextInput style={styles.input} value={ogle} onChangeText={setOgle} placeholder="Öğle yemeği" placeholderTextColor="#999" />
-            <TextInput style={styles.input} value={araOgun} onChangeText={setAraOgun} placeholder="Ara öğün" placeholderTextColor="#999" />
+            <MealInput
+              label="Kahvaltı"
+              value={kahvalti}
+              onChangeText={setKahvalti}
+              photo={kahvaltiFoto}
+              onGallery={() => pickMealPhoto('kahvalti', 'gallery')}
+              onCamera={() => pickMealPhoto('kahvalti', 'camera')}
+              onRemovePhoto={() => removeMealPhoto('kahvalti')}
+            />
+            <MealInput
+              label="Öğle yemeği"
+              value={ogle}
+              onChangeText={setOgle}
+              photo={ogleFoto}
+              onGallery={() => pickMealPhoto('ogle', 'gallery')}
+              onCamera={() => pickMealPhoto('ogle', 'camera')}
+              onRemovePhoto={() => removeMealPhoto('ogle')}
+            />
+            <MealInput
+              label="Ara öğün"
+              value={araOgun}
+              onChangeText={setAraOgun}
+              photo={araOgunFoto}
+              onGallery={() => pickMealPhoto('araOgun', 'gallery')}
+              onCamera={() => pickMealPhoto('araOgun', 'camera')}
+              onRemovePhoto={() => removeMealPhoto('araOgun')}
+            />
             <TouchableOpacity style={styles.saveButton} onPress={saveMeal} disabled={saving}>
               {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Yemek Listesini Kaydet</Text>}
             </TouchableOpacity>
@@ -164,6 +257,30 @@ export default function TeacherMealsScreen() {
   );
 }
 
+function MealInput({ label, value, onChangeText, photo, onGallery, onCamera, onRemovePhoto }) {
+  return (
+    <View style={styles.mealInputBox}>
+      <TextInput style={styles.input} value={value} onChangeText={onChangeText} placeholder={label} placeholderTextColor="#999" />
+      {photo?.uri ? (
+        <View style={styles.photoPreviewWrap}>
+          <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+          <TouchableOpacity style={styles.removePhotoButton} onPress={onRemovePhoto} activeOpacity={0.85}>
+            <Text style={styles.removePhotoText}>Fotoğrafı kaldır</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      <View style={styles.photoButtonRow}>
+        <TouchableOpacity style={styles.photoButton} onPress={onGallery} activeOpacity={0.85}>
+          <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.photoButton} onPress={onCamera} activeOpacity={0.85}>
+          <Text style={styles.photoButtonText}>📷 Kamera</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function MealCard({ item }) {
   return (
     <View style={styles.card}>
@@ -175,13 +292,27 @@ function MealCard({ item }) {
   );
 }
 
+function renderMeal(label, icon, value) {
+  const text = getMealText(value);
+  const fotoUrl = getMealPhoto(value);
+
+  if (!text && !fotoUrl) return null;
+
+  return (
+    <View style={styles.mealItem}>
+      {text ? <Text style={styles.mealText}>{icon} {label}: {text}</Text> : <Text style={styles.mealText}>{icon} {label}</Text>}
+      {fotoUrl ? <Image source={{ uri: fotoUrl }} style={styles.mealPhoto} /> : null}
+    </View>
+  );
+}
+
 function renderMeals(item) {
   const ogunler = item.ogunler || {};
   return (
     <View style={{ marginTop: 10 }}>
-      {ogunler.kahvalti ? <Text style={styles.mealText}>🥐 Kahvaltı: {ogunler.kahvalti}</Text> : null}
-      {ogunler.ogle ? <Text style={styles.mealText}>🍲 Öğle: {ogunler.ogle}</Text> : null}
-      {ogunler.araOgun ? <Text style={styles.mealText}>🍎 Ara Öğün: {ogunler.araOgun}</Text> : null}
+      {renderMeal('Kahvaltı', '🥐', ogunler.kahvalti)}
+      {renderMeal('Öğle', '🍲', ogunler.ogle)}
+      {renderMeal('Ara Öğün', '🍎', ogunler.araOgun)}
     </View>
   );
 }
@@ -191,7 +322,15 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   formCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
   formTitle: { color: THEME.primary, fontWeight: '900', fontSize: 16, marginBottom: 10 },
+  mealInputBox: { marginBottom: 10 },
   input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border },
+  photoButtonRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  photoButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  photoButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
+  photoPreviewWrap: { marginBottom: 10 },
+  photoPreview: { width: '100%', height: 150, borderRadius: 14, backgroundColor: THEME.bg },
+  removePhotoButton: { marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#FFE4E8', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 10 },
+  removePhotoText: { color: THEME.red, fontWeight: '900', fontSize: 12 },
   saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
   saveText: { color: '#FFF', fontWeight: '900' },
   tabRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
@@ -206,5 +345,7 @@ const styles = StyleSheet.create({
   type: { color: THEME.primary, fontWeight: '900', marginBottom: 7 },
   title: { fontSize: 17, fontWeight: '900', color: THEME.text },
   date: { color: THEME.muted, marginTop: 5, fontWeight: '700' },
-  mealText: { color: THEME.text, marginTop: 5, fontWeight: '700', lineHeight: 19 },
+  mealItem: { marginTop: 8 },
+  mealText: { color: THEME.text, fontWeight: '700', lineHeight: 19 },
+  mealPhoto: { width: '100%', height: 170, borderRadius: 14, marginTop: 8, backgroundColor: THEME.bg },
 });
