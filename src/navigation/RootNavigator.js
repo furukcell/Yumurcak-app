@@ -22,11 +22,13 @@ export default function RootNavigator() {
 
   const [subLoading, setSubLoading] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const [resolvedSinifId, setResolvedSinifId] = useState(null);
 
   const role = kullanici?.rol;
   const kresId = kullanici?.kresId;
   const userId = kullanici?.uid || kullanici?.id;
   const userSinifId = kullanici?.sinifId || null;
+  const classThemeSinifId = userSinifId || resolvedSinifId || null;
 
   useEffect(() => {
     if (!kullanici || role === ROLLER.SUPERADMIN || !kresId) {
@@ -52,12 +54,83 @@ export default function RootNavigator() {
     return () => unsubscribe();
   }, [kullanici, role, kresId]);
 
+  useEffect(() => {
+    setResolvedSinifId(null);
+
+    if (!kullanici || !userId || userSinifId) {
+      return undefined;
+    }
+
+    if (role === ROLLER.OGRETMEN) {
+      const unsubscribe = onValue(
+        ref(database, 'siniflar'),
+        (snap) => {
+          const data = snap.val() || {};
+          let nextSinifId = null;
+
+          Object.entries(data).some(([id, item]) => {
+            const sinif = item || {};
+            const ogretmenIds = Array.isArray(sinif.ogretmenIds) ? sinif.ogretmenIds.map(String) : [];
+            const matches =
+              ogretmenIds.includes(String(userId)) ||
+              String(sinif.ogretmenId || '') === String(userId);
+
+            if (matches) {
+              nextSinifId = id;
+              return true;
+            }
+
+            return false;
+          });
+
+          setResolvedSinifId(nextSinifId);
+        },
+        () => setResolvedSinifId(null)
+      );
+
+      return () => unsubscribe();
+    }
+
+    if (role === ROLLER.VELI) {
+      const unsubscribe = onValue(
+        ref(database, 'cocuklar'),
+        (snap) => {
+          const data = snap.val() || {};
+          let nextSinifId = null;
+
+          Object.values(data).some((item) => {
+            const child = item || {};
+            const veliIds = Array.isArray(child.veliIds) ? child.veliIds.map(String) : [];
+            const matches =
+              veliIds.includes(String(userId)) ||
+              String(child.veliId || '') === String(userId) ||
+              String(child.parentId || '') === String(userId);
+
+            if (matches && child.sinifId) {
+              nextSinifId = child.sinifId;
+              return true;
+            }
+
+            return false;
+          });
+
+          setResolvedSinifId(nextSinifId);
+        },
+        () => setResolvedSinifId(null)
+      );
+
+      return () => unsubscribe();
+    }
+
+    return undefined;
+  }, [kullanici, role, userId, userSinifId]);
+
   const subscriptionStatus = useMemo(() => getSubscriptionStatus(subscription), [subscription]);
 
   const withTheme = (screen) => (
     <ThemeProvider
       kresId={kresId}
-      classThemeSinifId={userSinifId}
+      classThemeSinifId={classThemeSinifId}
       userId={userId}
     >
       {screen}
