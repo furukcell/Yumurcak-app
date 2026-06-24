@@ -53,7 +53,13 @@ export default function TeacherDashboardScreen() {
             </View>
             <View style={styles.headerActions}>
               <AppNotificationButton navigation={navigation} />
-              <View style={styles.avatar}><Text style={styles.avatarText}>👩‍🏫</Text></View>
+              <TouchableOpacity
+                style={styles.avatar}
+                onPress={() => navigation.navigate('TeacherProfile')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.avatarText}>👩‍🏫</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
