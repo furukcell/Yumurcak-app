@@ -6,6 +6,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, THEME, MONTH_LABELS } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { formatDisplayDate } from '../../utils/dateFormat';
 
 const MEAL_LABELS = {
   kahvalti: 'Kahvaltı',
@@ -79,13 +80,14 @@ function ReportCard({ item, isToday, localStyles }) {
   const toilet = item?.tuvalet?.sayi ? `${item.tuvalet.sayi} kez` : (item?.tuvaletDurumu || '-');
   const note = item?.not || item?.ogretmenNotu || item?.notlar || 'Öğretmen notu yok.';
   const reportDate = item.tarih || item.date || 'Rapor';
+  const displayReportDate = formatDisplayDate(reportDate);
 
   return (
     <View style={localStyles.card}>
       <View style={localStyles.cardHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={localStyles.cardTitle}>{isToday ? 'En Güncel Rapor' : reportDate}</Text>
-          <Text style={localStyles.cardSub}>{reportDate}</Text>
+          <Text style={localStyles.cardTitle}>{isToday ? 'En Güncel Rapor' : displayReportDate}</Text>
+          <Text style={localStyles.cardSub}>{displayReportDate}</Text>
         </View>
         {isToday ? <Text style={localStyles.todayBadge}>Güncel</Text> : null}
       </View>
