@@ -5,6 +5,7 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
+import { formatDisplayDate } from '../../utils/dateFormat';
 
 export default function ParentEventsScreen({ navigation }) {
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
@@ -37,7 +38,7 @@ export default function ParentEventsScreen({ navigation }) {
               {item.sinifId ? 'Sınıf Etkinliği' : 'Genel Etkinlik'}
             </Text>
             <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.baslik || 'Etkinlik'}</Text>
-            <Text style={styles.cardText}>📅 {item.tarih || '-'} {item.saat ? `· ${item.saat}` : ''}</Text>
+            <Text style={styles.cardText}>📅 {formatDisplayDate(item.tarih)}</Text>
             {item.aciklama ? <Text style={styles.cardText}>{item.aciklama}</Text> : null}
           </View>
         ))
