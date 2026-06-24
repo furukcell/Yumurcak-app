@@ -21,6 +21,29 @@ function formatMonthLabel(monthKey) {
   return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
 }
 
+function getMealDateKey(item) {
+  return String(item?.tarih || item?.baslangicTarihi || '').slice(0, 10);
+}
+
+function isDateInLast7Days(dateKey) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() - 6);
+
+  const targetDate = new Date(`${dateKey}T00:00:00`);
+  targetDate.setHours(0, 0, 0, 0);
+
+  return targetDate >= minDate && targetDate <= today;
+}
+
+function isRecentDailyMeal(item) {
+  return item?.kaynak !== 'admin_aylik' && isDateInLast7Days(getMealDateKey(item));
+}
+
 function getMealText(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -53,7 +76,7 @@ export default function ParentMealsScreen({ navigation }) {
   }, [meals, kresId, sinifId]);
 
   const dailyMeals = useMemo(() => {
-    return visibleMeals.filter((item) => item.kaynak !== 'admin_aylik');
+    return visibleMeals.filter((item) => isRecentDailyMeal(item));
   }, [visibleMeals]);
 
   const monthlyMeals = useMemo(() => {
@@ -114,7 +137,7 @@ export default function ParentMealsScreen({ navigation }) {
               </>
             )
           ) : dailyMeals.length === 0 ? (
-            <EmptyState icon="🍽️" title="Yemek listesi yok" desc="Liste eklendiğinde burada görünür." />
+            <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Öğretmen günlük yemek listesi eklediğinde burada görünür." />
           ) : (
             dailyMeals.map((item) => <MealCard key={item.id} item={item} />)
           )}
