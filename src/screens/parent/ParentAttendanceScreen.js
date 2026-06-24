@@ -6,6 +6,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME, getMonthKey, getMonthLabel, isAbsentStatus } from './parentShared';
+import { formatDisplayDate } from '../../utils/dateFormat';
 
 const STATUS_LABELS = {
   geldi: 'Geldi',
