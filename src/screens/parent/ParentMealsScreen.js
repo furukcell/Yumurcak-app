@@ -3,7 +3,7 @@
 // Günlük ve aylık yemek listesi görünümü
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
 
@@ -19,6 +19,17 @@ function formatMonthLabel(monthKey) {
   const year = parts[0];
   const monthIndex = Number(parts[1]) - 1;
   return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
+}
+
+function getMealText(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.text || value.aciklama || '';
+}
+
+function getMealPhoto(value) {
+  if (!value || typeof value === 'string') return '';
+  return value.fotoUrl || value.photoUrl || value.imageUrl || '';
 }
 
 export default function ParentMealsScreen({ navigation }) {
@@ -124,9 +135,23 @@ function MealCard({ item }) {
       </Text>
       <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.baslik || 'Yemek Listesi'}</Text>
       <Text style={styles.cardText}>📅 {formatDisplayDate(item.tarih || item.baslangicTarihi)}</Text>
-      {ogunler.kahvalti ? <Text style={styles.cardText}>🥐 Kahvaltı: {ogunler.kahvalti}</Text> : null}
-      {ogunler.ogle ? <Text style={styles.cardText}>🍲 Öğle: {ogunler.ogle}</Text> : null}
-      {ogunler.araOgun ? <Text style={styles.cardText}>🍎 Ara Öğün: {ogunler.araOgun}</Text> : null}
+      {renderMeal('Kahvaltı', '🥐', ogunler.kahvalti)}
+      {renderMeal('Öğle', '🍲', ogunler.ogle)}
+      {renderMeal('Ara Öğün', '🍎', ogunler.araOgun)}
+    </View>
+  );
+}
+
+function renderMeal(label, icon, value) {
+  const text = getMealText(value);
+  const fotoUrl = getMealPhoto(value);
+
+  if (!text && !fotoUrl) return null;
+
+  return (
+    <View style={localStyles.mealItem}>
+      {text ? <Text style={styles.cardText}>{icon} {label}: {text}</Text> : <Text style={styles.cardText}>{icon} {label}</Text>}
+      {fotoUrl ? <Image source={{ uri: fotoUrl }} style={localStyles.mealPhoto} /> : null}
     </View>
   );
 }
@@ -171,5 +196,15 @@ const localStyles = {
     fontWeight: '700',
     fontSize: 12,
     marginTop: 4,
+  },
+  mealItem: {
+    marginTop: 8,
+  },
+  mealPhoto: {
+    width: '100%',
+    height: 170,
+    borderRadius: 14,
+    marginTop: 8,
+    backgroundColor: THEME.bg,
   },
 };
