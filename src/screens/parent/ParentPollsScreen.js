@@ -98,12 +98,19 @@ export default function ParentPollsScreen({ navigation }) {
 }
 
 function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
+  const [changeMode, setChangeMode] = useState(false);
+
   if (!poll) return null;
   const options = normalizeOptions(poll.secenekler || poll.options);
   const answer = poll.cevaplar?.[veliId]?.secenek || '';
   const answered = !!answer;
   const desc = poll.aciklama || poll.description || '';
   const typeLabel = getTargetLabel(poll);
+
+  const handleVote = (option) => {
+    setChangeMode(false);
+    onVote(poll, option);
+  };
 
   return (
     <View style={styles.pollCardHero}>
@@ -126,7 +133,7 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
               <TouchableOpacity
                 key={`${option}-${index}`}
                 style={[styles.optionHero, selected && styles.optionHeroSelected]}
-                onPress={() => onVote(poll, option)}
+                onPress={() => handleVote(option)}
                 disabled={sendingId === poll.id}
                 activeOpacity={0.86}
               >
@@ -148,10 +155,17 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
 
       <View style={[styles.answerBox, answered ? styles.answerBoxDone : styles.answerBoxWaiting]}>
         <Text style={[styles.answerText, answered ? styles.answerTextDone : styles.answerTextWaiting]}>
-          {answered ? '✅ Cevabın kaydedildi' : '⏳ Cevabın bekleniyor'}
+          {answered ? (changeMode ? '✏️ Yeni cevabını seç' : '✅ Cevabın kaydedildi') : '⏳ Cevabın bekleniyor'}
         </Text>
         {answered ? (
-          <Text style={styles.changeText}>Cevabı değiştir ›</Text>
+          <TouchableOpacity
+            style={styles.changeButton}
+            onPress={() => setChangeMode(true)}
+            disabled={sendingId === poll.id}
+            activeOpacity={0.82}
+          >
+            <Text style={styles.changeText}>{changeMode ? 'Seçeneklerden birine bas' : 'Cevabı değiştir ›'}</Text>
+          </TouchableOpacity>
         ) : null}
       </View>
     </View>
@@ -287,6 +301,7 @@ const createStyles = (theme) => {
     answerText: { fontWeight: '900', fontSize: 14, flex: 1, paddingRight: 8 },
     answerTextDone: { color: '#12833A' },
     answerTextWaiting: { color: '#936100' },
+    changeButton: { borderRadius: 99 },
     changeText: { color: primary, fontWeight: '900', fontSize: 13, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: '#B8E4FF', backgroundColor: '#F7FCFF', overflow: 'hidden' },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 9 },
     sectionIcon: { fontSize: 21 },
