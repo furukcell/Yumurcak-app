@@ -15,6 +15,7 @@ import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
 import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
 import TeacherPhysicalDevelopmentScreen from '../screens/teacher/TeacherPhysicalDevelopmentScreen';
 import TeacherBirthdaysScreen from '../screens/teacher/TeacherBirthdaysScreen';
+import TeacherWeeklyStarScreen from '../screens/teacher/TeacherWeeklyStarScreen';
 import TeacherThemeScreen from '../screens/teacher/TeacherThemeScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
 import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
@@ -40,6 +41,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
       <Stack.Screen name="TeacherPhysicalDevelopment" component={TeacherPhysicalDevelopmentScreen} />
       <Stack.Screen name="TeacherBirthdays" component={TeacherBirthdaysScreen} />
+      <Stack.Screen name="TeacherWeeklyStar" component={TeacherWeeklyStarScreen} />
       <Stack.Screen name="TeacherTheme" component={TeacherThemeScreen} />
       <Stack.Screen name="TeacherAnnouncements" component={TeacherAnnouncementsScreen} />
       <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
