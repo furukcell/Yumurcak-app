@@ -13,7 +13,7 @@ import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
-  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', bg: '#FFF0D9', border: '#F0B86A' },
+  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
   { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
   { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
@@ -87,7 +87,7 @@ export default function TeacherDashboardScreen() {
                 <TouchableOpacity
                   key={item.title}
                   style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]}
-                  onPress={() => navigation.navigate(item.route)}
+                  onPress={() => navigation.navigate(item.route, item.params || undefined)}
                   activeOpacity={0.85}
                 >
                   <View style={styles.menuIconRow}>
