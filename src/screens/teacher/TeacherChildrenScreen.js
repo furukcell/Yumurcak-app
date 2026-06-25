@@ -5,7 +5,7 @@
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { ref, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import {
@@ -71,6 +71,8 @@ function formatBirthDate(value) {
 
 export default function TeacherChildrenScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const reportMode = route.params?.mode === 'report';
   const { loading, currentClass, classChildren, reports } = useTeacherData();
   const [expandedId, setExpandedId] = useState(null);
   const [veliMap, setVeliMap] = useState({});
@@ -119,16 +121,32 @@ export default function TeacherChildrenScreen() {
     return set;
   }, [reports, today]);
 
-  if (loading) return <LoadingState text="Çocuklar hazırlanıyor..." />;
+  if (loading) return <LoadingState text={reportMode ? 'Günlük rapor için çocuklar hazırlanıyor...' : 'Çocuklar hazırlanıyor...'} />;
 
-  const toggleExpand = (childId) => {
+  const handleChildPress = (childId, child) => {
+    if (reportMode) {
+      navigation.navigate('ChildReport', { child });
+      return;
+    }
+
     setExpandedId((prev) => (prev === childId ? null : childId));
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader navigation={navigation} title="Çocuklarım" subtitle={currentClass?.ad || 'Sınıfım'} />
+      <ScreenHeader
+        navigation={navigation}
+        title={reportMode ? 'Günlük Rapor' : 'Çocuklarım'}
+        subtitle={reportMode ? 'Çocuk seç ve rapor gir' : (currentClass?.ad || 'Sınıfım')}
+      />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {reportMode ? (
+          <View style={styles.reportInfoBox}>
+            <Text style={styles.reportInfoTitle}>📝 Rapor girmek için çocuk seç</Text>
+            <Text style={styles.reportInfoText}>Çocuğa dokununca ruh hali, yemek, tuvalet ve öğretmen notu ekranı açılır.</Text>
+          </View>
+        ) : null}
+
         {classChildren.length === 0 ? (
           <EmptyState icon="👧" title="Sınıfta çocuk yok" desc="Yönetici çocukları sınıfa bağladığında burada görünecek." />
         ) : (
@@ -141,10 +159,10 @@ export default function TeacherChildrenScreen() {
               <View key={child.id} style={styles.card}>
                 <TouchableOpacity
                   style={styles.cardHeader}
-                  onPress={() => toggleExpand(child.id)}
+                  onPress={() => handleChildPress(child.id, child)}
                   activeOpacity={0.85}
                 >
-                  <View style={styles.avatar}><Text style={styles.avatarText}>👧</Text></View>
+                  <View style={styles.avatar}><Text style={styles.avatarText}>{reportMode ? '📝' : '👧'}</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{getChildName(child)}</Text>
                     <Text style={styles.sub}>Yaş: {age || '—'} • Doğum: {formatBirthDate(child.dogumTarihi)}</Text>
@@ -156,10 +174,10 @@ export default function TeacherChildrenScreen() {
                     </View>
                   ) : null}
 
-                  <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
+                  <Text style={styles.chevron}>{reportMode ? '›' : (isExpanded ? '▲' : '▼')}</Text>
                 </TouchableOpacity>
 
-                {isExpanded ? (
+                {!reportMode && isExpanded ? (
                   <View style={styles.details}>
                     <DetailRow label="Yaş" value={age || '—'} />
                     <DetailRow label="Doğum Tarihi" value={formatBirthDate(child.dogumTarihi)} />
@@ -224,6 +242,16 @@ function DetailRow({ label, value }) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   content: { padding: 16, paddingBottom: 30 },
+  reportInfoBox: {
+    backgroundColor: '#FFF8E7',
+    borderWidth: 1,
+    borderColor: '#FFE1A6',
+    borderRadius: 18,
+    padding: 13,
+    marginBottom: 12,
+  },
+  reportInfoTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  reportInfoText: { color: THEME.muted, fontWeight: '700', marginTop: 5, lineHeight: 18 },
   card: {
     backgroundColor: THEME.card,
     borderRadius: 20,
@@ -249,7 +277,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   reportBadgeText: { color: '#3C8C2A', fontSize: 11, fontWeight: '900' },
-  chevron: { color: THEME.muted, fontSize: 12, marginLeft: 4 },
+  chevron: { color: THEME.muted, fontSize: 20, marginLeft: 4, fontWeight: '900' },
   details: {
     paddingHorizontal: 14,
     paddingBottom: 14,
