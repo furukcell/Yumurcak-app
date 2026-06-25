@@ -15,15 +15,14 @@ import {
   LoadingState,
   EmptyState,
   getChildName,
-  formatDate,
   todayString,
 } from './teacherShared';
 
 // Doğum tarihinden yaş hesaplar. dogumTarihi 'YYYY-MM-DD' formatında bekleniyor.
 function calculateAge(dogumTarihi) {
   if (!dogumTarihi) return null;
-  const birth = new Date(dogumTarihi);
-  if (Number.isNaN(birth.getTime())) return null;
+  const birth = parseBirthDate(dogumTarihi);
+  if (!birth) return null;
 
   const now = new Date();
   let years = now.getFullYear() - birth.getFullYear();
@@ -37,6 +36,37 @@ function calculateAge(dogumTarihi) {
 
   if (years <= 0) return `${months} aylık`;
   return months > 0 ? `${years} yaş ${months} ay` : `${years} yaş`;
+}
+
+function parseBirthDate(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const trMatch = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (trMatch) {
+    const [, day, month, year] = trMatch;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function formatBirthDate(value) {
+  const date = parseBirthDate(value);
+  if (!date) return 'Belirtilmemiş';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
 }
 
 export default function TeacherChildrenScreen() {
@@ -117,7 +147,7 @@ export default function TeacherChildrenScreen() {
                   <View style={styles.avatar}><Text style={styles.avatarText}>👧</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{getChildName(child)}</Text>
-                    <Text style={styles.sub}>Doğum: {formatDate(child.dogumTarihi)}</Text>
+                    <Text style={styles.sub}>Yaş: {age || '—'} • Doğum: {formatBirthDate(child.dogumTarihi)}</Text>
                   </View>
 
                   {reportedToday ? (
@@ -132,6 +162,7 @@ export default function TeacherChildrenScreen() {
                 {isExpanded ? (
                   <View style={styles.details}>
                     <DetailRow label="Yaş" value={age || '—'} />
+                    <DetailRow label="Doğum Tarihi" value={formatBirthDate(child.dogumTarihi)} />
 
                     {veliLoading ? (
                       <Text style={styles.veliLoadingText}>Veli bilgileri yükleniyor...</Text>
