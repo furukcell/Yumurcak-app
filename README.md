@@ -1,10 +1,10 @@
 # Yumurcak Kreş
 
-Yumurcak Kreş; yönetici, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır.
+Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır. Amaç; kreşteki günlük akışı, çocuk takibini, veli iletişimini, duyuru/anket süreçlerini, yemek ve galeri paylaşımlarını tek uygulamada toplamaktır.
 
-Proje çalışan MVP + stabilizasyon seviyesindedir. Kod tarafında ana admin, öğretmen ve veli modülleri büyük ölçüde tamamlanmıştır. Güncel odak; gerçek cihaz testi, Firebase Storage / Realtime Database kurallarının doğrulanması, RevenueCat / Google Play abonelik bağlantısı, push notification fiziksel cihaz testi ve Play Store kapalı test hazırlığıdır.
+Proje şu an çalışan MVP + stabilizasyon seviyesindedir. Ana admin, öğretmen ve veli modülleri büyük ölçüde tamamlanmıştır. Güncel odak; gerçek cihaz build testi, Firebase Realtime Database / Storage rules doğrulaması, RevenueCat / Google Play abonelik bağlantısı, push notification fiziksel cihaz testi ve kapalı test hazırlığıdır.
 
-> Son güncelleme: 24 Haziran 2026
+> Son güncelleme: 25 Haziran 2026
 
 ---
 
@@ -15,9 +15,12 @@ Expo SDK: 54
 React Native: 0.81.5
 React: 19.1.0
 Firebase: 12.0.0
+Firebase Auth: kullanıcı girişi ve rol ayrımı
+Firebase Realtime Database: uygulama verileri
+Firebase Storage: profil, galeri ve yemek fotoğrafları
 RevenueCat: react-native-purchases 9.0.0
 Push: expo-notifications
-Storage / fotoğraf: expo-image-picker + Firebase Storage
+Medya seçimi: expo-image-picker
 Android sistem bar: expo-navigation-bar
 Android klavye davranışı: softwareKeyboardLayoutMode = resize
 ```
@@ -40,130 +43,264 @@ minSdkVersion: 24
 
 ## Roller
 
-| Rol | Yetki |
+| Rol | Açıklama |
 | --- | --- |
 | `superadmin` | Platform / kreş yönetimi ve üst seviye işlemler |
-| `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, anket, galeri, tema, abonelik, bildirim, yasal metin ve istatistik yönetimi |
-| `ogretmen` | Sınıf çocukları, yoklama, günlük rapor, fiziksel gelişim, mesaj, galeri, yemek listesi, medikal bilgi, sınıf teması ve bildirim ekranları |
-| `veli` | Çocuğa ait özet, rapor, ödeme, anket, mesaj, galeri, yemek listesi, gelişim, medikal bilgi, bildirim ve yasal metin ekranları |
+| `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, duyuru, anket, galeri, tema, abonelik, bildirim, yasal metin ve istatistik yönetimi |
+| `ogretmen` | Kendi sınıfındaki çocuklar, yoklama, günlük rapor, medikal bilgi, fiziksel gelişim, yemek listesi, galeri, mesaj, duyuru, tema ve bildirim ekranları |
+| `veli` | Çocuğa ait özet, günlük/aylık rapor, ödeme, yemek, gelişim, medikal bilgi, anket, galeri, mesaj, bildirim ve yasal metin ekranları |
 
 ---
 
-## Güncel Modüller
+## Öne Çıkan Özellikler
 
-- Rol bazlı giriş ve yönlendirme
-- Firebase Auth tabanlı yeni kullanıcı oluşturma akışı
-- Firebase Realtime Database bağlantısı
-- Firebase Storage profil fotoğrafı, galeri ve yemek fotoğrafı altyapısı
-- Kreş bazlı genel tema sistemi
-- Sınıf bazlı tema altyapısı ve öğretmen sınıf tema ekranı
-- Öğretmen sınıf teması seçince aynı sınıf öğretmen / veli ekranlarına tema yansıması
-- Admin tema ekranında desenli / temalı arka plan
-- Veli ve öğretmen anasayfa kartlarında pastel renkli görünüm
-- Veli alt tab yapısı ve safe-area uyumu
-- Admin dashboard safe-area düzeltmesi
-- Veli günlük özet ekranı
-- Veli profil fotoğrafının anasayfa ve özet alanlarına yansıması
-- Yönetici kurum istatistikleri
-- Öğretmen ve çocuk bazlı istatistik / risk ekranı
+- Rol bazlı giriş ve otomatik yönlendirme
+- Firebase Auth tabanlı kullanıcı akışı
+- Realtime Database ile kurum, sınıf, çocuk, veli, öğretmen ve günlük takip verileri
+- Firebase Storage ile profil fotoğrafı, galeri ve yemek fotoğrafı/video altyapısı
+- Kreş ve sınıf bazlı tema sistemi
+- Veli / öğretmen / admin panellerinde modern pastel kart tasarımları
+- Veli özet ekranı
+- Veli doğum günü kutlama modu
+- Öğretmen doğum günleri ekranı
+- Öğretmen günlük rapor ekranı
+- Yoklama sistemi
+- Yemek listesi ve öğün fotoğrafı sistemi
+- Galeri fotoğraf / video paylaşımı
+- Medikal bilgi takibi
+- Fiziksel gelişim kaydı ve geçmişi
+- Duyuru sistemi
+- Anket / oylama sistemi
+- Mesajlaşma sistemi
 - Kurum Zili
-- Hedefli duyuru sistemi: tüm kurum, veli, öğretmen, sınıf
 - Ödeme takibi
-- Admin ödeme listesi ve ödeme formu
-- Veli son 12 ay ödeme ekranı
-- Veli günlük / aylık rapor ekranı
-- Öğretmen günlük rapor oluşturma ekranı
-- Öğretmen fiziksel gelişim girişi: boy, kilo, baş çevresi, not
-- Öğretmen günlük yemek listesi girişi
-- Kahvaltı / öğle / ara öğün için kamera veya galeriden yemek fotoğrafı ekleme
-- Veli yemek ekranında fotoğraflı günlük yemek görüntüleme
-- Günlük yemeklerde son 7 gün listeleme ve eski yemek fotoğraflarını temizleme altyapısı
-- Admin abonelik ekranı
-- RevenueCat SDK altyapısı
-- Anket / oylama
-- Mesajlaşma
-- Chat ekranı Android klavye resize düzeltmesi
-- Mesaj meta verisinde `undefined` temizleme ile yanlış hata alerti riskinin azaltılması
-- Galeri
 - Uygulama içi bildirim merkezi
 - Expo push notification altyapısı
-- Başarı toast sistemi
-- Uygulama içi yasal metinler: Kullanım Şartları, Gizlilik Politikası, KVKK Aydınlatma Metni
-- Android navigation bar gizleme altyapısı
-- Kullanıcıya görünen tarih formatlarında `DD.MM.YYYY` gösterim standardı
+- RevenueCat abonelik altyapısı
+- Uygulama içi yasal metinler
+- Kullanıcıya görünen tarih formatlarında `DD.MM.YYYY` standardı
 
 ---
 
-## Tema Sistemi
+## Son Güncellemeler
 
-Tema sistemi iki katmanlıdır.
+### Veli paneli
 
-### 1. Kreş genel teması
+- Anket ekranında `Cevabı değiştir` yazısı gerçek tıklanabilir butona çevrildi.
+- Veli mesaj ekranı modern inbox tasarımına güncellendi.
+- Veli mesaj ekranında kurum yönetimi ve öğretmen sohbetleri sade kartlarla ayrıldı.
+- Veli özet ekranına doğum günü modu eklendi.
+- Çocuğun doğum günü ise özet ekranında gün boyunca hareketli balon ve konfeti efekti çalışır.
+- Doğum günü popup'ı aynı gün sadece bir kez gösterilir.
+- Popup kapandıktan sonra ekran normal kullanılmaya devam eder.
+- Balon ve konfeti overlay'i `pointerEvents="none"` mantığıyla çalışır; butonları, scroll'u ve tabbar'ı engellemez.
 
-Yönetici tarafından seçilir ve Firebase tarafında kreş kaydına yazılır.
+### Öğretmen paneli
 
-```txt
-kresler/{kresId}/temaAyarlari
-  temaId
-  patternEnabled
-  updatedAt
-```
+- Çocuklarım ekranında yaş bilgisi ve doğum tarihi gösterimi düzeltildi.
+- Doğum tarihi kullanıcıya `GG.AA.YYYY` formatında gösterilir.
+- Günlük Rapor kartı artık çocuk seçme moduna gider; çocuk seçilince eski detaylı rapor formu açılır.
+- Günlük raporda ruh hali, kahvaltı/öğle/ara öğün durumu, uyku, tuvalet ve öğretmen notu akışı korunur.
+- Günlük yemek fotoğraf yükleme tarafında medya okuma yöntemi daha sağlam hale getirildi.
+- Galeri fotoğraf/video yükleme tarafında medya okuma yöntemi daha sağlam hale getirildi.
+- Fiziksel Gelişim ekranına `Kayıt Gir` ve `Geçmiş` tabları eklendi.
+- Fiziksel gelişim geçmişinde tüm sınıf kayıtları listelenir.
+- Öğretmen paneline `Doğum Günleri` ekranı eklendi.
+- Doğum günleri en yakın tarihten en uzağa doğru sıralanır.
+- Öğretmen mesaj ekranına yeni mesaj başlatmak için alttan açılan veli seçme çekmecesi eklendi.
 
-Bu tema, sınıf özel teması olmayan kullanıcılar için varsayılan görünüm olarak kullanılır.
+### Admin paneli
 
-### 2. Sınıf teması
-
-Öğretmen tarafından kendi sınıfı için seçilir.
-
-```txt
-kresler/{kresId}/sinifTemalari/{sinifId}
-  temaId
-  patternEnabled
-  updatedAt
-  updatedBy
-```
-
-Amaç:
-
-```txt
-Öğretmen tema seçer
-↓
-Sadece o sınıfın öğretmenleri ve velileri aynı sınıf temasını görür
-↓
-Diğer sınıflar etkilenmez
-```
-
-Güncel durum:
-
-- `ThemeProvider` kreş genel teması ve sınıf teması okuyabilir.
-- `RootNavigator` öğretmen tarafında sınıfı `siniflar` üzerinden çözmeye çalışır.
-- `RootNavigator` veli tarafında sınıfı `cocuklar` üzerinden çözmeye çalışır.
-- Böylece kullanıcı kaydında `sinifId` boş olsa bile öğretmen / veli için sınıf teması bulunabilir.
-- Bu akış gerçek kullanıcı verileriyle test edilmelidir.
+- Çocuklar kartında doğum tarihi gösterimi `GG.AA.YYYY` formatına çevrildi.
+- Çocuk listesi modern kart yapısı korunarak tarih formatı standartlaştırıldı.
 
 ---
 
-## Yemek Listesi
+## Veli Paneli
 
-Güncel durum:
+Veli paneli çocuğun günlük akışını tek yerde takip etmek için tasarlanmıştır.
 
-- Veli panelinde yemek listesi görüntüleme ekranı vardır.
-- Öğretmen tarafında günlük yemek listesi girişi vardır.
-- Yemek kayıtları `yemekListeleri` node’u üzerinden okunur.
-- Bugünün menüsü tarih eşleşmesiyle veli ekranına çekilir.
-- Öğretmen kahvaltı / öğle / ara öğün için fotoğraf ekleyebilir.
+Alt tab yapısı:
+
+```txt
+📊 Özet
+🏠 Anasayfa
+📋 Rapor
+📈 Gelişim
+💬 Mesaj
+```
+
+### Veli Özet Ekranı
+
+Özet ekranında veli, çocuğun güncel durumunu hızlıca görür.
+
+Gösterilen bilgiler:
+
+- Çocuk kartı
+- Veli profil fotoğrafı / avatar
+- Kreş adı ve günün tarihi
+- Günlük durum özeti
+- Giriş saati / yoklama bilgisi
+- Ruh hali
+- Uyku bilgisi
+- Etkinlik sayısı
+- Günlük kısa yorum
+- Yemek ve menü özeti
+- Ders ve etkinlik programı
+- Bekleyen ödeme hatırlatması
+- Cevap bekleyen anket hatırlatması
+- Mesaj kısayolu
+- Gelişim ekranı kısayolu
+
+### Veli Doğum Günü Modu
+
+Çocuğun doğum günü geldiğinde sadece veli özet ekranında özel kutlama modu çalışır.
+
+Mantık:
+
+```txt
+selectedChild.dogumTarihi gün/ay == bugünün gün/ay değeri
+```
+
+Aktif olduğunda:
+
+- Üst bölümde `🎂 Bugün doğum günü var` rozeti çıkar.
+- Çocuk kartında özel doğum günü mesajı görünür.
+- Rengarenk balonlar sürekli aşağıdan yukarı hareket eder.
+- Konfetiler sürekli ekranda süzülür.
+- Popup aynı gün sadece bir kez gösterilir.
+- Popup durumu AsyncStorage ile saklanır.
+- Efektler ekran kullanımını engellemez.
+
+AsyncStorage anahtarı:
+
+```txt
+birthdayPopupSeen_{childId}_{YYYY-MM-DD}
+```
+
+### Veli Yemek Ekranı
+
+- Bugünün yemekleri gösterilir.
+- Kahvaltı, öğle ve ara öğün ayrı ayrı listelenir.
+- Öğretmen fotoğraf eklediyse veli fotoğrafı görür.
+- Aylık menü ve öğretmen günlük bildirimi birlikte desteklenir.
+- Öğretmen sadece kahvaltı girdiyse diğer öğünlerde aylık menü bilgisi korunabilir.
+- Son 7 günlük yemek kayıtları görüntülenebilir.
+
+### Veli Anket Ekranı
+
+- Aktif kurum/sınıf anketleri görünür.
+- Seçenek kartlarına basarak cevap verilir.
+- Cevap kaydedildikten sonra `Cevabı değiştir` butonu ile yeni cevap seçilebilir.
+- Seçili cevap görsel olarak vurgulanır.
+
+### Veli Mesaj Ekranı
+
+- Kurum yönetimi ile mesajlaşma
+- Öğretmen ile mesajlaşma
+- Okunmamış mesaj rozeti
+- Son mesaj önizlemesi
+- Saat/tarih gösterimi
+- Güvenli iletişim bilgi kartı
+
+### Veli Galeri Ekranı
+
+- Veli sadece kendi çocuğuna, çocuğunun sınıfına veya tüm kuruma hedeflenen aktif galeri içeriklerini görür.
+- Fotoğraf/video görüntüleme desteklenir.
+- Galeri içerikleri 24 saat aktif görünür.
+
+### Veli Rapor ve Gelişim
+
+- Günlük raporlar görüntülenir.
+- Aylık rapor özeti oluşturulur.
+- Aylık özet öğretmen raporlarından otomatik yorum çıkarır.
+- Bu yorum tıbbi veya psikolojik tanı değildir.
+- Fiziksel gelişim kayıtları veli tarafında gelişim ekranından takip edilir.
+
+---
+
+## Öğretmen Paneli
+
+Öğretmen paneli sınıf günlük operasyonlarını yönetmek için tasarlanmıştır.
+
+Ana modüller:
+
+- Çocuklarım
+- Doğum Günleri
+- Günlük Rapor
+- Yoklama
+- Ders Programı
+- Etkinlikler
+- Yemek Listesi
+- Galeri
+- Medikal
+- Fiziksel Gelişim
+- Tema Ayarları
+- Duyurular
+- Mesajlar
+- Profil
+
+### Çocuklarım
+
+- Öğretmenin sınıfındaki çocuklar listelenir.
+- Çocuk kartı açılıp kapanabilir.
+- Yaş ve doğum tarihi gösterilir.
+- Doğum tarihi `GG.AA.YYYY` formatındadır.
+- Veli bilgileri detay alanında görüntülenir.
+- Bugün rapor girilen çocuklarda rozet görünür.
+
+### Doğum Günleri
+
+Öğretmenin sınıfındaki çocukların doğum günleri takip edilir.
+
+Özellikler:
+
+- En yakın doğum gününden en geç olana doğru sıralama
+- Günü geçmiş doğum günlerini bir sonraki yıla göre hesaplama
+- Bu ay doğum günü olan çocuk sayısı
+- 30 gün içindeki yaklaşan doğum günü sayısı
+- Bu yıl toplam doğum günü sayısı
+- Çocuk adı, doğum tarihi, yaş ve kalan gün bilgisi
+
+### Günlük Rapor
+
+Günlük Rapor kartı önce çocuk seçme ekranına gider. Çocuğa basılınca rapor formu açılır.
+
+Raporda bulunan alanlar:
+
+- Ruh hali
+- Kahvaltı durumu
+- Öğle yemeği durumu
+- Ara öğün durumu
+- Uyku süresi
+- Tuvalet sayısı
+- Öğretmen notu
+
+Yemek durumları:
+
+```txt
+Yemedi
+Az yedi
+Bitirdi
+```
+
+### Yemek Listesi
+
+- Öğretmen günlük yemek listesi girebilir.
+- Kahvaltı, öğle ve ara öğün ayrı ayrı güncellenebilir.
+- Her öğüne açıklama ve fotoğraf eklenebilir.
 - Fotoğraf kamera veya galeriden seçilebilir.
-- Fotoğraflar Firebase Storage altında tutulur.
-- Yemek kaydı içine hem `fotoUrl` hem `fotoPath` yazılır.
-- Veli ekranı eski yazılı yemek kayıtlarını ve yeni fotoğraflı yemek kayıtlarını birlikte destekler.
-- Veli ve öğretmen günlük liste ekranlarında son 7 günlük yemekler gösterilir.
-- 7 günden eski günlük yemek kayıtları öğretmen yemek ekranı açıldığında temizlenmeye çalışılır.
-- `fotoPath` bulunan eski yemek fotoğrafları Storage’dan silinmeye çalışılır.
+- Fotoğraf Firebase Storage'a yüklenir.
+- Kayıt Realtime Database içinde `yemekListeleri` node'una yazılır.
+- Son 7 günlük yemek kayıtları listelenir.
+- Daha eski günlük yemek kayıtları ve uygun fotoğraflar temizlenmeye çalışılır.
+- Fotoğraf upload tarafında `XMLHttpRequest + blob` medya okuma yöntemi kullanılır.
 
-Storage path:
+Storage path örnekleri:
 
 ```txt
-yemekFotolari/{kresId}/{sinifId}/{timestamp}_{mealKey}.jpg
+yemekFotograflari/{kresId}/{sinifId}/{fileName}
+galeri/{kresId}/yemekFotograflari/{sinifId}/{fileName}
 ```
 
 Realtime Database yapı örneği:
@@ -173,6 +310,8 @@ yemekListeleri/{id}
   kresId
   sinifId
   tarih
+  kaynak
+  tip
   ogunler
     kahvalti
       text
@@ -182,40 +321,35 @@ yemekListeleri/{id}
       text
       fotoUrl
       fotoPath
-    ara
+    araOgun
       text
       fotoUrl
       fotoPath
 ```
 
-Sonraki faz:
+### Galeri
 
-- Admin için aylık yemek listesi ekranı.
-- Admin ay seçip 30/31 günlük kahvaltı / öğle / ara öğün planı girebilir.
-- Yayınla butonu ile her gün için `yemekListeleri` altına günlük kayıt basılır.
-- A4/PDF yemek listesi ek belge olarak yüklenebilir.
-- Belgeden otomatik menü çıkarma için OCR/AI gerekir; tablo ve fotoğraf kalitesi nedeniyle sonraki faza bırakılması önerilir.
+- Öğretmen kendi sınıfı veya tek çocuk için fotoğraf/video yükleyebilir.
+- Çoklu fotoğraf seçimi desteklenir.
+- Video paylaşımı desteklenir.
+- Paylaşımlar 24 saat görünür.
+- Süresi dolan kayıtlar ekran açıldığında temizlenmeye çalışılır.
+- Medya upload tarafında `XMLHttpRequest + blob` yöntemi kullanılır.
 
----
-
-## Galeri Modülü
-
-Galeri modülü `galeri/` node’u ve Firebase Storage ile çalışır.
-
-Yapı:
+Galeri veri yapısı:
 
 ```txt
-galeri/{mediaId}
+galeri/{galleryId}
   kresId
-  sinifId
-  cocukIds
-  hedef: kurum | sinif | cocuk
   targetType: school | class | student
+  hedef: kurum | sinif | cocuk
   classId
   studentId
-  type: image | video
-  url
-  storagePath
+  sinifId
+  cocukId
+  cocukIds
+  mediaItems
+  mediaCount
   aciklama
   yukleyenId
   yukleyenAd
@@ -224,15 +358,183 @@ galeri/{mediaId}
   expiresAt
 ```
 
-Kurallar:
+### Fiziksel Gelişim
 
-- Yönetici fotoğraf / video yükleyebilir.
-- Yönetici paylaşımı tüm kurum, sınıf veya tek çocuk hedefli yapabilir.
-- Öğretmen kendi sınıfı veya seçili çocuk için fotoğraf / video yükleyebilir.
-- Veli sadece kendi çocuğuna, çocuğunun sınıfına veya tüm kuruma ait aktif galeri kayıtlarını görür.
-- Medyalar 24 saat sonra uygulamada görünmez.
-- Yönetici / öğretmen galeri ekranı açıldığında süresi dolan kayıtlar temizlenmeye çalışılır.
-- Storage’dan garantili otomatik silme için ileride Firebase Cloud Functions scheduled cleanup gerekir.
+Öğretmen çocuklara fiziksel gelişim kaydı girebilir.
+
+Alanlar:
+
+- Boy
+- Kilo
+- Baş çevresi
+- Not
+
+Ekran tabları:
+
+```txt
+Kayıt Gir
+Geçmiş
+```
+
+Geçmiş tabında:
+
+- Tüm sınıf kayıtları görünür.
+- Çocuk adı
+- Tarih
+- Boy
+- Kilo
+- Baş çevresi
+- Not
+
+Kayıt node'u:
+
+```txt
+fizikselGelisim/{id}
+  kresId
+  sinifId
+  cocukId
+  cocukAdi
+  ogretmenId
+  boy
+  kilo
+  basCevresi
+  not
+  tarih
+  createdAt
+```
+
+### Medikal
+
+- Alerji bilgileri
+- İlaç bilgileri
+- Genel notlar
+- Öğretmen gözlem notu
+- Kart bazlı aç/kapat tasarım
+- Öğretmen gözlem bilgisi ekleme/güncelleme
+
+### Öğretmen Mesajları
+
+- Kurum yönetimi ile mesajlaşma
+- Sınıf velileriyle mesajlaşma
+- Arama ve filtreleme
+- Okunmamış mesaj rozeti
+- Son mesaj ve saat gösterimi
+- `Yeni Mesaj` butonuyla alttan açılan veli seçme çekmecesi
+- Veli seçilince direkt sohbet ekranına geçiş
+
+---
+
+## Yönetici Paneli
+
+Yönetici paneli kreş yönetiminin ana kontrol merkezidir.
+
+Özellikler:
+
+- Kurum bilgileri
+- Sınıf yönetimi
+- Öğretmen yönetimi
+- Veli yönetimi
+- Çocuk yönetimi
+- Ödeme yönetimi
+- Duyuru yönetimi
+- Anket yönetimi
+- Galeri yönetimi
+- Tema yönetimi
+- Abonelik yönetimi
+- Bildirim merkezi
+- Yasal metinlere erişim
+- İstatistik ve takip ekranları
+
+### Çocuk Yönetimi
+
+- Çocuk kartları modern tasarımla listelenir.
+- Sınıf, öğretmen ve veli bilgileri gösterilir.
+- Doğum tarihi `GG.AA.YYYY` formatında gösterilir.
+- Çocuk detay/form ekranına geçiş desteklenir.
+
+### Anket Yönetimi
+
+- Admin yeni anket oluşturabilir.
+- Başlık ve açıklama girilebilir.
+- Seçenekler ayrı ayrı eklenip silinebilir.
+- Sonuçlar progress bar ile gösterilir.
+- Anketler veli ekranında cevaplanabilir.
+
+### Duyuru Yönetimi
+
+- Kurum geneli duyuru
+- Sınıf hedefli duyuru
+- Veli/öğretmen hedefli duyuru
+- Önemli duyuru etiketi
+- Duyuru kartlarında tarih, rozet ve detay görünümü
+
+### Ödeme Yönetimi
+
+- Admin ödeme kaydı oluşturabilir.
+- Veli ödeme ekranında son 12 ay ve tüm kayıtlar görüntülenebilir.
+- Bekleyen ödeme veli özet ekranında hatırlatma olarak çıkar.
+
+---
+
+## Tema Sistemi
+
+Tema sistemi iki katmanlıdır.
+
+### 1. Kreş genel teması
+
+Yönetici tarafından seçilir ve kreş kaydına yazılır.
+
+```txt
+kresler/{kresId}/temaAyarlari
+  temaId
+  patternEnabled
+  updatedAt
+```
+
+### 2. Sınıf teması
+
+Öğretmen kendi sınıfı için tema seçebilir.
+
+```txt
+kresler/{kresId}/sinifTemalari/{sinifId}
+  temaId
+  patternEnabled
+  updatedAt
+  updatedBy
+```
+
+Akış:
+
+```txt
+Öğretmen sınıf teması seçer
+↓
+Aynı sınıfın öğretmen ve velileri temayı görür
+↓
+Diğer sınıflar etkilenmez
+```
+
+Sınıf teması bulunamazsa kreş genel teması kullanılır.
+
+---
+
+## Mesajlaşma Sistemi
+
+Mesajlaşma `mesajKonusmalari` node'u üzerinden çalışır.
+
+Desteklenen konuşma tipleri:
+
+- Admin - öğretmen
+- Admin - veli
+- Öğretmen - veli
+
+Özellikler:
+
+- Konuşma meta verisi
+- Son mesaj önizlemesi
+- Okunmamış mesaj rozeti
+- Mesaj detay ekranı
+- Android klavye resize uyumu
+- Mesaj gönderiminden sonra yanlış hata alerti riskini azaltmak için `undefined` temizleme
 
 ---
 
@@ -244,53 +546,29 @@ Bildirim sistemi 3 katmanlıdır.
 
 Tamamlandı.
 
-- Bildirim merkezi servisi eklendi.
-- Admin, öğretmen ve veli panellerine bildirim butonu eklendi.
-- Ortak bildirim ekranı eklendi.
-- Rol / kullanıcı / kurum bazlı bildirim okuma mantığı eklendi.
+- Bildirim merkezi servisi
+- Admin, öğretmen ve veli panellerinde bildirim butonu
+- Ortak bildirim ekranı
+- Rol / kullanıcı / kurum bazlı bildirim okuma mantığı
 
 ### FAZ 2 — Uygulama içi olay bildirimleri
 
 Tamamlandı.
 
-Aşağıdaki işlemler Firebase içine bildirim kaydı oluşturur:
+Aşağıdaki işlemler bildirim oluşturur:
 
-- Admin duyuru oluşturunca seçili hedefe göre veli / öğretmen / sınıf bildirimi
+- Admin duyuru oluşturunca hedefe göre bildirim
 - Admin ödeme kaydı oluşturunca ilgili veliye bildirim
 - Veli kurum zili gönderince admin / öğretmen bildirimi
-- Mesaj gönderilince alıcı kullanıcıya bildirim
+- Mesaj gönderilince alıcıya bildirim
 
-### FAZ 3 — Push notification altyapısı
+### FAZ 3 — Push notification
 
-Kod altyapısı hazırlandı; gerçek cihaz testi gerekir.
+Kod altyapısı hazırdır; fiziksel cihaz testi gerekir.
 
-- Expo push token alma akışı eklendi.
-- Token kullanıcı kaydına yazılacak hale getirildi.
-- Bildirim kaydı oluşturulurken uygun tokenlara Expo push gönderme mantığı eklendi.
-- Fiziksel cihazda izin, token ve push bildirimi test edilmelidir.
-
----
-
-## Başarı Toast Sistemi
-
-Klasik `Alert.alert('Başarılı')` kullanımını azaltmak için ortak başarı toast componenti eklendi.
-
-Dosya:
-
-```txt
-src/components/AppSuccessToast.js
-```
-
-Toast eklenen ekranlar:
-
-- Admin duyuru formu
-- Admin ödeme formu
-- Admin çocuk formu
-- Admin sınıf formu
-- Admin veli formu
-- Veli medikal bilgi ekranı
-- Veli profil fotoğrafı ekranı
-- Öğretmen günlük rapor ekranı
+- Expo push token alma
+- Token'ı kullanıcı kaydına yazma
+- Bildirim kaydı oluşturulurken uygun tokenlara Expo push gönderme altyapısı
 
 ---
 
@@ -312,59 +590,29 @@ RevenueCat durumu:
 Project: YUMURCAK
 Android app: YUMURCAK (Play Store)
 Android package: com.furukcell.yumurcakapp
-Public SDK key: goog_WqntzZwxdOpqOYBOtuKyYaMwfIg
 Offering identifier: default
 Packages: monthly, yearly
-Entitlement identifier: YUMURCAK Pro
 Entitlement display name: Premium
 ```
 
-Kod tarafında eklenen RevenueCat dosyası:
+Kod tarafında eklenen servis:
 
 ```txt
 src/services/revenueCat.js
 ```
 
-Kod tarafında yapılanlar:
-
-- Android public SDK key eklendi.
-- RevenueCat configure altyapısı eklendi.
-- `default` offering okuma altyapısı eklendi.
-- `monthly` ve `yearly` paketleri okunmaya hazırlandı.
-- Satın alma fonksiyonu eklendi.
-- Satın alma geri yükleme fonksiyonu eklendi.
-- RevenueCat sonucu başarılı olursa Firebase `abonelikler/{kresId}` kaydı güncellenecek şekilde hazırlandı.
-- Admin abonelik ekranında RevenueCat debug kartları kaldırıldı; kullanıcıya sade abonelik deneyimi bırakıldı.
-- Google Play ürünleri henüz bağlanmadıysa ekran güvenli şekilde uyarı verir; manuel/demo kullanım korunur.
-
-Google Play kapalı test / ürün bağlama aşamasında unutulmaması gerekenler:
+Google Play ürünleri:
 
 ```txt
-Google Play subscription product id:
-- yumurcak_aylik_1500
-- yumurcak_yillik_15000
-
-RevenueCat bağlantısı:
-- monthly package -> yumurcak_aylik_1500
-- yearly package -> yumurcak_yillik_15000
-- entitlement -> YUMURCAK Pro
-- offering -> default
+yumurcak_aylik_1500
+yumurcak_yillik_15000
 ```
 
-Not: Google Play ürünleri ve RevenueCat service account bağlantısı tamamlanmadan gerçek satın alma çalışmaz. Şu an RevenueCat iskeleti ve kod entegrasyonu hazırdır.
+Not: Google Play ürünleri ve RevenueCat service account bağlantısı tamamlanmadan gerçek satın alma çalışmaz. Kod entegrasyonu ve iskelet hazırdır.
 
 ---
 
 ## Firebase Rules Durumu
-
-Storage tarafında profil fotoğrafı ve yemek fotoğrafı için path bazlı yazma izni kullanılır.
-
-Storage pathleri:
-
-```txt
-profilFotograflari/veliler/{fileName}
-yemekFotolari/{kresId}/{sinifId}/{fileName}
-```
 
 Realtime Database tarafında geçiş rules seviyesi kullanılır:
 
@@ -373,7 +621,16 @@ Realtime Database tarafında geçiş rules seviyesi kullanılır:
 .write -> auth != null
 ```
 
-Ek olarak temel node’lar için `.indexOn` kuralları eklenmiştir. Bu aşama production rol bazlı kilitleme değildir. Amaç auth olmayan erişimi kapatmak, uygulamayı bozmadan pilot / kapalı test sürecine girmek ve sorgu performansını iyileştirmektir.
+Storage tarafında profil, yemek ve galeri için path bazlı yazma izinleri gerekir.
+
+Önemli Storage pathleri:
+
+```txt
+profilFotograflari/veliler/{fileName}
+yemekFotograflari/{kresId}/{sinifId}/{fileName}
+galeri/{kresId}/{galleryId}/{mediaId}.{extension}
+galeri/{kresId}/yemekFotograflari/{sinifId}/{fileName}
+```
 
 Production güvenlik fazında hedef:
 
@@ -382,62 +639,6 @@ Production güvenlik fazında hedef:
 - Öğretmen sadece kendi `kresId` / `sinifId` verilerini yönetebilir.
 - Veli sadece kendi çocuğu, çocuğunun sınıfı ve kurum genel hedefli verileri okuyabilir.
 - Storage yazma / silme işlemleri rol ve path bazlı daraltılır.
-
----
-
-## Veli Paneli
-
-Alt tab yapısı:
-
-```txt
-📊 Özet
-🏠 Anasayfa
-📋 Raporlar
-📈 Gelişim
-💬 Mesaj
-```
-
-Güncel durum:
-
-- Anasayfa kartları pastel renkli hale getirildi.
-- Özet ekranındaki profil / avatar alanları veli profil fotoğrafı ile uyumlu hale getirildi.
-- Ödeme ekranında son 12 ay ve tüm kayıtlar görünür.
-- Rapor ekranında günlük ve aylık özet sekmeleri vardır.
-- Aylık özet öğretmen raporlarından otomatik özet çıkarır; tıbbi/psikolojik tanı değildir.
-- Yemek ekranında bugünün fotoğraflı menüsü ve son 7 günlük günlük yemek listesi görülebilir.
-- Tarihler kullanıcıya `DD.MM.YYYY` formatında gösterilir.
-
----
-
-## Öğretmen Paneli
-
-Güncel durum:
-
-- Öğretmen anasayfa kartları pastel renkli hale getirildi.
-- Öğretmen dashboard sağ üst profil kısayolu öğretmen profiline gider.
-- Öğretmen günlük rapor oluşturur.
-- Öğretmen yoklama girer.
-- Öğretmen medikal bilgileri görür/günceller.
-- Öğretmen fiziksel gelişim bilgisi girer.
-- Öğretmen kendi sınıfına galeri paylaşımı yapabilir.
-- Öğretmen sınıf teması seçebilir.
-- Öğretmen günlük yemek listesine kahvaltı / öğle / ara öğün fotoğrafı ekleyebilir.
-- Öğretmen günlük yemek listesinde son 7 günlük kayıtları görür.
-- Öğretmen yemek ekranı açıldığında 7 günden eski günlük yemek kayıtları ve uygun fotoğraflar temizlenmeye çalışılır.
-- Öğretmen mesajlaşma ve bildirim ekranlarına erişir.
-
----
-
-## Yönetici Paneli
-
-Güncel durum:
-
-- Yönetici kurum, sınıf, çocuk, öğretmen ve veli yönetimi yapabilir.
-- Yönetici tema ayarlarını düzenleyebilir.
-- Yönetici ödeme listesi ve ödeme formunu kullanabilir.
-- Yönetici duyuru, anket, galeri, abonelik, bildirim ve yasal metin alanlarına erişebilir.
-- Admin dashboard Android status bar / safe-area uyumu düzeltilmiştir.
-- Admin ödeme listesinde dönem gösterimi kullanıcıya uygun tarih formatıyla gösterilir.
 
 ---
 
@@ -451,18 +652,18 @@ Gizlilik Politikası
 KVKK Aydınlatma Metni
 ```
 
-Yasal metinlere erişim noktaları:
+Erişim noktaları:
 
 - Giriş ekranı alt bağlantıları
 - Veli profili
 - Öğretmen profili
 - Yönetici kurum bilgileri / ayarlar ekranı
 
-Yasal metinlerde galeri içeriklerinin fotoğraf/video içerebileceği ve uygulama içinde 24 saat görünür olacak şekilde tasarlandığı belirtilmiştir. Fiziksel Storage temizliği için sonraki fazda Cloud Functions önerilir.
+Yasal metinlerde galeri içeriklerinin fotoğraf/video içerebileceği ve uygulama içinde 24 saat görünür olacak şekilde tasarlandığı belirtilmiştir. Fiziksel Storage temizliği için ileride Cloud Functions önerilir.
 
 ---
 
-## Build Öncesi Test
+## Build Öncesi Kontrol
 
 ```bash
 npm install
@@ -470,38 +671,41 @@ npx expo-doctor
 npx expo start --clear
 ```
 
-Test edilecek temel akış:
+Kapalı test / build öncesi kontrol edilecek temel akışlar:
 
 1. Admin giriş yapar.
 2. Sınıf, öğretmen, veli ve çocuk bağlantıları kontrol edilir.
-3. Öğretmen profil kısayolu test edilir.
-4. Öğretmen günlük rapor ve yoklama girer.
-5. Öğretmen fiziksel gelişim kaydı girer.
-6. Öğretmen sınıf teması seçer.
-7. Aynı sınıftaki öğretmen/veli sınıf temasını görür.
-8. Öğretmen günlük yemek listesine kahvaltı / öğle / ara öğün fotoğrafı ekler.
-9. Veli bugünün fotoğraflı yemek listesini görür.
-10. Veli ve öğretmen yemek listesinde son 7 günlük kayıtlar görünür.
-11. Admin / öğretmen galeriye fotoğraf veya video yükler.
-12. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
-13. Admin ödeme kaydı oluşturur.
-14. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
-15. Admin abonelik ekranında demo/promo/manual abonelik akışı kontrol edilir.
-16. RevenueCat ekranında ürün yokken güvenli uyarı geldiği kontrol edilir.
-17. Ödeme, anket ve kurum zili ekranları açılır.
-18. Veli özet ekranında günlük veriler ve profil fotoğrafı görünür.
-19. Veli ve öğretmen anasayfa kartları pastel görünür.
-20. Tema değişimi admin / veli / öğretmen ekranlarına yansır.
-21. Admin / öğretmen / veli bildirim ekranları açılır.
-22. Mesaj gönderimi sonrası mesaj gitmesine rağmen yanlış hata alerti çıkmadığı test edilir.
-23. Admin / öğretmen / veli chat ekranlarında klavye açılınca mesaj inputu görünür kalır.
-24. Admin dashboard üst alanının Android status bar altında düzgün başladığı test edilir.
-25. Fiziksel cihazda push token ve push bildirim testi yapılır.
-26. Android navigation bar davranışı gerçek cihazda test edilir.
-27. Giriş ekranından Kullanım Şartları, Gizlilik Politikası ve KVKK metni açılır.
-28. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
-29. Storage rules sonrası profil fotoğrafı ve yemek fotoğrafı upload test edilir.
-30. Realtime Database rules sonrası admin / öğretmen / veli ana akışlarında permission error olmadığı test edilir.
+3. Admin çocuk kartlarında doğum tarihi `GG.AA.YYYY` görünür.
+4. Öğretmen çocuklarım ekranında yaş ve doğum tarihi doğru görünür.
+5. Öğretmen doğum günleri ekranı açılır ve sıralama doğru çalışır.
+6. Öğretmen günlük rapora basar, çocuk seçer ve rapor formuna gider.
+7. Öğretmen ruh hali, yemek, uyku, tuvalet ve not içeren günlük rapor girer.
+8. Veli özet ekranında günlük rapor bilgileri görünür.
+9. Doğum günü olan çocukla veli özet ekranı açılır; balon/konfeti ve popup kontrol edilir.
+10. Popup kapatılınca aynı gün tekrar açılmadığı kontrol edilir.
+11. Veli anket ekranında cevap verilir ve `Cevabı değiştir` butonu test edilir.
+12. Öğretmen yemek listesine kahvaltı / öğle / ara öğün fotoğrafı ekler.
+13. Veli bugünün fotoğraflı yemek listesini görür.
+14. Öğretmen/Admin galeriye fotoğraf veya video yükler.
+15. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
+16. Öğretmen fiziksel gelişim kaydı girer.
+17. Fiziksel gelişim geçmiş tabında kayıt görünür.
+18. Öğretmen mesaj ekranında `Yeni Mesaj` çekmecesi açılır, veli seçilince sohbet açılır.
+19. Veli mesaj ekranında kurum ve öğretmen kartları çalışır.
+20. Admin ödeme kaydı oluşturur.
+21. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
+22. Veli özet ekranında bekleyen ödeme hatırlatması görünür.
+23. Tema değişimi admin / öğretmen / veli ekranlarına yansır.
+24. Uygulama içi bildirim ekranları açılır.
+25. Mesaj gönderimi sonrası yanlış hata alerti çıkmadığı kontrol edilir.
+26. Chat ekranında klavye açılınca mesaj inputu görünür kalır.
+27. Profil fotoğrafı upload test edilir.
+28. Yemek fotoğrafı upload test edilir.
+29. Galeri fotoğraf/video upload test edilir.
+30. Firebase Storage hata mesajları kontrol edilir.
+31. Push token ve push bildirim fiziksel cihazda test edilir.
+32. Giriş ekranından yasal metinler açılır.
+33. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
 
 ---
 
@@ -512,96 +716,32 @@ Test edilecek temel akış:
 - Android package doğru olmalı: com.furukcell.yumurcakapp
 - versionCode kapalı test / yeni build için gerekirse artırılmalı.
 - targetSdkVersion 35 olarak kalmalı.
-- Firebase Storage foto upload test edilmeli.
+- Firebase Storage foto/video upload gerçek cihazda test edilmeli.
 - Realtime Database auth rules ile tüm roller test edilmeli.
 - RevenueCat ürünleri Google Play ürünlerine bağlanmalı.
 - Kapalı test kullanıcısı satın alma / restore akışını test etmeli.
 - Push notification fiziksel cihazda test edilmeli.
 - Uygulama içi yasal metinler erişilebilir olmalı.
-- Play Store veri güvenliği formu, KVKK / gizlilik bilgilerine göre doldurulmalı.
-- Çocuk / aile hedefli içerik hassasiyeti nedeniyle ekran görüntüleri ve açıklama metni dikkatli hazırlanmalı.
+- Veli doğum günü modu ve animasyonların düşük cihazlarda performansı kontrol edilmeli.
 ```
 
 ---
 
-## Kalan Büyük İşler
+## Kısa Durum Özeti
 
-- Google Play Console abonelik ürünlerini oluşturma
-- RevenueCat Google Play service account bağlantısı
-- RevenueCat ürünlerini gerçek Google Play ürünlerine bağlama
-- Gerçek satın alma / restore testi
-- Push notification gerçek cihaz uçtan uca testi
-- Firebase Rules production rol bazlı güvenlik fazı
-- Cloud Functions ile 24 saatten eski galeri medyasını garantili silme
-- Cloud Functions ile eski yemek fotoğraflarını garantili silme
-- Admin aylık yemek listesi ekranı
-- A4/PDF yemek listesi ek dosya yükleme
-- A4/PDF içinden otomatik menü çıkarma için sonraki faz OCR/AI değerlendirmesi
-- Öğretmen sınıf temasının veli tarafına yansımasının gerçek kullanıcı verisiyle test edilmesi
-- Mesaj gönderim / chat klavye düzeltmesinin gerçek cihazda doğrulanması
-- Gerçek cihazda uçtan uca test
-- Play Store kapalı test / üretim build süreci
-
----
-
-## Yol Haritası
-
-### FAZ 1 — MVP stabilizasyon
-
-Durum: Büyük ölçüde tamamlandı.
-
-- Admin / öğretmen / veli temel modülleri
-- Firebase Auth tabanlı yeni kullanıcı akışı
-- Realtime Database bağlantıları
-- Storage profil / galeri / yemek foto altyapısı
-- Tema sistemi
-- Bildirim merkezi
-- Mesajlaşma
-- Ödeme takibi
-- Rapor / gelişim / yoklama akışları
-- Yasal metinler
-
-### FAZ 2 — Kapalı test hazırlığı
-
-Durum: Sıradaki aktif faz.
-
-- Gerçek Android cihaz testi
-- Storage upload / delete testi
-- Database rules sonrası permission testleri
-- RevenueCat Google Play ürün bağlantısı
-- Kapalı test build alma
-- Play Console kapalı test yayını
-- Test kullanıcılarından geri bildirim toplama
-
-### FAZ 3 — Production güvenlik ve temizlik
-
-Durum: Kapalı test sonrası.
-
-- Firebase Realtime Database role based rules
-- Storage role based rules
-- Cloud Functions scheduled cleanup
-- Galeri ve yemek fotoğraflarında garantili fiziksel temizlik
-- Log / hata takibi
-- Performans ve index kontrolü
-
-### FAZ 4 — Gelişmiş modüller
-
-Durum: İlk yayın sonrası.
-
-- Admin aylık yemek listesi ekranı
-- A4/PDF yemek listesi yükleme
-- OCR/AI ile menü çıkarma değerlendirmesi
-- Gelişmiş abonelik / fatura / kurum yönetimi
-- Gelişmiş push notification senaryoları
-
----
-
-## Geliştirici
-
-Faruk Kurtuluş
-
----
-
-## Durum
-
-Yumurcak aktif geliştirme / MVP stabilizasyon aşamasındadır. Ana admin, öğretmen ve veli modülleri çalışır durumdadır. Galeri hedefleme, ödeme takibi, veli günlük/aylık rapor ekranı, medikal bilgi akışı, fiziksel gelişim girişi, yasal metinler, tema sistemi, sınıf teması yayılımı, admin ödeme modülü, RevenueCat kod altyapısı, uygulama içi bildirim merkezi, push notification altyapısı, başarı toast sistemi, yemek fotoğrafı altyapısı, chat klavye düzeltmesi, admin safe-area düzeltmesi ve görsel/pastel arayüz iyileştirmeleri eklenmiştir. Sıradaki kritik işler gerçek cihaz testleri, Google Play abonelik bağlantıları, kapalı test build süreci, Firebase Rules production güvenliği ve push testidir.
+```txt
+Admin temel yönetim: Hazır
+Öğretmen günlük operasyon: Hazır
+Veli takip ekranları: Hazır
+Tema sistemi: Hazır / gerçek veri testi gerekli
+Mesajlaşma: Hazır / gerçek cihaz testi gerekli
+Galeri: Hazır / Storage rules ve cihaz testi gerekli
+Yemek fotoğrafı: Hazır / Storage rules ve cihaz testi gerekli
+Fiziksel gelişim geçmişi: Hazır
+Doğum günü ekranları: Hazır
+Doğum günü animasyon modu: Hazır
+RevenueCat: Kod altyapısı hazır / Play ürün bağlantısı gerekli
+Push notification: Kod altyapısı hazır / fiziksel cihaz testi gerekli
+Yasal metinler: Hazır
+Google Play kapalı test: Build ve gerçek cihaz doğrulaması sonrası hazır
+```
