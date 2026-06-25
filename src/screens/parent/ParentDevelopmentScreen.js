@@ -13,6 +13,7 @@ import {
   isAbsentStatus,
 } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
+import { sortWeeklyBadgesNewestFirst } from '../../utils/weeklyBadges';
 
 const MEAL_KEYS = ['kahvalti', 'ogle', 'araOgun'];
 const MOOD_LABELS = {
@@ -34,6 +35,7 @@ export default function ParentDevelopmentScreen({ navigation }) {
   const attendanceRaw = useNodeList('yoklamalar');
   const eventsRaw = useNodeList('etkinlikler');
   const mealsRaw = useNodeList('yemekListeleri');
+  const badgesRaw = useNodeList('haftaninRozetleri');
 
   const targetMonth = useMemo(() => {
     const now = new Date();
@@ -41,6 +43,14 @@ export default function ParentDevelopmentScreen({ navigation }) {
   }, [monthOffset]);
 
   const monthKey = getMonthKey(targetMonth);
+
+  const badgeHistory = useMemo(() => {
+    if (!selectedChild?.id) return [];
+    return badgesRaw
+      .filter((item) => item.aktif !== false)
+      .filter((item) => String(item.cocukId || '') === String(selectedChild.id))
+      .sort(sortWeeklyBadgesNewestFirst);
+  }, [badgesRaw, selectedChild?.id]);
 
   const monthly = useMemo(() => {
     if (!selectedChild?.id) return null;
@@ -166,11 +176,7 @@ export default function ParentDevelopmentScreen({ navigation }) {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Katılım Durumu</Text>
-            <ProgressLine
-              label={`${monthly.presentDays} gün geldi / ${monthly.attendanceTotal || 0} kayıt`}
-              percent={percent(monthly.presentDays, monthly.attendanceTotal)}
-              color={THEME.green}
-            />
+            <ProgressLine label={`${monthly.presentDays} gün geldi / ${monthly.attendanceTotal || 0} kayıt`} percent={percent(monthly.presentDays, monthly.attendanceTotal)} color={THEME.green} />
             <Text style={styles.cardText}>Devamsızlık: {monthly.absentDays} gün</Text>
           </View>
 
@@ -182,28 +188,15 @@ export default function ParentDevelopmentScreen({ navigation }) {
               Object.entries(monthly.moodCounts)
                 .sort((a, b) => b[1] - a[1])
                 .map(([key, count]) => (
-                  <ProgressLine
-                    key={key}
-                    label={`${MOOD_LABELS[key] || key}: ${count} gün`}
-                    percent={percent(count, monthly.reports.length)}
-                    color={getMoodColor(key)}
-                  />
+                  <ProgressLine key={key} label={`${MOOD_LABELS[key] || key}: ${count} gün`} percent={percent(count, monthly.reports.length)} color={getMoodColor(key)} />
                 ))
             )}
           </View>
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Uyku ve Yemek</Text>
-            <ProgressLine
-              label={`Ortalama uyku: ${formatSleep(monthly.averageSleep)}`}
-              percent={Math.min(100, Math.round((monthly.averageSleep / 2) * 100))}
-              color={THEME.blue}
-            />
-            <ProgressLine
-              label={`Yemek iyi: ${monthly.mealGoodTotal}/${monthly.mealTotal || 0} öğün`}
-              percent={percent(monthly.mealGoodTotal, monthly.mealTotal)}
-              color={THEME.orange}
-            />
+            <ProgressLine label={`Ortalama uyku: ${formatSleep(monthly.averageSleep)}`} percent={Math.min(100, Math.round((monthly.averageSleep / 2) * 100))} color={THEME.blue} />
+            <ProgressLine label={`Yemek iyi: ${monthly.mealGoodTotal}/${monthly.mealTotal || 0} öğün`} percent={percent(monthly.mealGoodTotal, monthly.mealTotal)} color={THEME.orange} />
             <Text style={styles.cardText}>Yemek menüsü yayınlanan gün: {monthly.menuDays}</Text>
           </View>
 
@@ -244,6 +237,21 @@ export default function ParentDevelopmentScreen({ navigation }) {
               </>
             )}
           </View>
+
+          <View style={styles.card}>
+            <View style={localStyles.badgeAlbumHead}>
+              <View>
+                <Text style={styles.cardTitle}>🎖️ Rozet Albümü</Text>
+                <Text style={localStyles.miniNote}>Haftanın Yıldızı geçmişi sadece bu çocuğa ait kayıtları gösterir.</Text>
+              </View>
+              <Text style={localStyles.badgeCount}>{badgeHistory.length}</Text>
+            </View>
+            {badgeHistory.length === 0 ? (
+              <Text style={styles.cardText}>Henüz rozet kaydı yok. Öğretmen cuma günü rozet verdiğinde burada görünecek.</Text>
+            ) : (
+              badgeHistory.map((item) => <BadgeHistoryRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} />)
+            )}
+          </View>
         </>
       )}
     </ScreenShell>
@@ -259,12 +267,7 @@ function MonthSelector({ monthKey, monthOffset, setMonthOffset }) {
       <View style={localStyles.monthPill}>
         <Text style={localStyles.monthPillText}>{getMonthLabel(monthKey)}</Text>
       </View>
-      <TouchableOpacity
-        style={[localStyles.monthButton, monthOffset >= 0 && localStyles.monthButtonDisabled]}
-        onPress={() => setMonthOffset((value) => Math.min(0, value + 1))}
-        disabled={monthOffset >= 0}
-        activeOpacity={0.8}
-      >
+      <TouchableOpacity style={[localStyles.monthButton, monthOffset >= 0 && localStyles.monthButtonDisabled]} onPress={() => setMonthOffset((value) => Math.min(0, value + 1))} disabled={monthOffset >= 0} activeOpacity={0.8}>
         <Text style={[localStyles.monthButtonText, monthOffset >= 0 && localStyles.monthButtonDisabledText]}>Sonraki ›</Text>
       </TouchableOpacity>
     </View>
@@ -343,6 +346,19 @@ function MeasurementRow({ item }) {
       <View style={localStyles.measurementInfo}>
         <Text style={localStyles.measurementMain}>Boy: {formatMeasurement(item, 'boy', 'cm')} · Kilo: {formatMeasurement(item, 'kilo', 'kg')}</Text>
         {item.basCevresi ? <Text style={localStyles.measurementSub}>Baş çevresi: {item.basCevresi} cm</Text> : null}
+      </View>
+    </View>
+  );
+}
+
+function BadgeHistoryRow({ item }) {
+  return (
+    <View style={localStyles.badgeRow}>
+      <View style={localStyles.badgeIconBox}><Text style={localStyles.badgeIcon}>{item.badgeEmoji || item.rozetEmoji || '🌟'}</Text></View>
+      <View style={{ flex: 1 }}>
+        <Text style={localStyles.badgeTitle}>{item.badgeTitle || item.rozetAdi || 'Rozet'}</Text>
+        <Text style={localStyles.badgeWeek}>{item.haftaLabel || `${item.haftaBaslangic || ''} - ${item.haftaBitis || ''}`}</Text>
+        {item.note || item.not ? <Text style={localStyles.badgeNote}>{item.note || item.not}</Text> : null}
       </View>
     </View>
   );
@@ -554,4 +570,12 @@ const localStyles = StyleSheet.create({
   measurementInfo: { flex: 1 },
   measurementMain: { color: THEME.text, fontWeight: '900', fontSize: 13 },
   measurementSub: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 2 },
+  badgeAlbumHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  badgeCount: { minWidth: 34, textAlign: 'center', backgroundColor: '#FFF7E8', color: '#B46A00', fontWeight: '900', borderRadius: 99, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 7 },
+  badgeRow: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF7E8', borderRadius: 18, padding: 12, marginTop: 10, borderWidth: 1, borderColor: '#FFE0A3' },
+  badgeIconBox: { width: 52, height: 52, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 10, borderWidth: 1, borderColor: '#FFE0A3' },
+  badgeIcon: { fontSize: 28 },
+  badgeTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  badgeWeek: { color: '#B46A00', fontWeight: '900', fontSize: 12, marginTop: 3 },
+  badgeNote: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: 6 },
 });
