@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ref, update } from 'firebase/database';
+import { onValue, ref, update } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
@@ -23,15 +23,28 @@ import {
   sortWeeklyBadgesNewestFirst,
 } from '../../utils/weeklyBadges';
 
+function toList(data) {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data).map(([id, item]) => ({ id, ...(item || {}) }));
+}
+
 export default function TeacherWeeklyStarScreen() {
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, classChildren } = useTeacherData();
-  const records = useTeacherData().weeklyBadges || [];
+  const [records, setRecords] = useState([]);
 
   const [selectedChildId, setSelectedChildId] = useState('');
   const [selectedBadgeId, setSelectedBadgeId] = useState(WEEKLY_BADGES[0].id);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const unsub = onValue(ref(database, 'haftaninRozetleri'), (snap) => {
+      setRecords(toList(snap.val()));
+    }, () => setRecords([]));
+
+    return () => unsub();
+  }, []);
 
   const weekKey = getWeekKey();
   const weekRange = getWeekRange();
@@ -41,6 +54,7 @@ export default function TeacherWeeklyStarScreen() {
 
   const classRecords = useMemo(() => {
     return (records || [])
+      .filter((item) => item.aktif !== false)
       .filter((item) => {
         if (currentClass?.id && item.sinifId) return String(item.sinifId) === String(currentClass.id);
         return classChildIds.has(String(item.cocukId || ''));
