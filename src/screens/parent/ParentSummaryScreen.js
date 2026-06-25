@@ -18,6 +18,7 @@ import { useNodeList, useParentBase, LoadingScreen, EmptyState, toDateKey } from
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
+import { getWeekKey } from '../../utils/weeklyBadges';
 
 const MEAL_LABELS = {
   kahvalti: 'Kahvaltı',
@@ -63,6 +64,7 @@ export default function ParentSummaryScreen({ navigation }) {
   const schedules = useNodeList('dersProgramlari');
   const payments = useNodeList('odemeler');
   const polls = useNodeList('anketler');
+  const weeklyBadges = useNodeList('haftaninRozetleri');
 
   const {
     loading,
@@ -77,6 +79,7 @@ export default function ParentSummaryScreen({ navigation }) {
   } = base;
   const unreadMessages = useUnreadMessagesCount(parentId);
   const today = toDateKey(new Date());
+  const weekKey = getWeekKey();
   const isBirthday = useMemo(() => isBirthdayToday(selectedChild?.dogumTarihi), [selectedChild?.dogumTarihi, today]);
   const [birthdayPopupVisible, setBirthdayPopupVisible] = useState(false);
 
@@ -193,6 +196,15 @@ export default function ParentSummaryScreen({ navigation }) {
       return true;
     }) || null;
   }, [polls, kresId, parentId]);
+
+  const weeklyStar = useMemo(() => {
+    if (!selectedChild?.id) return null;
+    return weeklyBadges
+      .filter((item) => item.aktif !== false)
+      .filter((item) => String(item.cocukId || '') === String(selectedChild.id))
+      .filter((item) => String(item.weekKey || item.haftaKey || '') === weekKey)
+      .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0))[0] || null;
+  }, [weeklyBadges, selectedChild?.id, weekKey]);
 
   if (loading) return <LoadingScreen text="Özet hazırlanıyor..." />;
 
@@ -397,9 +409,32 @@ export default function ParentSummaryScreen({ navigation }) {
           </View>
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
+
+        {weeklyStar ? <WeeklyStarCard styles={styles} item={weeklyStar} /> : null}
       </ScrollView>
       <BirthdayPopup visible={isBirthday && birthdayPopupVisible} childName={childName} onClose={closeBirthdayPopup} styles={styles} />
     </SafeAreaView>
+  );
+}
+
+function WeeklyStarCard({ styles, item }) {
+  return (
+    <View style={styles.weeklyStarCard}>
+      <View style={styles.weeklyStarHead}>
+        <Text style={styles.weeklyStarTitle}>🌟 Haftanın Yıldızı</Text>
+        <Text style={styles.weeklyStarTag}>Bu Hafta</Text>
+      </View>
+      <View style={styles.weeklyStarBody}>
+        <View style={styles.weeklyStarIconBox}>
+          <Text style={styles.weeklyStarIcon}>{item.badgeEmoji || item.rozetEmoji || '🌟'}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.weeklyStarBadge}>{item.badgeTitle || item.rozetAdi || 'Rozet'}</Text>
+          <Text style={styles.weeklyStarDesc}>{item.note || item.not || item.badgeDesc || item.rozetAciklama || 'Bu hafta güzel bir davranışıyla öne çıktı.'}</Text>
+          <Text style={styles.weeklyStarWeek}>{item.haftaLabel || `${item.haftaBaslangic || ''} - ${item.haftaBitis || ''}`}</Text>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -683,6 +718,16 @@ const createStyles = (theme) => StyleSheet.create({
   smallDesc: { color: theme.muted, fontSize: 11.2, fontWeight: '700', lineHeight: 15, marginTop: 4 },
   wideCard: { backgroundColor: theme.card, borderRadius: 20, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 12 },
   arrow: { color: theme.primary, fontSize: 24, fontWeight: '900' },
+  weeklyStarCard: { backgroundColor: '#FFF7E8', borderRadius: 24, padding: 16, marginTop: 10, marginBottom: 12, borderWidth: 1, borderColor: '#FFE0A3' },
+  weeklyStarHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  weeklyStarTitle: { flex: 1, color: '#B46A00', fontWeight: '900', fontSize: 17 },
+  weeklyStarTag: { color: '#B46A00', backgroundColor: '#FFE8B8', borderRadius: 99, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontWeight: '900', fontSize: 11 },
+  weeklyStarBody: { flexDirection: 'row', alignItems: 'center' },
+  weeklyStarIconBox: { width: 64, height: 64, borderRadius: 22, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: '#FFE0A3' },
+  weeklyStarIcon: { fontSize: 34 },
+  weeklyStarBadge: { color: theme.text, fontWeight: '900', fontSize: 17 },
+  weeklyStarDesc: { color: theme.muted, fontWeight: '700', lineHeight: 18, marginTop: 5 },
+  weeklyStarWeek: { color: '#B46A00', fontWeight: '900', fontSize: 12, marginTop: 7 },
   celebrationOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 2, overflow: 'hidden' },
   balloonWrap: { position: 'absolute', bottom: 0, alignItems: 'center' },
   balloon: { opacity: 0.86, borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)' },
