@@ -13,6 +13,7 @@ import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
+  { icon: '🎂', title: 'Doğum Günleri', desc: 'Yaklaşan doğum günleri', route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
   { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
   { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
@@ -53,11 +54,7 @@ export default function TeacherDashboardScreen() {
             </View>
             <View style={styles.headerActions}>
               <AppNotificationButton navigation={navigation} />
-              <TouchableOpacity
-                style={styles.avatar}
-                onPress={() => navigation.navigate('TeacherProfile')}
-                activeOpacity={0.85}
-              >
+              <TouchableOpacity style={styles.avatar} onPress={() => navigation.navigate('TeacherProfile')} activeOpacity={0.85}>
                 <Text style={styles.avatarText}>👩‍🏫</Text>
               </TouchableOpacity>
             </View>
@@ -84,19 +81,10 @@ export default function TeacherDashboardScreen() {
               const badgeCount = isMessages ? unreadMessages : 0;
 
               return (
-                <TouchableOpacity
-                  key={item.title}
-                  style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]}
-                  onPress={() => navigation.navigate(item.route, item.params || undefined)}
-                  activeOpacity={0.85}
-                >
+                <TouchableOpacity key={item.title} style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]} onPress={() => navigation.navigate(item.route, item.params || undefined)} activeOpacity={0.85}>
                   <View style={styles.menuIconRow}>
                     <Text style={styles.menuIcon}>{item.icon}</Text>
-                    {badgeCount > 0 ? (
-                      <View style={styles.menuBadge}>
-                        <Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
-                      </View>
-                    ) : null}
+                    {badgeCount > 0 ? <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text></View> : null}
                   </View>
                   <Text style={[styles.menuTitle, badgeCount > 0 && styles.menuTitleUnread]}>{item.title}</Text>
                   <Text style={styles.menuDesc}>{item.desc}</Text>
@@ -120,11 +108,7 @@ function renderStat(styles, label, value) {
 }
 
 const createStyles = (theme) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.bg,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
-  },
+  safeArea: { flex: 1, backgroundColor: theme.bg, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
   screen: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: 18, paddingBottom: 56 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 10 },
@@ -143,18 +127,7 @@ const createStyles = (theme) => StyleSheet.create({
   statLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '700' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  menuCard: {
-  width: '48%',
-  borderRadius: 22,
-  padding: 15,
-  marginBottom: 12,
-  borderWidth: 1.2,
-  shadowColor: '#000',
-  shadowOpacity: 0.08,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 5 },
-  elevation: 2,
-},
+  menuCard: { width: '48%', borderRadius: 22, padding: 15, marginBottom: 12, borderWidth: 1.2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
   menuIcon: { fontSize: 28, marginBottom: 8 },
   menuIconRow: { flexDirection: 'row', alignItems: 'center' },
   menuBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginLeft: 8, marginBottom: 8 },
