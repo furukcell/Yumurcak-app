@@ -92,13 +92,21 @@ function getPhotoFileInfo(asset, mealKey) {
   return { contentType, fileName };
 }
 
+function readAssetAsBlob(uri) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Fotoğraf dosyası okunamadı.'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
+}
+
 async function uploadMealPhoto(asset, kresId, sinifId, mealKey) {
   if (!asset?.uri) return { url: '', path: '' };
 
-  const response = await fetch(asset.uri);
-  if (!response.ok) throw new Error('Yemek fotoğrafı okunamadı.');
-
-  const blob = await response.blob();
+  const blob = await readAssetAsBlob(asset.uri);
   const { contentType, fileName } = getPhotoFileInfo(asset, mealKey);
   const safeKresId = kresId || 'kres';
   const safeSinifId = sinifId || 'sinif';
@@ -207,9 +215,7 @@ export default function TeacherMealsScreen() {
       .sort((a, b) => String(b.tarih || b.baslangicTarihi || b.createdAt || '').localeCompare(String(a.tarih || a.baslangicTarihi || a.createdAt || '')));
   }, [meals, kresId, currentClass?.id]);
 
-  const dailyMeals = useMemo(() => {
-    return visibleMeals.filter((item) => isRecentDailyMeal(item));
-  }, [visibleMeals]);
+  const dailyMeals = useMemo(() => visibleMeals.filter((item) => isRecentDailyMeal(item)), [visibleMeals]);
 
   const monthlyMeals = useMemo(() => {
     return visibleMeals
@@ -221,14 +227,7 @@ export default function TeacherMealsScreen() {
   const today = todayString();
   const todayDailyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || null;
   const todayMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'admin_aylik') || null;
-  const todayMeal = useMemo(() => {
-    return mergeTodayMeal({
-      kresId,
-      classItem: currentClass,
-      monthlyMeal: todayMonthlyMeal,
-      dailyMeal: todayDailyMeal,
-    });
-  }, [currentClass, kresId, todayDailyMeal, todayMonthlyMeal]);
+  const todayMeal = useMemo(() => mergeTodayMeal({ kresId, classItem: currentClass, monthlyMeal: todayMonthlyMeal, dailyMeal: todayDailyMeal }), [currentClass, kresId, todayDailyMeal, todayMonthlyMeal]);
 
   useEffect(() => {
     if (loading) return;
@@ -363,8 +362,8 @@ export default function TeacherMealsScreen() {
       setRemoveExistingPhoto(false);
       setSuccessToast(true);
     } catch (err) {
-      console.error(err);
-      Alert.alert('Hata', 'Öğün kaydedilemedi. Fotoğraf yükleme izni veya internet bağlantısını kontrol et.');
+      console.error('Öğün kaydedilemedi:', err?.code || err?.message || err);
+      Alert.alert('Hata', `Öğün kaydedilemedi. ${err?.code || err?.message || 'Fotoğraf yükleme izni veya internet bağlantısını kontrol et.'}`);
     } finally {
       setSaving(false);
     }
@@ -376,17 +375,8 @@ export default function TeacherMealsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast
-        visible={successToast}
-        message={`${selectedMeal.title} kaydedildi`}
-        onHide={() => setSuccessToast(false)}
-      />
-
-      <ScreenHeader
-        navigation={navigation}
-        title="Yemek Listesi"
-        subtitle={currentClass?.ad || 'Sınıfım'}
-      />
+      <AppSuccessToast visible={successToast} message={`${selectedMeal.title} kaydedildi`} onHide={() => setSuccessToast(false)} />
+      <ScreenHeader navigation={navigation} title="Yemek Listesi" subtitle={currentClass?.ad || 'Sınıfım'} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.tabRow}>
           <TouchableOpacity style={[styles.tab, tab === 'today' && styles.tabActive]} onPress={() => setTab('today')} activeOpacity={0.85}>
@@ -402,14 +392,7 @@ export default function TeacherMealsScreen() {
 
         {tab === 'today' ? (
           <>
-            <MealTodayCard
-              item={todayMeal}
-              className={currentClass?.ad || ''}
-              title="Günlük Yemek Listesi"
-              editable
-              onMealPress={openMealEditor}
-            />
-
+            <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" editable onMealPress={openMealEditor} />
             <View style={styles.editorCard}>
               <Text style={styles.editorTitle}>{selectedMeal.icon} {selectedMeal.title} ekle / güncelle</Text>
               <Text style={styles.editorDesc}>Aylık menü varsa bilgiler otomatik gelir. Değişiklik veya fotoğraf eklediğinde sadece seçili öğün güncellenir ve veli ekranında görünür.</Text>
@@ -422,14 +405,7 @@ export default function TeacherMealsScreen() {
                 ))}
               </View>
 
-              <TextInput
-                style={styles.input}
-                value={mealText}
-                onChangeText={setMealText}
-                placeholder={`${selectedMeal.title} açıklaması`}
-                placeholderTextColor="#999"
-                multiline
-              />
+              <TextInput style={styles.input} value={mealText} onChangeText={setMealText} placeholder={`${selectedMeal.title} açıklaması`} placeholderTextColor="#999" multiline />
 
               {previewPhoto ? (
                 <View style={styles.photoPreviewWrap}>
@@ -463,17 +439,13 @@ export default function TeacherMealsScreen() {
                 <Text style={styles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
                 <Text style={styles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
               </View>
-              {monthlyMeals.map((item) => (
-                <MealCard key={item.id} item={item} />
-              ))}
+              {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
             </>
           )
         ) : dailyMeals.length === 0 ? (
           <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
         ) : (
-          dailyMeals.map((item) => (
-            <MealCard key={item.id} item={item} />
-          ))
+          dailyMeals.map((item) => <MealCard key={item.id} item={item} />)
         )}
       </ScrollView>
     </SafeAreaView>
@@ -494,9 +466,7 @@ function MealCard({ item }) {
 function renderMeal(label, icon, value) {
   const text = getMealText(value);
   const fotoUrl = getMealPhoto(value);
-
   if (!text && !fotoUrl) return null;
-
   return (
     <View style={styles.mealItem}>
       {text ? <Text style={styles.mealText}>{icon} {label}: {text}</Text> : <Text style={styles.mealText}>{icon} {label}</Text>}
