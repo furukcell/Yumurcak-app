@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,11 @@ import {
   Platform,
   StatusBar,
   Image,
+  Modal,
+  Animated,
+  Easing,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState, toDateKey } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
@@ -26,6 +30,25 @@ const MEAL_STATUS_LABELS = {
   az_yedi: 'Az yedi',
   bitirdi: 'Yedi',
 };
+
+const BALLOONS = [
+  { left: '4%', color: '#AEEBFF', delay: 0, duration: 9200, size: 50 },
+  { left: '77%', color: '#FFB5DA', delay: 1300, duration: 10600, size: 58 },
+  { left: '89%', color: '#CDB8FF', delay: 2600, duration: 9800, size: 46 },
+  { left: '15%', color: '#FFE08A', delay: 3800, duration: 11200, size: 42 },
+  { left: '66%', color: '#9EF0C2', delay: 5100, duration: 10200, size: 44 },
+];
+
+const CONFETTI = [
+  { left: '6%', color: '#FF8DB7', delay: 0, duration: 5600 },
+  { left: '18%', color: '#FFD166', delay: 500, duration: 6100 },
+  { left: '31%', color: '#8FD3FF', delay: 1000, duration: 5900 },
+  { left: '43%', color: '#A78BFA', delay: 1500, duration: 6300 },
+  { left: '56%', color: '#7EE7C4', delay: 2000, duration: 5700 },
+  { left: '68%', color: '#FF9F1C', delay: 2500, duration: 6400 },
+  { left: '81%', color: '#FF77AA', delay: 3000, duration: 6000 },
+  { left: '92%', color: '#72D6FF', delay: 3500, duration: 6200 },
+];
 
 export default function ParentSummaryScreen({ navigation }) {
   const base = useParentBase();
@@ -49,12 +72,49 @@ export default function ParentSummaryScreen({ navigation }) {
     kresAdi,
     kresId,
     sinifId,
-    kullanici,
     parentId,
     parentPhotoUrl,
   } = base;
   const unreadMessages = useUnreadMessagesCount(parentId);
   const today = toDateKey(new Date());
+  const isBirthday = useMemo(() => isBirthdayToday(selectedChild?.dogumTarihi), [selectedChild?.dogumTarihi, today]);
+  const [birthdayPopupVisible, setBirthdayPopupVisible] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkBirthdayPopup = async () => {
+      if (!isBirthday || !selectedChild?.id) {
+        if (mounted) setBirthdayPopupVisible(false);
+        return;
+      }
+
+      const key = `birthdayPopupSeen_${selectedChild.id}_${today}`;
+      try {
+        const seen = await AsyncStorage.getItem(key);
+        if (mounted && !seen) setBirthdayPopupVisible(true);
+      } catch (error) {
+        if (mounted) setBirthdayPopupVisible(true);
+      }
+    };
+
+    checkBirthdayPopup();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isBirthday, selectedChild?.id, today]);
+
+  const closeBirthdayPopup = async () => {
+    setBirthdayPopupVisible(false);
+    if (!selectedChild?.id) return;
+
+    try {
+      await AsyncStorage.setItem(`birthdayPopupSeen_${selectedChild.id}_${today}`, '1');
+    } catch (error) {
+      // Kapanması yeterli, kayıt başarısız olsa da ekranı bozma.
+    }
+  };
 
   const todayReport = useMemo(() => {
     if (!selectedChild?.id) return null;
@@ -158,12 +218,14 @@ export default function ParentSummaryScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemePatternBackground />
+      {isBirthday ? <BirthdayCelebrationOverlay styles={styles} /> : null}
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
             <Text style={styles.logo} numberOfLines={1}>Bugünün Özeti</Text>
             <Text style={styles.brandSub}>{kresAdi || 'Yumurcak'} · {formatDate(today)}</Text>
           </View>
+          {isBirthday ? <Text style={styles.birthdayTopBadge}>🎂 Bugün doğum günü var</Text> : null}
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton} activeOpacity={0.82}>
             {parentPhotoUrl ? (
               <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
@@ -173,17 +235,18 @@ export default function ParentSummaryScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.childCard}>
+        <View style={[styles.childCard, isBirthday && styles.birthdayChildCard]}>
           <View style={styles.avatar}>
             {parentPhotoUrl ? (
               <Image source={{ uri: parentPhotoUrl }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>👧</Text>
             )}
+            {isBirthday ? <Text style={styles.partyHat}>🎉</Text> : null}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.childName}>{childName}</Text>
-            <Text style={styles.childSub}>Merhaba {parentName}, bugün olanları tek ekranda topladık.</Text>
+            <Text style={styles.childSub}>{isBirthday ? `Bugün ${childName} için çok özel bir gün! 🎂` : `Merhaba ${parentName}, bugün olanları tek ekranda topladık.`}</Text>
             <View style={styles.pillRow}>
               <Text style={[styles.pill, styles.pillGreen]}>✅ {attendanceLabel}</Text>
               <Text style={styles.pill}>😊 {mood}</Text>
@@ -335,7 +398,82 @@ export default function ParentSummaryScreen({ navigation }) {
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
       </ScrollView>
+      <BirthdayPopup visible={isBirthday && birthdayPopupVisible} childName={childName} onClose={closeBirthdayPopup} styles={styles} />
     </SafeAreaView>
+  );
+}
+
+function BirthdayCelebrationOverlay({ styles }) {
+  const balloonValues = useRef(BALLOONS.map(() => new Animated.Value(0))).current;
+  const confettiValues = useRef(CONFETTI.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    const animations = [
+      ...balloonValues.map((value, index) => Animated.loop(
+        Animated.timing(value, {
+          toValue: 1,
+          duration: BALLOONS[index].duration,
+          delay: BALLOONS[index].delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      )),
+      ...confettiValues.map((value, index) => Animated.loop(
+        Animated.timing(value, {
+          toValue: 1,
+          duration: CONFETTI[index].duration,
+          delay: CONFETTI[index].delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      )),
+    ];
+
+    animations.forEach((animation) => animation.start());
+    return () => animations.forEach((animation) => animation.stop());
+  }, [balloonValues, confettiValues]);
+
+  return (
+    <View pointerEvents="none" style={styles.celebrationOverlay}>
+      {CONFETTI.map((item, index) => {
+        const translateY = confettiValues[index].interpolate({ inputRange: [0, 1], outputRange: [-40, 720] });
+        const rotate = confettiValues[index].interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+        const opacity = confettiValues[index].interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 1, 1, 0] });
+        return <Animated.View key={`confetti-${index}`} style={[styles.confetti, { left: item.left, backgroundColor: item.color, opacity, transform: [{ translateY }, { rotate }] }]} />;
+      })}
+      {BALLOONS.map((item, index) => {
+        const translateY = balloonValues[index].interpolate({ inputRange: [0, 1], outputRange: [760, -130] });
+        const translateX = balloonValues[index].interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, index % 2 === 0 ? 18 : -16, 0] });
+        const opacity = balloonValues[index].interpolate({ inputRange: [0, 0.08, 0.88, 1], outputRange: [0, 0.78, 0.78, 0] });
+        return (
+          <Animated.View key={`balloon-${index}`} style={[styles.balloonWrap, { left: item.left, opacity, transform: [{ translateY }, { translateX }] }]}>
+            <View style={[styles.balloon, { width: item.size, height: item.size * 1.22, borderRadius: item.size / 2, backgroundColor: item.color }]} />
+            <View style={styles.balloonString} />
+          </Animated.View>
+        );
+      })}
+    </View>
+  );
+}
+
+function BirthdayPopup({ visible, childName, onClose, styles }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.popupBackdrop}>
+        <View style={styles.popupCard}>
+          <TouchableOpacity style={styles.popupClose} onPress={onClose} activeOpacity={0.8}>
+            <Text style={styles.popupCloseText}>×</Text>
+          </TouchableOpacity>
+          <Text style={styles.popupCake}>🧁</Text>
+          <Text style={styles.popupTitle}>🎉 Doğum Günün Kutlu Olsun!</Text>
+          <Text style={styles.popupText}>Bugün {childName}'in doğum günü.</Text>
+          <Text style={styles.popupSub}>Mutlu yaşlar, nice güzel yaşlara! 💜</Text>
+          <TouchableOpacity style={styles.popupButton} onPress={onClose} activeOpacity={0.86}>
+            <Text style={styles.popupButtonText}>Tamam</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -358,6 +496,24 @@ function SectionHead({ styles, title, action, onPress }) {
       </TouchableOpacity>
     </View>
   );
+}
+
+function parseBirthDate(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const tr = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (tr) return new Date(Number(tr[3]), Number(tr[2]) - 1, Number(tr[1]));
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function isBirthdayToday(value) {
+  const birth = parseBirthDate(value);
+  if (!birth) return false;
+  const todayDate = new Date();
+  return birth.getDate() === todayDate.getDate() && birth.getMonth() === todayDate.getMonth();
 }
 
 function getMealMenuText(value) {
@@ -443,24 +599,23 @@ function formatAmount(value) {
 }
 
 const createStyles = (theme) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.bg,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
-  },
+  safeArea: { flex: 1, backgroundColor: theme.bg, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
   screen: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 96 },
   emptyWrap: { flex: 1, padding: 16, justifyContent: 'center' },
-  topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
   logo: { color: theme.primary, fontSize: 23, fontWeight: '900' },
   brandSub: { color: theme.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
+  birthdayTopBadge: { color: '#9C3DD8', backgroundColor: '#FFF0FF', borderWidth: 1, borderColor: '#E9B8FF', paddingHorizontal: 11, paddingVertical: 7, borderRadius: 99, overflow: 'hidden', fontWeight: '900', fontSize: 11, flexShrink: 0 },
   profileButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border, overflow: 'hidden' },
   profileButtonText: { fontSize: 20 },
   profileImage: { width: 44, height: 44, borderRadius: 22 },
   childCard: { backgroundColor: theme.card, borderRadius: 24, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: theme.border, marginBottom: 12 },
-  avatar: { width: 66, height: 66, borderRadius: 22, backgroundColor: theme.primarySoft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  birthdayChildCard: { borderColor: '#E9B8FF', backgroundColor: 'rgba(255,255,255,0.93)' },
+  avatar: { width: 66, height: 66, borderRadius: 22, backgroundColor: theme.primarySoft, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   avatarImage: { width: 66, height: 66, borderRadius: 22 },
   avatarText: { fontSize: 34 },
+  partyHat: { position: 'absolute', top: -13, left: -8, fontSize: 22 },
   childName: { color: theme.text, fontSize: 18, fontWeight: '900' },
   childSub: { color: theme.muted, fontSize: 12, fontWeight: '700', lineHeight: 17, marginTop: 3 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
@@ -480,7 +635,7 @@ const createStyles = (theme) => StyleSheet.create({
   commentHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
   commentTitle: { color: theme.primary, fontSize: 13, fontWeight: '900' },
   todayTag: { color: '#FFF', backgroundColor: theme.primary, fontSize: 10, fontWeight: '900', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99, overflow: 'hidden' },
-  commentText: { color: theme.text, fontSize: 13.5, lineHeight: 20, fontWeight: '650' },
+  commentText: { color: theme.text, fontSize: 13.5, lineHeight: 20, fontWeight: '700' },
   miniGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   miniCard: { width: '23.5%', backgroundColor: theme.card, borderRadius: 18, paddingVertical: 10, paddingHorizontal: 5, alignItems: 'center', borderWidth: 1, borderColor: theme.border },
   miniIcon: { fontSize: 20, marginBottom: 4 },
@@ -505,7 +660,7 @@ const createStyles = (theme) => StyleSheet.create({
   amountText: { color: theme.orange, fontSize: 13, fontWeight: '900', marginTop: 6 },
   cardTitle: { color: theme.text, fontSize: 14.5, fontWeight: '900' },
   cardTitleUnread: { color: theme.primary },
-  cardDesc: { color: theme.muted, fontSize: 11.8, fontWeight: '650', lineHeight: 16, marginTop: 4 },
+  cardDesc: { color: theme.muted, fontSize: 11.8, fontWeight: '700', lineHeight: 16, marginTop: 4 },
   mealBox: { marginTop: 10, gap: 8 },
   mealLine: { backgroundColor: theme.bg, borderRadius: 15, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.border },
   mealName: { width: 66, color: theme.primary, fontSize: 11.3, fontWeight: '900' },
@@ -518,14 +673,29 @@ const createStyles = (theme) => StyleSheet.create({
   scheduleList: { marginTop: 10, gap: 8 },
   lessonLine: { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, borderRadius: 15, paddingHorizontal: 11, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   lessonMain: { flex: 1, color: theme.text, fontSize: 12, fontWeight: '900' },
-  lessonTime: { color: theme.muted, fontSize: 10.5, fontWeight: '850', marginLeft: 8 },
+  lessonTime: { color: theme.muted, fontSize: 10.5, fontWeight: '800', marginLeft: 8 },
   emptyInline: { color: theme.muted, fontWeight: '700', fontSize: 12, paddingVertical: 8 },
   twoGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   smallCard: { width: '48.7%', minHeight: 112, backgroundColor: theme.card, borderRadius: 19, padding: 13, borderWidth: 1, borderColor: theme.border },
   noticeCard: { backgroundColor: '#FFFAF0', borderColor: '#FFE5B3' },
   smallIcon: { fontSize: 24, marginBottom: 7 },
   smallTitle: { color: theme.text, fontSize: 13, fontWeight: '900' },
-  smallDesc: { color: theme.muted, fontSize: 11.2, fontWeight: '650', lineHeight: 15, marginTop: 4 },
+  smallDesc: { color: theme.muted, fontSize: 11.2, fontWeight: '700', lineHeight: 15, marginTop: 4 },
   wideCard: { backgroundColor: theme.card, borderRadius: 20, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 12 },
   arrow: { color: theme.primary, fontSize: 24, fontWeight: '900' },
+  celebrationOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 2, overflow: 'hidden' },
+  balloonWrap: { position: 'absolute', bottom: 0, alignItems: 'center' },
+  balloon: { opacity: 0.86, borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)' },
+  balloonString: { width: 1, height: 64, backgroundColor: 'rgba(120,120,150,0.35)' },
+  confetti: { position: 'absolute', top: 0, width: 9, height: 14, borderRadius: 3 },
+  popupBackdrop: { flex: 1, backgroundColor: 'rgba(20,20,35,0.18)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  popupCard: { width: '100%', maxWidth: 360, backgroundColor: '#FFF7FF', borderRadius: 30, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: '#E9B8FF', shadowColor: '#6C3DEB', shadowOpacity: 0.2, shadowRadius: 18, elevation: 8 },
+  popupClose: { position: 'absolute', right: 14, top: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(108,61,235,0.12)', alignItems: 'center', justifyContent: 'center' },
+  popupCloseText: { color: '#7B61B9', fontSize: 24, fontWeight: '900', marginTop: -2 },
+  popupCake: { fontSize: 56, marginBottom: 8 },
+  popupTitle: { color: '#6C3DEB', fontSize: 21, fontWeight: '900', textAlign: 'center' },
+  popupText: { color: theme.text, fontSize: 15, fontWeight: '800', textAlign: 'center', marginTop: 10 },
+  popupSub: { color: theme.muted, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 6 },
+  popupButton: { marginTop: 18, backgroundColor: '#8B5CF6', borderRadius: 18, paddingHorizontal: 40, paddingVertical: 13 },
+  popupButtonText: { color: '#FFF', fontWeight: '900', fontSize: 15 },
 });
