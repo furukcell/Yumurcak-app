@@ -14,6 +14,7 @@ import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
   { icon: '🎂', title: 'Doğum Günleri', desc: 'Yaklaşan doğum günleri', route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
+  { icon: '🌟', title: 'Haftanın Yıldızı', desc: 'Cuma rozeti ver', route: 'TeacherWeeklyStar', bg: '#FFF7E8', border: '#FFE0A3' },
   { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
   { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
