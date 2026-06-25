@@ -28,9 +28,7 @@ const THEME = {
   primary: '#6C3DEB',
   primarySoft: '#EFE8FF',
   orange: '#FF9F1C',
-  green: '#20B45B',
   red: '#FF4D6D',
-  blue: '#3A7BFF',
   text: '#191A23',
   muted: '#707386',
   bg: '#F8F6FF',
@@ -96,6 +94,17 @@ function getFileInfo(asset) {
   return { isVideo, extension, contentType };
 }
 
+function readAssetAsBlob(uri) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Medya dosyası okunamadı.'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
+}
+
 function normalizeTargetType(item) {
   if (item?.targetType) return item.targetType;
   if (item?.hedef === 'kurum') return 'school';
@@ -145,9 +154,7 @@ function GalleryVideoPlayer({ uri }) {
     return () => {
       try {
         player?.pause?.();
-      } catch (error) {
-        // Player kapanırken hata olursa sessiz geç.
-      }
+      } catch (error) {}
     };
   }, [player]);
 
@@ -162,14 +169,7 @@ function GalleryVideoPlayer({ uri }) {
 
   return (
     <View style={styles.videoPlayerFrame}>
-      <VideoView
-        player={player}
-        style={styles.videoPlayer}
-        nativeControls
-        allowsFullscreen
-        allowsPictureInPicture
-        contentFit="contain"
-      />
+      <VideoView player={player} style={styles.videoPlayer} nativeControls allowsFullscreen allowsPictureInPicture contentFit="contain" />
     </View>
   );
 }
@@ -217,13 +217,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   }, [classes, kullanici?.sinifId, mode, userId]);
 
   const myChildren = useMemo(() => {
-    if (mode === 'parent') {
-      return children.filter((child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
-    }
-    if (mode === 'teacher') {
-      if (!currentClass?.id) return [];
-      return children.filter((child) => child.sinifId === currentClass.id);
-    }
+    if (mode === 'parent') return children.filter((child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
+    if (mode === 'teacher') return currentClass?.id ? children.filter((child) => child.sinifId === currentClass.id) : [];
     const userKresId = kullanici?.kresId || children[0]?.kresId || null;
     return children.filter((child) => !userKresId || child.kresId === userKresId);
   }, [children, currentClass?.id, kullanici?.kresId, mode, userId]);
@@ -250,18 +245,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       .filter((item) => normalizeMediaItems(item).length > 0)
       .filter((item) => {
         if (mode === 'admin') return true;
-
         const normalizedTarget = normalizeTargetType(item);
         const itemClassId = item.classId || item.sinifId;
         const itemStudentIds = asArray(item.studentId || item.cocukIds || item.cocukId);
-
         if (normalizedTarget === 'school' || item.hedef === 'kurum') return true;
-
         if (mode === 'teacher') {
           if (currentClass?.id && String(itemClassId || '') === String(currentClass.id)) return true;
           return itemStudentIds.some((id) => childIds.has(String(id)));
         }
-
         if (itemClassId && classIds.has(String(itemClassId))) return true;
         return itemStudentIds.some((id) => childIds.has(String(id)));
       })
@@ -279,71 +270,26 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const uploadTarget = useMemo(() => {
     if (targetType === 'child' && selectedChildId) {
       const child = myChildren.find((item) => item.id === selectedChildId);
-      return {
-        hedef: 'cocuk',
-        targetType: 'student',
-        classId: child?.sinifId || null,
-        studentId: child?.id || null,
-        cocukIds: child ? [child.id] : [],
-        label: child ? getChildName(child) : 'Seçili çocuk',
-      };
+      return { hedef: 'cocuk', targetType: 'student', classId: child?.sinifId || null, studentId: child?.id || null, cocukIds: child ? [child.id] : [], label: child ? getChildName(child) : 'Seçili çocuk' };
     }
-
     if (targetType === 'class' && selectedClassId) {
       const classItem = availableClasses.find((item) => item.id === selectedClassId);
       const classChildren = myChildren.filter((child) => child.sinifId === selectedClassId);
-      return {
-        hedef: 'sinif',
-        targetType: 'class',
-        classId: selectedClassId,
-        studentId: null,
-        cocukIds: classChildren.map((child) => child.id),
-        label: classItem ? getClassName(classItem) : 'Seçili sınıf',
-      };
+      return { hedef: 'sinif', targetType: 'class', classId: selectedClassId, studentId: null, cocukIds: classChildren.map((child) => child.id), label: classItem ? getClassName(classItem) : 'Seçili sınıf' };
     }
-
-    if (mode === 'teacher') {
-      return {
-        hedef: 'sinif',
-        targetType: 'class',
-        classId: currentClass?.id || null,
-        studentId: null,
-        cocukIds: myChildren.map((child) => child.id),
-        label: currentClass ? getClassName(currentClass) : 'Tüm sınıf',
-      };
-    }
-
-    return {
-      hedef: 'kurum',
-      targetType: 'school',
-      classId: null,
-      studentId: null,
-      cocukIds: myChildren.map((child) => child.id),
-      label: 'Tüm kurum',
-    };
+    if (mode === 'teacher') return { hedef: 'sinif', targetType: 'class', classId: currentClass?.id || null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: currentClass ? getClassName(currentClass) : 'Tüm sınıf' };
+    return { hedef: 'kurum', targetType: 'school', classId: null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: 'Tüm kurum' };
   }, [availableClasses, currentClass, mode, myChildren, selectedChildId, selectedClassId, targetType]);
 
   async function pickAndUpload() {
     if (!canUpload) return;
-    if (!kresId) {
-      Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
-      return;
-    }
-    if (targetType === 'class' && !selectedClassId) {
-      Alert.alert('Sınıf Seç', 'Sınıfa özel paylaşım için bir sınıf seçmelisin.');
-      return;
-    }
-    if (targetType === 'child' && !selectedChildId) {
-      Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
-      return;
-    }
+    if (!kresId) return Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
+    if (targetType === 'class' && !selectedClassId) return Alert.alert('Sınıf Seç', 'Sınıfa özel paylaşım için bir sınıf seçmelisin.');
+    if (targetType === 'child' && !selectedChildId) return Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
-        return;
-      }
+      if (!permission.granted) return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -368,8 +314,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const { isVideo, extension, contentType } = getFileInfo(asset);
         const mediaId = `${galleryId}-${index}`;
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
-        const response = await fetch(asset.uri);
-        const blob = await response.blob();
+        const blob = await readAssetAsBlob(asset.uri);
         const fileRef = storageRef(storage, storagePath);
         await uploadBytes(fileRef, blob, { contentType });
         const url = await getDownloadURL(fileRef);
@@ -412,8 +357,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       setTargetType('all');
       Alert.alert('Yüklendi', `${uploadTarget.label} için ${mediaItems.length} medya 24 saat boyunca galeride görünecek.`);
     } catch (error) {
-      console.error(error);
-      Alert.alert('Hata', 'Galeri yüklemesi yapılamadı. Storage ayarlarını kontrol et.');
+      console.error('Galeri yüklemesi yapılamadı:', error?.code || error?.message || error);
+      Alert.alert('Hata', `Galeri yüklemesi yapılamadı. ${error?.code || error?.message || 'Storage ayarlarını kontrol et.'}`);
     } finally {
       setUploading(false);
     }
@@ -456,25 +401,13 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     const hiddenCount = total > 4 && index === 3 ? total - 4 : 0;
     const isVideo = media.type === 'video';
     return (
-      <TouchableOpacity
-        key={media.id || `${item.id}-${index}`}
-        style={[styles.gridTile, total === 1 && styles.singleTile, total === 3 && index === 0 && styles.largeTile]}
-        onPress={() => openViewer(item, index)}
-        activeOpacity={0.88}
-      >
+      <TouchableOpacity key={media.id || `${item.id}-${index}`} style={[styles.gridTile, total === 1 && styles.singleTile, total === 3 && index === 0 && styles.largeTile]} onPress={() => openViewer(item, index)} activeOpacity={0.88}>
         {isVideo ? (
-          <View style={styles.videoTile}>
-            <Text style={styles.playIcon}>▶</Text>
-            <Text style={styles.videoTileText}>Video</Text>
-          </View>
+          <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>Video</Text></View>
         ) : (
           <Image source={{ uri: media.thumbnailUrl || media.url }} style={styles.tileImage} resizeMode="cover" />
         )}
-        {hiddenCount > 0 ? (
-          <View style={styles.moreOverlay}>
-            <Text style={styles.moreText}>+{hiddenCount}</Text>
-          </View>
-        ) : null}
+        {hiddenCount > 0 ? <View style={styles.moreOverlay}><Text style={styles.moreText}>+{hiddenCount}</Text></View> : null}
       </TouchableOpacity>
     );
   }
@@ -483,28 +416,16 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     const mediaItems = normalizeMediaItems(item);
     const previewItems = mediaItems.slice(0, 4);
     const count = mediaItems.length;
-
-    if (count === 1) {
-      return <View style={styles.singleGrid}>{renderMediaTile(item, previewItems[0], 0, count)}</View>;
-    }
-
+    if (count === 1) return <View style={styles.singleGrid}>{renderMediaTile(item, previewItems[0], 0, count)}</View>;
     if (count === 3) {
       return (
         <View style={styles.threeGrid}>
           <View style={styles.threeLeft}>{renderMediaTile(item, previewItems[0], 0, count)}</View>
-          <View style={styles.threeRight}>
-            {renderMediaTile(item, previewItems[1], 1, count)}
-            {renderMediaTile(item, previewItems[2], 2, count)}
-          </View>
+          <View style={styles.threeRight}>{renderMediaTile(item, previewItems[1], 1, count)}{renderMediaTile(item, previewItems[2], 2, count)}</View>
         </View>
       );
     }
-
-    return (
-      <View style={styles.gridWrap}>
-        {previewItems.map((media, index) => renderMediaTile(item, media, index, count))}
-      </View>
-    );
+    return <View style={styles.gridWrap}>{previewItems.map((media, index) => renderMediaTile(item, media, index, count))}</View>;
   }
 
   function renderViewer() {
@@ -512,47 +433,21 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     const media = mediaItems[viewerIndex] || mediaItems[0];
     if (!viewerItem || !media) return null;
     const isVideo = media.type === 'video';
-
     return (
       <Modal visible={!!viewerItem} transparent animationType="fade" onRequestClose={closeViewer}>
         <SafeAreaView style={styles.viewerBackdrop}>
           <View style={styles.viewerHeader}>
-            <TouchableOpacity style={styles.viewerTopButton} onPress={closeViewer}>
-              <Text style={styles.viewerTopButtonText}>Kapat</Text>
-            </TouchableOpacity>
+            <TouchableOpacity style={styles.viewerTopButton} onPress={closeViewer}><Text style={styles.viewerTopButtonText}>Kapat</Text></TouchableOpacity>
             <Text style={styles.viewerCounter}>{viewerIndex + 1} / {mediaItems.length}</Text>
-            <TouchableOpacity style={styles.viewerTopButton} onPress={() => downloadMedia(media)}>
-              <Text style={styles.viewerTopButtonText}>İndir</Text>
-            </TouchableOpacity>
+            <TouchableOpacity style={styles.viewerTopButton} onPress={() => downloadMedia(media)}><Text style={styles.viewerTopButtonText}>İndir</Text></TouchableOpacity>
           </View>
-
-          <View style={styles.viewerStage}>
-            {isVideo ? (
-              <GalleryVideoPlayer uri={media.url} />
-            ) : (
-              <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />
-            )}
-          </View>
-
+          <View style={styles.viewerStage}>{isVideo ? <GalleryVideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
           {mediaItems.length > 1 ? (
             <View style={styles.viewerNavRow}>
-              <TouchableOpacity
-                style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]}
-                disabled={viewerIndex === 0}
-                onPress={() => setViewerIndex((index) => Math.max(index - 1, 0))}
-              >
-                <Text style={styles.viewerNavText}>‹ Önceki</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]}
-                disabled={viewerIndex === mediaItems.length - 1}
-                onPress={() => setViewerIndex((index) => Math.min(index + 1, mediaItems.length - 1))}
-              >
-                <Text style={styles.viewerNavText}>Sonraki ›</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} disabled={viewerIndex === 0} onPress={() => setViewerIndex((index) => Math.max(index - 1, 0))}><Text style={styles.viewerNavText}>‹ Önceki</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} disabled={viewerIndex === mediaItems.length - 1} onPress={() => setViewerIndex((index) => Math.min(index + 1, mediaItems.length - 1))}><Text style={styles.viewerNavText}>Sonraki ›</Text></TouchableOpacity>
             </View>
           ) : null}
-
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
             {mediaItems.map((thumb, index) => (
               <TouchableOpacity key={thumb.id || index} style={[styles.viewerThumb, viewerIndex === index && styles.viewerThumbActive]} onPress={() => setViewerIndex(index)}>
@@ -577,137 +472,42 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        {navigation?.canGoBack?.() ? (
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>‹ Geri</Text>
-          </TouchableOpacity>
-        ) : <View style={styles.backButton} />}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>{title}</Text>
-          <Text style={styles.headerSub}>{roleLabel}</Text>
-        </View>
+        {navigation?.canGoBack?.() ? <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹ Geri</Text></TouchableOpacity> : <View style={styles.backButton} />}
+        <View style={{ flex: 1, alignItems: 'center' }}><Text style={styles.headerTitle}>{title}</Text><Text style={styles.headerSub}>{roleLabel}</Text></View>
         <Text style={styles.headerIcon}>🖼️</Text>
       </View>
-
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {canUpload ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Galeriye Paylaş</Text>
             <Text style={styles.cardText}>Tek fotoğraf, çoklu fotoğraf veya video seçebilirsin. Paylaşımlar 24 saat sonra otomatik gizlenir.</Text>
-
             <View style={styles.segmentRow}>
-              <TouchableOpacity
-                style={[styles.segment, targetType === 'all' && styles.segmentActive]}
-                onPress={() => {
-                  setTargetType('all');
-                  setSelectedClassId('');
-                  setSelectedChildId('');
-                }}
-              >
-                <Text style={[styles.segmentText, targetType === 'all' && styles.segmentTextActive]}>{mode === 'teacher' ? 'Tüm Sınıf' : 'Tüm Kurum'}</Text>
-              </TouchableOpacity>
-
-              {mode === 'admin' ? (
-                <TouchableOpacity
-                  style={[styles.segment, targetType === 'class' && styles.segmentActive]}
-                  onPress={() => {
-                    setTargetType('class');
-                    setSelectedChildId('');
-                  }}
-                >
-                  <Text style={[styles.segmentText, targetType === 'class' && styles.segmentTextActive]}>Sınıf</Text>
-                </TouchableOpacity>
-              ) : null}
-
-              <TouchableOpacity
-                style={[styles.segment, targetType === 'child' && styles.segmentActive]}
-                onPress={() => {
-                  setTargetType('child');
-                  setSelectedClassId('');
-                }}
-              >
-                <Text style={[styles.segmentText, targetType === 'child' && styles.segmentTextActive]}>Tek Çocuk</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, targetType === 'all' && styles.segmentActive]} onPress={() => { setTargetType('all'); setSelectedClassId(''); setSelectedChildId(''); }}><Text style={[styles.segmentText, targetType === 'all' && styles.segmentTextActive]}>{mode === 'teacher' ? 'Tüm Sınıf' : 'Tüm Kurum'}</Text></TouchableOpacity>
+              {mode === 'admin' ? <TouchableOpacity style={[styles.segment, targetType === 'class' && styles.segmentActive]} onPress={() => { setTargetType('class'); setSelectedChildId(''); }}><Text style={[styles.segmentText, targetType === 'class' && styles.segmentTextActive]}>Sınıf</Text></TouchableOpacity> : null}
+              <TouchableOpacity style={[styles.segment, targetType === 'child' && styles.segmentActive]} onPress={() => { setTargetType('child'); setSelectedClassId(''); }}><Text style={[styles.segmentText, targetType === 'child' && styles.segmentTextActive]}>Tek Çocuk</Text></TouchableOpacity>
             </View>
-
-            {targetType === 'class' ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>
-                {availableClasses.map((classItem) => (
-                  <TouchableOpacity
-                    key={classItem.id}
-                    style={[styles.childChip, selectedClassId === classItem.id && styles.childChipActive]}
-                    onPress={() => setSelectedClassId(classItem.id)}
-                  >
-                    <Text style={[styles.childChipText, selectedClassId === classItem.id && styles.childChipTextActive]}>{getClassName(classItem)}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            ) : null}
-
-            {targetType === 'child' ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>
-                {myChildren.map((child) => (
-                  <TouchableOpacity
-                    key={child.id}
-                    style={[styles.childChip, selectedChildId === child.id && styles.childChipActive]}
-                    onPress={() => setSelectedChildId(child.id)}
-                  >
-                    <Text style={[styles.childChipText, selectedChildId === child.id && styles.childChipTextActive]}>{getChildName(child)}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            ) : null}
-
-            <View style={styles.targetPreview}>
-              <Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text>
-            </View>
-
-            <TextInput
-              value={caption}
-              onChangeText={setCaption}
-              placeholder="Başlık / açıklama ekle (opsiyonel)"
-              placeholderTextColor={THEME.muted}
-              style={styles.input}
-              multiline
-            />
-
-            <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>
-              {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>}
-            </TouchableOpacity>
+            {targetType === 'class' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>{availableClasses.map((classItem) => <TouchableOpacity key={classItem.id} style={[styles.childChip, selectedClassId === classItem.id && styles.childChipActive]} onPress={() => setSelectedClassId(classItem.id)}><Text style={[styles.childChipText, selectedClassId === classItem.id && styles.childChipTextActive]}>{getClassName(classItem)}</Text></TouchableOpacity>)}</ScrollView> : null}
+            {targetType === 'child' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>{myChildren.map((child) => <TouchableOpacity key={child.id} style={[styles.childChip, selectedChildId === child.id && styles.childChipActive]} onPress={() => setSelectedChildId(child.id)}><Text style={[styles.childChipText, selectedChildId === child.id && styles.childChipTextActive]}>{getChildName(child)}</Text></TouchableOpacity>)}</ScrollView> : null}
+            <View style={styles.targetPreview}><Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text></View>
+            <TextInput value={caption} onChangeText={setCaption} placeholder="Başlık / açıklama ekle (opsiyonel)" placeholderTextColor={THEME.muted} style={styles.input} multiline />
+            <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>{uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>}</TouchableOpacity>
           </View>
         ) : null}
-
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
         {visibleGallery.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🖼️</Text>
-            <Text style={styles.emptyTitle}>Aktif galeri yok</Text>
-            <Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text>
-          </View>
+          <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>Aktif galeri yok</Text><Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text></View>
         ) : visibleGallery.map((item) => {
           const mediaItems = normalizeMediaItems(item);
           return (
             <View key={item.id} style={styles.mediaCard}>
               {renderPreviewGrid(item)}
               <View style={styles.mediaBody}>
-                <View style={styles.mediaTitleRow}>
-                  <Text style={styles.mediaTitle} numberOfLines={2}>{getGalleryTitle(item)}</Text>
-                  <View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View>
-                </View>
+                <View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getGalleryTitle(item)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View></View>
                 <Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || normalizeTargetType(item)}</Text>
                 <Text style={styles.mediaMeta}>Yükleyen: {item.yukleyenAd || getUserName(users[item.yukleyenId])}</Text>
                 <Text style={styles.mediaMeta}>Yüklenme: {formatDateTime(item.createdAt)}</Text>
-                <View style={styles.actionRow}>
-                  <Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text>
-                  <TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}>
-                    <Text style={styles.openButtonText}>Aç</Text>
-                  </TouchableOpacity>
-                </View>
-                {canUpload ? (
-                  <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(item, true)}>
-                    <Text style={styles.deleteButtonText}>Sil</Text>
-                  </TouchableOpacity>
-                ) : null}
+                <View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>Aç</Text></TouchableOpacity></View>
+                {canUpload ? <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(item, true)}><Text style={styles.deleteButtonText}>Sil</Text></TouchableOpacity> : null}
               </View>
             </View>
           );
@@ -788,12 +588,6 @@ const styles = StyleSheet.create({
   viewerCounter: { color: '#fff', fontWeight: '900' },
   viewerStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   viewerImage: { width: '100%', height: '100%' },
-  videoViewerBox: { width: '86%', borderRadius: 28, padding: 24, backgroundColor: '#171821', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  videoViewerIcon: { color: '#fff', fontSize: 52, fontWeight: '900' },
-  videoViewerTitle: { color: '#fff', fontWeight: '900', fontSize: 22, marginTop: 14 },
-  videoViewerDesc: { color: '#B8B9C6', fontWeight: '700', textAlign: 'center', lineHeight: 20, marginTop: 8 },
-  viewerPlayButton: { marginTop: 18, backgroundColor: THEME.orange, borderRadius: 16, paddingHorizontal: 24, paddingVertical: 13 },
-  viewerPlayButtonText: { color: '#fff', fontWeight: '900' },
   viewerNavRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
   viewerNavButton: { backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14 },
   viewerNavButtonDisabled: { opacity: 0.35 },
@@ -804,24 +598,9 @@ const styles = StyleSheet.create({
   viewerThumbActive: { borderColor: THEME.orange },
   viewerThumbImage: { width: '100%', height: '100%' },
   viewerThumbVideo: { color: '#fff', fontWeight: '900', fontSize: 20 },
-    videoPlayerFrame: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoPlayer: {
-    width: '100%',
-    height: '100%',
-  },
-  videoPlayerFallback: {
-    width: '86%',
-    borderRadius: 28,
-    padding: 24,
-    backgroundColor: '#171821',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
+  videoPlayerFrame: { width: '100%', height: '100%', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  videoPlayer: { width: '100%', height: '100%' },
+  videoPlayerFallback: { width: '86%', borderRadius: 28, padding: 24, backgroundColor: '#171821', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  videoViewerIcon: { color: '#fff', fontSize: 52, fontWeight: '900' },
+  videoViewerTitle: { color: '#fff', fontWeight: '900', fontSize: 22, marginTop: 14 },
 });
