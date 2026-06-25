@@ -33,6 +33,37 @@ const THEME = {
   border: '#EEEAF8',
 };
 
+function parseBirthDate(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const trMatch = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (trMatch) {
+    const [, day, month, year] = trMatch;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function formatBirthDate(value) {
+  const date = parseBirthDate(value);
+  if (!date) return 'Belirtilmemiş';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
 export default function ChildListScreen() {
   const navigation = useNavigation();
   const [children, setChildren] = useState([]);
@@ -150,7 +181,7 @@ export default function ChildListScreen() {
           <View style={[styles.infoPill, styles.infoPillBlue]}>
             <Text style={styles.infoLabel}>Doğum</Text>
             <Text style={styles.infoValue} numberOfLines={1}>
-              {item.dogumTarihi || 'Belirtilmemiş'}
+              {formatBirthDate(item.dogumTarihi)}
             </Text>
           </View>
 
