@@ -47,8 +47,8 @@ minSdkVersion: 24
 | --- | --- |
 | `superadmin` | Platform / kreş yönetimi ve üst seviye işlemler |
 | `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, duyuru, anket, galeri, tema, abonelik, bildirim, yasal metin ve istatistik yönetimi |
-| `ogretmen` | Kendi sınıfındaki çocuklar, yoklama, günlük rapor, medikal bilgi, fiziksel gelişim, yemek listesi, galeri, mesaj, duyuru, tema ve bildirim ekranları |
-| `veli` | Çocuğa ait özet, günlük/aylık rapor, ödeme, yemek, gelişim, medikal bilgi, anket, galeri, mesaj, bildirim ve yasal metin ekranları |
+| `ogretmen` | Kendi sınıfındaki çocuklar, yoklama, günlük rapor, medikal bilgi, fiziksel gelişim, haftanın yıldızı rozeti, yemek listesi, galeri, mesaj, duyuru, tema ve bildirim ekranları |
+| `veli` | Çocuğa ait özet, haftanın yıldızı rozeti, rozet albümü, günlük/aylık rapor, ödeme, yemek, gelişim, medikal bilgi, anket, galeri, mesaj, bildirim ve yasal metin ekranları |
 
 ---
 
@@ -63,6 +63,9 @@ minSdkVersion: 24
 - Veli özet ekranı
 - Veli doğum günü kutlama modu
 - Öğretmen doğum günleri ekranı
+- Öğretmen `Haftanın Yıldızı` rozet ekranı
+- Veli özet ekranında haftalık rozet kartı
+- Veli gelişim ekranında `Rozet Albümü`
 - Öğretmen günlük rapor ekranı
 - Yoklama sistemi
 - Yemek listesi ve öğün fotoğrafı sistemi
@@ -94,6 +97,10 @@ minSdkVersion: 24
 - Doğum günü popup'ı aynı gün sadece bir kez gösterilir.
 - Popup kapandıktan sonra ekran normal kullanılmaya devam eder.
 - Balon ve konfeti overlay'i `pointerEvents="none"` mantığıyla çalışır; butonları, scroll'u ve tabbar'ı engellemez.
+- Veli özet ekranının en altına `Haftanın Yıldızı` kartı eklendi.
+- Haftalık rozet sadece seçili çocuğa ait kayıt varsa görünür.
+- Veli gelişim ekranına `Rozet Albümü` eklendi.
+- Rozet Albümü sadece velinin kendi çocuğuna ait geçmiş rozetleri gösterir.
 
 ### Öğretmen paneli
 
@@ -108,6 +115,12 @@ minSdkVersion: 24
 - Öğretmen paneline `Doğum Günleri` ekranı eklendi.
 - Doğum günleri en yakın tarihten en uzağa doğru sıralanır.
 - Öğretmen mesaj ekranına yeni mesaj başlatmak için alttan açılan veli seçme çekmecesi eklendi.
+- Öğretmen paneline `Haftanın Yıldızı` ekranı eklendi.
+- Haftanın Yıldızı rozeti sadece cuma günü verilebilir.
+- Öğretmen aynı cuma günü sınıftan birden fazla çocuğa ayrı ayrı rozet verebilir.
+- Aynı hafta aynı çocuğa ikinci kez kayıt yapılırsa mevcut kayıt güncellenir.
+- Öğretmen ekranında gizlilik bilgilendirmesi bulunur: verilen rozet sadece seçilen çocuğun velisinde görünür, diğer öğrenci velileri göremez.
+- Öğretmen ekranında bu haftanın kayıtları ve sınıf rozet geçmişi listelenir.
 
 ### Admin paneli
 
@@ -151,6 +164,7 @@ Gösterilen bilgiler:
 - Cevap bekleyen anket hatırlatması
 - Mesaj kısayolu
 - Gelişim ekranı kısayolu
+- En altta `Haftanın Yıldızı` kartı
 
 ### Veli Doğum Günü Modu
 
@@ -177,6 +191,45 @@ AsyncStorage anahtarı:
 ```txt
 birthdayPopupSeen_{childId}_{YYYY-MM-DD}
 ```
+
+### Veli Haftanın Yıldızı Kartı
+
+Özet ekranının en altında haftalık rozet kartı görünür.
+
+Mantık:
+
+```txt
+haftaninRozetleri içinde:
+  cocukId == selectedChild.id
+  weekKey == mevcut hafta başlangıcı
+  aktif != false
+```
+
+Kartta gösterilenler:
+
+- `🌟 Haftanın Yıldızı` başlığı
+- `Bu Hafta` etiketi
+- Rozet emojisi
+- Rozet adı
+- Öğretmen kısa notu veya rozet açıklaması
+- Hafta aralığı
+
+Önemli davranış:
+
+- Bu hafta rozet yoksa kart hiç görünmez.
+- Kart sadece kendi çocuğunun velisinde görünür.
+- Diğer çocukların velileri bu rozeti kendi ekranında göremez.
+
+### Veli Rozet Albümü
+
+Veli gelişim ekranında `🎖️ Rozet Albümü` alanı bulunur.
+
+Özellikler:
+
+- Çocuğun geçmiş haftalık rozetlerini listeler.
+- Sadece seçili çocuğun kayıtları görünür.
+- Rozet emojisi, rozet adı, hafta aralığı ve öğretmen notu gösterilir.
+- Kayıt yoksa açıklayıcı boş durum metni görünür.
 
 ### Veli Yemek Ekranı
 
@@ -216,6 +269,7 @@ birthdayPopupSeen_{childId}_{YYYY-MM-DD}
 - Aylık özet öğretmen raporlarından otomatik yorum çıkarır.
 - Bu yorum tıbbi veya psikolojik tanı değildir.
 - Fiziksel gelişim kayıtları veli tarafında gelişim ekranından takip edilir.
+- Rozet Albümü gelişim ekranından takip edilir.
 
 ---
 
@@ -227,6 +281,7 @@ Ana modüller:
 
 - Çocuklarım
 - Doğum Günleri
+- Haftanın Yıldızı
 - Günlük Rapor
 - Yoklama
 - Ders Programı
@@ -261,6 +316,93 @@ Ana modüller:
 - 30 gün içindeki yaklaşan doğum günü sayısı
 - Bu yıl toplam doğum günü sayısı
 - Çocuk adı, doğum tarihi, yaş ve kalan gün bilgisi
+
+### Haftanın Yıldızı
+
+Öğretmen, cuma günü çocukların hafta boyunca öne çıkan güzel davranışlarını rozetle kutlayabilir.
+
+Kural:
+
+```txt
+Rozet verme sadece cuma günü aktiftir.
+Cuma değilse ekran açılır ama kayıt alanı pasif kalır.
+```
+
+Ekran özellikleri:
+
+- Üstte açıklama kartı
+- Gizlilik bilgilendirme kartı
+- Çocuk seçimi
+- 12 rozet seçeneği
+- Kısa öğretmen notu
+- Kaydet / güncelle butonu
+- Bu haftanın kayıtları
+- Sınıf rozet geçmişi
+
+Gizlilik metni:
+
+```txt
+Verilen rozet sadece seçilen çocuğun velisinde görünür.
+Diğer öğrencilerin velileri bu rozeti göremez.
+```
+
+Rozet seti:
+
+```txt
+🤝 Yardımsever Kalp
+🧸 Paylaşımcı Minik
+🦁 Cesur Yürek
+🔍 Meraklı Kaşif
+🎨 Yaratıcı Ressam
+😊 Neşeli Güneş
+✅ Sorumluluk Sahibi
+🌱 Sabırlı Minik
+📚 Kitap Dostu
+🧩 Problem Çözücü
+💬 Güzel İletişim
+👏 Katılım Yıldızı
+```
+
+Veri mantığı:
+
+- Öğretmen aynı cuma günü sınıftan birden fazla çocuğa rozet verebilir.
+- Her çocuk için aynı hafta tek kayıt tutulur.
+- Aynı çocuğa aynı hafta tekrar kayıt yapılırsa kayıt güncellenir.
+- Kayıtlar `haftaninRozetleri` node'una yazılır.
+
+Realtime Database yapı örneği:
+
+```txt
+haftaninRozetleri/{weekKey}_{childId}
+  id
+  kresId
+  sinifId
+  cocukId
+  cocukAdi
+  ogretmenId
+  weekKey
+  haftaKey
+  haftaBaslangic
+  haftaBitis
+  haftaLabel
+  badgeId / rozetId
+  badgeTitle / rozetAdi
+  badgeEmoji / rozetEmoji
+  badgeDesc / rozetAciklama
+  note / not
+  privateToChild: true
+  visibleToParentOnly: true
+  aktif: true
+  createdAt
+  updatedAt
+```
+
+Kod dosyaları:
+
+```txt
+src/screens/teacher/TeacherWeeklyStarScreen.js
+src/utils/weeklyBadges.js
+```
 
 ### Günlük Rapor
 
@@ -623,6 +765,23 @@ Realtime Database tarafında geçiş rules seviyesi kullanılır:
 
 Storage tarafında profil, yemek ve galeri için path bazlı yazma izinleri gerekir.
 
+Önemli Realtime Database node'ları:
+
+```txt
+cocuklar
+siniflar
+kullanicilar
+gunlukRaporlar
+yoklamalar
+yemekListeleri
+galeri
+fizikselGelisim
+haftaninRozetleri
+mesajKonusmalari
+bildirimler
+abonelikler
+```
+
 Önemli Storage pathleri:
 
 ```txt
@@ -638,6 +797,7 @@ Production güvenlik fazında hedef:
 - Admin sadece kendi `kresId` verilerini yönetebilir.
 - Öğretmen sadece kendi `kresId` / `sinifId` verilerini yönetebilir.
 - Veli sadece kendi çocuğu, çocuğunun sınıfı ve kurum genel hedefli verileri okuyabilir.
+- `haftaninRozetleri` içinde veli sadece kendi çocuğunun rozetlerini okuyabilmelidir.
 - Storage yazma / silme işlemleri rol ve path bazlı daraltılır.
 
 ---
@@ -678,34 +838,43 @@ Kapalı test / build öncesi kontrol edilecek temel akışlar:
 3. Admin çocuk kartlarında doğum tarihi `GG.AA.YYYY` görünür.
 4. Öğretmen çocuklarım ekranında yaş ve doğum tarihi doğru görünür.
 5. Öğretmen doğum günleri ekranı açılır ve sıralama doğru çalışır.
-6. Öğretmen günlük rapora basar, çocuk seçer ve rapor formuna gider.
-7. Öğretmen ruh hali, yemek, uyku, tuvalet ve not içeren günlük rapor girer.
-8. Veli özet ekranında günlük rapor bilgileri görünür.
-9. Doğum günü olan çocukla veli özet ekranı açılır; balon/konfeti ve popup kontrol edilir.
-10. Popup kapatılınca aynı gün tekrar açılmadığı kontrol edilir.
-11. Veli anket ekranında cevap verilir ve `Cevabı değiştir` butonu test edilir.
-12. Öğretmen yemek listesine kahvaltı / öğle / ara öğün fotoğrafı ekler.
-13. Veli bugünün fotoğraflı yemek listesini görür.
-14. Öğretmen/Admin galeriye fotoğraf veya video yükler.
-15. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
-16. Öğretmen fiziksel gelişim kaydı girer.
-17. Fiziksel gelişim geçmiş tabında kayıt görünür.
-18. Öğretmen mesaj ekranında `Yeni Mesaj` çekmecesi açılır, veli seçilince sohbet açılır.
-19. Veli mesaj ekranında kurum ve öğretmen kartları çalışır.
-20. Admin ödeme kaydı oluşturur.
-21. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
-22. Veli özet ekranında bekleyen ödeme hatırlatması görünür.
-23. Tema değişimi admin / öğretmen / veli ekranlarına yansır.
-24. Uygulama içi bildirim ekranları açılır.
-25. Mesaj gönderimi sonrası yanlış hata alerti çıkmadığı kontrol edilir.
-26. Chat ekranında klavye açılınca mesaj inputu görünür kalır.
-27. Profil fotoğrafı upload test edilir.
-28. Yemek fotoğrafı upload test edilir.
-29. Galeri fotoğraf/video upload test edilir.
-30. Firebase Storage hata mesajları kontrol edilir.
-31. Push token ve push bildirim fiziksel cihazda test edilir.
-32. Giriş ekranından yasal metinler açılır.
-33. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
+6. Öğretmen `Haftanın Yıldızı` ekranını açar.
+7. Cuma değilse rozet kayıt alanının pasif olduğu kontrol edilir.
+8. Cuma testinde çocuk seçilir, rozet seçilir, kısa not yazılır ve kayıt alınır.
+9. Aynı çocuk için aynı hafta ikinci kayıt yerine güncelleme yapıldığı kontrol edilir.
+10. Birden fazla çocuğa ayrı ayrı rozet verilebildiği kontrol edilir.
+11. Veli özet ekranında sadece kendi çocuğunun bu haftaki rozeti en altta görünür.
+12. Rozet olmayan çocukta veli özet kartının görünmediği kontrol edilir.
+13. Veli gelişim ekranında Rozet Albümü geçmişi görünür.
+14. Başka çocuğun velisinin bu rozeti görmediği kontrol edilir.
+15. Öğretmen günlük rapora basar, çocuk seçer ve rapor formuna gider.
+16. Öğretmen ruh hali, yemek, uyku, tuvalet ve not içeren günlük rapor girer.
+17. Veli özet ekranında günlük rapor bilgileri görünür.
+18. Doğum günü olan çocukla veli özet ekranı açılır; balon/konfeti ve popup kontrol edilir.
+19. Popup kapatılınca aynı gün tekrar açılmadığı kontrol edilir.
+20. Veli anket ekranında cevap verilir ve `Cevabı değiştir` butonu test edilir.
+21. Öğretmen yemek listesine kahvaltı / öğle / ara öğün fotoğrafı ekler.
+22. Veli bugünün fotoğraflı yemek listesini görür.
+23. Öğretmen/Admin galeriye fotoğraf veya video yükler.
+24. Veli galeri ekranında sadece kendi çocuğuna/sınıfına/kurumuna ait aktif kayıtları görür.
+25. Öğretmen fiziksel gelişim kaydı girer.
+26. Fiziksel gelişim geçmiş tabında kayıt görünür.
+27. Öğretmen mesaj ekranında `Yeni Mesaj` çekmecesi açılır, veli seçilince sohbet açılır.
+28. Veli mesaj ekranında kurum ve öğretmen kartları çalışır.
+29. Admin ödeme kaydı oluşturur.
+30. Veli ödeme ekranında son 12 ay ve tüm kayıtları görür.
+31. Veli özet ekranında bekleyen ödeme hatırlatması görünür.
+32. Tema değişimi admin / öğretmen / veli ekranlarına yansır.
+33. Uygulama içi bildirim ekranları açılır.
+34. Mesaj gönderimi sonrası yanlış hata alerti çıkmadığı kontrol edilir.
+35. Chat ekranında klavye açılınca mesaj inputu görünür kalır.
+36. Profil fotoğrafı upload test edilir.
+37. Yemek fotoğrafı upload test edilir.
+38. Galeri fotoğraf/video upload test edilir.
+39. Firebase Storage hata mesajları kontrol edilir.
+40. Push token ve push bildirim fiziksel cihazda test edilir.
+41. Giriş ekranından yasal metinler açılır.
+42. Veli, öğretmen ve admin profil/ayar alanlarından yasal metinler açılır.
 
 ---
 
@@ -718,6 +887,7 @@ Kapalı test / build öncesi kontrol edilecek temel akışlar:
 - targetSdkVersion 35 olarak kalmalı.
 - Firebase Storage foto/video upload gerçek cihazda test edilmeli.
 - Realtime Database auth rules ile tüm roller test edilmeli.
+- haftaninRozetleri gizlilik mantığı gerçek veli hesaplarıyla test edilmeli.
 - RevenueCat ürünleri Google Play ürünlerine bağlanmalı.
 - Kapalı test kullanıcısı satın alma / restore akışını test etmeli.
 - Push notification fiziksel cihazda test edilmeli.
@@ -740,6 +910,8 @@ Yemek fotoğrafı: Hazır / Storage rules ve cihaz testi gerekli
 Fiziksel gelişim geçmişi: Hazır
 Doğum günü ekranları: Hazır
 Doğum günü animasyon modu: Hazır
+Haftanın Yıldızı rozet sistemi: Hazır / cuma ve gizlilik testi gerekli
+Rozet Albümü: Hazır
 RevenueCat: Kod altyapısı hazır / Play ürün bağlantısı gerekli
 Push notification: Kod altyapısı hazır / fiziksel cihaz testi gerekli
 Yasal metinler: Hazır
