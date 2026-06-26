@@ -254,10 +254,9 @@ export default function AdminSubscriptionScreen() {
 
     Alert.alert(
       'Paket Henüz Hazır Değil',
-      `${tier.title} paketi seçildi.\n${tier.range}\n${priceText}\n\nRevenueCat/Google Play paketi henüz okunamadı. Şimdilik demo veya manuel aktif etme ile devam edebilirsiniz.`,
+      `${tier.title} paketi seçildi.\n${tier.range}\n${priceText}\n\nRevenueCat/Google Play paketi şu an okunamadı. Lütfen daha sonra tekrar deneyin.`,
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Manuel Aktif Et', onPress: () => activateManual(tier, selectedPeriod) },
+       { text: 'Tamam', style: 'cancel' },
       ]
     );
   };
