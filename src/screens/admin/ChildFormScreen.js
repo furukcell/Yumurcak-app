@@ -14,6 +14,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import { formatChildBirthDate, getChildBirthDate, normalizeChildBirthDate } from '../../utils/childDates';
+import { bugunKey } from '../../utils/uyum';
 
 export default function ChildFormScreen() {
   const route = useRoute();
@@ -27,20 +28,21 @@ export default function ChildFormScreen() {
   const [seciliVeliIds, setSeciliVeliIds] = useState([]);
   const [siniflar, setSiniflar] = useState([]);
   const [veliler, setVeliler] = useState([]);
+  const [yeniBaslayan, setYeniBaslayan] = useState(false);
+  const [uyumBaslangicTarihi, setUyumBaslangicTarihi] = useState(bugunKey());
+  const [uyumDurumu, setUyumDurumu] = useState('pasif');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
     const yukle = async () => {
-      // Sınıfları çek
       const sinifSnap = await get(ref(database, 'siniflar'));
       if (sinifSnap.exists()) {
         const data = sinifSnap.val();
         setSiniflar(Object.entries(data).map(([id, v]) => ({ id, ...v })));
       }
 
-      // Velileri çek
       const kullaniciSnap = await get(ref(database, 'kullanicilar'));
       if (kullaniciSnap.exists()) {
         const data = kullaniciSnap.val();
@@ -50,7 +52,6 @@ export default function ChildFormScreen() {
         setVeliler(veliListesi);
       }
 
-      // Düzenleme modunda çocuk bilgilerini çek
       if (childId) {
         const snap = await get(ref(database, `cocuklar/${childId}`));
         if (snap.exists()) {
@@ -59,6 +60,9 @@ export default function ChildFormScreen() {
           setDogumTarihi(formatChildBirthDate(getChildBirthDate(data)) === 'Belirtilmemiş' ? '' : formatChildBirthDate(getChildBirthDate(data)));
           setSinifId(data.sinifId || '');
           setSeciliVeliIds(data.veliIds || []);
+          setYeniBaslayan(data.yeniBaslayan === true || data.uyumTakibiAktif === true || data.uyumDurumu === 'aktif');
+          setUyumBaslangicTarihi(data.uyumBaslangicTarihi || bugunKey());
+          setUyumDurumu(data.uyumDurumu || (data.uyumTakibiAktif ? 'aktif' : 'pasif'));
         }
       }
       setFetching(false);
@@ -84,11 +88,17 @@ export default function ChildFormScreen() {
       return;
     }
 
+    if (yeniBaslayan && !/^\d{4}-\d{2}-\d{2}$/.test(uyumBaslangicTarihi)) {
+      Alert.alert('Hata', 'Uyum başlangıç tarihini 2026-06-26 formatında gir.');
+      return;
+    }
+
     setLoading(true);
     try {
       const id = childId || generateId();
       const existingSnap = childId ? await get(ref(database, `cocuklar/${childId}`)) : null;
       const existing = existingSnap?.exists?.() ? existingSnap.val() : {};
+      const uyumAktif = yeniBaslayan && uyumDurumu !== 'tamamlandi';
 
       await set(ref(database, `cocuklar/${id}`), {
         ...existing,
@@ -97,6 +107,11 @@ export default function ChildFormScreen() {
         sinifId,
         kresId: kullanici?.kresId || existing?.kresId || 'default-kres',
         veliIds: seciliVeliIds,
+        yeniBaslayan,
+        uyumTakibiAktif: uyumAktif,
+        uyumBaslangicTarihi: yeniBaslayan ? uyumBaslangicTarihi : (existing?.uyumBaslangicTarihi || ''),
+        uyumSureGun: 30,
+        uyumDurumu: yeniBaslayan ? (uyumDurumu === 'tamamlandi' ? 'tamamlandi' : 'aktif') : 'pasif',
         createdAt: existing?.createdAt || Date.now(),
         updatedAt: Date.now(),
       });
@@ -174,6 +189,32 @@ export default function ChildFormScreen() {
             )}
           </View>
 
+          <View style={styles.uyumCard}>
+            <Text style={styles.uyumTitle}>🌱 Uyum Modülü</Text>
+            <Text style={styles.uyumDesc}>Bu çocuk kreşe yeni başlayan öğrenci mi? Seçilirse 30 günlük uyum takibi öğretmen ve veli tarafında açılır.</Text>
+            <View style={styles.segmentRow}>
+              <TouchableOpacity style={[styles.segment, !yeniBaslayan && styles.segmentActive]} onPress={() => { setYeniBaslayan(false); setUyumDurumu('pasif'); }}>
+                <Text style={[styles.segmentText, !yeniBaslayan && styles.segmentTextActive]}>Mevcut öğrenci</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, yeniBaslayan && styles.segmentActiveGreen]} onPress={() => { setYeniBaslayan(true); setUyumDurumu('aktif'); }}>
+                <Text style={[styles.segmentText, yeniBaslayan && styles.segmentTextActive]}>Yeni başlayan</Text>
+              </TouchableOpacity>
+            </View>
+            {yeniBaslayan ? (
+              <View style={styles.uyumOpenBox}>
+                <Text style={styles.label}>Uyum başlangıç tarihi</Text>
+                <TextInput style={styles.input} value={uyumBaslangicTarihi} onChangeText={setUyumBaslangicTarihi} placeholder="2026-06-26" placeholderTextColor="#999" />
+                <Text style={styles.hint}>30 gün sonunda aktif takip kapanır, kayıtlar veli geçmişinde kalır.</Text>
+                {childId ? (
+                  <View style={styles.segmentRowSmall}>
+                    <TouchableOpacity style={[styles.statusBtn, uyumDurumu !== 'tamamlandi' && styles.statusBtnOn]} onPress={() => setUyumDurumu('aktif')}><Text style={[styles.statusText, uyumDurumu !== 'tamamlandi' && styles.statusTextOn]}>Aktif</Text></TouchableOpacity>
+                    <TouchableOpacity style={[styles.statusBtn, uyumDurumu === 'tamamlandi' && styles.statusBtnDone]} onPress={() => setUyumDurumu('tamamlandi')}><Text style={[styles.statusText, uyumDurumu === 'tamamlandi' && styles.statusTextOn]}>Tamamlandı</Text></TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
           <View style={styles.field}>
             <Text style={styles.label}>Veli Bağla (opsiyonel)</Text>
             {veliler.length === 0 ? (
@@ -230,6 +271,22 @@ const styles = StyleSheet.create({
   seciBtnAktif: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
   seciBtnYazi: { fontSize: 15, color: '#333' },
   seciBtnYaziAktif: { fontWeight: '700', color: '#712B13' },
+  uyumCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#DDEFE3', marginBottom: 20 },
+  uyumTitle: { color: '#12301E', fontSize: 18, fontWeight: '900' },
+  uyumDesc: { color: '#667A70', fontWeight: '700', lineHeight: 18, marginTop: 6 },
+  segmentRow: { flexDirection: 'row', backgroundColor: '#F1F4F2', padding: 4, borderRadius: 14, marginTop: 12 },
+  segment: { flex: 1, paddingVertical: 11, borderRadius: 11, alignItems: 'center' },
+  segmentActive: { backgroundColor: '#712B13' },
+  segmentActiveGreen: { backgroundColor: '#20B45B' },
+  segmentText: { color: '#555', fontWeight: '900', fontSize: 12 },
+  segmentTextActive: { color: '#fff' },
+  uyumOpenBox: { backgroundColor: '#F4FBF5', borderRadius: 14, padding: 12, marginTop: 12 },
+  segmentRowSmall: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  statusBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', alignItems: 'center' },
+  statusBtnOn: { backgroundColor: '#20B45B', borderColor: '#20B45B' },
+  statusBtnDone: { backgroundColor: '#6C3DEB', borderColor: '#6C3DEB' },
+  statusText: { color: '#555', fontWeight: '900' },
+  statusTextOn: { color: '#fff' },
   saveButton: {
     backgroundColor: '#712B13', padding: 15, borderRadius: 10,
     alignItems: 'center', marginTop: 10,
