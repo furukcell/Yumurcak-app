@@ -2,35 +2,49 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null;
+
+    match /profilFotograflari/veliler/{fileName} {
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+        && request.resource != null
+        && request.resource.size < 5 * 1024 * 1024;
+
+      allow delete: if request.auth != null;
     }
 
-    function isMedia() {
-      return request.resource == null
-        || request.resource.contentType.matches('image/.*')
-        || request.resource.contentType.matches('video/.*');
+    match /yemekFotograflari/{kresId}/{sinifId}/{fileName} {
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+        && request.resource != null
+        && request.resource.size < 15 * 1024 * 1024;
+
+      allow delete: if request.auth != null;
     }
 
-    match /profilFotograflari/{allPaths=**} {
-      allow read: if signedIn();
-      allow write: if signedIn() && isMedia();
+    match /galeri/{kresId}/yemekFotograflari/{sinifId}/{fileName} {
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+        && request.resource != null
+        && request.resource.size < 15 * 1024 * 1024;
+
+      allow delete: if request.auth != null;
     }
 
-    match /yemekFotograflari/{allPaths=**} {
-      allow read: if signedIn();
-      allow write: if signedIn() && isMedia();
-      allow delete: if signedIn();
-    }
+    match /galeri/{kresId}/{galleryId}/{fileName} {
+      allow read: if true;
 
-    match /galeri/{allPaths=**} {
-      allow read: if signedIn();
-      allow write: if signedIn() && isMedia();
-      allow delete: if signedIn();
+      allow create, update: if request.auth != null
+        && request.resource != null
+        && request.resource.size < 50 * 1024 * 1024;
+
+      allow delete: if request.auth != null;
     }
 
     match /{allPaths=**} {
-      allow read: if false;
+      allow read: if true;
       allow write: if false;
     }
   }
