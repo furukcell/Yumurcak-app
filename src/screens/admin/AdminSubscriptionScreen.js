@@ -1,7 +1,6 @@
 // ============================================================
 // YUMURCAK — AdminSubscriptionScreen.js
-// Abonelik / Ödeme / Promosyon ekranı
-// Kreş yöneticisi için sade ve profesyonel görünüm
+// Öğrenci sayısına göre abonelik / ödeme / promosyon ekranı
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -42,8 +41,45 @@ const THEME = {
   border: '#EEEAF8',
 };
 
-const MONTHLY_PRICE = 1500;
-const YEARLY_PRICE = 15000;
+const PACKAGE_TIERS = [
+  {
+    id: 'baslangic',
+    title: 'Başlangıç',
+    range: '0 - 30 öğrenci',
+    minStudent: 0,
+    maxStudent: 30,
+    monthly: 1000,
+    yearly: 10000,
+    desc: 'Küçük kreşler için ideal başlangıç paketi.',
+    badge: 'Ekonomik',
+    color: '#20B45B',
+  },
+  {
+    id: 'profesyonel',
+    title: 'Profesyonel',
+    range: '31 - 50 öğrenci',
+    minStudent: 31,
+    maxStudent: 50,
+    monthly: 1500,
+    yearly: 15000,
+    desc: 'Büyüyen kurumlar için dengeli paket.',
+    badge: 'Önerilen',
+    color: '#6C3DEB',
+    featured: true,
+  },
+  {
+    id: 'kurum',
+    title: 'Kurum',
+    range: '51 - 100 öğrenci',
+    minStudent: 51,
+    maxStudent: 100,
+    monthly: 3000,
+    yearly: 30000,
+    desc: 'Yoğun kullanımlı büyük kreşler için.',
+    badge: 'Büyük Kreş',
+    color: '#C98A00',
+  },
+];
 
 const BUILT_IN_PROMOS = {
   PILOT1AY: { kod: 'PILOT1AY', tip: 'demo', sureAy: 1, aktif: true },
@@ -53,6 +89,22 @@ const BUILT_IN_PROMOS = {
 
 function formatPrice(value) {
   return `${Number(value || 0).toLocaleString('tr-TR')} TL`;
+}
+
+function getTierById(id) {
+  return PACKAGE_TIERS.find((tier) => tier.id === id) || PACKAGE_TIERS[0];
+}
+
+function getSuggestedTier(studentCount) {
+  return PACKAGE_TIERS.find((tier) => studentCount <= tier.maxStudent) || null;
+}
+
+function getPlanLabel(subscription) {
+  if (!subscription?.planTier && !subscription?.plan) return 'Henüz yok';
+  const tier = getTierById(subscription.planTier || String(subscription.plan || '').split('_')[0]);
+  const period = subscription.planPeriod || (String(subscription.plan || '').includes('yillik') ? 'yillik' : String(subscription.plan || '').includes('aylik') ? 'aylik' : '');
+  if (!period) return subscription.plan || tier.title;
+  return `${tier.title} / ${period === 'yillik' ? 'Yıllık' : 'Aylık'}`;
 }
 
 export default function AdminSubscriptionScreen() {
@@ -69,7 +121,9 @@ export default function AdminSubscriptionScreen() {
 
   const [kres, setKres] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [children, setChildren] = useState([]);
   const [promoCode, setPromoCode] = useState('');
+  const [period, setPeriod] = useState('aylik');
 
   useEffect(() => {
     const kresUnsub = onValue(ref(database, `kresler/${kresId}`), (snap) => {
@@ -81,9 +135,19 @@ export default function AdminSubscriptionScreen() {
       setLoading(false);
     });
 
+    const childUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
+      const data = snap.val() || {};
+      const list = Object.entries(data)
+        .map(([id, item]) => ({ id, ...(item || {}) }))
+        .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+        .filter((item) => item.aktif !== false && item.deleted !== true);
+      setChildren(list);
+    });
+
     return () => {
       kresUnsub();
       subUnsub();
+      childUnsub();
     };
   }, [kresId]);
 
@@ -105,6 +169,11 @@ export default function AdminSubscriptionScreen() {
 
   const status = useMemo(() => getStatus(subscription), [subscription]);
   const remainingDays = useMemo(() => getRemainingDays(subscription), [subscription]);
+  const studentCount = children.length;
+  const suggestedTier = getSuggestedTier(studentCount);
+  const activeTier = subscription?.planTier ? getTierById(subscription.planTier) : suggestedTier;
+  const activeLimit = subscription?.planTier ? getTierById(subscription.planTier).maxStudent : suggestedTier?.maxStudent;
+  const overLimit = activeLimit && studentCount > activeLimit;
 
   const startTrial = async () => {
     if (subscription?.durum === 'aktif' || subscription?.durum === 'demo') {
@@ -115,10 +184,14 @@ export default function AdminSubscriptionScreen() {
     try {
       const now = new Date();
       const end = addMonths(now, 1);
+      const tier = suggestedTier || PACKAGE_TIERS[0];
 
       await set(ref(database, `abonelikler/${kresId}`), {
         kresId,
         plan: 'demo',
+        planTier: tier.id,
+        planPeriod: 'demo',
+        ogrenciLimiti: tier.maxStudent,
         durum: 'demo',
         baslangicTarihi: toDateStr(now),
         bitisTarihi: toDateStr(end),
@@ -141,18 +214,30 @@ export default function AdminSubscriptionScreen() {
     }
   };
 
-  const selectPlan = async (plan) => {
-    const isYearly = plan === 'yillik';
-    const priceText = isYearly ? `${formatPrice(YEARLY_PRICE)} / yıl` : `${formatPrice(MONTHLY_PRICE)} / ay`;
-    const rcPackage = isYearly ? rcPackages.yearly : rcPackages.monthly;
+  const selectPlan = async (tier, selectedPeriod) => {
+    const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
+    const priceText = `${formatPrice(price)} / ${selectedPeriod === 'yillik' ? 'yıl' : 'ay'}`;
+    const rcPackage = selectedPeriod === 'yillik' ? rcPackages.yearly : rcPackages.monthly;
+
+    if (studentCount > tier.maxStudent) {
+      const nextTier = getSuggestedTier(studentCount);
+      return Alert.alert(
+        'Paket Yetersiz',
+        `${tier.title} paketi ${tier.range} içindir. Kurumda şu an ${studentCount} öğrenci var. ${nextTier ? `${nextTier.title} paketini seçmelisin.` : '100+ öğrenci için özel teklif gerekir.'}`
+      );
+    }
+
+    if (!suggestedTier) {
+      return Alert.alert('Özel Teklif', '100 üzeri öğrenci için özel teklif gerekir. Bu aşamada manuel görüşme ile ilerlenmeli.');
+    }
 
     if (rcPackage) {
       Alert.alert(
-        `${isYearly ? 'Yıllık' : 'Aylık'} Paket`,
-        `${priceText}\n\nSatın alma ekranı açılacak.`,
+        `${tier.title} ${selectedPeriod === 'yillik' ? 'Yıllık' : 'Aylık'}`,
+        `${tier.range}\n${priceText}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.`,
         [
           { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Satın Al', onPress: () => purchasePlan(plan, rcPackage) },
+          { text: 'Satın Al', onPress: () => purchasePlan(tier, selectedPeriod, rcPackage) },
         ]
       );
       return;
@@ -160,19 +245,19 @@ export default function AdminSubscriptionScreen() {
 
     Alert.alert(
       'Paket Henüz Hazır Değil',
-      `${isYearly ? 'Yıllık' : 'Aylık'} paket seçildi.\n\n${priceText}\n\nÖdeme ürünü hazırlanıyor. Şimdilik demo veya promosyon kodu ile devam edebilirsiniz.`,
+      `${tier.title} paketi seçildi.\n${tier.range}\n${priceText}\n\nGoogle Play ödeme ürünü hazırlanıyor. Şimdilik demo veya manuel aktif etme ile devam edebilirsiniz.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Manuel Aktif Et', onPress: () => activateManual(plan) },
+        { text: 'Manuel Aktif Et', onPress: () => activateManual(tier, selectedPeriod) },
       ]
     );
   };
 
-  const purchasePlan = async (plan, rcPackage) => {
+  const purchasePlan = async (tier, selectedPeriod, rcPackage) => {
     setSaving(true);
     try {
       const result = await purchaseRevenueCatPackage(rcPackage, revenueCatUserId);
-      await syncRevenueCatResult(result?.customerInfo, plan);
+      await syncRevenueCatResult(result?.customerInfo, tier, selectedPeriod);
       Alert.alert('Başarılı', 'Abonelik aktif edildi.');
     } catch (err) {
       const userCancelled = err?.userCancelled || err?.code === 'PURCHASE_CANCELLED';
@@ -194,7 +279,7 @@ export default function AdminSubscriptionScreen() {
         Alert.alert('Abonelik Bulunamadı', 'Bu hesap için aktif abonelik bulunamadı.');
         return;
       }
-      await syncRevenueCatResult(customerInfo, subscription?.plan || 'revenuecat');
+      await syncRevenueCatResult(customerInfo, activeTier || PACKAGE_TIERS[0], subscription?.planPeriod || 'aylik');
       Alert.alert('Başarılı', 'Satın alma geri yüklendi.');
     } catch (err) {
       console.warn('Satın alma geri yükleme hatası:', err);
@@ -204,22 +289,25 @@ export default function AdminSubscriptionScreen() {
     }
   };
 
-  const syncRevenueCatResult = async (customerInfo, plan) => {
+  const syncRevenueCatResult = async (customerInfo, tier, selectedPeriod) => {
     const active = isRevenueCatPremiumActive(customerInfo);
     if (!active) throw new Error('Abonelik hakkı aktif değil.');
 
     const now = new Date();
-    const expiryDate = getRevenueCatExpiryDate(customerInfo) || toDateStr(plan === 'yillik' ? addMonths(now, 12) : addMonths(now, 1));
-    const finalPlan = plan === 'yillik' ? 'yillik' : plan === 'aylik' ? 'aylik' : 'revenuecat';
+    const expiryDate = getRevenueCatExpiryDate(customerInfo) || toDateStr(selectedPeriod === 'yillik' ? addMonths(now, 12) : addMonths(now, 1));
+    const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
 
     await set(ref(database, `abonelikler/${kresId}`), {
       kresId,
-      plan: finalPlan,
+      plan: `${tier.id}_${selectedPeriod}`,
+      planTier: tier.id,
+      planPeriod: selectedPeriod,
+      ogrenciLimiti: tier.maxStudent,
       durum: 'aktif',
       baslangicTarihi: subscription?.baslangicTarihi || toDateStr(now),
       bitisTarihi: expiryDate,
       demoBitisTarihi: '',
-      fiyat: finalPlan === 'yillik' ? YEARLY_PRICE : MONTHLY_PRICE,
+      fiyat: price,
       paraBirimi: 'TRY',
       kaynak: 'revenuecat',
       revenueCatCustomerId: revenueCatUserId,
@@ -230,20 +318,24 @@ export default function AdminSubscriptionScreen() {
     });
   };
 
-  const activateManual = async (plan) => {
+  const activateManual = async (tier, selectedPeriod) => {
     setSaving(true);
     try {
       const now = new Date();
-      const end = plan === 'yillik' ? addMonths(now, 12) : addMonths(now, 1);
+      const end = selectedPeriod === 'yillik' ? addMonths(now, 12) : addMonths(now, 1);
+      const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
 
       await set(ref(database, `abonelikler/${kresId}`), {
         kresId,
-        plan,
+        plan: `${tier.id}_${selectedPeriod}`,
+        planTier: tier.id,
+        planPeriod: selectedPeriod,
+        ogrenciLimiti: tier.maxStudent,
         durum: 'aktif',
         baslangicTarihi: toDateStr(now),
         bitisTarihi: toDateStr(end),
         demoBitisTarihi: '',
-        fiyat: plan === 'yillik' ? YEARLY_PRICE : MONTHLY_PRICE,
+        fiyat: price,
         paraBirimi: 'TRY',
         kaynak: 'manuel_admin',
         revenueCatCustomerId: revenueCatUserId,
@@ -252,7 +344,7 @@ export default function AdminSubscriptionScreen() {
         updatedAt: Date.now(),
       });
 
-      Alert.alert('Başarılı', plan === 'yillik' ? 'Yıllık abonelik aktif edildi.' : 'Aylık abonelik aktif edildi.');
+      Alert.alert('Başarılı', `${tier.title} ${selectedPeriod === 'yillik' ? 'yıllık' : 'aylık'} abonelik aktif edildi.`);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Abonelik aktif edilemedi.');
@@ -276,9 +368,7 @@ export default function AdminSubscriptionScreen() {
 
       let promo = BUILT_IN_PROMOS[code] || null;
       const promoSnap = await get(ref(database, `promosyonKodlari/${code}`));
-      if (promoSnap.exists()) {
-        promo = promoSnap.val();
-      }
+      if (promoSnap.exists()) promo = promoSnap.val();
 
       if (!promo || promo.aktif === false) {
         setSaving(false);
@@ -297,10 +387,14 @@ export default function AdminSubscriptionScreen() {
       const currentEnd = getCurrentEndDate(subscription);
       const startBase = currentEnd && currentEnd > now ? currentEnd : now;
       const end = addMonths(startBase, months);
+      const tier = suggestedTier || PACKAGE_TIERS[0];
 
       await set(ref(database, `abonelikler/${kresId}`), {
         kresId,
         plan: 'demo',
+        planTier: tier.id,
+        planPeriod: 'demo',
+        ogrenciLimiti: tier.maxStudent,
         durum: 'demo',
         baslangicTarihi: subscription?.baslangicTarihi || toDateStr(now),
         bitisTarihi: toDateStr(end),
@@ -354,7 +448,7 @@ export default function AdminSubscriptionScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>💎</Text>
           <Text style={styles.heroTitle}>Abonelik / Ödeme</Text>
-          <Text style={styles.heroDesc}>{kres?.ad || 'Kreş'} için kullanım durumu</Text>
+          <Text style={styles.heroDesc}>{kres?.ad || 'Kreş'} için öğrenci sayısına göre paket yönetimi</Text>
         </View>
 
         <View style={styles.statusCard}>
@@ -362,9 +456,29 @@ export default function AdminSubscriptionScreen() {
             <Text style={styles.statusTitle}>{status.label}</Text>
             <Text style={[styles.statusBadge, { backgroundColor: status.bg, color: status.color }]}>{status.badge}</Text>
           </View>
-          <Text style={styles.statusText}>Plan: {subscription?.plan || 'Henüz yok'}</Text>
+          <Text style={styles.statusText}>Plan: {getPlanLabel(subscription)}</Text>
           <Text style={styles.statusText}>Bitiş: {subscription?.bitisTarihi || subscription?.demoBitisTarihi || '-'}</Text>
           <Text style={styles.statusText}>Kalan gün: {remainingDays}</Text>
+        </View>
+
+        <View style={[styles.usageCard, overLimit && styles.usageDanger]}>
+          <View style={styles.usageTop}>
+            <View>
+              <Text style={styles.usageTitle}>Öğrenci Kullanımı</Text>
+              <Text style={styles.usageSub}>Kayıtlı öğrenci sayısı paket limitine göre takip edilir.</Text>
+            </View>
+            <Text style={styles.usageCount}>{studentCount}/{activeLimit || '∞'}</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${getUsagePercent(studentCount, activeLimit)}%`, backgroundColor: overLimit ? THEME.red : THEME.primary }]} />
+          </View>
+          <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}>
+            {overLimit
+              ? 'Mevcut paket öğrenci sayısı için yetersiz. Yeni öğrenci eklemek için üst pakete geçilmelidir.'
+              : suggestedTier
+                ? `Size uygun paket: ${suggestedTier.title} (${suggestedTier.range})`
+                : '100+ öğrenci için özel teklif gerekir.'}
+          </Text>
         </View>
 
         {!subscription ? (
@@ -373,30 +487,44 @@ export default function AdminSubscriptionScreen() {
           </TouchableOpacity>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Paketler</Text>
-        <View style={styles.planRow}>
+        <View style={styles.periodCard}>
+          <Text style={styles.sectionTitle}>Ödeme Dönemi</Text>
+          <View style={styles.periodRow}>
+            <TouchableOpacity style={[styles.periodButton, period === 'aylik' && styles.periodButtonActive]} onPress={() => setPeriod('aylik')} activeOpacity={0.85}>
+              <Text style={[styles.periodText, period === 'aylik' && styles.periodTextActive]}>Aylık</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.periodButton, period === 'yillik' && styles.periodButtonActive]} onPress={() => setPeriod('yillik')} activeOpacity={0.85}>
+              <Text style={[styles.periodText, period === 'yillik' && styles.periodTextActive]}>Yıllık</Text>
+              <Text style={[styles.periodMini, period === 'yillik' && styles.periodMiniActive]}>2 ay ücretsiz</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Öğrenci Sayısına Göre Paketler</Text>
+        {PACKAGE_TIERS.map((tier) => (
           <PlanCard
-            title="Aylık"
-            price={formatPrice(MONTHLY_PRICE)}
-            period="/ ay"
-            desc={rcPackages.monthly ? 'Güvenli ödeme ile satın al' : 'Paket hazırlanıyor'}
-            onPress={() => selectPlan('aylik')}
+            key={tier.id}
+            tier={tier}
+            period={period}
+            studentCount={studentCount}
+            active={subscription?.planTier === tier.id}
+            suggested={suggestedTier?.id === tier.id}
+            disabled={studentCount > tier.maxStudent}
+            saving={saving || rcLoading}
+            onPress={() => selectPlan(tier, period)}
           />
-          <PlanCard
-            title="Yıllık"
-            price={formatPrice(YEARLY_PRICE)}
-            period="/ yıl"
-            desc={rcPackages.yearly ? 'Güvenli ödeme ile satın al' : 'Paket hazırlanıyor'}
-            featured
-            onPress={() => selectPlan('yillik')}
-          />
+        ))}
+
+        <View style={styles.specialCard}>
+          <Text style={styles.specialTitle}>100+ öğrenci</Text>
+          <Text style={styles.specialText}>Büyük kurumlar için özel teklif ile ilerlenir. Bu paket ileride manuel satış veya özel kurumsal plan olarak yönetilebilir.</Text>
         </View>
 
         <TouchableOpacity style={[styles.restoreButton, saving && { opacity: 0.6 }]} onPress={restorePurchases} disabled={saving} activeOpacity={0.85}>
           <Text style={styles.restoreText}>Satın Almayı Geri Yükle</Text>
         </TouchableOpacity>
 
-        {rcError ? <Text style={styles.paymentWarning}>Ödeme bilgileri şu an alınamadı. Demo veya promosyon kodu ile devam edebilirsiniz.</Text> : null}
+        {rcError ? <Text style={styles.paymentWarning}>Google Play ödeme bilgileri şu an alınamadı. Demo veya promosyon kodu ile devam edebilirsiniz.</Text> : null}
 
         <View style={styles.promoCard}>
           <Text style={styles.sectionTitle}>Promosyon Kodu</Text>
@@ -417,16 +545,30 @@ export default function AdminSubscriptionScreen() {
   );
 }
 
-function PlanCard({ title, price, period, desc, featured, onPress }) {
+function PlanCard({ tier, period, studentCount, active, suggested, disabled, saving, onPress }) {
+  const price = period === 'yillik' ? tier.yearly : tier.monthly;
+  const periodText = period === 'yillik' ? '/ yıl' : '/ ay';
+  const isAvailable = !disabled;
+
   return (
-    <TouchableOpacity style={[styles.planCard, featured && styles.featuredPlan]} onPress={onPress} activeOpacity={0.85}>
-      {featured ? <Text style={styles.bestBadge}>Avantajlı</Text> : null}
-      <Text style={styles.planTitle}>{title}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 }}>
-        <Text style={styles.planPrice}>{price}</Text>
-        <Text style={styles.planPeriod}>{period}</Text>
+    <TouchableOpacity style={[styles.planCard, tier.featured && styles.featuredPlan, active && styles.activePlan, disabled && styles.disabledPlan]} onPress={onPress} disabled={saving} activeOpacity={0.85}>
+      <View style={styles.planHead}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.planTitle}>{tier.title}</Text>
+          <Text style={styles.planRange}>{tier.range}</Text>
+        </View>
+        <Text style={[styles.bestBadge, { color: tier.color, backgroundColor: `${tier.color}18` }]}>{active ? 'Aktif' : suggested ? 'Uygun' : tier.badge}</Text>
       </View>
-      <Text style={styles.planDesc}>{desc}</Text>
+
+      <View style={styles.priceRow}>
+        <Text style={styles.planPrice}>{formatPrice(price)}</Text>
+        <Text style={styles.planPeriod}>{periodText}</Text>
+      </View>
+
+      <Text style={styles.planDesc}>{tier.desc}</Text>
+      <Text style={[styles.limitText, !isAvailable && { color: THEME.red }]}>
+        {isAvailable ? `Mevcut öğrenci: ${studentCount}/${tier.maxStudent}` : `Bu paket ${studentCount} öğrenci için yetersiz`}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -455,6 +597,11 @@ function getRemainingDays(sub) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function getUsagePercent(count, limit) {
+  if (!limit) return 0;
+  return Math.min(100, Math.round((count / limit) * 100));
+}
+
 function addMonths(date, count) {
   const d = new Date(date);
   const day = d.getDate();
@@ -481,20 +628,45 @@ const styles = StyleSheet.create({
   statusTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
   statusText: { color: THEME.muted, fontWeight: '700', marginTop: 4 },
+  usageCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
+  usageDanger: { borderColor: THEME.red, borderWidth: 1.5 },
+  usageTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14 },
+  usageTitle: { color: THEME.text, fontSize: 18, fontWeight: '900' },
+  usageSub: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: 4 },
+  usageCount: { color: THEME.primary, fontSize: 24, fontWeight: '900' },
+  progressTrack: { height: 10, backgroundColor: THEME.primarySoft, borderRadius: 99, overflow: 'hidden', marginTop: 13 },
+  progressFill: { height: '100%', borderRadius: 99 },
+  usageInfo: { color: THEME.muted, fontWeight: '800', marginTop: 9, lineHeight: 18 },
+  trialButton: { backgroundColor: THEME.green, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 18 },
+  trialText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
+  periodCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 10 },
+  periodRow: { flexDirection: 'row', backgroundColor: THEME.bg, borderRadius: 16, padding: 5, gap: 6 },
+  periodButton: { flex: 1, borderRadius: 13, paddingVertical: 11, alignItems: 'center' },
+  periodButtonActive: { backgroundColor: THEME.primary },
+  periodText: { color: THEME.primary, fontWeight: '900' },
+  periodTextActive: { color: '#FFF' },
+  periodMini: { color: THEME.muted, fontSize: 10, fontWeight: '800', marginTop: 2 },
+  periodMiniActive: { color: 'rgba(255,255,255,0.82)' },
+  planCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  featuredPlan: { borderColor: THEME.primary, borderWidth: 1.5 },
+  activePlan: { backgroundColor: '#FBF8FF' },
+  disabledPlan: { opacity: 0.58 },
+  planHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  bestBadge: { alignSelf: 'flex-start', fontWeight: '900', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, overflow: 'hidden', fontSize: 12 },
+  planTitle: { color: THEME.text, fontSize: 20, fontWeight: '900' },
+  planRange: { color: THEME.muted, fontSize: 12.5, fontWeight: '800', marginTop: 4 },
+  priceRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 },
+  planPrice: { color: THEME.primary, fontSize: 27, fontWeight: '900' },
+  planPeriod: { color: THEME.muted, fontWeight: '800', marginLeft: 4, marginBottom: 4 },
+  planDesc: { color: THEME.muted, fontWeight: '700', marginTop: 8, lineHeight: 18 },
+  limitText: { color: THEME.green, fontWeight: '900', marginTop: 10 },
+  specialCard: { backgroundColor: '#FFF7E8', borderRadius: 20, padding: 15, borderWidth: 1, borderColor: '#FFE0A3', marginBottom: 14 },
+  specialTitle: { color: THEME.gold, fontSize: 17, fontWeight: '900' },
+  specialText: { color: THEME.text, fontWeight: '700', lineHeight: 19, marginTop: 5 },
   restoreButton: { backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginBottom: 14 },
   restoreText: { color: THEME.primary, fontWeight: '900' },
   paymentWarning: { color: THEME.orange, fontWeight: '800', lineHeight: 18, marginBottom: 14, textAlign: 'center' },
-  trialButton: { backgroundColor: THEME.green, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 18 },
-  trialText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 10 },
-  planRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  planCard: { flex: 1, backgroundColor: THEME.card, borderRadius: 20, padding: 15, borderWidth: 1, borderColor: THEME.border, minHeight: 150 },
-  featuredPlan: { borderColor: THEME.gold, borderWidth: 2 },
-  bestBadge: { alignSelf: 'flex-start', backgroundColor: '#FFF5D9', color: THEME.gold, fontWeight: '900', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden', marginBottom: 8 },
-  planTitle: { color: THEME.text, fontSize: 17, fontWeight: '900' },
-  planPrice: { color: THEME.primary, fontSize: 22, fontWeight: '900' },
-  planPeriod: { color: THEME.muted, fontWeight: '800', marginLeft: 3, marginBottom: 2 },
-  planDesc: { color: THEME.muted, fontWeight: '700', marginTop: 8 },
   promoCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
   input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 13, color: THEME.text, borderWidth: 1, borderColor: THEME.border, fontWeight: '800', marginBottom: 10 },
   applyButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
