@@ -15,6 +15,7 @@ import {
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { calculateChildAge, formatChildBirthDate, getChildBirthDate } from '../../utils/childDates';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -32,37 +33,6 @@ const THEME = {
   card: '#FFFFFF',
   border: '#EEEAF8',
 };
-
-function parseBirthDate(value) {
-  if (!value) return null;
-  const raw = String(value).trim();
-
-  const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (isoMatch) {
-    const [, year, month, day] = isoMatch;
-    const date = new Date(Number(year), Number(month) - 1, Number(day));
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  const trMatch = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
-  if (trMatch) {
-    const [, day, month, year] = trMatch;
-    const date = new Date(Number(year), Number(month) - 1, Number(day));
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  const fallback = new Date(raw);
-  return Number.isNaN(fallback.getTime()) ? null : fallback;
-}
-
-function formatBirthDate(value) {
-  const date = parseBirthDate(value);
-  if (!date) return 'Belirtilmemiş';
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
-}
 
 export default function ChildListScreen() {
   const navigation = useNavigation();
@@ -83,6 +53,7 @@ export default function ChildListScreen() {
       const liste = Object.entries(cocuklar)
         .map(([id, c]) => {
           const sinif = c.sinifId ? siniflar[c.sinifId] : null;
+          const birthDate = getChildBirthDate(c);
 
           const veliBilgileri = c.veliIds
             ? c.veliIds
@@ -108,7 +79,8 @@ export default function ChildListScreen() {
           return {
             id,
             ad: `${c.ad || ''} ${c.soyad || ''}`.trim() || c.ad || id,
-            dogumTarihi: c.dogumTarihi || null,
+            dogumTarihi: birthDate,
+            yas: calculateChildAge(birthDate),
             sinifAd: sinif ? sinif.ad : c.sinifId || null,
             veliler: veliBilgileri,
             ogretmenAd,
@@ -170,7 +142,7 @@ export default function ChildListScreen() {
               {item.ad}
             </Text>
             <Text style={styles.classText} numberOfLines={1} ellipsizeMode="tail">
-              🏫 {item.sinifAd ?? 'Sınıf belirtilmemiş'}
+              🏫 {item.sinifAd ?? 'Sınıf belirtilmemiş'} {item.yas ? `• ${item.yas}` : ''}
             </Text>
           </View>
 
@@ -181,7 +153,7 @@ export default function ChildListScreen() {
           <View style={[styles.infoPill, styles.infoPillBlue]}>
             <Text style={styles.infoLabel}>Doğum</Text>
             <Text style={styles.infoValue} numberOfLines={1}>
-              {formatBirthDate(item.dogumTarihi)}
+              {formatChildBirthDate(item.dogumTarihi)}
             </Text>
           </View>
 
@@ -194,12 +166,12 @@ export default function ChildListScreen() {
         </View>
 
         <View style={styles.parentBox}>
-          <Text style={styles.parentLabel}>👨‍👩‍👧 Veli Bilgisi</Text>
+          <Text style={styles.parentLabel}>Veli Bilgisi</Text>
           <Text style={styles.parentName} numberOfLines={2} ellipsizeMode="tail">
             {veliText}
           </Text>
           <Text style={styles.parentPhone} numberOfLines={1} ellipsizeMode="tail">
-            📞 {telefonText}
+            Tel: {telefonText}
           </Text>
         </View>
       </TouchableOpacity>
@@ -234,7 +206,7 @@ export default function ChildListScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>👶</Text>
             <Text style={styles.emptyText}>Henüz çocuk eklenmemiş</Text>
-            <Text style={styles.emptySubtext}>İlk çocuğu ekleyerek sınıf ve veli takibini başlat.</Text>
+            <Text style={styles.emptySubtext}>İlk kaydı ekleyerek sınıf ve veli takibini başlat.</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
               onPress={() => navigation.navigate('ChildForm')}
@@ -270,101 +242,36 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: THEME.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
-
-  headerCard: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 6,
-    padding: 18,
-    borderRadius: 24,
-    backgroundColor: THEME.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  headerCard: { marginHorizontal: 16, marginTop: 14, marginBottom: 6, padding: 18, borderRadius: 24, backgroundColor: THEME.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerTitle: { color: '#FFFFFF', fontSize: 25, fontWeight: '900' },
   headerSub: { color: 'rgba(255,255,255,0.82)', marginTop: 4, fontWeight: '800' },
-  headerIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  headerIcon: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   headerIconText: { fontSize: 28 },
-
   list: { padding: 16, paddingBottom: 108 },
-  card: {
-    backgroundColor: THEME.card,
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    shadowColor: '#3B235C',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 3,
-  },
+  card: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: THEME.border, shadowColor: '#3B235C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 14, elevation: 3 },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: THEME.orangeSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
+  avatar: { width: 52, height: 52, borderRadius: 18, backgroundColor: THEME.orangeSoft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText: { fontSize: 27 },
   titleBlock: { flex: 1, minWidth: 0 },
   childName: { fontSize: 18, fontWeight: '900', color: THEME.text },
   classText: { fontSize: 13, color: THEME.muted, fontWeight: '700', marginTop: 4 },
   arrow: { fontSize: 34, fontWeight: '900', color: THEME.primary, marginLeft: 8 },
-
   infoGrid: { flexDirection: 'row', gap: 10, marginTop: 14 },
   infoPill: { flex: 1, minWidth: 0, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 },
   infoPillBlue: { backgroundColor: THEME.blueSoft },
   infoPillGreen: { backgroundColor: THEME.greenSoft },
   infoLabel: { fontSize: 11, color: THEME.muted, fontWeight: '800', marginBottom: 3 },
   infoValue: { fontSize: 13, color: THEME.text, fontWeight: '900' },
-
-  parentBox: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: '#FAFAFF',
-    borderWidth: 1,
-    borderColor: '#F0ECFA',
-  },
+  parentBox: { marginTop: 12, padding: 12, borderRadius: 16, backgroundColor: '#FAFAFF', borderWidth: 1, borderColor: '#F0ECFA' },
   parentLabel: { fontSize: 12, color: THEME.muted, fontWeight: '900', marginBottom: 5 },
   parentName: { fontSize: 14, color: THEME.text, fontWeight: '800', lineHeight: 19 },
   parentPhone: { fontSize: 13, color: THEME.muted, fontWeight: '700', marginTop: 4 },
-
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 34 },
   emptyIcon: { fontSize: 58, marginBottom: 12 },
   emptyText: { fontSize: 21, fontWeight: '900', color: THEME.text, marginBottom: 8, textAlign: 'center' },
   emptySubtext: { fontSize: 14, color: THEME.muted, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
   emptyBtn: { marginTop: 20, backgroundColor: THEME.primary, borderRadius: 16, paddingHorizontal: 18, paddingVertical: 13 },
   emptyBtnText: { color: '#FFFFFF', fontWeight: '900', fontSize: 15 },
-
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: THEME.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: THEME.primaryDark,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 7,
-  },
+  fab: { position: 'absolute', right: 20, bottom: 20, width: 58, height: 58, borderRadius: 29, backgroundColor: THEME.primary, justifyContent: 'center', alignItems: 'center', shadowColor: THEME.primaryDark, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 7 },
   fabText: { fontSize: 34, color: '#fff', fontWeight: '500', lineHeight: 36 },
 });
