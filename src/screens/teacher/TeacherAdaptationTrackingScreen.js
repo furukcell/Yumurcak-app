@@ -37,6 +37,11 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
   const [selectedId, setSelectedId] = useState('');
   const [form, setForm] = useState(defaultForm());
 
+  const activeChildren = data.classChildren.filter(uyumAktifMi);
+  const selectedChild = activeChildren.find((c) => c.id === selectedId) || activeChildren[0] || null;
+  const selectedRecords = selectedChild ? uyumKayitlari.filter((r) => String(r.cocukId) === String(selectedChild.id)) : [];
+  const todayRecord = selectedChild ? selectedRecords.find((r) => r.tarih === today) : null;
+
   React.useEffect(() => {
     const unsub = onValue(ref(database, 'uyumKayitlari'), (snap) => {
       const val = snap.val() || {};
@@ -44,14 +49,6 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
     }, () => setUyumKayitlari([]));
     return () => unsub && unsub();
   }, []);
-
-  if (data.loading) return <LoadingState text="Uyum takibi hazırlanıyor..." />;
-  if (!data.currentClass) return <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlandığında uyum takibi aktifleşir." />;
-
-  const activeChildren = data.classChildren.filter(uyumAktifMi);
-  const selectedChild = activeChildren.find((c) => c.id === selectedId) || activeChildren[0] || null;
-  const selectedRecords = selectedChild ? uyumKayitlari.filter((r) => String(r.cocukId) === String(selectedChild.id)) : [];
-  const todayRecord = selectedChild ? selectedRecords.find((r) => r.tarih === today) : null;
 
   React.useEffect(() => {
     if (!selectedChild?.id) {
@@ -64,6 +61,9 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
     }
     setForm(defaultForm());
   }, [selectedChild?.id, todayRecord?.id]);
+
+  if (data.loading) return <LoadingState text="Uyum takibi hazırlanıyor..." />;
+  if (!data.currentClass) return <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlandığında uyum takibi aktifleşir." />;
 
   const enteredToday = activeChildren.filter((child) => uyumKayitlari.some((r) => r.tarih === today && String(r.cocukId) === String(child.id))).length;
   const pending = Math.max(0, activeChildren.length - enteredToday);
