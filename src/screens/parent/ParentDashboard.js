@@ -48,6 +48,7 @@ export default function ParentDashboardScreen({ navigation }) {
     ['💬', 'Mesajlar', 'ParentMessages', '#E9F0FF', '#94AFFF'],
     ['🖼️', 'Galeri', 'ParentGallery', '#E8F8E9', '#86D78B'],
     ['📁', 'Belgeler', 'ParentDocuments', '#F2EAFE', '#BA9BEA'],
+    ['🌱', 'Uyum Skoru', 'ParentUyum', '#E8FBEA', '#7DDC8C'],
   ];
 
   return (
