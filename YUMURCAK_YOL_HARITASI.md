@@ -1,234 +1,379 @@
 # Yumurcak Güncel Yol Haritası
 
-Bu dosya build öncesi güncel durumu kısa ve net şekilde özetler.
+Bu dosya Yumurcak Kreş uygulamasının güncel canlı öncesi durumunu özetler.
 
-> Son güncelleme: 23 Haziran 2026
+> Son güncelleme: 26 Haziran 2026
 
 ---
 
 ## 1. Güncel Genel Durum
 
-Yumurcak Kreş, çalışan MVP + stabilizasyon aşamasındadır. Yönetici, öğretmen ve veli panellerindeki ana modüller büyük ölçüde tamamlandı. Şu an öncelik yeni özellik eklemekten çok gerçek cihaz testi, güvenlik, ödeme ve Play Store kapalı test hazırlığıdır.
+Yumurcak Kreş şu an **canlı öncesi hazır / son gerçek cihaz kontrolü** seviyesindedir. Yönetici, öğretmen ve veli tarafındaki ana modüller tamamlandı. Push notification sistemi Firebase Cloud Functions tarafına taşındı ve uygulamadaki ana olayların büyük çoğunluğu telefona push bildirim üretecek hale getirildi.
+
+Yeni özellik geliştirme tarafında canlıyı engelleyen ana iş kalmamıştır. Kalan işler; gerçek cihaz son testleri, Firebase Rules son kontrolü, RevenueCat / Google Play satın alma doğrulaması ve Play Console kapalı test sürecidir.
 
 ---
 
 ## 2. Tamamlanan Ana Modüller
 
-- Expo / React Native temel yapı
-- Firebase Realtime Database bağlantısı
-- Firebase Storage profil fotoğrafı ve galeri altyapısı
-- Rol bazlı yönetici, öğretmen, veli ve superadmin panelleri
-- Veli alt tab yapısı
-- Veli özet ekranı
-- Veli anasayfa pastel kart tasarımı
-- Öğretmen anasayfa pastel kart tasarımı
-- Veli profil fotoğrafının anasayfa ve özet alanlarına yansıması
-- Kurum Zili
-- Ödeme takibi
-- Admin ödeme listesi ve ödeme formu
-- Veli son 12 ay ödeme ekranı
-- Anket yönetimi
-- Kurum istatistikleri
-- Hedefli duyuru sistemi
-- Öğretmen sınıf duyurusu
-- Öğretmen günlük rapor girişi
-- Öğretmen yoklama girişi
-- Öğretmen fiziksel gelişim girişi
-- Veli gelişim / rapor ekranları
-- Kreş genel tema sistemi
-- Admin tema ekranı
-- Öğretmen sınıf teması ekranı
-- Sınıf tema kayıt altyapısı
-- Admin / öğretmen / veli bildirim merkezi
-- Expo push notification kod altyapısı
-- Mesajlaşma
-- Mesaj meta verisinde `undefined` temizleme
-- Galeri modülü
-- Yasal metinler
-- Başarı toast sistemi
-- Android navigation bar gizleme altyapısı
-- RevenueCat kod altyapısı
-
----
-
-## 3. Galeri Durumu
-
-Galeri modülü build öncesi eklendi.
-
-Yapılanlar:
-
-- `src/screens/shared/GalleryScreenBase.js` ortak galeri altyapısı oluşturuldu.
-- `src/screens/parent/ParentGalleryScreen.js` placeholder olmaktan çıkarıldı.
-- `src/screens/admin/AdminGalleryScreen.js` eklendi.
-- `src/screens/teacher/TeacherGalleryScreen.js` eklendi.
-- Öğretmen navigation içine `TeacherGallery` route’u eklendi.
-- Öğretmen paneline Galeri kartı eklendi.
-- Yönetici navigation içine `AdminGallery` route’u eklendi.
-- Galeri kayıtları `galeri/` node’una yazılır.
-- Dosyalar Firebase Storage içinde `galeri/{kresId}/` altında tutulur.
-- Her galeri kaydı `expiresAt` taşır ve 24 saat dolunca ekranda görünmez.
-
-Veri modeli:
-
 ```txt
-galeri/{mediaId}
-  kresId
-  sinifId
-  cocukIds
-  hedef
-  targetType
-  classId
-  studentId
-  type
-  url
-  storagePath
-  aciklama
-  yukleyenId
-  yukleyenAd
-  yukleyenRol
-  createdAt
-  expiresAt
+✅ Expo / React Native temel yapı
+✅ Firebase Auth rol bazlı giriş
+✅ Firebase Realtime Database bağlantısı
+✅ Firebase Storage profil / galeri / medya altyapısı
+✅ Yönetici paneli
+✅ Öğretmen paneli
+✅ Veli paneli
+✅ Superadmin paneli
+✅ Kurum / sınıf / çocuk / öğretmen / veli yönetimi
+✅ Veli özet ekranı
+✅ Veli anasayfa
+✅ Öğretmen anasayfa
+✅ Admin dashboard
+✅ Ödeme takibi
+✅ Admin ödeme listesi ve ödeme formu
+✅ Veli ödeme ekranı
+✅ Duyuru sistemi
+✅ Anket yönetimi
+✅ Mesajlaşma
+✅ Kurum Zili
+✅ Günlük rapor
+✅ Yoklama
+✅ Yemek listesi
+✅ Admin aylık yemek listesi
+✅ Galeri fotoğraf / video
+✅ Galeri uygulama içi görüntüleme
+✅ Galeri video oynatma
+✅ Galeri cihaz galerisine kaydetme
+✅ Medikal bilgi takibi
+✅ Fiziksel gelişim kaydı
+✅ Veli gelişim ekranı
+✅ Aylık Gelişim
+✅ Sınıf Ortalaması
+✅ Rozet Albümü
+✅ Haftanın Yıldızı
+✅ Veli Rozetlerim ekranı
+✅ Uyum Modülü
+✅ Öğretmen Uyum Takibi
+✅ Veli Uyum Skoru
+✅ Tema sistemi
+✅ Sınıf tema sistemi
+✅ Bildirim merkezi
+✅ Cloud Functions push notification sistemi
+✅ RevenueCat abonelik altyapısı
+✅ Google Play abonelik ürün eşleşmeleri
+✅ Yasal metinler
+✅ Başarı toast sistemi
+✅ Android navigation bar ayarları
 ```
 
-Kalan galeri işi:
+---
 
-- Cloud Functions ile 24 saatten eski Storage dosyalarını fiziksel olarak garantili silme.
+## 3. Push Bildirim Durumu
+
+Push notification sistemi artık sadece uygulama açıkken değil, uygulama kapalıyken de telefona bildirim gönderecek backend mimarisine taşındı.
+
+Akış:
+
+```txt
+Olay oluşur
+  ↓
+Firebase node'una kayıt düşer
+  ↓
+Cloud Function tetiklenir
+  ↓
+bildirimler node'una bildirim kaydı yazılır
+  ↓
+sendPushOnNotificationCreate çalışır
+  ↓
+Expo Push API ile telefona bildirim gider
+```
+
+Aktif Cloud Functions:
+
+```txt
+sendPushOnNotificationCreate
+createNotificationOnDailyReportCreate
+createNotificationOnGalleryCreate
+createNotificationOnPollCreate
+createNotificationOnWeeklyBadgeWrite
+createNotificationOnAttendanceWrite
+createNotificationOnMealListCreate
+createNotificationOnMedicalWrite
+createNotificationOnPhysicalDevelopmentCreate
+createNotificationOnAdaptationWrite
+```
+
+Telefona push giden olaylar:
+
+```txt
+✅ Duyuru
+✅ Ödeme kaydı
+✅ Mesaj
+✅ Kurum Zili
+✅ Günlük Rapor
+✅ Galeri Foto/Video
+✅ Anket
+✅ Haftanın Yıldızı / Rozet
+✅ Yoklama
+✅ Yemek Listesi
+✅ Medikal Bilgi
+✅ Fiziksel Gelişim
+✅ Uyum Takibi
+```
+
+Bildirim kayıtlarında kontrol edilecek durumlar:
+
+```txt
+pushStatus: pending
+pushStatus: sent
+pushStatus: no_tokens
+pushStatus: error
+pushStatus: skipped_empty_body
+```
 
 ---
 
-## 4. Tema Durumu
+## 4. RevenueCat / Google Play Durumu
+
+Abonelik altyapısı canlı güvenli akışa göre düzenlendi.
 
 Tamamlananlar:
 
-- Kreş genel tema sistemi vardır.
-- Yönetici tema seçebilir.
-- Admin tema ekranı da tema arka planını kullanır.
-- Veli / öğretmen anasayfa kartları pastel hale getirildi.
-- Öğretmen sınıf teması seçme ekranı eklendi.
-- Sınıf temaları şu path’e yazılır:
-
 ```txt
-kresler/{kresId}/sinifTemalari/{sinifId}
+✅ RevenueCat proje ayarı
+✅ Android public key
+✅ Offering: default
+✅ Entitlement: YUMURCAK Pro
+✅ Google Play abonelik ürünleri
+✅ RevenueCat package eşleşmeleri
+✅ Admin abonelik ekranı
+✅ Paket okunamadığında manuel aktif etme kaldırıldı
+✅ PILOT1AY demo promosyon kodu bırakıldı
 ```
 
-Kontrol gereken nokta:
+Paketler:
 
-- Öğretmen / veli kullanıcı kayıtlarında `sinifId` alanı doluysa sınıf teması yayılır.
-- `sinifId` boş gelen kullanıcılar için sonraki fazda RootNavigator sınıf tespit mantığı güçlendirilecek.
+```txt
+Başlangıç: 0-30 öğrenci / 1.000 TL aylık / 10.000 TL yıllık
+Profesyonel: 31-50 öğrenci / 1.500 TL aylık / 15.000 TL yıllık
+Kurum: 51-100 öğrenci / 3.000 TL aylık / 30.000 TL yıllık
+100+: özel teklif
+```
 
----
+Kalan kontrol:
 
-## 5. Build Öncesi Kalan Kritik İşler
-
-1. Gerçek cihazda admin / öğretmen / veli uçtan uca test.
-2. Mesaj gönderimi sonrası yanlış `Mesaj gönderilemedi` alerti çıkmadığını doğrulama.
-3. Öğretmen sınıf temasının aynı sınıftaki veli ve öğretmenlere yansıdığını test etme.
-4. Push token kaydı ve gerçek push bildirimi testi.
-5. RevenueCat ürün yok / ürün var senaryoları.
-6. Google Play subscription ürünleri.
-7. RevenueCat service account bağlantısı.
-8. RevenueCat package / entitlement eşlemesi.
-9. Gerçek satın alma ve restore testi.
-10. Firebase Realtime Database rules.
-11. Firebase Storage rules.
-12. Tema ve sınıf teması yazma yetki kuralları.
-13. Android navigation bar davranışı gerçek cihaz testi.
-14. Codemagic release build.
-15. Play Store kapalı test.
+```txt
+- Gerçek Android cihazda Google Play ödeme popup'ı
+- Başarılı satın alma sonrası entitlement kontrolü
+- Restore testi
+- Firebase abonelik kaydı kontrolü
+```
 
 ---
 
-## 6. Sıradaki Geliştirme Fazları
+## 5. Galeri Durumu
 
-### FAZ 1 — Firebase Güvenlik Kuralları
+Galeri modülü tamamlandı.
 
-Production öncesi en kritik iştir.
+Yapılanlar:
 
-- `kresId` bazlı veri izolasyonu
-- Yönetici / öğretmen / veli rol kontrolü
-- Çocuk verisi erişim kısıtları
-- Mesaj erişim kısıtları
-- Bildirim erişim kısıtları
-- Galeri Storage erişimi
-- Tema / sınıf teması yazma yetkileri
+```txt
+✅ Ortak GalleryScreenBase altyapısı
+✅ Veli galeri ekranı
+✅ Öğretmen galeri ekranı
+✅ Admin galeri ekranı
+✅ Fotoğraf yükleme
+✅ Çoklu fotoğraf yükleme
+✅ Video yükleme
+✅ 24 saat aktif görünürlük
+✅ Fotoğraf tıklayınca uygulama içi görüntüleme
+✅ Video uygulama içinde oynatma
+✅ Kaydet butonu
+✅ Cihaz galerisine Yumurcak albümü altında kaydetme
+✅ Çoklu medya grid tasarımı
+✅ Galeri push bildirimi
+```
 
-### FAZ 2 — Admin Aylık Yemek Listesi
+Opsiyonel sonraki iş:
 
-- Admin ay/yıl seçer.
-- 30/31 günlük tablo açılır.
-- Kahvaltı / öğle / ara öğün girilir.
-- `Ayı Yayınla` ile günlük `yemekListeleri` kayıtları oluşturulur.
-- Veli bugünün menüsünü mevcut ekrandan görür.
-
-### FAZ 3 — Sınıf Teması Yayılım Kontrolü
-
-- Öğretmen tema seçer.
-- Aynı sınıftaki öğretmenler görür.
-- O sınıftaki veliler görür.
-- Başka sınıflar etkilenmez.
-- Kullanıcı kaydında `sinifId` yoksa çocuk/sınıf verisinden tespit yapılır.
-
-### FAZ 4 — RevenueCat / Google Play Gerçek Ödeme
-
-- Google Play ürünleri oluşturulur.
-- RevenueCat service account bağlanır.
-- Ürünler RevenueCat package / entitlement ile eşlenir.
-- Gerçek Android cihazda satın alma ve restore test edilir.
-
-### FAZ 5 — Push Notification Gerçek Test
-
-- Bildirim izni alınır.
-- Expo push token kullanıcı kaydına yazılır.
-- Admin / öğretmen / veli olaylarında push telefona düşer.
-
-### FAZ 6 — Galeri Cloud Functions Temizliği
-
-- 24 saatten eski galeri kayıtları silinir.
-- Storage dosyaları fiziksel silinir.
-- Hata loglama yapılır.
-
-### FAZ 7 — Kapalı Test / Release
-
-- Codemagic Android release build alınır.
-- Android gerçek cihaz release testi yapılır.
-- Play Console kapalı test açılır.
-- Crash kontrolü yapılır.
-- Veri güvenliği formu doldurulur.
+```txt
+- 24 saatten eski Storage dosyalarını fiziksel silen zamanlı Cloud Function
+```
 
 ---
 
-## 7. Build Test Akışı
+## 6. Uyum Modülü Durumu
 
-1. Admin giriş yapar.
-2. Öğretmen giriş yapar.
-3. Veli giriş yapar.
-4. Admin sınıf / çocuk / öğretmen / veli bağlantılarını kontrol eder.
-5. Öğretmen günlük rapor girer.
-6. Öğretmen yoklama girer.
-7. Öğretmen fiziksel gelişim girer.
-8. Öğretmen sınıf teması seçer.
-9. Veli aynı sınıf temasını görür.
-10. Admin duyuru oluşturur.
-11. Öğretmen sınıf duyurusu oluşturur.
-12. Veli duyuruları doğru hedefe göre görür.
-13. Admin ödeme kaydı oluşturur.
-14. Veli ödeme ekranında kaydı görür.
-15. Mesaj gönderilir ve yanlış hata alerti çıkmaz.
-16. Galeriye fotoğraf/video yüklenir.
-17. Veli doğru galeri kayıtlarını görür.
-18. Bildirim merkezi açılır.
-19. Push token oluşur.
-20. Push bildirim telefona düşer.
-21. Android navigation bar davranışı test edilir.
-22. RevenueCat satın alma / restore denenir.
+Uyum Modülü tamamlandı.
+
+Tamamlananlar:
+
+```txt
+✅ Admin çocuk formunda Mevcut öğrenci / Yeni başlayan seçimi
+✅ Yeni başlayan çocuk için 30 günlük takip
+✅ Öğretmen Uyum Takibi ekranı
+✅ Günlük uyum kaydı
+✅ Otomatik uyum skoru
+✅ Aynı gün kayıt varsa formun eski veriyle dolması
+✅ 30 gün sonunda aktif takibin kapanması
+✅ Veli Uyum Skoru ekranı
+✅ İlk kayıt yoksa 0/100 yerine Skor Bekleniyor gösterimi
+✅ Veli anasayfada sadece uyum çocuğunda Uyum Skoru kartı
+✅ Uyum takibi push bildirimi
+```
 
 ---
 
-## 8. Notlar
+## 7. Gelişim / Sınıf Ortalaması Durumu
 
-- Kod tarafında ana modüller büyük ölçüde hazırdır.
-- Production öncesi Firebase Rules şarttır.
-- RevenueCat gerçek ödeme için Google Play bağlantısı şarttır.
-- Push notification gerçek cihazda test edilmeden production hazır kabul edilmemelidir.
-- Galeri içerikleri uygulamada 24 saat görünür; Storage’dan garantili silme için Cloud Functions gerekir.
-- Admin aylık yemek listesi sonraki en büyük ürün geliştirme işidir.
+Tamamlandı.
+
+```txt
+✅ Öğretmen fiziksel gelişim kaydı
+✅ Veli aylık gelişim ekranı
+✅ Veli Sınıf Ortalaması tabı
+✅ Minimum 5 çocuk ölçümü şartı
+✅ Anonim karşılaştırma
+✅ Başka çocuk adı göstermeme
+✅ Sıralama / derece göstermeme
+✅ Fiziksel gelişim push bildirimi
+```
+
+Kullanılan yorum dili:
+
+```txt
+Ortalamaya yakın
+Ortalamanın üzerinde
+Ortalamanın altında
+```
+
+---
+
+## 8. Haftanın Yıldızı / Rozet Durumu
+
+Tamamlandı.
+
+```txt
+✅ Öğretmen Haftanın Yıldızı ekranı
+✅ Cuma günü rozet verme mantığı
+✅ Aynı hafta aynı çocuk için kayıt güncelleme
+✅ haftaninRozetleri veri yapısı
+✅ Veli özet ekranında haftalık rozet kartı
+✅ Veli Rozetlerim ekranı
+✅ Veli rozet geçmişi
+✅ Sadece ilgili çocuğun velisinin görmesi
+✅ Rozet push bildirimi
+```
+
+---
+
+## 9. Tema Durumu
+
+Tamamlandı / test edilecek.
+
+```txt
+✅ Kreş genel tema sistemi
+✅ Yönetici tema seçimi
+✅ Admin tema ekranı
+✅ Veli / öğretmen pastel kart tasarımları
+✅ Öğretmen sınıf teması ekranı
+✅ Sınıf tema kayıt altyapısı
+```
+
+Son kontrol:
+
+```txt
+- Öğretmen / veli kullanıcı kayıtlarında sinifId doluysa sınıf teması doğru yayılıyor mu?
+- sinifId boş kullanıcılar için çocuk/sınıf ilişkisinden görünüm doğru mu?
+```
+
+---
+
+## 10. Canlı Öncesi Son Test Akışı
+
+```txt
+1. Admin giriş yapar
+2. Öğretmen giriş yapar
+3. Veli giriş yapar
+4. Admin sınıf / çocuk / öğretmen / veli bağlantılarını kontrol eder
+5. Öğretmen günlük rapor girer
+6. Veli günlük raporu görür ve push alır
+7. Öğretmen yoklama girer
+8. Veli yoklama ekranını görür ve push alır
+9. Öğretmen fiziksel gelişim girer
+10. Veli gelişim kaydını görür ve push alır
+11. Öğretmen uyum kaydı girer
+12. Veli Uyum Skoru ekranını görür ve push alır
+13. Öğretmen rozet verir
+14. Veli Rozetlerim ekranında görür ve push alır
+15. Admin / öğretmen galeriye medya yükler
+16. Veli galeride görür ve push alır
+17. Veli fotoğraf/video açar
+18. Veli medyayı cihaza kaydeder
+19. Admin duyuru oluşturur
+20. Hedef kullanıcı push alır
+21. Admin anket oluşturur
+22. Veli anketi görür ve push alır
+23. Admin ödeme kaydı oluşturur
+24. Veli ödeme ekranında görür ve push alır
+25. Veli Kurum Zili gönderir
+26. Admin / öğretmen push alır
+27. Mesaj gönderilir
+28. Karşı taraf push alır
+29. Bildirimler ekranında kayıtlar görünür
+30. Firebase'de pushStatus: sent kontrol edilir
+31. RevenueCat paketleri gerçek cihazda görünür
+32. Google Play ödeme popup'ı açılır
+33. Satın alma sonrası abonelik aktif olur
+34. Restore testi yapılır
+35. Firebase Database Rules kontrol edilir
+36. Firebase Storage Rules kontrol edilir
+37. Android release build alınır
+38. Play Console kapalı test başlatılır
+```
+
+---
+
+## 11. Kalan İşler
+
+Canlıya engel ana geliştirme işi kalmadı. Kalanlar son kontrol ve opsiyonel geliştirmelerdir.
+
+### Zorunlu Son Kontroller
+
+```txt
+⏳ Gerçek cihaz push testi
+⏳ RevenueCat / Google Play gerçek satın alma testi
+⏳ Restore testi
+⏳ Firebase Realtime Database rules son kontrolü
+⏳ Firebase Storage rules son kontrolü
+⏳ Android release build testi
+⏳ Play Console kapalı test
+```
+
+### Opsiyonel Sonraki Fazlar
+
+```txt
+- Abonelik bitiş uyarısı için zamanlı Cloud Function
+- Doğum günü bildirimi için zamanlı Cloud Function
+- Galeri Storage otomatik temizlik Function'ı
+- Admin raporlama / kullanım analitiği
+- Landing page / web tanıtım sayfası
+- Pilot kreş onboarding dökümanı
+```
+
+---
+
+## 12. Canlıya Hazırlık Notu
+
+Yumurcak şu an ürün kapsamı olarak canlı pilot / kapalı test için hazır kabul edilebilir. Bundan sonraki asıl iş yeni özellik eklemek değil; gerçek cihazda uçtan uca test, kapalı test kullanıcıları, Firebase rules güvenliği ve ilk pilot kreş kullanım sürecidir.
+
+Özet:
+
+```txt
+Kod tarafı: Ana modüller tamamlandı
+Bildirim tarafı: Cloud Functions ile tamamlandı
+Abonelik tarafı: Kuruldu, gerçek cihaz testi kaldı
+Play tarafı: Kapalı test hazırlığı kaldı
+Canlı engeli: Kritik özellik eksiği yok
+```
