@@ -54,6 +54,63 @@ function chunkArray(items = [], size = 90) {
   return chunks;
 }
 
+function getChildName(child = {}) {
+  return `${child.ad || child.adSoyad || child.isim || child.cocukAdi || 'Çocuk'} ${child.soyad || ''}`.trim();
+}
+
+function getParentIdsFromChild(child = {}) {
+  return unique([
+    ...arr(child.veliIds),
+    ...arr(child.parentIds),
+    ...arr(child.veliler),
+    child.veliId,
+    child.parentId,
+  ]);
+}
+
+async function getParentIdsForChildIds(childIds = []) {
+  const ids = unique(childIds);
+  if (!ids.length) return [];
+
+  const parentIds = [];
+  await Promise.all(ids.map(async (childId) => {
+    const snap = await admin.database().ref(`cocuklar/${childId}`).once('value');
+    const child = snap.val() || {};
+    parentIds.push(...getParentIdsFromChild(child));
+  }));
+
+  return unique(parentIds);
+}
+
+async function createNotificationRecord(payload = {}) {
+  const data = Object.entries({
+    baslik: payload.baslik || payload.title || 'Yumurcak Bildirim',
+    mesaj: payload.mesaj || payload.aciklama || '',
+    tip: payload.tip || 'genel',
+    kresId: payload.kresId || '',
+    hedefRol: payload.hedefRol || '',
+    hedefRoller: payload.hedefRoller || null,
+    hedefUserIds: payload.hedefUserIds || null,
+    hedefSinifIds: payload.hedefSinifIds || null,
+    hedefCocukIds: payload.hedefCocukIds || null,
+    routeName: payload.routeName || '',
+    routeParams: payload.routeParams || {},
+    createdBy: payload.createdBy || 'cloud-function',
+    createdAt: Date.now(),
+    serverCreatedAt: admin.database.ServerValue.TIMESTAMP,
+    okunduBy: {},
+    pushStatus: 'pending',
+    source: payload.source || 'cloud-function',
+    sourceId: payload.sourceId || '',
+  }).reduce((acc, [key, value]) => {
+    if (value !== undefined && value !== null && value !== '') acc[key] = value;
+    return acc;
+  }, {});
+
+  const notificationRef = await admin.database().ref('bildirimler').push(data);
+  return notificationRef.key;
+}
+
 async function getTargetPushTokens(payload = {}) {
   const usersSnap = await admin.database().ref('kullanicilar').once('value');
   const users = usersSnap.val() || {};
@@ -186,6 +243,154 @@ exports.sendPushOnNotificationCreate = functions
         pushCheckedAt: admin.database.ServerValue.TIMESTAMP,
       });
     }
+
+    return null;
+  });
+
+exports.createNotificationOnDailyReportCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/gunlukRaporlar/{reportId}')
+  .onCreate(async (snapshot, context) => {
+    const reportId = context.params.reportId;
+    const report = snapshot.val() || {};
+    const childId = report.cocukId || report.childId;
+    if (!childId) return null;
+
+    const childSnap = await admin.database().ref(`cocuklar/${childId}`).once('value');
+    const child = childSnap.val() || {};
+    const parentIds = getParentIdsFromChild(child);
+    if (!parentIds.length) return null;
+
+    await createNotificationRecord({
+      kresId: report.kresId || child.kresId || '',
+      hedefUserIds: parentIds,
+      baslik: '📋 Günlük rapor hazır',
+      mesaj: `${getChildName(child)} için bugünkü günlük rapor girildi.`,
+      tip: 'rapor',
+      routeName: 'ParentReports',
+      routeParams: { reportId, childId },
+      source: 'gunlukRaporlar',
+      sourceId: reportId,
+      createdBy: report.ogretmenId || report.teacherId || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnGalleryCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/galeri/{galleryId}')
+  .onCreate(async (snapshot, context) => {
+    const galleryId = context.params.galleryId;
+    const gallery = snapshot.val() || {};
+    const mediaCount = Number(gallery.mediaCount || arr(gallery.mediaItems).length || 1);
+    const mediaLabel = mediaCount > 1 ? `${mediaCount} yeni medya` : (gallery.type === 'video' ? 'Yeni video' : 'Yeni fotoğraf');
+    const title = gallery.aciklama || gallery.hedefAdi || 'Galeri paylaşımı';
+
+    const childIds = unique([
+      ...arr(gallery.cocukIds),
+      gallery.cocukId,
+      gallery.studentId,
+    ]);
+
+    if (childIds.length) {
+      const parentIds = await getParentIdsForChildIds(childIds);
+      if (!parentIds.length) return null;
+      await createNotificationRecord({
+        kresId: gallery.kresId || '',
+        hedefUserIds: parentIds,
+        baslik: '🖼️ Galeriye yeni paylaşım',
+        mesaj: `${title}: ${mediaLabel} yüklendi.`,
+        tip: 'galeri',
+        routeName: 'ParentGallery',
+        routeParams: { galleryId },
+        source: 'galeri',
+        sourceId: galleryId,
+        createdBy: gallery.yukleyenId || 'cloud-function',
+      });
+      return null;
+    }
+
+    await createNotificationRecord({
+      kresId: gallery.kresId || '',
+      hedefRol: 'veli',
+      baslik: '🖼️ Galeriye yeni paylaşım',
+      mesaj: `${title}: ${mediaLabel} yüklendi.`,
+      tip: 'galeri',
+      routeName: 'ParentGallery',
+      routeParams: { galleryId },
+      source: 'galeri',
+      sourceId: galleryId,
+      createdBy: gallery.yukleyenId || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnPollCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/anketler/{pollId}')
+  .onCreate(async (snapshot, context) => {
+    const pollId = context.params.pollId;
+    const poll = snapshot.val() || {};
+    if (poll.aktif === false) return null;
+
+    await createNotificationRecord({
+      kresId: poll.kresId || poll.kurumId || '',
+      hedefRol: 'veli',
+      baslik: '🗳️ Yeni anket',
+      mesaj: poll.baslik || poll.title || 'Veliler için yeni bir anket yayınlandı.',
+      tip: 'anket',
+      routeName: 'ParentPolls',
+      routeParams: { pollId },
+      source: 'anketler',
+      sourceId: pollId,
+      createdBy: poll.createdBy || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnWeeklyBadgeWrite = functions
+  .region('europe-west1')
+  .database
+  .ref('/haftaninRozetleri/{badgeRecordId}')
+  .onWrite(async (change, context) => {
+    const badgeRecordId = context.params.badgeRecordId;
+    const before = change.before.val() || null;
+    const after = change.after.val() || null;
+    if (!after || after.aktif === false) return null;
+
+    const beforeUpdatedAt = Number(before && before.updatedAt ? before.updatedAt : 0);
+    const afterUpdatedAt = Number(after.updatedAt || 0);
+    if (before && beforeUpdatedAt && afterUpdatedAt && beforeUpdatedAt === afterUpdatedAt) return null;
+
+    const childId = after.cocukId;
+    if (!childId) return null;
+
+    const childSnap = await admin.database().ref(`cocuklar/${childId}`).once('value');
+    const child = childSnap.val() || {};
+    const parentIds = getParentIdsFromChild(child);
+    if (!parentIds.length) return null;
+
+    const badgeEmoji = after.badgeEmoji || after.rozetEmoji || '🏅';
+    const badgeTitle = after.badgeTitle || after.rozetAdi || 'Haftanın Yıldızı';
+
+    await createNotificationRecord({
+      kresId: after.kresId || child.kresId || '',
+      hedefUserIds: parentIds,
+      baslik: `${badgeEmoji} Yeni rozet`,
+      mesaj: `${getChildName(child)} bu hafta "${badgeTitle}" rozeti kazandı.`,
+      tip: 'rozet',
+      routeName: 'ParentBadges',
+      routeParams: { badgeRecordId, childId },
+      source: 'haftaninRozetleri',
+      sourceId: badgeRecordId,
+      createdBy: after.ogretmenId || 'cloud-function',
+    });
 
     return null;
   });
