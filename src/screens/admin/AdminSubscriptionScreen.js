@@ -81,10 +81,9 @@ const PACKAGE_TIERS = [
   },
 ];
 
+// Built-in demo kodları sade tutulur. 3 aylık demo yok; tek standart demo 1 aydır.
 const BUILT_IN_PROMOS = {
   PILOT1AY: { kod: 'PILOT1AY', tip: 'demo', sureAy: 1, aktif: true },
-  PILOT3AY: { kod: 'PILOT3AY', tip: 'demo', sureAy: 3, aktif: true },
-  KRES2026: { kod: 'KRES2026', tip: 'demo', sureAy: 3, aktif: true },
 };
 
 function formatPrice(value) {
@@ -102,8 +101,9 @@ function getSuggestedTier(studentCount) {
 function getPlanLabel(subscription) {
   if (!subscription?.planTier && !subscription?.plan) return 'Henüz yok';
   const tier = getTierById(subscription.planTier || String(subscription.plan || '').split('_')[0]);
-  const period = subscription.planPeriod || (String(subscription.plan || '').includes('yillik') ? 'yillik' : String(subscription.plan || '').includes('aylik') ? 'aylik' : '');
-  if (!period) return subscription.plan || tier.title;
+  const plan = String(subscription.plan || '');
+  const period = subscription.planPeriod || (plan.includes('yillik') ? 'yillik' : plan.includes('aylik') ? 'aylik' : '');
+  if (!period || period === 'demo') return subscription.plan === 'demo' ? `${tier.title} / Demo` : (subscription.plan || tier.title);
   return `${tier.title} / ${period === 'yillik' ? 'Yıllık' : 'Aylık'}`;
 }
 
@@ -118,7 +118,6 @@ export default function AdminSubscriptionScreen() {
   const [rcLoading, setRcLoading] = useState(true);
   const [rcError, setRcError] = useState('');
   const [rcPackages, setRcPackages] = useState({ monthly: null, yearly: null });
-
   const [kres, setKres] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [children, setChildren] = useState([]);
@@ -153,7 +152,6 @@ export default function AdminSubscriptionScreen() {
 
   useEffect(() => {
     let alive = true;
-
     async function loadPackages() {
       setRcLoading(true);
       const result = await getRevenueCatPackages(revenueCatUserId);
@@ -162,7 +160,6 @@ export default function AdminSubscriptionScreen() {
       setRcError(result.error || '');
       setRcLoading(false);
     }
-
     loadPackages();
     return () => { alive = false; };
   }, [revenueCatUserId]);
@@ -175,6 +172,28 @@ export default function AdminSubscriptionScreen() {
   const activeLimit = subscription?.planTier ? getTierById(subscription.planTier).maxStudent : suggestedTier?.maxStudent;
   const overLimit = activeLimit && studentCount > activeLimit;
 
+  const writeSubscription = async ({ tier, selectedPeriod, durum, source, endDate, price, customerInfo }) => {
+    await set(ref(database, `abonelikler/${kresId}`), {
+      kresId,
+      plan: durum === 'demo' ? 'demo' : `${tier.id}_${selectedPeriod}`,
+      planTier: tier.id,
+      planPeriod: durum === 'demo' ? 'demo' : selectedPeriod,
+      ogrenciLimiti: tier.maxStudent,
+      durum,
+      baslangicTarihi: subscription?.baslangicTarihi || toDateStr(new Date()),
+      bitisTarihi: endDate,
+      demoBitisTarihi: durum === 'demo' ? endDate : '',
+      fiyat: price,
+      paraBirimi: 'TRY',
+      kaynak: source,
+      revenueCatCustomerId: revenueCatUserId,
+      revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
+      revenueCatSyncedAt: customerInfo ? Date.now() : subscription?.revenueCatSyncedAt || '',
+      createdAt: subscription?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+    });
+  };
+
   const startTrial = async () => {
     if (subscription?.durum === 'aktif' || subscription?.durum === 'demo') {
       return Alert.alert('Bilgi', 'Bu kreşte zaten aktif/demo abonelik var.');
@@ -183,28 +202,15 @@ export default function AdminSubscriptionScreen() {
     setSaving(true);
     try {
       const now = new Date();
-      const end = addMonths(now, 1);
       const tier = suggestedTier || PACKAGE_TIERS[0];
-
-      await set(ref(database, `abonelikler/${kresId}`), {
-        kresId,
-        plan: 'demo',
-        planTier: tier.id,
-        planPeriod: 'demo',
-        ogrenciLimiti: tier.maxStudent,
+      await writeSubscription({
+        tier,
+        selectedPeriod: 'demo',
         durum: 'demo',
-        baslangicTarihi: toDateStr(now),
-        bitisTarihi: toDateStr(end),
-        demoBitisTarihi: toDateStr(end),
-        fiyat: 0,
-        paraBirimi: 'TRY',
-        kaynak: 'ilk_1_ay_ucretsiz',
-        revenueCatCustomerId: revenueCatUserId,
-        revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        source: 'ilk_1_ay_ucretsiz',
+        endDate: toDateStr(addMonths(now, 1)),
+        price: 0,
       });
-
       Alert.alert('Başarılı', 'İlk 1 ay ücretsiz demo başlatıldı.');
     } catch (err) {
       console.error(err);
@@ -297,24 +303,14 @@ export default function AdminSubscriptionScreen() {
     const expiryDate = getRevenueCatExpiryDate(customerInfo) || toDateStr(selectedPeriod === 'yillik' ? addMonths(now, 12) : addMonths(now, 1));
     const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
 
-    await set(ref(database, `abonelikler/${kresId}`), {
-      kresId,
-      plan: `${tier.id}_${selectedPeriod}`,
-      planTier: tier.id,
-      planPeriod: selectedPeriod,
-      ogrenciLimiti: tier.maxStudent,
+    await writeSubscription({
+      tier,
+      selectedPeriod,
       durum: 'aktif',
-      baslangicTarihi: subscription?.baslangicTarihi || toDateStr(now),
-      bitisTarihi: expiryDate,
-      demoBitisTarihi: '',
-      fiyat: price,
-      paraBirimi: 'TRY',
-      kaynak: 'revenuecat',
-      revenueCatCustomerId: revenueCatUserId,
-      revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
-      revenueCatSyncedAt: Date.now(),
-      createdAt: subscription?.createdAt || Date.now(),
-      updatedAt: Date.now(),
+      source: 'revenuecat',
+      endDate: expiryDate,
+      price,
+      customerInfo,
     });
   };
 
@@ -324,26 +320,14 @@ export default function AdminSubscriptionScreen() {
       const now = new Date();
       const end = selectedPeriod === 'yillik' ? addMonths(now, 12) : addMonths(now, 1);
       const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
-
-      await set(ref(database, `abonelikler/${kresId}`), {
-        kresId,
-        plan: `${tier.id}_${selectedPeriod}`,
-        planTier: tier.id,
-        planPeriod: selectedPeriod,
-        ogrenciLimiti: tier.maxStudent,
+      await writeSubscription({
+        tier,
+        selectedPeriod,
         durum: 'aktif',
-        baslangicTarihi: toDateStr(now),
-        bitisTarihi: toDateStr(end),
-        demoBitisTarihi: '',
-        fiyat: price,
-        paraBirimi: 'TRY',
-        kaynak: 'manuel_admin',
-        revenueCatCustomerId: revenueCatUserId,
-        revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
-        createdAt: subscription?.createdAt || Date.now(),
-        updatedAt: Date.now(),
+        source: 'manuel_admin',
+        endDate: toDateStr(end),
+        price,
       });
-
       Alert.alert('Başarılı', `${tier.title} ${selectedPeriod === 'yillik' ? 'yıllık' : 'aylık'} abonelik aktif edildi.`);
     } catch (err) {
       console.error(err);
@@ -382,30 +366,20 @@ export default function AdminSubscriptionScreen() {
         return Alert.alert('Limit Doldu', 'Bu promosyon kodunun kullanım limiti dolmuş.');
       }
 
-      const months = Number(promo.sureAy || 1);
+      const months = Math.min(Number(promo.sureAy || 1), 1);
       const now = new Date();
       const currentEnd = getCurrentEndDate(subscription);
       const startBase = currentEnd && currentEnd > now ? currentEnd : now;
       const end = addMonths(startBase, months);
       const tier = suggestedTier || PACKAGE_TIERS[0];
 
-      await set(ref(database, `abonelikler/${kresId}`), {
-        kresId,
-        plan: 'demo',
-        planTier: tier.id,
-        planPeriod: 'demo',
-        ogrenciLimiti: tier.maxStudent,
+      await writeSubscription({
+        tier,
+        selectedPeriod: 'demo',
         durum: 'demo',
-        baslangicTarihi: subscription?.baslangicTarihi || toDateStr(now),
-        bitisTarihi: toDateStr(end),
-        demoBitisTarihi: toDateStr(end),
-        fiyat: 0,
-        paraBirimi: 'TRY',
-        kaynak: `promo_${code}`,
-        revenueCatCustomerId: subscription?.revenueCatCustomerId || revenueCatUserId,
-        revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
-        createdAt: subscription?.createdAt || Date.now(),
-        updatedAt: Date.now(),
+        source: `promo_${code}`,
+        endDate: toDateStr(end),
+        price: 0,
       });
 
       await set(ref(database, `promosyonKullanimlari/${usageKey}`), {
@@ -424,7 +398,7 @@ export default function AdminSubscriptionScreen() {
       }
 
       setPromoCode('');
-      Alert.alert('Başarılı', `${code} kodu uygulandı. ${months} ay demo tanımlandı.`);
+      Alert.alert('Başarılı', `${code} kodu uygulandı. 1 ay demo tanımlandı.`);
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Promosyon kodu uygulanamadı.');
@@ -463,7 +437,7 @@ export default function AdminSubscriptionScreen() {
 
         <View style={[styles.usageCard, overLimit && styles.usageDanger]}>
           <View style={styles.usageTop}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.usageTitle}>Öğrenci Kullanımı</Text>
               <Text style={styles.usageSub}>Kayıtlı öğrenci sayısı paket limitine göre takip edilir.</Text>
             </View>
@@ -472,7 +446,7 @@ export default function AdminSubscriptionScreen() {
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${getUsagePercent(studentCount, activeLimit)}%`, backgroundColor: overLimit ? THEME.red : THEME.primary }]} />
           </View>
-          <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}>
+          <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}> 
             {overLimit
               ? 'Mevcut paket öğrenci sayısı için yetersiz. Yeni öğrenci eklemek için üst pakete geçilmelidir.'
               : suggestedTier
@@ -517,7 +491,7 @@ export default function AdminSubscriptionScreen() {
 
         <View style={styles.specialCard}>
           <Text style={styles.specialTitle}>100+ öğrenci</Text>
-          <Text style={styles.specialText}>Büyük kurumlar için özel teklif ile ilerlenir. Bu paket ileride manuel satış veya özel kurumsal plan olarak yönetilebilir.</Text>
+          <Text style={styles.specialText}>Büyük kurumlar için özel teklif ile ilerlenir. Bu paket manuel satış veya özel kurumsal plan olarak yönetilebilir.</Text>
         </View>
 
         <TouchableOpacity style={[styles.restoreButton, saving && { opacity: 0.6 }]} onPress={restorePurchases} disabled={saving} activeOpacity={0.85}>
@@ -528,6 +502,7 @@ export default function AdminSubscriptionScreen() {
 
         <View style={styles.promoCard}>
           <Text style={styles.sectionTitle}>Promosyon Kodu</Text>
+          <Text style={styles.promoHint}>Yerleşik demo kodu: PILOT1AY. Demo süresi standart olarak 1 aydır.</Text>
           <TextInput
             style={styles.input}
             value={promoCode}
@@ -547,128 +522,126 @@ export default function AdminSubscriptionScreen() {
 
 function PlanCard({ tier, period, studentCount, active, suggested, disabled, saving, onPress }) {
   const price = period === 'yillik' ? tier.yearly : tier.monthly;
-  const periodText = period === 'yillik' ? '/ yıl' : '/ ay';
-  const isAvailable = !disabled;
+  const suffix = period === 'yillik' ? '/ yıl' : '/ ay';
 
   return (
-    <TouchableOpacity style={[styles.planCard, tier.featured && styles.featuredPlan, active && styles.activePlan, disabled && styles.disabledPlan]} onPress={onPress} disabled={saving} activeOpacity={0.85}>
-      <View style={styles.planHead}>
+    <View style={[styles.planCard, tier.featured && styles.planFeatured, active && styles.planActive, disabled && styles.planDisabled]}>
+      <View style={styles.planTop}>
         <View style={{ flex: 1 }}>
           <Text style={styles.planTitle}>{tier.title}</Text>
           <Text style={styles.planRange}>{tier.range}</Text>
         </View>
-        <Text style={[styles.bestBadge, { color: tier.color, backgroundColor: `${tier.color}18` }]}>{active ? 'Aktif' : suggested ? 'Uygun' : tier.badge}</Text>
+        <View style={[styles.planBadge, { backgroundColor: `${tier.color}22` }]}>
+          <Text style={[styles.planBadgeText, { color: tier.color }]}>{active ? 'Aktif' : suggested ? 'Uygun' : tier.badge}</Text>
+        </View>
       </View>
-
-      <View style={styles.priceRow}>
-        <Text style={styles.planPrice}>{formatPrice(price)}</Text>
-        <Text style={styles.planPeriod}>{periodText}</Text>
-      </View>
-
       <Text style={styles.planDesc}>{tier.desc}</Text>
-      <Text style={[styles.limitText, !isAvailable && { color: THEME.red }]}>
-        {isAvailable ? `Mevcut öğrenci: ${studentCount}/${tier.maxStudent}` : `Bu paket ${studentCount} öğrenci için yetersiz`}
-      </Text>
-    </TouchableOpacity>
+      <Text style={styles.planPrice}>{formatPrice(price)} <Text style={styles.planSuffix}>{suffix}</Text></Text>
+      <Text style={styles.planSmall}>{period === 'yillik' ? 'Yıllık ödemede 2 ay ücretsiz' : 'Aylık yenilenir'}</Text>
+      <TouchableOpacity style={[styles.planButton, disabled && styles.planButtonDisabled]} onPress={onPress} disabled={saving || disabled} activeOpacity={0.85}>
+        <Text style={styles.planButtonText}>{disabled ? `${studentCount} öğrenci için yetersiz` : active ? 'Planı Yönet' : 'Paketi Seç'}</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
-function getStatus(sub) {
-  if (!sub) return { label: 'Abonelik Yok', badge: 'Başlatılmadı', color: THEME.muted, bg: '#F0F0F4' };
-  if (sub.durum === 'aktif') return { label: 'Abonelik Aktif', badge: 'Aktif', color: THEME.green, bg: '#E8F9EF' };
-  if (sub.durum === 'demo') return { label: 'Demo Kullanım', badge: 'Demo', color: THEME.orange, bg: '#FFF4E1' };
-  return { label: 'Abonelik Pasif', badge: 'Pasif', color: THEME.red, bg: '#FFE8EC' };
+function getStatus(subscription) {
+  if (!subscription) return { label: 'Abonelik Yok', badge: 'Pasif', color: THEME.red, bg: '#FFE8EE' };
+  if (subscription.durum === 'aktif') return { label: 'Aktif Abonelik', badge: 'Aktif', color: THEME.green, bg: '#E8FBEA' };
+  if (subscription.durum === 'demo') return { label: 'Demo Kullanım', badge: 'Demo', color: THEME.orange, bg: '#FFF4D8' };
+  return { label: 'Abonelik Pasif', badge: 'Pasif', color: THEME.red, bg: '#FFE8EE' };
 }
 
-function getCurrentEndDate(sub) {
-  if (!sub) return null;
-  const value = sub.bitisTarihi || sub.demoBitisTarihi;
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
+function getCurrentEndDate(subscription) {
+  const raw = subscription?.bitisTarihi || subscription?.demoBitisTarihi;
+  if (!raw) return null;
+  const date = new Date(`${raw}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getRemainingDays(sub) {
-  const end = getCurrentEndDate(sub);
-  if (!end) return '-';
+function getRemainingDays(subscription) {
+  const end = getCurrentEndDate(subscription);
+  if (!end) return 0;
   const now = new Date();
-  const diff = end.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  const diff = Math.ceil((end - now) / (24 * 60 * 60 * 1000));
+  return Math.max(0, diff);
+}
+
+function addMonths(date, months) {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
+function toDateStr(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function getUsagePercent(count, limit) {
   if (!limit) return 0;
-  return Math.min(100, Math.round((count / limit) * 100));
-}
-
-function addMonths(date, count) {
-  const d = new Date(date);
-  const day = d.getDate();
-  d.setMonth(d.getMonth() + count);
-  if (d.getDate() < day) d.setDate(0);
-  return d;
-}
-
-function toDateStr(date) {
-  return date.toISOString().split('T')[0];
+  return Math.max(0, Math.min(100, Math.round((count / limit) * 100)));
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
+  content: { padding: 18, paddingBottom: 80 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.bg },
-  loadingText: { marginTop: 12, color: THEME.muted, fontWeight: '700' },
-  content: { padding: 18, paddingBottom: 38 },
-  hero: { backgroundColor: THEME.primary, borderRadius: 24, padding: 20, alignItems: 'center', marginBottom: 18 },
-  heroIcon: { fontSize: 42, marginBottom: 8 },
-  heroTitle: { color: '#FFF', fontWeight: '900', fontSize: 22 },
-  heroDesc: { color: 'rgba(255,255,255,0.82)', marginTop: 5, fontWeight: '700', textAlign: 'center' },
-  statusCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
+  loadingText: { marginTop: 10, color: THEME.muted, fontWeight: '700' },
+  hero: { backgroundColor: THEME.primary, borderRadius: 26, padding: 22, marginBottom: 16 },
+  heroIcon: { fontSize: 34 },
+  heroTitle: { color: '#fff', fontSize: 25, fontWeight: '900', marginTop: 8 },
+  heroDesc: { color: 'rgba(255,255,255,0.82)', fontWeight: '700', marginTop: 6, lineHeight: 20 },
+  statusCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
   statusTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  statusTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
-  statusText: { color: THEME.muted, fontWeight: '700', marginTop: 4 },
-  usageCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
-  usageDanger: { borderColor: THEME.red, borderWidth: 1.5 },
-  usageTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14 },
-  usageTitle: { color: THEME.text, fontSize: 18, fontWeight: '900' },
-  usageSub: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: 4 },
+  statusTitle: { color: THEME.text, fontSize: 18, fontWeight: '900' },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, overflow: 'hidden', fontWeight: '900', fontSize: 12 },
+  statusText: { color: THEME.muted, fontWeight: '800', marginTop: 5 },
+  usageCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
+  usageDanger: { borderColor: THEME.red, backgroundColor: '#FFF7F8' },
+  usageTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  usageTitle: { color: THEME.text, fontSize: 17, fontWeight: '900' },
+  usageSub: { color: THEME.muted, fontWeight: '700', marginTop: 4, lineHeight: 18 },
   usageCount: { color: THEME.primary, fontSize: 24, fontWeight: '900' },
-  progressTrack: { height: 10, backgroundColor: THEME.primarySoft, borderRadius: 99, overflow: 'hidden', marginTop: 13 },
+  progressTrack: { height: 10, backgroundColor: THEME.primarySoft, borderRadius: 99, marginTop: 14, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 99 },
   usageInfo: { color: THEME.muted, fontWeight: '800', marginTop: 9, lineHeight: 18 },
-  trialButton: { backgroundColor: THEME.green, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 18 },
-  trialText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
-  periodCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 10 },
-  periodRow: { flexDirection: 'row', backgroundColor: THEME.bg, borderRadius: 16, padding: 5, gap: 6 },
-  periodButton: { flex: 1, borderRadius: 13, paddingVertical: 11, alignItems: 'center' },
+  trialButton: { backgroundColor: THEME.green, borderRadius: 18, paddingVertical: 15, alignItems: 'center', marginBottom: 14 },
+  trialText: { color: '#fff', fontWeight: '900', fontSize: 15 },
+  periodCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
+  sectionTitle: { color: THEME.text, fontSize: 18, fontWeight: '900', marginBottom: 12 },
+  periodRow: { flexDirection: 'row', gap: 10 },
+  periodButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 12, alignItems: 'center' },
   periodButtonActive: { backgroundColor: THEME.primary },
   periodText: { color: THEME.primary, fontWeight: '900' },
-  periodTextActive: { color: '#FFF' },
-  periodMini: { color: THEME.muted, fontSize: 10, fontWeight: '800', marginTop: 2 },
+  periodTextActive: { color: '#fff' },
+  periodMini: { color: THEME.muted, fontWeight: '700', fontSize: 11, marginTop: 3 },
   periodMiniActive: { color: 'rgba(255,255,255,0.82)' },
-  planCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
-  featuredPlan: { borderColor: THEME.primary, borderWidth: 1.5 },
-  activePlan: { backgroundColor: '#FBF8FF' },
-  disabledPlan: { opacity: 0.58 },
-  planHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  bestBadge: { alignSelf: 'flex-start', fontWeight: '900', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, overflow: 'hidden', fontSize: 12 },
-  planTitle: { color: THEME.text, fontSize: 20, fontWeight: '900' },
-  planRange: { color: THEME.muted, fontSize: 12.5, fontWeight: '800', marginTop: 4 },
-  priceRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 },
-  planPrice: { color: THEME.primary, fontSize: 27, fontWeight: '900' },
-  planPeriod: { color: THEME.muted, fontWeight: '800', marginLeft: 4, marginBottom: 4 },
-  planDesc: { color: THEME.muted, fontWeight: '700', marginTop: 8, lineHeight: 18 },
-  limitText: { color: THEME.green, fontWeight: '900', marginTop: 10 },
-  specialCard: { backgroundColor: '#FFF7E8', borderRadius: 20, padding: 15, borderWidth: 1, borderColor: '#FFE0A3', marginBottom: 14 },
-  specialTitle: { color: THEME.gold, fontSize: 17, fontWeight: '900' },
-  specialText: { color: THEME.text, fontWeight: '700', lineHeight: 19, marginTop: 5 },
-  restoreButton: { backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginBottom: 14 },
+  planCard: { backgroundColor: THEME.card, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  planFeatured: { borderColor: THEME.primary },
+  planActive: { borderColor: THEME.green, backgroundColor: '#F7FFF8' },
+  planDisabled: { opacity: 0.58 },
+  planTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  planTitle: { color: THEME.text, fontSize: 19, fontWeight: '900' },
+  planRange: { color: THEME.muted, fontWeight: '800', marginTop: 3 },
+  planBadge: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  planBadgeText: { fontWeight: '900', fontSize: 11 },
+  planDesc: { color: THEME.muted, fontWeight: '700', marginTop: 11, lineHeight: 19 },
+  planPrice: { color: THEME.text, fontSize: 27, fontWeight: '900', marginTop: 12 },
+  planSuffix: { color: THEME.muted, fontSize: 13, fontWeight: '800' },
+  planSmall: { color: THEME.muted, fontWeight: '800', fontSize: 12, marginTop: 4 },
+  planButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
+  planButtonDisabled: { backgroundColor: THEME.muted },
+  planButtonText: { color: '#fff', fontWeight: '900' },
+  specialCard: { backgroundColor: '#FFF7E8', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#FFE1A8', marginBottom: 12 },
+  specialTitle: { color: THEME.gold, fontSize: 18, fontWeight: '900' },
+  specialText: { color: THEME.text, fontWeight: '700', lineHeight: 19, marginTop: 6 },
+  restoreButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 12 },
   restoreText: { color: THEME.primary, fontWeight: '900' },
-  paymentWarning: { color: THEME.orange, fontWeight: '800', lineHeight: 18, marginBottom: 14, textAlign: 'center' },
-  promoCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
-  input: { backgroundColor: THEME.bg, borderRadius: 14, padding: 13, color: THEME.text, borderWidth: 1, borderColor: THEME.border, fontWeight: '800', marginBottom: 10 },
-  applyButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
-  applyText: { color: '#FFF', fontWeight: '900' },
+  paymentWarning: { color: THEME.orange, fontWeight: '800', lineHeight: 18, marginBottom: 12 },
+  promoCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border },
+  promoHint: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: -4, marginBottom: 10 },
+  input: { backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 13, paddingVertical: 12, color: THEME.text, fontWeight: '800', marginBottom: 10 },
+  applyButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
+  applyText: { color: '#fff', fontWeight: '900' },
 });
