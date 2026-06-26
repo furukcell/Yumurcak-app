@@ -13,6 +13,7 @@ import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { formatChildBirthDate, getChildBirthDate, normalizeChildBirthDate } from '../../utils/childDates';
 
 export default function ChildFormScreen() {
   const route = useRoute();
@@ -54,8 +55,8 @@ export default function ChildFormScreen() {
         const snap = await get(ref(database, `cocuklar/${childId}`));
         if (snap.exists()) {
           const data = snap.val();
-          setAd(data.ad || '');
-          setDogumTarihi(data.dogumTarihi || '');
+          setAd(`${data.ad || ''} ${data.soyad || ''}`.trim() || data.ad || '');
+          setDogumTarihi(formatChildBirthDate(getChildBirthDate(data)) === 'Belirtilmemiş' ? '' : formatChildBirthDate(getChildBirthDate(data)));
           setSinifId(data.sinifId || '');
           setSeciliVeliIds(data.veliIds || []);
         }
@@ -77,17 +78,27 @@ export default function ChildFormScreen() {
       return;
     }
 
+    const normalizedBirthDate = normalizeChildBirthDate(dogumTarihi);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirthDate)) {
+      Alert.alert('Hata', 'Doğum tarihini 15.05.2022 veya 2022-05-15 formatında gir.');
+      return;
+    }
+
     setLoading(true);
     try {
       const id = childId || generateId();
+      const existingSnap = childId ? await get(ref(database, `cocuklar/${childId}`)) : null;
+      const existing = existingSnap?.exists?.() ? existingSnap.val() : {};
 
       await set(ref(database, `cocuklar/${id}`), {
+        ...existing,
         ad: ad.trim(),
-        dogumTarihi: dogumTarihi.trim(),
+        dogumTarihi: normalizedBirthDate,
         sinifId,
-        kresId: kullanici?.kresId || 'default-kres',
+        kresId: kullanici?.kresId || existing?.kresId || 'default-kres',
         veliIds: seciliVeliIds,
-        createdAt: Date.now(),
+        createdAt: existing?.createdAt || Date.now(),
+        updatedAt: Date.now(),
       });
 
       setSuccessToast(true);
@@ -138,9 +149,10 @@ export default function ChildFormScreen() {
               style={styles.input}
               value={dogumTarihi}
               onChangeText={setDogumTarihi}
-              placeholder="2022-05-15"
+              placeholder="15.05.2022"
               placeholderTextColor="#999"
             />
+            <Text style={styles.hint}>Kaydedilince sistem 2022-05-15 olarak saklar, ekranlarda 15.05.2022 gösterir.</Text>
           </View>
 
           <View style={styles.field}>
@@ -209,6 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 8, padding: 12,
     fontSize: 16, borderWidth: 1, borderColor: '#ddd',
   },
+  hint: { color: '#777', fontSize: 12, marginTop: 6, lineHeight: 17 },
   bilgi: { color: '#999', fontStyle: 'italic' },
   seciBtn: {
     padding: 12, borderRadius: 8, borderWidth: 1,
@@ -218,9 +231,9 @@ const styles = StyleSheet.create({
   seciBtnYazi: { fontSize: 15, color: '#333' },
   seciBtnYaziAktif: { fontWeight: '700', color: '#712B13' },
   saveButton: {
-    backgroundColor: '#712B13', borderRadius: 8,
-    padding: 16, alignItems: 'center', marginTop: 10,
+    backgroundColor: '#712B13', padding: 15, borderRadius: 10,
+    alignItems: 'center', marginTop: 10,
   },
   saveButtonDisabled: { opacity: 0.6 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
