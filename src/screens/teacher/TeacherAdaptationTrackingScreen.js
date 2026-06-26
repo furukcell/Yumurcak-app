@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Platform, StatusBar, Alert, ActivityIndicator } from 'react-native';
-import { ref, set, update } from 'firebase/database';
+import { ref, set, update, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useTeacherData, LoadingState, EmptyState, getChildName } from './teacherShared';
 import { bugunKey, tarihTr, uyumAktifMi, uyumEmoji, uyumGunNo, uyumKalanGun, uyumOzet, uyumSkoru, UYUM_GUN } from '../../utils/uyum';
@@ -8,7 +8,6 @@ import { bugunKey, tarihTr, uyumAktifMi, uyumEmoji, uyumGunNo, uyumKalanGun, uyu
 const BLUE = '#356CFF';
 const GREEN = '#20B45B';
 const ORANGE = '#FF9F1C';
-const RED = '#FF4D6D';
 const BG = '#F5F8FF';
 const CARD = '#FFFFFF';
 const TEXT = '#141A35';
@@ -33,14 +32,12 @@ const OPTION = {
 export default function TeacherAdaptationTrackingScreen({ navigation }) {
   const data = useTeacherData();
   const today = bugunKey();
-  const records = data.reports; // dummy fallback yerine uyumKayitlari ayrı dinleniyor aşağıda değil; ek listener için basit ekran içinde kullanacağız.
   const [uyumKayitlari, setUyumKayitlari] = React.useState([]);
   const [saving, setSaving] = useState(false);
   const [selectedId, setSelectedId] = useState('');
   const [form, setForm] = useState(defaultForm());
 
   React.useEffect(() => {
-    const { onValue } = require('firebase/database');
     const unsub = onValue(ref(database, 'uyumKayitlari'), (snap) => {
       const val = snap.val() || {};
       setUyumKayitlari(Object.entries(val).map(([id, item]) => ({ id, ...(item || {}) })));
@@ -54,8 +51,19 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
   const activeChildren = data.classChildren.filter(uyumAktifMi);
   const selectedChild = activeChildren.find((c) => c.id === selectedId) || activeChildren[0] || null;
   const selectedRecords = selectedChild ? uyumKayitlari.filter((r) => String(r.cocukId) === String(selectedChild.id)) : [];
-  const selectedSummary = uyumOzet(selectedRecords);
   const todayRecord = selectedChild ? selectedRecords.find((r) => r.tarih === today) : null;
+
+  React.useEffect(() => {
+    if (!selectedChild?.id) {
+      setForm(defaultForm());
+      return;
+    }
+    if (todayRecord) {
+      setForm({ ...defaultForm(), ...todayRecord, milestones: { ...(todayRecord.milestones || {}) } });
+      return;
+    }
+    setForm(defaultForm());
+  }, [selectedChild?.id, todayRecord?.id]);
 
   const enteredToday = activeChildren.filter((child) => uyumKayitlari.some((r) => r.tarih === today && String(r.cocukId) === String(child.id))).length;
   const pending = Math.max(0, activeChildren.length - enteredToday);
@@ -68,9 +76,6 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
 
   const selectChild = (child) => {
     setSelectedId(child.id);
-    const rec = uyumKayitlari.find((r) => r.tarih === today && String(r.cocukId) === String(child.id));
-    if (rec) setForm({ ...defaultForm(), ...rec, milestones: { ...(rec.milestones || {}) } });
-    else setForm(defaultForm());
   };
 
   const save = async () => {
