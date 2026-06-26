@@ -10,6 +10,7 @@ import {
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { calculateChildAge, formatChildBirthDate, getChildBirthDate } from '../../utils/childDates';
 
 export default function ChildDetailScreen() {
   const navigation = useNavigation();
@@ -65,10 +66,16 @@ export default function ChildDetailScreen() {
         }
       }
 
+      const birthDate = getChildBirthDate(cocukData);
+      const formattedBirthDate = formatChildBirthDate(birthDate);
+      const age = calculateChildAge(birthDate);
+
       setCocuk({
         id: childId,
         ad: `${cocukData.ad || ''} ${cocukData.soyad || ''}`.trim() || cocukData.ad || childId,
-        dogumTarihi: cocukData.dogumTarihi || null,
+        dogumTarihi: birthDate || null,
+        dogumTarihiText: formattedBirthDate,
+        yasText: age,
         sinifId: cocukData.sinifId || null,
       });
 
@@ -127,7 +134,7 @@ export default function ChildDetailScreen() {
           </View>
           <Text style={s.cocukAd}>{cocuk.ad}</Text>
           {cocuk.dogumTarihi ? (
-            <Text style={s.dogumTarihi}>🎂 {cocuk.dogumTarihi}</Text>
+            <Text style={s.dogumTarihi}>🎂 {cocuk.dogumTarihiText}{cocuk.yasText ? ` • ${cocuk.yasText}` : ''}</Text>
           ) : null}
         </View>
 
@@ -141,6 +148,8 @@ export default function ChildDetailScreen() {
                 {sinif.yasGrubu ? (
                   <BilgiSatir etiket="Yaş Grubu" deger={sinif.yasGrubu} />
                 ) : null}
+                <BilgiSatir etiket="Doğum Tarihi" deger={cocuk.dogumTarihiText || 'Belirtilmemiş'} />
+                <BilgiSatir etiket="Yaş" deger={cocuk.yasText || '-'} />
               </>
             ) : (
               <Text style={s.bosInfo}>Sınıf atanmamış</Text>
