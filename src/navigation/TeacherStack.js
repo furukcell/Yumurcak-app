@@ -1,7 +1,3 @@
-// ============================================================
-// YUMURCAK — TeacherStack.js
-// Öğretmen navigasyon stack'i
-// ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -14,6 +10,7 @@ import TeacherEventsScreen from '../screens/teacher/TeacherEventsScreen';
 import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
 import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
 import TeacherPhysicalDevelopmentScreen from '../screens/teacher/TeacherPhysicalDevelopmentScreen';
+import UyumTakibiScreen from '../screens/teacher/TeacherAdaptationTrackingScreen';
 import TeacherBirthdaysScreen from '../screens/teacher/TeacherBirthdaysScreen';
 import TeacherWeeklyStarScreen from '../screens/teacher/TeacherWeeklyStarScreen';
 import TeacherThemeScreen from '../screens/teacher/TeacherThemeScreen';
@@ -40,6 +37,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherMeals" component={TeacherMealsScreen} />
       <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
       <Stack.Screen name="TeacherPhysicalDevelopment" component={TeacherPhysicalDevelopmentScreen} />
+      <Stack.Screen name="TeacherAdaptationTracking" component={UyumTakibiScreen} />
       <Stack.Screen name="TeacherBirthdays" component={TeacherBirthdaysScreen} />
       <Stack.Screen name="TeacherWeeklyStar" component={TeacherWeeklyStarScreen} />
       <Stack.Screen name="TeacherTheme" component={TeacherThemeScreen} />
