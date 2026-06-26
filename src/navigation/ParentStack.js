@@ -1,7 +1,3 @@
-// ============================================================
-// YUMURCAK — ParentStack.js
-// Veli navigasyon stack'i + alt tab bar
-// ============================================================
 import React, { useMemo } from 'react';
 import { Text, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -18,6 +14,7 @@ import ParentMealsScreen from '../screens/parent/ParentMealsScreen';
 import ParentEventsScreen from '../screens/parent/ParentEventsScreen';
 import ParentAttendanceScreen from '../screens/parent/ParentAttendanceScreen';
 import ParentDevelopmentScreen from '../screens/parent/ParentDevelopmentScreen';
+import ParentUyumScreen from '../screens/parent/ParentAdaptationScoreScreen';
 import ParentMedicalScreen from '../screens/parent/ParentMedicalScreen';
 import ParentContactScreen from '../screens/parent/ParentContactScreen';
 import ParentServiceScreen from '../screens/parent/ParentServiceScreen';
@@ -36,9 +33,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ icon, focused, color, compact }) {
-  return (
-    <Text style={{ fontSize: compact ? (focused ? 20 : 18) : (focused ? 22 : 20), color }}>{icon}</Text>
-  );
+  return <Text style={{ fontSize: compact ? (focused ? 20 : 18) : (focused ? 22 : 20), color }}>{icon}</Text>;
 }
 
 function ParentTabs() {
@@ -47,37 +42,17 @@ function ParentTabs() {
   const { width } = useWindowDimensions();
   const compact = width < 360;
   const bottomInset = Math.max(insets.bottom || 0, 8);
-
   const tabOptions = useMemo(() => ({
     headerShown: false,
     tabBarActiveTintColor: theme.primary,
     tabBarInactiveTintColor: theme.muted,
     tabBarHideOnKeyboard: true,
-    tabBarStyle: {
-      height: 58 + bottomInset,
-      paddingTop: compact ? 3 : 5,
-      paddingBottom: bottomInset,
-      backgroundColor: theme.card,
-      borderTopColor: theme.border,
-      borderTopWidth: 1,
-      elevation: 10,
-    },
-    tabBarItemStyle: {
-      paddingVertical: 2,
-    },
-    tabBarIconStyle: {
-      marginTop: 1,
-    },
-    tabBarLabelStyle: {
-      fontSize: compact ? 9 : 10,
-      fontWeight: '900',
-      marginTop: compact ? 0 : 1,
-      marginBottom: 1,
-    },
+    tabBarStyle: { height: 58 + bottomInset, paddingTop: compact ? 3 : 5, paddingBottom: bottomInset, backgroundColor: theme.card, borderTopColor: theme.border, borderTopWidth: 1, elevation: 10 },
+    tabBarItemStyle: { paddingVertical: 2 },
+    tabBarIconStyle: { marginTop: 1 },
+    tabBarLabelStyle: { fontSize: compact ? 9 : 10, fontWeight: '900', marginTop: compact ? 0 : 1, marginBottom: 1 },
   }), [theme, bottomInset, compact]);
-
   const iconProps = (icon) => ({ focused, color }) => <TabIcon icon={icon} focused={focused} color={color} compact={compact} />;
-
   return (
     <Tab.Navigator initialRouteName="ParentSummary" screenOptions={tabOptions}>
       <Tab.Screen name="ParentSummary" component={ParentSummaryScreen} options={{ title: 'Özet', tabBarIcon: iconProps('📊') }} />
@@ -104,6 +79,7 @@ export default function ParentStack() {
         <Stack.Screen name="ParentEvents" component={ParentEventsScreen} />
         <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
         <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
+        <Stack.Screen name="ParentUyum" component={ParentUyumScreen} />
         <Stack.Screen name="ParentMedical" component={ParentMedicalScreen} />
         <Stack.Screen name="ParentContact" component={ParentContactScreen} />
         <Stack.Screen name="ParentService" component={ParentServiceScreen} />
@@ -119,9 +95,4 @@ export default function ParentStack() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-});
+const styles = StyleSheet.create({ root: { flex: 1 } });
