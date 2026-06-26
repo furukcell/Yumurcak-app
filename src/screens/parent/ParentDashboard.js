@@ -51,6 +51,7 @@ export default function ParentDashboardScreen({ navigation }) {
     ['🖼️', 'Galeri', 'ParentGallery', '#E8F8E9', '#86D78B'],
     ['📁', 'Belgeler', 'ParentDocuments', '#F2EAFE', '#BA9BEA'],
     ...(showUyumCard ? [['🌱', 'Uyum Skoru', 'ParentUyum', '#E8FBEA', '#7DDC8C']] : []),
+    ['🏅', 'Rozetlerim', 'ParentBadges', '#FFF7E8', '#F0C36A'],
   ];
 
   return (
