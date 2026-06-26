@@ -20,6 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   REVENUECAT_ENTITLEMENT_ID,
   getRevenueCatExpiryDate,
+  getRevenueCatPackageForPlan,
   getRevenueCatPackages,
   isRevenueCatPremiumActive,
   purchaseRevenueCatPackage,
@@ -117,7 +118,7 @@ export default function AdminSubscriptionScreen() {
   const [saving, setSaving] = useState(false);
   const [rcLoading, setRcLoading] = useState(true);
   const [rcError, setRcError] = useState('');
-  const [rcPackages, setRcPackages] = useState({ monthly: null, yearly: null });
+  const [rcPackages, setRcPackages] = useState({ byId: {}, packages: [], monthly: null, yearly: null });
   const [kres, setKres] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [children, setChildren] = useState([]);
@@ -156,7 +157,7 @@ export default function AdminSubscriptionScreen() {
       setRcLoading(true);
       const result = await getRevenueCatPackages(revenueCatUserId);
       if (!alive) return;
-      setRcPackages({ monthly: result.monthly, yearly: result.yearly });
+      setRcPackages(result);
       setRcError(result.error || '');
       setRcLoading(false);
     }
@@ -172,7 +173,7 @@ export default function AdminSubscriptionScreen() {
   const activeLimit = subscription?.planTier ? getTierById(subscription.planTier).maxStudent : suggestedTier?.maxStudent;
   const overLimit = activeLimit && studentCount > activeLimit;
 
-  const writeSubscription = async ({ tier, selectedPeriod, durum, source, endDate, price, customerInfo }) => {
+  const writeSubscription = async ({ tier, selectedPeriod, durum, source, endDate, price, customerInfo, rcPackage }) => {
     await set(ref(database, `abonelikler/${kresId}`), {
       kresId,
       plan: durum === 'demo' ? 'demo' : `${tier.id}_${selectedPeriod}`,
@@ -188,6 +189,8 @@ export default function AdminSubscriptionScreen() {
       kaynak: source,
       revenueCatCustomerId: revenueCatUserId,
       revenueCatEntitlement: REVENUECAT_ENTITLEMENT_ID,
+      revenueCatPackageIdentifier: rcPackage?.identifier || '',
+      revenueCatProductIdentifier: rcPackage?.product?.identifier || rcPackage?.product?.productIdentifier || '',
       revenueCatSyncedAt: customerInfo ? Date.now() : subscription?.revenueCatSyncedAt || '',
       createdAt: subscription?.createdAt || Date.now(),
       updatedAt: Date.now(),
@@ -223,7 +226,7 @@ export default function AdminSubscriptionScreen() {
   const selectPlan = async (tier, selectedPeriod) => {
     const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
     const priceText = `${formatPrice(price)} / ${selectedPeriod === 'yillik' ? 'yıl' : 'ay'}`;
-    const rcPackage = selectedPeriod === 'yillik' ? rcPackages.yearly : rcPackages.monthly;
+    const rcPackage = getRevenueCatPackageForPlan(rcPackages, tier.id, selectedPeriod);
 
     if (studentCount > tier.maxStudent) {
       const nextTier = getSuggestedTier(studentCount);
@@ -251,7 +254,7 @@ export default function AdminSubscriptionScreen() {
 
     Alert.alert(
       'Paket Henüz Hazır Değil',
-      `${tier.title} paketi seçildi.\n${tier.range}\n${priceText}\n\nGoogle Play ödeme ürünü hazırlanıyor. Şimdilik demo veya manuel aktif etme ile devam edebilirsiniz.`,
+      `${tier.title} paketi seçildi.\n${tier.range}\n${priceText}\n\nRevenueCat/Google Play paketi henüz okunamadı. Şimdilik demo veya manuel aktif etme ile devam edebilirsiniz.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Manuel Aktif Et', onPress: () => activateManual(tier, selectedPeriod) },
@@ -263,7 +266,7 @@ export default function AdminSubscriptionScreen() {
     setSaving(true);
     try {
       const result = await purchaseRevenueCatPackage(rcPackage, revenueCatUserId);
-      await syncRevenueCatResult(result?.customerInfo, tier, selectedPeriod);
+      await syncRevenueCatResult(result?.customerInfo, tier, selectedPeriod, rcPackage);
       Alert.alert('Başarılı', 'Abonelik aktif edildi.');
     } catch (err) {
       const userCancelled = err?.userCancelled || err?.code === 'PURCHASE_CANCELLED';
@@ -295,7 +298,7 @@ export default function AdminSubscriptionScreen() {
     }
   };
 
-  const syncRevenueCatResult = async (customerInfo, tier, selectedPeriod) => {
+  const syncRevenueCatResult = async (customerInfo, tier, selectedPeriod, rcPackage = null) => {
     const active = isRevenueCatPremiumActive(customerInfo);
     if (!active) throw new Error('Abonelik hakkı aktif değil.');
 
@@ -311,6 +314,7 @@ export default function AdminSubscriptionScreen() {
       endDate: expiryDate,
       price,
       customerInfo,
+      rcPackage,
     });
   };
 
@@ -446,7 +450,7 @@ export default function AdminSubscriptionScreen() {
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${getUsagePercent(studentCount, activeLimit)}%`, backgroundColor: overLimit ? THEME.red : THEME.primary }]} />
           </View>
-          <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}> 
+          <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}>
             {overLimit
               ? 'Mevcut paket öğrenci sayısı için yetersiz. Yeni öğrenci eklemek için üst pakete geçilmelidir.'
               : suggestedTier
