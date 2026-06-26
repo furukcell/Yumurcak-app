@@ -8,10 +8,38 @@ export const REVENUECAT_ANDROID_PUBLIC_KEY = 'goog_WqntzZwxdOpqOYBOtuKyYaMwfIg';
 export const REVENUECAT_OFFERING_ID = 'default';
 export const REVENUECAT_ENTITLEMENT_ID = 'YUMURCAK Pro';
 
+export const REVENUECAT_PACKAGE_IDS = {
+  baslangic: {
+    aylik: 'baslangic_aylik',
+    yillik: 'baslangic_yillik',
+  },
+  profesyonel: {
+    aylik: 'profesyonel_aylik',
+    yillik: 'profesyonel_yillik',
+  },
+  kurum: {
+    aylik: 'kurum_aylik',
+    yillik: 'kurum_yillik',
+  },
+};
+
 let configuredAppUserId = null;
 
 function normalizeUserId(appUserId) {
   return String(appUserId || 'anonymous').trim() || 'anonymous';
+}
+
+function buildPackageMap(packages = []) {
+  return packages.reduce((acc, item) => {
+    if (item?.identifier) acc[item.identifier] = item;
+    return acc;
+  }, {});
+}
+
+export function getRevenueCatPackageForPlan(packagesResult, tierId, period) {
+  const key = REVENUECAT_PACKAGE_IDS?.[tierId]?.[period];
+  if (!key) return null;
+  return packagesResult?.byId?.[key] || null;
 }
 
 export async function configureRevenueCat(appUserId) {
@@ -42,6 +70,7 @@ export async function getRevenueCatPackages(appUserId) {
   if (!configured) {
     return {
       ready: false,
+      byId: {},
       monthly: null,
       yearly: null,
       offering: null,
@@ -53,14 +82,14 @@ export async function getRevenueCatPackages(appUserId) {
     const offerings = await Purchases.getOfferings();
     const offering = offerings?.all?.[REVENUECAT_OFFERING_ID] || offerings?.current || null;
     const packages = offering?.availablePackages || [];
-
-    const monthly = packages.find((item) => item.identifier === 'monthly' || item.packageType === 'MONTHLY') || null;
-    const yearly = packages.find((item) => item.identifier === 'yearly' || item.packageType === 'ANNUAL') || null;
+    const byId = buildPackageMap(packages);
 
     return {
       ready: !!offering,
-      monthly,
-      yearly,
+      byId,
+      packages,
+      monthly: packages.find((item) => item.identifier === 'monthly' || item.packageType === 'MONTHLY') || null,
+      yearly: packages.find((item) => item.identifier === 'yearly' || item.packageType === 'ANNUAL') || null,
       offering,
       error: offering ? '' : 'RevenueCat offering bulunamadı.',
     };
@@ -68,6 +97,8 @@ export async function getRevenueCatPackages(appUserId) {
     console.warn('RevenueCat offering okuma hatası:', error);
     return {
       ready: false,
+      byId: {},
+      packages: [],
       monthly: null,
       yearly: null,
       offering: null,
