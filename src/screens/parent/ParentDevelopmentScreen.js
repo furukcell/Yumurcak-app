@@ -16,6 +16,7 @@ import { formatDisplayDate } from '../../utils/dateFormat';
 import { sortWeeklyBadgesNewestFirst } from '../../utils/weeklyBadges';
 
 const MEAL_KEYS = ['kahvalti', 'ogle', 'araOgun'];
+const MIN_AVERAGE_COUNT = 5;
 const MOOD_LABELS = {
   mutlu: 'Mutlu',
   iyi: 'İyi',
@@ -29,6 +30,7 @@ const MOOD_LABELS = {
 export default function ParentDevelopmentScreen({ navigation }) {
   const { loading, selectedChild, childName, kresId, sinifId } = useParentBase();
   const [monthOffset, setMonthOffset] = useState(0);
+  const [activeTab, setActiveTab] = useState('monthly');
 
   const physicalRaw = useNodeList('fizikselGelisim');
   const reportsRaw = useNodeList('gunlukRaporlar');
@@ -96,9 +98,7 @@ export default function ParentDevelopmentScreen({ navigation }) {
     const sleepValues = reports
       .map((item) => extractSleepHours(item))
       .filter((value) => Number.isFinite(value) && value > 0);
-    const averageSleep = sleepValues.length
-      ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length
-      : 0;
+    const averageSleep = sleepValues.length ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length : 0;
 
     const mealStats = buildMealStats(reports);
     const mealGoodTotal = mealStats.good;
@@ -142,13 +142,18 @@ export default function ParentDevelopmentScreen({ navigation }) {
     };
   }, [selectedChild?.id, reportsRaw, attendanceRaw, physicalRaw, eventsRaw, mealsRaw, monthKey, kresId, sinifId, childName]);
 
+  const classAverage = useMemo(() => {
+    if (!selectedChild?.id || !sinifId) return null;
+    return buildClassAverageData({ physicalRaw, selectedChild, sinifId, kresId, monthKey });
+  }, [physicalRaw, selectedChild?.id, sinifId, kresId, monthKey]);
+
   if (loading) return <LoadingScreen text="Aylık gelişim raporu hazırlanıyor..." />;
 
   return (
     <ScreenShell
-      title="Aylık Gelişim"
+      title="Gelişim"
       emoji="📈"
-      subtitle={getMonthLabel(monthKey)}
+      subtitle={activeTab === 'monthly' ? getMonthLabel(monthKey) : 'Anonim sınıf ortalaması'}
       navigation={navigation}
     >
       {!selectedChild ? (
@@ -157,104 +162,245 @@ export default function ParentDevelopmentScreen({ navigation }) {
         <EmptyState icon="📈" title="Rapor hazırlanamadı" desc="Bu ay için veri okunamadı." />
       ) : (
         <>
+          <DevelopmentTabs activeTab={activeTab} setActiveTab={setActiveTab} />
           <MonthSelector monthKey={monthKey} monthOffset={monthOffset} setMonthOffset={setMonthOffset} />
 
-          <View style={[styles.card, localStyles.heroCard]}>
-            <Text style={localStyles.heroEmoji}>📊</Text>
-            <Text style={localStyles.heroTitle}>{childName}</Text>
-            <Text style={localStyles.heroSub}>{getMonthLabel(monthKey)} gelişim özeti</Text>
-            <Text style={localStyles.heroText}>{monthly.comment}</Text>
-          </View>
-
-          <Text style={styles.sectionTitle}>Ayın Özeti</Text>
-          <View style={localStyles.grid}>
-            <MetricCard icon="✅" value={`${monthly.presentDays}`} label="Geldiği gün" />
-            <MetricCard icon="🏠" value={`${monthly.absentDays}`} label="Devamsızlık" />
-            <MetricCard icon="😊" value={`${monthly.positiveMoodDays}`} label="Olumlu ruh hali" />
-            <MetricCard icon="🎨" value={`${monthly.events.length}`} label="Etkinlik" />
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Katılım Durumu</Text>
-            <ProgressLine label={`${monthly.presentDays} gün geldi / ${monthly.attendanceTotal || 0} kayıt`} percent={percent(monthly.presentDays, monthly.attendanceTotal)} color={THEME.green} />
-            <Text style={styles.cardText}>Devamsızlık: {monthly.absentDays} gün</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Ruh Hali Dağılımı</Text>
-            {Object.entries(monthly.moodCounts).length === 0 ? (
-              <Text style={styles.cardText}>Bu ay ruh hali kaydı yok.</Text>
-            ) : (
-              Object.entries(monthly.moodCounts)
-                .sort((a, b) => b[1] - a[1])
-                .map(([key, count]) => (
-                  <ProgressLine key={key} label={`${MOOD_LABELS[key] || key}: ${count} gün`} percent={percent(count, monthly.reports.length)} color={getMoodColor(key)} />
-                ))
-            )}
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Uyku ve Yemek</Text>
-            <ProgressLine label={`Ortalama uyku: ${formatSleep(monthly.averageSleep)}`} percent={Math.min(100, Math.round((monthly.averageSleep / 2) * 100))} color={THEME.blue} />
-            <ProgressLine label={`Yemek iyi: ${monthly.mealGoodTotal}/${monthly.mealTotal || 0} öğün`} percent={percent(monthly.mealGoodTotal, monthly.mealTotal)} color={THEME.orange} />
-            <Text style={styles.cardText}>Yemek menüsü yayınlanan gün: {monthly.menuDays}</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Fiziksel Gelişim</Text>
-            {monthly.physicalAll.length === 0 ? (
-              <Text style={styles.cardText}>Henüz boy/kilo ölçümü girilmemiş.</Text>
-            ) : (
-              <>
-                <View style={localStyles.physicalSummary}>
-                  <View style={localStyles.physicalBox}>
-                    <Text style={localStyles.physicalLabel}>Son boy</Text>
-                    <Text style={localStyles.physicalValue}>{formatMeasurement(monthly.lastPhysical, 'boy', 'cm')}</Text>
-                    <Text style={localStyles.physicalDelta}>{monthly.heightDelta}</Text>
-                  </View>
-                  <View style={localStyles.physicalBox}>
-                    <Text style={localStyles.physicalLabel}>Son kilo</Text>
-                    <Text style={localStyles.physicalValue}>{formatMeasurement(monthly.lastPhysical, 'kilo', 'kg')}</Text>
-                    <Text style={localStyles.physicalDelta}>{monthly.weightDelta}</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.cardText}>Son ölçüm: {formatDate(monthly.lastPhysical)}</Text>
-                {monthly.lastPhysical?.basCevresi ? <Text style={styles.cardText}>Baş çevresi: {monthly.lastPhysical.basCevresi} cm</Text> : null}
-                {monthly.physical.length === 0 ? (
-                  <Text style={localStyles.miniNote}>Bu ay yeni ölçüm yok; aşağıda son kayıtlar gösteriliyor.</Text>
-                ) : (
-                  <Text style={localStyles.miniNote}>Bu ay {monthly.physical.length} fiziksel ölçüm kaydı var.</Text>
-                )}
-
-                <Text style={localStyles.subTitle}>Gelişim görünümü</Text>
-                <PhysicalGrowthChart measurements={monthly.physicalChart} />
-
-                <Text style={localStyles.subTitle}>Son ölçümler</Text>
-                {monthly.physicalAll.slice(0, 6).map((item) => (
-                  <MeasurementRow key={item.id || `${item.tarih}-${item.createdAt}`} item={item} />
-                ))}
-              </>
-            )}
-          </View>
-
-          <View style={styles.card}>
-            <View style={localStyles.badgeAlbumHead}>
-              <View>
-                <Text style={styles.cardTitle}>🎖️ Rozet Albümü</Text>
-                <Text style={localStyles.miniNote}>Haftanın Yıldızı geçmişi sadece bu çocuğa ait kayıtları gösterir.</Text>
-              </View>
-              <Text style={localStyles.badgeCount}>{badgeHistory.length}</Text>
-            </View>
-            {badgeHistory.length === 0 ? (
-              <Text style={styles.cardText}>Henüz rozet kaydı yok. Öğretmen cuma günü rozet verdiğinde burada görünecek.</Text>
-            ) : (
-              badgeHistory.map((item) => <BadgeHistoryRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} />)
-            )}
-          </View>
+          {activeTab === 'monthly' ? (
+            <MonthlyDevelopmentContent monthly={monthly} childName={childName} badgeHistory={badgeHistory} />
+          ) : (
+            <ClassAverageContent data={classAverage} childName={childName} monthKey={monthKey} />
+          )}
         </>
       )}
     </ScreenShell>
+  );
+}
+
+function DevelopmentTabs({ activeTab, setActiveTab }) {
+  return (
+    <View style={localStyles.tabRow}>
+      <TouchableOpacity style={[localStyles.tabButton, activeTab === 'monthly' && localStyles.tabButtonActive]} onPress={() => setActiveTab('monthly')} activeOpacity={0.85}>
+        <Text style={[localStyles.tabText, activeTab === 'monthly' && localStyles.tabTextActive]}>📅 Aylık Gelişim</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[localStyles.tabButton, activeTab === 'classAverage' && localStyles.tabButtonActive]} onPress={() => setActiveTab('classAverage')} activeOpacity={0.85}>
+        <Text style={[localStyles.tabText, activeTab === 'classAverage' && localStyles.tabTextActive]}>📊 Sınıf Ortalaması</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function MonthlyDevelopmentContent({ monthly, childName, badgeHistory }) {
+  return (
+    <>
+      <View style={[styles.card, localStyles.heroCard]}>
+        <Text style={localStyles.heroEmoji}>📊</Text>
+        <Text style={localStyles.heroTitle}>{childName}</Text>
+        <Text style={localStyles.heroSub}>Aylık gelişim özeti</Text>
+        <Text style={localStyles.heroText}>{monthly.comment}</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>Ayın Özeti</Text>
+      <View style={localStyles.grid}>
+        <MetricCard icon="✅" value={`${monthly.presentDays}`} label="Geldiği gün" />
+        <MetricCard icon="🏠" value={`${monthly.absentDays}`} label="Devamsızlık" />
+        <MetricCard icon="😊" value={`${monthly.positiveMoodDays}`} label="Olumlu ruh hali" />
+        <MetricCard icon="🎨" value={`${monthly.events.length}`} label="Etkinlik" />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Katılım Durumu</Text>
+        <ProgressLine label={`${monthly.presentDays} gün geldi / ${monthly.attendanceTotal || 0} kayıt`} percent={percent(monthly.presentDays, monthly.attendanceTotal)} color={THEME.green} />
+        <Text style={styles.cardText}>Devamsızlık: {monthly.absentDays} gün</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Ruh Hali Dağılımı</Text>
+        {Object.entries(monthly.moodCounts).length === 0 ? (
+          <Text style={styles.cardText}>Bu ay ruh hali kaydı yok.</Text>
+        ) : (
+          Object.entries(monthly.moodCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([key, count]) => (
+              <ProgressLine key={key} label={`${MOOD_LABELS[key] || key}: ${count} gün`} percent={percent(count, monthly.reports.length)} color={getMoodColor(key)} />
+            ))
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Uyku ve Yemek</Text>
+        <ProgressLine label={`Ortalama uyku: ${formatSleep(monthly.averageSleep)}`} percent={Math.min(100, Math.round((monthly.averageSleep / 2) * 100))} color={THEME.blue} />
+        <ProgressLine label={`Yemek iyi: ${monthly.mealGoodTotal}/${monthly.mealTotal || 0} öğün`} percent={percent(monthly.mealGoodTotal, monthly.mealTotal)} color={THEME.orange} />
+        <Text style={styles.cardText}>Yemek menüsü yayınlanan gün: {monthly.menuDays}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Fiziksel Gelişim</Text>
+        {monthly.physicalAll.length === 0 ? (
+          <Text style={styles.cardText}>Henüz boy/kilo ölçümü girilmemiş.</Text>
+        ) : (
+          <>
+            <View style={localStyles.physicalSummary}>
+              <View style={localStyles.physicalBox}>
+                <Text style={localStyles.physicalLabel}>Son boy</Text>
+                <Text style={localStyles.physicalValue}>{formatMeasurement(monthly.lastPhysical, 'boy', 'cm')}</Text>
+                <Text style={localStyles.physicalDelta}>{monthly.heightDelta}</Text>
+              </View>
+              <View style={localStyles.physicalBox}>
+                <Text style={localStyles.physicalLabel}>Son kilo</Text>
+                <Text style={localStyles.physicalValue}>{formatMeasurement(monthly.lastPhysical, 'kilo', 'kg')}</Text>
+                <Text style={localStyles.physicalDelta}>{monthly.weightDelta}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.cardText}>Son ölçüm: {formatDate(monthly.lastPhysical)}</Text>
+            {monthly.lastPhysical?.basCevresi ? <Text style={styles.cardText}>Baş çevresi: {monthly.lastPhysical.basCevresi} cm</Text> : null}
+            {monthly.physical.length === 0 ? (
+              <Text style={localStyles.miniNote}>Bu ay yeni ölçüm yok; aşağıda son kayıtlar gösteriliyor.</Text>
+            ) : (
+              <Text style={localStyles.miniNote}>Bu ay {monthly.physical.length} fiziksel ölçüm kaydı var.</Text>
+            )}
+
+            <Text style={localStyles.subTitle}>Gelişim görünümü</Text>
+            <PhysicalGrowthChart measurements={monthly.physicalChart} />
+
+            <Text style={localStyles.subTitle}>Son ölçümler</Text>
+            {monthly.physicalAll.slice(0, 6).map((item) => (
+              <MeasurementRow key={item.id || `${item.tarih}-${item.createdAt}`} item={item} />
+            ))}
+          </>
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <View style={localStyles.badgeAlbumHead}>
+          <View>
+            <Text style={styles.cardTitle}>🎖️ Rozet Albümü</Text>
+            <Text style={localStyles.miniNote}>Haftanın Yıldızı geçmişi sadece bu çocuğa ait kayıtları gösterir.</Text>
+          </View>
+          <Text style={localStyles.badgeCount}>{badgeHistory.length}</Text>
+        </View>
+        {badgeHistory.length === 0 ? (
+          <Text style={styles.cardText}>Henüz rozet kaydı yok. Öğretmen cuma günü rozet verdiğinde burada görünecek.</Text>
+        ) : (
+          badgeHistory.map((item) => <BadgeHistoryRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} />)
+        )}
+      </View>
+    </>
+  );
+}
+
+function ClassAverageContent({ data, childName, monthKey }) {
+  const firstName = getFirstName(childName);
+
+  if (!data?.childMeasurement) {
+    return (
+      <>
+        <AnonHeader childName={childName} monthKey={monthKey} dataCount={0} />
+        <EmptyState icon="📏" title="Ölçüm bulunamadı" desc="Bu ay için çocuğunuzun fiziksel ölçüm kaydı yok. Ölçüm girildiğinde sınıf ortalamasıyla karşılaştırma burada görünür." />
+      </>
+    );
+  }
+
+  if (!data.canShowAverage) {
+    return (
+      <>
+        <AnonHeader childName={childName} monthKey={monthKey} dataCount={data.count || 0} />
+        <View style={localStyles.privacyCard}>
+          <Text style={localStyles.privacyIcon}>🔒</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={localStyles.privacyTitle}>Anonim veri için yeterli kayıt yok</Text>
+            <Text style={localStyles.privacyText}>Sınıf ortalaması en az {MIN_AVERAGE_COUNT} çocuk ölçümü olduğunda gösterilir. Böylece hiçbir çocuğun verisi tek tek anlaşılmaz.</Text>
+          </View>
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AnonHeader childName={childName} monthKey={monthKey} dataCount={data.count} />
+      <View style={localStyles.privacyCard}>
+        <Text style={localStyles.privacyIcon}>🛡️</Text>
+        <Text style={localStyles.privacyText}><Text style={localStyles.privacyStrong}>Tamamen anonim.</Text> Sadece sınıf ortalaması gösterilir; başka çocukların adı veya tekil verisi görünmez.</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>Fiziksel Karşılaştırma</Text>
+      <CompareMetricCard icon="📏" title="Boy" suffix="cm" childName={firstName} childValue={data.child.boy} avgValue={data.average.boy} color="#7C5CBF" />
+      <CompareMetricCard icon="⚖️" title="Kilo" suffix="kg" childName={firstName} childValue={data.child.kilo} avgValue={data.average.kilo} color="#F472B6" />
+      {data.child.basCevresi || data.average.basCevresi ? (
+        <CompareMetricCard icon="🙂" title="Baş Çevresi" suffix="cm" childName={firstName} childValue={data.child.basCevresi} avgValue={data.average.basCevresi} color="#34D399" />
+      ) : null}
+
+      <View style={localStyles.infoCard}>
+        <Text style={localStyles.infoIcon}>💡</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={localStyles.infoTitle}>Bilgilendirme</Text>
+          <Text style={localStyles.infoText}>Bu karşılaştırma sınıf ortalamasına göre genel bir bilgidir. Her çocuğun gelişimi kendine özeldir ve farklı hızlarda ilerleyebilir.</Text>
+        </View>
+      </View>
+
+      <View style={localStyles.dataCountCard}>
+        <Text style={localStyles.dataCountIcon}>👥</Text>
+        <Text style={localStyles.dataCountText}>{getMonthLabel(monthKey)} ortalaması {data.count} anonim çocuk ölçümü ile hesaplandı.</Text>
+      </View>
+    </>
+  );
+}
+
+function AnonHeader({ childName, monthKey, dataCount }) {
+  return (
+    <View style={localStyles.averageHero}>
+      <View style={{ flex: 1 }}>
+        <Text style={localStyles.averageLabel}>%100 Anonim</Text>
+        <Text style={localStyles.averageTitle}>Sınıf Ortalaması</Text>
+        <Text style={localStyles.averageSub}>{childName} · {getMonthLabel(monthKey)} · {dataCount || 0} kayıt</Text>
+      </View>
+      <View style={localStyles.lockBadge}><Text style={localStyles.lockIcon}>🔒</Text></View>
+    </View>
+  );
+}
+
+function CompareMetricCard({ icon, title, suffix, childName, childValue, avgValue, color }) {
+  const child = Number(childValue || 0);
+  const avg = Number(avgValue || 0);
+  if (!child || !avg) return null;
+  const max = Math.max(child, avg, 1);
+  const childPercent = Math.max(12, Math.round((child / max) * 100));
+  const avgPercent = Math.max(12, Math.round((avg / max) * 100));
+  const diff = Number((child - avg).toFixed(1));
+  const status = getComparisonStatus(diff, suffix);
+
+  return (
+    <View style={localStyles.compareCard}>
+      <View style={localStyles.compareHead}>
+        <View style={localStyles.compareTitleRow}>
+          <View style={[localStyles.compareIconBox, { backgroundColor: `${color}22` }]}><Text style={localStyles.compareIcon}>{icon}</Text></View>
+          <View>
+            <Text style={localStyles.compareTitle}>{title}</Text>
+            <Text style={localStyles.compareUnit}>{suffix}</Text>
+          </View>
+        </View>
+        <Text style={[localStyles.statusBadge, { color: status.color, backgroundColor: status.bg }]}>{status.label}</Text>
+      </View>
+
+      <CompareBar label={childName} value={`${child}${suffix}`} percent={childPercent} color={color} strong />
+      <CompareBar label="Sınıf Ort." value={`${avg}${suffix}`} percent={avgPercent} color="#D4C5F5" />
+
+      <View style={[localStyles.diffBox, { backgroundColor: status.bg }]}>
+        <Text style={localStyles.diffIcon}>{status.icon}</Text>
+        <Text style={localStyles.diffText}>{status.message}</Text>
+      </View>
+    </View>
+  );
+}
+
+function CompareBar({ label, value, percent: widthPercent, color, strong }) {
+  return (
+    <View style={localStyles.compareBarRow}>
+      <Text style={[localStyles.compareBarLabel, strong && { color }]}>{label}</Text>
+      <View style={localStyles.compareTrack}><View style={[localStyles.compareFill, { width: `${widthPercent}%`, backgroundColor: color }]} /></View>
+      <Text style={[localStyles.compareBarValue, strong && { color }]}>{value}</Text>
+    </View>
   );
 }
 
@@ -362,6 +508,62 @@ function BadgeHistoryRow({ item }) {
       </View>
     </View>
   );
+}
+
+function buildClassAverageData({ physicalRaw, selectedChild, sinifId, kresId, monthKey }) {
+  const monthRecords = physicalRaw
+    .filter((item) => item.aktif !== false)
+    .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+    .filter((item) => String(item.sinifId || '') === String(sinifId || ''))
+    .filter((item) => isInMonth(item, monthKey))
+    .sort((a, b) => getSortableDate(b) - getSortableDate(a));
+
+  const latestByChild = new Map();
+  monthRecords.forEach((item) => {
+    const id = String(item.cocukId || '');
+    if (!id || latestByChild.has(id)) return;
+    latestByChild.set(id, item);
+  });
+
+  const childMeasurement = latestByChild.get(String(selectedChild.id || '')) || null;
+  const values = Array.from(latestByChild.values());
+  const count = values.length;
+
+  const average = {
+    boy: averageOf(values, 'boy'),
+    kilo: averageOf(values, 'kilo'),
+    basCevresi: averageOf(values, 'basCevresi'),
+  };
+
+  return {
+    count,
+    canShowAverage: count >= MIN_AVERAGE_COUNT,
+    childMeasurement,
+    child: {
+      boy: getPhysicalValue(childMeasurement, 'boy'),
+      kilo: getPhysicalValue(childMeasurement, 'kilo'),
+      basCevresi: getPhysicalValue(childMeasurement, 'basCevresi'),
+    },
+    average,
+  };
+}
+
+function averageOf(items, key) {
+  const values = items.map((item) => getPhysicalValue(item, key)).filter((value) => value > 0);
+  if (!values.length) return 0;
+  return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1));
+}
+
+function getComparisonStatus(diff, suffix) {
+  const abs = Math.abs(diff);
+  const threshold = suffix === 'kg' ? 0.8 : 2;
+  if (abs <= threshold) {
+    return { label: 'Ortalamaya yakın', icon: '✅', color: '#2563EB', bg: '#EFF6FF', message: 'Sınıf ortalamasına yakın bir değer görünüyor.' };
+  }
+  if (diff > 0) {
+    return { label: 'Ortalamanın üzerinde', icon: '↗', color: '#059669', bg: '#ECFDF5', message: `Sınıf ortalamasından ${abs}${suffix} daha yüksek görünüyor.` };
+  }
+  return { label: 'Ortalamanın altında', icon: '↘', color: '#D97706', bg: '#FFF7ED', message: `Sınıf ortalamasından ${abs}${suffix} daha düşük görünüyor.` };
 }
 
 function isInMonth(item, monthKey) {
@@ -487,6 +689,10 @@ function getMoodColor(key) {
   return THEME.primary;
 }
 
+function getFirstName(value) {
+  return String(value || 'Çocuğunuz').trim().split(' ')[0] || 'Çocuğunuz';
+}
+
 function buildMonthlyComment(data) {
   const name = String(data.childName || 'Çocuğunuz').split(' ')[0] || 'Çocuğunuz';
   const parts = [];
@@ -526,6 +732,11 @@ function buildMonthlyComment(data) {
 }
 
 const localStyles = StyleSheet.create({
+  tabRow: { flexDirection: 'row', backgroundColor: THEME.card, borderRadius: 18, padding: 4, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  tabButton: { flex: 1, paddingVertical: 11, paddingHorizontal: 6, borderRadius: 14, alignItems: 'center' },
+  tabButtonActive: { backgroundColor: THEME.primary },
+  tabText: { color: THEME.muted, fontWeight: '900', fontSize: 12 },
+  tabTextActive: { color: '#fff' },
   heroCard: { alignItems: 'flex-start' },
   heroEmoji: { fontSize: 34, marginBottom: 6 },
   heroTitle: { fontSize: 20, fontWeight: '900', color: THEME.text },
@@ -578,4 +789,38 @@ const localStyles = StyleSheet.create({
   badgeTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
   badgeWeek: { color: '#B46A00', fontWeight: '900', fontSize: 12, marginTop: 3 },
   badgeNote: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: 6 },
+  averageHero: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#7C5CBF', borderRadius: 24, padding: 18, marginBottom: 12 },
+  averageLabel: { color: 'rgba(255,255,255,0.82)', fontWeight: '900', fontSize: 12, letterSpacing: 0.4 },
+  averageTitle: { color: '#fff', fontSize: 23, fontWeight: '900', marginTop: 3 },
+  averageSub: { color: 'rgba(255,255,255,0.82)', fontWeight: '700', marginTop: 5 },
+  lockBadge: { width: 56, height: 56, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  lockIcon: { fontSize: 28 },
+  privacyCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#F7F3FF', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#E9DDFB', marginBottom: 14 },
+  privacyIcon: { fontSize: 28 },
+  privacyTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  privacyText: { flex: 1, color: THEME.text, fontWeight: '700', lineHeight: 20 },
+  privacyStrong: { fontWeight: '900', color: '#7C5CBF' },
+  compareCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 15, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  compareHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
+  compareTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  compareIconBox: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  compareIcon: { fontSize: 24 },
+  compareTitle: { color: THEME.text, fontWeight: '900', fontSize: 17 },
+  compareUnit: { color: THEME.muted, fontWeight: '800', fontSize: 12 },
+  statusBadge: { fontWeight: '900', fontSize: 11, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 6 },
+  compareBarRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 9 },
+  compareBarLabel: { width: 72, color: THEME.muted, fontWeight: '900', fontSize: 12 },
+  compareTrack: { flex: 1, height: 10, backgroundColor: '#F0EDF8', borderRadius: 99, overflow: 'hidden' },
+  compareFill: { height: '100%', borderRadius: 99 },
+  compareBarValue: { width: 62, textAlign: 'right', color: THEME.muted, fontWeight: '900', fontSize: 12 },
+  diffBox: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, padding: 10, marginTop: 12 },
+  diffIcon: { fontSize: 17 },
+  diffText: { flex: 1, color: THEME.text, fontWeight: '700', lineHeight: 18, fontSize: 12 },
+  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#FFF7E8', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#FFE3AA', marginTop: 4, marginBottom: 12 },
+  infoIcon: { fontSize: 28 },
+  infoTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  infoText: { color: THEME.text, fontWeight: '700', lineHeight: 19, marginTop: 3 },
+  dataCountCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: THEME.card, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: THEME.border },
+  dataCountIcon: { fontSize: 24 },
+  dataCountText: { flex: 1, color: THEME.muted, fontWeight: '800', lineHeight: 18 },
 });
