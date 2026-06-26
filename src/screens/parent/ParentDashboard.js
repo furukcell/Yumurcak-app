@@ -5,6 +5,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
+import { uyumGorunurMu } from '../../utils/uyum';
 
 export default function ParentDashboardScreen({ navigation }) {
   const base = useParentBase();
@@ -28,6 +29,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const getMood = () => todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || 'Mutlu';
   const getMeal = () => todayReport?.yemekDurumu || (todayReport?.yemek ? 'İyi' : 'İyi');
   const getSleep = () => todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || 'İyi');
+  const showUyumCard = selectedChild && uyumGorunurMu(selectedChild);
 
   const featuredActions = [
     ['🔔', 'Kurum Zili', 'ParentBell', 'Geliyorum / kapıdayım bildir', '#FFF4C7', '#F5C84B'],
@@ -48,7 +50,7 @@ export default function ParentDashboardScreen({ navigation }) {
     ['💬', 'Mesajlar', 'ParentMessages', '#E9F0FF', '#94AFFF'],
     ['🖼️', 'Galeri', 'ParentGallery', '#E8F8E9', '#86D78B'],
     ['📁', 'Belgeler', 'ParentDocuments', '#F2EAFE', '#BA9BEA'],
-    ['🌱', 'Uyum Skoru', 'ParentUyum', '#E8FBEA', '#7DDC8C'],
+    ...(showUyumCard ? [['🌱', 'Uyum Skoru', 'ParentUyum', '#E8FBEA', '#7DDC8C']] : []),
   ];
 
   return (
