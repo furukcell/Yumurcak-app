@@ -32,11 +32,13 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
   const dayNo = String(selectedChild.uyumDurumu || '') === 'tamamlandi' ? UYUM_GUN : uyumGunNo(startDate, today);
   const daysLeft = String(selectedChild.uyumDurumu || '') === 'tamamlandi' ? 0 : uyumKalanGun(startDate, today);
   const summary = uyumOzet(childRecords);
-  const score = summary.skor || 0;
+  const hasRecords = childRecords.length > 0;
+  const score = hasRecords ? Number(summary.skor || 0) : 0;
   const latest = summary.son || {};
   const donePercent = Math.min(100, Math.round((dayNo / UYUM_GUN) * 100));
-  const scorePercent = `${Math.max(6, score)}%`;
   const completed = String(selectedChild.uyumDurumu || '') === 'tamamlandi';
+  const scoreLabel = hasRecords ? `${score}` : '--';
+  const scoreDesc = hasRecords ? (completed ? '30 günlük süreç tamamlandı' : uyumYazi(score)) : 'İlk öğretmen kaydı bekleniyor';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -51,13 +53,20 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
         </View>
 
         <View style={styles.scoreCard}>
-          <View style={styles.fakeCircle}><Text style={styles.circleEmoji}>{uyumEmoji(score)}</Text></View>
+          <View style={[styles.fakeCircle, !hasRecords && styles.fakeCirclePending]}><Text style={styles.circleEmoji}>{hasRecords ? uyumEmoji(score) : '🌱'}</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.scoreText}>{score}<Text style={styles.scoreSmall}>/100</Text></Text>
-            <Text style={styles.scoreTitle}>Uyum Skoru</Text>
-            <Text style={styles.scoreDesc}>{completed ? '30 günlük süreç tamamlandı' : uyumYazi(score)}</Text>
+            <Text style={styles.scoreText}>{scoreLabel}<Text style={styles.scoreSmall}>/100</Text></Text>
+            <Text style={styles.scoreTitle}>{hasRecords ? 'Uyum Skoru' : 'Skor Bekleniyor'}</Text>
+            <Text style={styles.scoreDesc}>{scoreDesc}</Text>
           </View>
         </View>
+
+        {!hasRecords ? (
+          <View style={styles.pendingCard}>
+            <Text style={styles.pendingTitle}>İlk kayıt bekleniyor</Text>
+            <Text style={styles.pendingDesc}>Öğretmen ilk günlük uyum değerlendirmesini kaydettiğinde skor, emoji geçmişi ve notlar burada görünür.</Text>
+          </View>
+        ) : null}
 
         <View style={styles.progressCard}>
           <View style={styles.rowBetween}><Text style={styles.cardTitle}>{dayNo} / {UYUM_GUN} tamamlandı</Text><Text style={styles.greenText}>{completed ? 'Tamamlandı' : `${daysLeft} gün kaldı`}</Text></View>
@@ -73,7 +82,7 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
                 const d = week * 7 + i + 1;
                 const rec = childRecords.find((item) => Number(item.gunNo || 0) === d);
                 const active = d === dayNo && !completed;
-                const emoji = rec ? uyumEmoji(rec.skor) : d <= dayNo ? '🙂' : '○';
+                const emoji = rec ? uyumEmoji(rec.skor) : '○';
                 return <Text key={d} style={[styles.dayDot, active && styles.todayDot]}>{emoji}</Text>;
               })}
             </View>
@@ -83,20 +92,20 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
         <View style={styles.twoCol}>
           <View style={styles.infoCard}>
             <Text style={styles.cardTitle}>Bugünün Özeti</Text>
-            <Info label="Ağladı mı?" value={Number(latest.aglamaDakika || 0) > 0 ? `${latest.aglamaDakika} dk` : 'Hayır'} />
-            <Info label="Yemek" value={foodLabel(latest.yemekDurumu)} />
-            <Info label="Çıkış" value={exitLabel(latest.cikisDurumu)} />
-            <Info label="Uyku" value={latest.uykuDakika ? `${latest.uykuDakika} dk` : '-'} />
+            <Info label="Ağladı mı?" value={hasRecords ? (Number(latest.aglamaDakika || 0) > 0 ? `${latest.aglamaDakika} dk` : 'Hayır') : 'Bekleniyor'} />
+            <Info label="Yemek" value={hasRecords ? foodLabel(latest.yemekDurumu) : 'Bekleniyor'} />
+            <Info label="Çıkış" value={hasRecords ? exitLabel(latest.cikisDurumu) : 'Bekleniyor'} />
+            <Info label="Uyku" value={hasRecords ? (latest.uykuDakika ? `${latest.uykuDakika} dk` : '-') : 'Bekleniyor'} />
           </View>
           <View style={styles.noteCard}>
             <Text style={styles.cardTitle}>Öğretmen Notu</Text>
-            <Text style={styles.noteText}>{latest.ogretmenNotu || 'Bugün için öğretmen notu henüz girilmedi.'}</Text>
+            <Text style={styles.noteText}>{hasRecords ? (latest.ogretmenNotu || 'Bugün için öğretmen notu henüz girilmedi.') : 'İlk uyum notu kaydedildiğinde burada görünür.'}</Text>
           </View>
         </View>
 
         <View style={styles.twoCol}>
           <View style={styles.infoCard}>
-            <View style={styles.rowBetween}><Text style={styles.cardTitle}>Ağlama Trendi</Text><Text style={styles.badge}>%{summary.aglamaAzalma} azaldı</Text></View>
+            <View style={styles.rowBetween}><Text style={styles.cardTitle}>Ağlama Trendi</Text><Text style={styles.badge}>{hasRecords ? `%${summary.aglamaAzalma} azaldı` : 'Bekleniyor'}</Text></View>
             <View style={styles.barRow}>{[1,2,3,4].map((w) => <Bar key={w} week={w} records={childRecords} />)}</View>
           </View>
           <View style={styles.infoCard}>
@@ -144,8 +153,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: '900', color: '#073B1E', marginTop: 6 }, childName: { fontSize: 22, fontWeight: '900', color: '#073B1E', marginTop: 12 }, childSub: { color: '#335A43', fontWeight: '700', marginTop: 5 },
   dayPill: { backgroundColor: 'rgba(255,255,255,0.76)', borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, marginTop: 10 }, dayPillText: { color: '#0A7A37', fontWeight: '900' },
   scoreCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: CARD, borderRadius: 26, padding: 22, marginTop: -18, borderWidth: 1, borderColor: BORDER, elevation: 3 },
-  fakeCircle: { width: 132, height: 132, borderRadius: 66, borderWidth: 12, borderColor: GREEN, alignItems: 'center', justifyContent: 'center', marginRight: 22, backgroundColor: '#F1FFF4' }, circleEmoji: { fontSize: 42 },
+  fakeCircle: { width: 132, height: 132, borderRadius: 66, borderWidth: 12, borderColor: GREEN, alignItems: 'center', justifyContent: 'center', marginRight: 22, backgroundColor: '#F1FFF4' }, fakeCirclePending: { borderColor: '#B9DEC4', backgroundColor: '#F8FFF9' }, circleEmoji: { fontSize: 42 },
   scoreText: { fontSize: 48, fontWeight: '900', color: '#075B28' }, scoreSmall: { fontSize: 22 }, scoreTitle: { fontSize: 20, fontWeight: '900', color: TEXT }, scoreDesc: { color: GREEN, fontWeight: '800', marginTop: 5 },
+  pendingCard: { backgroundColor: '#F7FFF8', borderRadius: 22, padding: 16, marginTop: 14, borderWidth: 1, borderColor: BORDER }, pendingTitle: { color: TEXT, fontWeight: '900', fontSize: 17 }, pendingDesc: { color: MUTED, fontWeight: '700', lineHeight: 19, marginTop: 6 },
   progressCard: { backgroundColor: CARD, borderRadius: 22, padding: 16, marginTop: 14, borderWidth: 1, borderColor: BORDER }, rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, cardTitle: { fontSize: 16, fontWeight: '900', color: TEXT }, greenText: { color: GREEN, fontWeight: '900' }, muted: { color: MUTED, fontWeight: '700' },
   progressTrack: { height: 12, backgroundColor: '#E9EEE9', borderRadius: 99, marginTop: 13, overflow: 'hidden' }, progressFill: { height: '100%', backgroundColor: GREEN, borderRadius: 99 },
   weekCard: { backgroundColor: CARD, borderRadius: 22, padding: 16, marginTop: 14, borderWidth: 1, borderColor: BORDER }, weekRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 }, weekLabel: { width: 70, color: TEXT, fontWeight: '800' }, dayDot: { width: 28, height: 28, marginRight: 5, textAlign: 'center', textAlignVertical: 'center', borderRadius: 14, backgroundColor: '#F2F7F1', overflow: 'hidden' }, todayDot: { borderWidth: 2, borderColor: GREEN, backgroundColor: '#E7FBEA' },
