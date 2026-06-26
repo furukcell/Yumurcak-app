@@ -15,6 +15,7 @@ import ParentEventsScreen from '../screens/parent/ParentEventsScreen';
 import ParentAttendanceScreen from '../screens/parent/ParentAttendanceScreen';
 import ParentDevelopmentScreen from '../screens/parent/ParentDevelopmentScreen';
 import ParentUyumScreen from '../screens/parent/ParentAdaptationScoreScreen';
+import ParentBadgesScreen from '../screens/parent/ParentBadgesScreen';
 import ParentMedicalScreen from '../screens/parent/ParentMedicalScreen';
 import ParentContactScreen from '../screens/parent/ParentContactScreen';
 import ParentServiceScreen from '../screens/parent/ParentServiceScreen';
@@ -80,6 +81,7 @@ export default function ParentStack() {
         <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
         <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
         <Stack.Screen name="ParentUyum" component={ParentUyumScreen} />
+        <Stack.Screen name="ParentBadges" component={ParentBadgesScreen} />
         <Stack.Screen name="ParentMedical" component={ParentMedicalScreen} />
         <Stack.Screen name="ParentContact" component={ParentContactScreen} />
         <Stack.Screen name="ParentService" component={ParentServiceScreen} />
