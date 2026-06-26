@@ -36,6 +36,15 @@
         "backgroundColor": "#FFFFFF"
       }
     },
-    "plugins": []
+    "plugins": [
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Yumurcak fotoğraf ve videoları göstermek için galeri erişimi ister.",
+          "savePhotosPermission": "Yumurcak fotoğraf ve videoları cihaz galerisine kaydetmek için izin ister.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
+    ]
   }
 }
