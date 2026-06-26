@@ -68,14 +68,19 @@ function getParentIdsFromChild(child = {}) {
   ]);
 }
 
+async function getChild(childId) {
+  if (!childId) return {};
+  const snap = await admin.database().ref(`cocuklar/${childId}`).once('value');
+  return snap.val() || {};
+}
+
 async function getParentIdsForChildIds(childIds = []) {
   const ids = unique(childIds);
   if (!ids.length) return [];
 
   const parentIds = [];
   await Promise.all(ids.map(async (childId) => {
-    const snap = await admin.database().ref(`cocuklar/${childId}`).once('value');
-    const child = snap.val() || {};
+    const child = await getChild(childId);
     parentIds.push(...getParentIdsFromChild(child));
   }));
 
@@ -109,6 +114,19 @@ async function createNotificationRecord(payload = {}) {
 
   const notificationRef = await admin.database().ref('bildirimler').push(data);
   return notificationRef.key;
+}
+
+async function notifyChildParents({ childId, fallbackChild = {}, payload = {} }) {
+  const child = childId ? await getChild(childId) : fallbackChild;
+  const finalChild = Object.keys(child || {}).length ? child : fallbackChild;
+  const parentIds = getParentIdsFromChild(finalChild);
+  if (!parentIds.length) return null;
+
+  return createNotificationRecord({
+    kresId: payload.kresId || finalChild.kresId || '',
+    hedefUserIds: parentIds,
+    ...payload,
+  });
 }
 
 async function getTargetPushTokens(payload = {}) {
@@ -257,8 +275,7 @@ exports.createNotificationOnDailyReportCreate = functions
     const childId = report.cocukId || report.childId;
     if (!childId) return null;
 
-    const childSnap = await admin.database().ref(`cocuklar/${childId}`).once('value');
-    const child = childSnap.val() || {};
+    const child = await getChild(childId);
     const parentIds = getParentIdsFromChild(child);
     if (!parentIds.length) return null;
 
@@ -371,8 +388,7 @@ exports.createNotificationOnWeeklyBadgeWrite = functions
     const childId = after.cocukId;
     if (!childId) return null;
 
-    const childSnap = await admin.database().ref(`cocuklar/${childId}`).once('value');
-    const child = childSnap.val() || {};
+    const child = await getChild(childId);
     const parentIds = getParentIdsFromChild(child);
     if (!parentIds.length) return null;
 
@@ -390,6 +406,169 @@ exports.createNotificationOnWeeklyBadgeWrite = functions
       source: 'haftaninRozetleri',
       sourceId: badgeRecordId,
       createdBy: after.ogretmenId || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnAttendanceWrite = functions
+  .region('europe-west1')
+  .database
+  .ref('/yoklamalar/{attendanceId}')
+  .onWrite(async (change, context) => {
+    const attendanceId = context.params.attendanceId;
+    const before = change.before.val() || null;
+    const after = change.after.val() || null;
+    if (!after) return null;
+    if (before && before.durum === after.durum) return null;
+
+    const childId = after.cocukId || after.childId;
+    if (!childId) return null;
+
+    const child = await getChild(childId);
+    const durum = String(after.durum || '').toLowerCase();
+    const statusLabel = durum === 'gelmedi' ? 'bugün gelmedi olarak işaretlendi.' : durum === 'gec' ? 'bugün geç geldi olarak işaretlendi.' : 'bugün okula geldi olarak işaretlendi.';
+
+    await notifyChildParents({
+      childId,
+      fallbackChild: child,
+      payload: {
+        kresId: after.kresId || child.kresId || '',
+        baslik: '✅ Yoklama güncellendi',
+        mesaj: `${getChildName(child)} ${statusLabel}`,
+        tip: 'yoklama',
+        routeName: 'ParentAttendance',
+        routeParams: { attendanceId, childId },
+        source: 'yoklamalar',
+        sourceId: attendanceId,
+        createdBy: after.ogretmenId || 'cloud-function',
+      },
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnMealListCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/yemekListeleri/{mealId}')
+  .onCreate(async (snapshot, context) => {
+    const mealId = context.params.mealId;
+    const meal = snapshot.val() || {};
+    if (meal.aktif === false) return null;
+
+    const title = meal.baslik || (meal.ayKey ? `${meal.ayKey} yemek listesi` : 'Yemek listesi');
+    await createNotificationRecord({
+      kresId: meal.kresId || '',
+      hedefRol: 'veli',
+      baslik: '🍽️ Yemek listesi güncellendi',
+      mesaj: `${title} yayınlandı.`,
+      tip: 'yemek',
+      routeName: 'ParentMeals',
+      routeParams: { mealId, ayKey: meal.ayKey || '' },
+      source: 'yemekListeleri',
+      sourceId: mealId,
+      createdBy: meal.olusturanId || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnMedicalWrite = functions
+  .region('europe-west1')
+  .database
+  .ref('/medikalBilgiler/{childId}')
+  .onWrite(async (change, context) => {
+    const childId = context.params.childId;
+    const before = change.before.val() || null;
+    const after = change.after.val() || null;
+    if (!after) return null;
+    if (before && JSON.stringify(before) === JSON.stringify(after)) return null;
+
+    const child = await getChild(childId);
+    const parentIds = getParentIdsFromChild(child);
+    if (!parentIds.length) return null;
+
+    const updater = after.guncelleyenVeliId || after.guncelleyenId || after.updatedBy || '';
+    await createNotificationRecord({
+      kresId: after.kresId || child.kresId || '',
+      hedefRol: ['yonetici', 'ogretmen'],
+      baslik: '🩺 Medikal bilgi güncellendi',
+      mesaj: `${getChildName(child)} için medikal bilgiler güncellendi.`,
+      tip: 'medikal',
+      routeName: 'TeacherMedical',
+      routeParams: { childId },
+      source: 'medikalBilgiler',
+      sourceId: childId,
+      createdBy: updater || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnPhysicalDevelopmentCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/fizikselGelisim/{recordId}')
+  .onCreate(async (snapshot, context) => {
+    const recordId = context.params.recordId;
+    const record = snapshot.val() || {};
+    const childId = record.cocukId || record.childId;
+    if (!childId) return null;
+
+    const child = await getChild(childId);
+    await notifyChildParents({
+      childId,
+      fallbackChild: child,
+      payload: {
+        kresId: record.kresId || child.kresId || '',
+        baslik: '📈 Gelişim kaydı eklendi',
+        mesaj: `${getChildName(child)} için yeni fiziksel gelişim ölçümü kaydedildi.`,
+        tip: 'gelisim',
+        routeName: 'ParentDevelopment',
+        routeParams: { recordId, childId },
+        source: 'fizikselGelisim',
+        sourceId: recordId,
+        createdBy: record.ogretmenId || 'cloud-function',
+      },
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnAdaptationWrite = functions
+  .region('europe-west1')
+  .database
+  .ref('/uyumKayitlari/{adaptationId}')
+  .onWrite(async (change, context) => {
+    const adaptationId = context.params.adaptationId;
+    const before = change.before.val() || null;
+    const after = change.after.val() || null;
+    if (!after) return null;
+
+    const beforeUpdatedAt = Number(before && before.updatedAt ? before.updatedAt : 0);
+    const afterUpdatedAt = Number(after.updatedAt || 0);
+    if (before && beforeUpdatedAt && afterUpdatedAt && beforeUpdatedAt === afterUpdatedAt) return null;
+
+    const childId = after.cocukId || after.childId;
+    if (!childId) return null;
+
+    const child = await getChild(childId);
+    const scoreText = Number.isFinite(Number(after.skor)) ? ` Skor: ${after.skor}/100.` : '';
+    await notifyChildParents({
+      childId,
+      fallbackChild: child,
+      payload: {
+        kresId: after.kresId || child.kresId || '',
+        baslik: '🌱 Uyum takibi güncellendi',
+        mesaj: `${getChildName(child)} için bugünkü uyum kaydı girildi.${scoreText}`,
+        tip: 'uyum',
+        routeName: 'ParentUyum',
+        routeParams: { adaptationId, childId },
+        source: 'uyumKayitlari',
+        sourceId: adaptationId,
+        createdBy: after.kaydedenId || 'cloud-function',
+      },
     });
 
     return null;
