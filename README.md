@@ -1,10 +1,26 @@
 # Yumurcak Kreş
 
-Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır. Amaç; kreşteki günlük akışı, çocuk takibini, veli iletişimini, duyuru/anket süreçlerini, yemek, galeri, gelişim ve uyum takibini tek uygulamada toplamaktır.
+Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır. Amaç; kreşteki günlük akışı, çocuk takibini, veli iletişimini, duyuru/anket süreçlerini, yemek, galeri, gelişim, ödeme, uyum ve bildirim süreçlerini tek uygulamada toplamaktır.
 
-Proje şu an çalışan MVP + stabilizasyon seviyesindedir. Ana admin, öğretmen ve veli modülleri büyük ölçüde tamamlanmıştır. Güncel odak; gerçek cihaz build testi, Firebase Realtime Database / Storage rules doğrulaması, RevenueCat / Google Play abonelik bağlantısı, push notification fiziksel cihaz testi ve kapalı test hazırlığıdır.
+Proje şu an **canlı öncesi hazır / son gerçek cihaz kontrolü** seviyesindedir. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri, uyum, rozet, gelişim, sınıf ortalaması ve bildirim kapsamı güncellenmiştir.
 
 > Son güncelleme: 26 Haziran 2026
+
+---
+
+## Güncel Durum
+
+```txt
+Durum: Canlı öncesi hazır
+Ana modüller: Tamamlandı
+Push bildirim: Firebase Cloud Functions ile aktif
+Abonelik: RevenueCat + Google Play ürünleri bağlı
+Galeri: Uygulama içi görüntüleme, video oynatma ve cihaza kaydetme aktif
+Uyum Modülü: Admin / öğretmen / veli tarafı aktif
+Rozetlerim / Haftanın Yıldızı: Öğretmen verir, veli geçmişini görür
+Sınıf Ortalaması: Veli gelişim ekranında anonim karşılaştırma aktif
+Kalan ana iş: Gerçek cihaz son testleri ve Play kapalı test
+```
 
 ---
 
@@ -18,8 +34,9 @@ Firebase: 12.0.0
 Firebase Auth: kullanıcı girişi ve rol ayrımı
 Firebase Realtime Database: uygulama verileri
 Firebase Storage: profil, galeri, yemek ve gelişim medya dosyaları
+Firebase Cloud Functions: push bildirim ve otomatik bildirim tetikleyicileri
 RevenueCat: react-native-purchases 9.0.0
-Push: expo-notifications
+Push: expo-notifications + Expo Push API
 Medya seçimi: expo-image-picker
 Medya indirme / cihaz galerisine kaydetme: expo-file-system + expo-media-library
 Android sistem bar: expo-navigation-bar
@@ -38,6 +55,7 @@ Android versionCode: 1
 compileSdkVersion: 35
 targetSdkVersion: 35
 minSdkVersion: 24
+Firebase project: yumurcak-app
 ```
 
 ---
@@ -53,12 +71,12 @@ minSdkVersion: 24
 
 ---
 
-## Öne Çıkan Özellikler
+## Tamamlanan Ana Özellikler
 
 - Rol bazlı giriş ve otomatik yönlendirme
 - Firebase Auth tabanlı kullanıcı akışı
 - Realtime Database ile kurum, sınıf, çocuk, veli, öğretmen ve günlük takip verileri
-- Firebase Storage ile profil fotoğrafı, galeri ve yemek fotoğrafı/video altyapısı
+- Firebase Storage ile profil fotoğrafı, galeri ve medya altyapısı
 - Kreş ve sınıf bazlı tema sistemi
 - Veli / öğretmen / admin panellerinde modern pastel kart tasarımları
 - Veli özet ekranı
@@ -66,6 +84,7 @@ minSdkVersion: 24
 - Öğretmen doğum günleri ekranı
 - Öğretmen `Haftanın Yıldızı` rozet ekranı
 - Veli özet ekranında haftalık rozet kartı
+- Veli ana sayfada `Rozetlerim` ekranı
 - Veli gelişim ekranında `Rozet Albümü`
 - Veli gelişim ekranında `Aylık Gelişim` ve `Sınıf Ortalaması` tabları
 - Veli tarafında anonim sınıf ortalaması karşılaştırması
@@ -75,7 +94,7 @@ minSdkVersion: 24
 - Admin çocuk formunda `Mevcut öğrenci / Yeni başlayan` ayrımı
 - Öğretmen günlük rapor ekranı
 - Yoklama sistemi
-- Yemek listesi ve öğün fotoğrafı sistemi
+- Yemek listesi ve aylık yemek listesi sistemi
 - Galeri fotoğraf / video paylaşımı
 - Galeri medya görüntüleme, uygulama içi video oynatma ve cihaz galerisine kaydetme
 - Medikal bilgi takibi
@@ -86,23 +105,138 @@ minSdkVersion: 24
 - Kurum Zili
 - Ödeme takibi
 - Uygulama içi bildirim merkezi
-- Expo push notification altyapısı
+- Firebase Cloud Functions tabanlı push notification sistemi
 - RevenueCat abonelik altyapısı
+- Google Play abonelik ürünleri
 - Uygulama içi yasal metinler
 - Kullanıcıya görünen tarih formatlarında `DD.MM.YYYY` standardı
 
 ---
 
-## Son Güncellemeler
+## Push Bildirim Sistemi
 
-### 26 Haziran 2026
+Push bildirim gönderimi uygulama içinden çıkarılmış ve Firebase Cloud Functions tarafına taşınmıştır. Uygulama sadece `bildirimler` node’una kayıt oluşturur; Cloud Function hedef kullanıcıların Expo push tokenlarını bulur ve bildirimi telefona gönderir.
 
-#### Uyum Modülü
+Akış:
 
-- Admin çocuk ekleme/düzenleme formuna `Uyum Modülü` ayarı eklendi.
-- Çocuk kaydında `Mevcut öğrenci` ve `Yeni başlayan` ayrımı yapılır.
-- Yeni başlayan seçilirse 30 günlük uyum takibi açılır.
-- Çocuk kaydına şu alanlar yazılır:
+```txt
+Uygulama / Admin / Öğretmen / Veli olayı
+        ↓
+Firebase Realtime Database kaydı
+        ↓
+Cloud Function otomatik tetiklenir
+        ↓
+bildirimler/{bildirimId} kaydı oluşur veya mevcut bildirim işlenir
+        ↓
+Expo Push API ile telefona push gider
+```
+
+Aktif Cloud Functions:
+
+```txt
+sendPushOnNotificationCreate
+createNotificationOnDailyReportCreate
+createNotificationOnGalleryCreate
+createNotificationOnPollCreate
+createNotificationOnWeeklyBadgeWrite
+createNotificationOnAttendanceWrite
+createNotificationOnMealListCreate
+createNotificationOnMedicalWrite
+createNotificationOnPhysicalDevelopmentCreate
+createNotificationOnAdaptationWrite
+```
+
+Telefona push giden bildirimler:
+
+```txt
+✅ Duyuru
+✅ Ödeme kaydı
+✅ Mesaj
+✅ Kurum Zili
+✅ Günlük rapor
+✅ Galeri fotoğraf / video
+✅ Anket
+✅ Haftanın Yıldızı / Rozet
+✅ Yoklama
+✅ Yemek listesi
+✅ Medikal bilgi
+✅ Fiziksel gelişim
+✅ Uyum takibi
+```
+
+Bildirim durumları `bildirimler` kaydında izlenir:
+
+```txt
+pushStatus: pending | sent | no_tokens | error | skipped_empty_body
+pushTokenCount
+pushSentAt
+pushProvider
+pushError
+```
+
+---
+
+## Abonelik / RevenueCat
+
+RevenueCat ve Google Play abonelik altyapısı kurulmuştur. Admin panelinden paket seçimi yapılır. RevenueCat paketi okunamazsa ödeme yapmadan abonelik açılmaz; manuel aktif etme butonu canlı risk nedeniyle kaldırılmıştır.
+
+Paketler:
+
+| Paket | Öğrenci Aralığı | Aylık | Yıllık |
+| --- | ---: | ---: | ---: |
+| Başlangıç | 0-30 | 1.000 TL | 10.000 TL |
+| Profesyonel | 31-50 | 1.500 TL | 15.000 TL |
+| Kurum | 51-100 | 3.000 TL | 30.000 TL |
+| 100+ | Özel teklif | Manuel | Manuel |
+
+RevenueCat yapılandırması:
+
+```txt
+Offering: default
+Entitlement: YUMURCAK Pro
+Android public key: REVENUECAT_ANDROID_PUBLIC_KEY
+```
+
+Package eşleşmeleri:
+
+```txt
+baslangic_aylik
+baslangic_yillik
+profesyonel_aylik
+profesyonel_yillik
+kurum_aylik
+kurum_yillik
+```
+
+Dahili demo promosyon kodu:
+
+```txt
+PILOT1AY
+```
+
+---
+
+## Admin / Yönetici Paneli
+
+Yönetici tarafında tamamlanan ana modüller:
+
+- Dashboard / kurum özeti
+- Sınıf yönetimi
+- Çocuk yönetimi
+- Öğretmen yönetimi
+- Veli yönetimi
+- Ödeme kayıtları
+- Duyuru yönetimi
+- Anket yönetimi
+- Galeri yönetimi
+- Aylık yemek listesi
+- Tema yönetimi
+- Abonelik ekranı
+- Bildirim merkezi
+- Yasal metinler
+- Yeni başlayan çocuk için Uyum Modülü ayarı
+
+Çocuk formunda uyum alanları:
 
 ```txt
 yeniBaslayan
@@ -114,52 +248,33 @@ uyumTamamlanmaTarihi
 sonUyumSkoru
 ```
 
-- Öğretmen paneline `Uyum Modülü` kartı eklendi.
-- Öğretmen sadece `uyumTakibiAktif == true` olan çocukları günlük uyum listesinde görür.
-- Öğretmen günlük olarak sabah durumu, ağlama süresi, yemek, çıkış, uyku, arkadaşlarla oyun, dönüm noktaları ve not girebilir.
-- Kayıt kaydedildiğinde otomatik `0-100` arası uyum skoru hesaplanır.
-- Aynı gün tekrar açılan kayıt formu eski kayıtla otomatik dolar; böylece kayıt yanlışlıkla default değerlerle ezilmez.
-- 30 gün sonunda aktif takip kapanır, kayıtlar silinmez.
-- Veli tarafında aktif süreç `Uyum Skoru`, tamamlanan süreç ise geçmiş uyum raporu olarak görüntülenir.
-- Veli ekranında ilk öğretmen kaydı yoksa `0/100` gösterilmez; `Skor Bekleniyor` durumu gösterilir.
-- Veli ana ekranda `Uyum Skoru` kartı sadece uyum takibi olan çocuklarda görünür.
+---
 
-#### Veli Gelişim / Sınıf Ortalaması
+## Öğretmen Paneli
 
-- Veli `Gelişim` ekranına iki tab eklendi:
+Öğretmen tarafında tamamlanan ana modüller:
 
-```txt
-Aylık Gelişim
-Sınıf Ortalaması
-```
+- Sınıf çocukları
+- Yoklama
+- Günlük rapor
+- Fiziksel gelişim kaydı
+- Medikal bilgi görüntüleme / takip
+- Uyum Takibi
+- Haftanın Yıldızı / rozet verme
+- Sınıf galerisi
+- Yemek listesi görüntüleme
+- Mesajlaşma
+- Duyurular
+- Bildirim merkezi
+- Sınıf teması
 
-- Eski aylık gelişim ekranı `Aylık Gelişim` tabında korunur.
-- `Sınıf Ortalaması` tabı sadece veli tarafındadır; admin ve öğretmen tarafına yeni ekran eklenmemiştir.
-- Sınıf ortalaması `fizikselGelisim` kayıtlarından hesaplanır.
-- Aynı sınıf + aynı ay + her çocuk için son ölçüm mantığı kullanılır.
-- Boy, kilo ve varsa baş çevresi karşılaştırılır.
-- Başka çocukların adı veya tekil verisi gösterilmez.
-- Gizlilik için minimum `5 çocuk ölçümü` şartı eklendi.
-- Minimum veri yoksa ortalama gösterilmez ve açıklayıcı anonimlik uyarısı çıkar.
-- Sıralama, derece, `4/18`, `ilk %25`, `en iyi/en kötü` gibi rekabet oluşturabilecek ifadeler kullanılmaz.
-- Yorum dili yumuşak tutulur:
+Haftanın Yıldızı mantığı:
 
 ```txt
-Ortalamaya yakın
-Ortalamanın üzerinde
-Ortalamanın altında
+haftaninRozetleri/{weekKey}_{cocukId}
 ```
 
-- Bilgilendirme kartında her çocuğun gelişiminin kendine özel olduğu belirtilir.
-
-#### Galeri İyileştirmeleri
-
-- Ortak galeri altyapısı üzerinden veli, öğretmen ve admin tarafında medya görüntüleme desteklenir.
-- Fotoğrafa tıklayınca uygulama içinde görüntüleyici açılır.
-- Video uygulama içinde oynatılır; telefon tarayıcısına yönlendirme hedeflenmez.
-- Galeri görüntüleyiciye `Kaydet` butonu eklendi.
-- Medya cihaz galerisine `Yumurcak` albümü altında kaydedilir.
-- Çoklu medya tasarımı 1, 3 ve 4+ medya durumlarına göre grid/overlay mantığıyla düzenlenir.
+Rozet sadece seçilen çocuğun velisinde görünür. Diğer çocukların velileri bu rozeti göremez.
 
 ---
 
@@ -177,546 +292,199 @@ Alt tab yapısı:
 💬 Mesaj
 ```
 
-### Veli Özet Ekranı
+Veli tarafında tamamlanan ana modüller:
 
-Özet ekranında veli, çocuğun güncel durumunu hızlıca görür.
-
-Gösterilen bilgiler:
-
-- Çocuk kartı
-- Veli profil fotoğrafı / avatar
-- Kreş adı ve günün tarihi
-- Günlük durum özeti
-- Giriş saati / yoklama bilgisi
-- Ruh hali
-- Uyku bilgisi
-- Etkinlik sayısı
-- Günlük kısa yorum
-- Yemek ve menü özeti
-- Ders ve etkinlik programı
-- Bekleyen ödeme hatırlatması
-- Cevap bekleyen anket hatırlatması
-- Mesaj kısayolu
-- Gelişim ekranı kısayolu
-- En altta `Haftanın Yıldızı` kartı
-- Uyum takibi olan çocuklarda `Uyum Skoru` kartı
-
-### Veli Doğum Günü Modu
-
-Çocuğun doğum günü geldiğinde sadece veli özet ekranında özel kutlama modu çalışır.
-
-Mantık:
-
-```txt
-selectedChild.dogumTarihi gün/ay == bugünün gün/ay değeri
-```
-
-Aktif olduğunda:
-
-- Üst bölümde `🎂 Bugün doğum günü var` rozeti çıkar.
-- Çocuk kartında özel doğum günü mesajı görünür.
-- Rengarenk balonlar sürekli aşağıdan yukarı hareket eder.
-- Konfetiler sürekli ekranda süzülür.
-- Popup aynı gün sadece bir kez gösterilir.
-- Popup durumu AsyncStorage ile saklanır.
-- Efektler ekran kullanımını engellemez.
-
-AsyncStorage anahtarı:
-
-```txt
-birthdayPopupSeen_{childId}_{YYYY-MM-DD}
-```
-
-### Veli Haftanın Yıldızı Kartı
-
-Özet ekranının en altında haftalık rozet kartı görünür.
-
-Mantık:
-
-```txt
-haftaninRozetleri içinde:
-  cocukId == selectedChild.id
-  weekKey == mevcut hafta başlangıcı
-  aktif != false
-```
-
-Önemli davranış:
-
-- Bu hafta rozet yoksa kart hiç görünmez.
-- Kart sadece kendi çocuğunun velisinde görünür.
-- Diğer çocukların velileri bu rozeti kendi ekranında göremez.
-
-### Veli Gelişim Ekranı
-
-Veli gelişim ekranı artık tablı yapıdadır.
-
-```txt
-📅 Aylık Gelişim
-📊 Sınıf Ortalaması
-```
-
-#### Aylık Gelişim
-
-Aylık gelişim tabı çocuğun seçili ay içindeki genel durumunu gösterir.
-
-Gösterilen bilgiler:
-
-- Aylık gelişim yorumu
-- Geldiği gün
-- Devamsızlık
-- Olumlu ruh hali sayısı
-- Etkinlik sayısı
-- Katılım durumu
-- Ruh hali dağılımı
-- Ortalama uyku
-- Yemek durumu
-- Fiziksel gelişim özeti
-- Boy/kilo geçmiş grafiği
-- Son ölçümler
+- Çocuk özeti
+- Günlük durum kartları
+- Raporlar
+- Gelişim ekranı
+- Aylık Gelişim
+- Sınıf Ortalaması
 - Rozet Albümü
-
-#### Rozet Albümü
-
-Veli gelişim ekranında `🎖️ Rozet Albümü` alanı bulunur.
-
-Özellikler:
-
-- Çocuğun geçmiş haftalık rozetlerini listeler.
-- Sadece seçili çocuğun kayıtları görünür.
-- Rozet emojisi, rozet adı, hafta aralığı ve öğretmen notu gösterilir.
-- Kayıt yoksa açıklayıcı boş durum metni görünür.
-
-#### Sınıf Ortalaması
-
-Sınıf Ortalaması tabı velinin kendi çocuğunun fiziksel ölçümünü anonim sınıf ortalamasıyla karşılaştırır.
-
-Gösterilen bilgiler:
-
-- Mor anonimlik kartı
-- Seçili çocuk adı ve seçili ay
-- Anonim veri sayısı
-- Boy karşılaştırması
-- Kilo karşılaştırması
-- Baş çevresi karşılaştırması, veri varsa
-- Bilgilendirme kartı
-- Veri sayısı kartı
-
-Gizlilik kuralları:
-
-```txt
-Minimum çocuk ölçümü: 5
-Başka çocuk adı: gösterilmez
-Tekil çocuk verisi: gösterilmez
-Sıralama: gösterilmez
-```
-
-Yetersiz veri durumunda:
-
-```txt
-Anonim veri için yeterli kayıt yok
-```
-
-mesajı gösterilir.
-
-### Veli Uyum Skoru
-
-Uyum Skoru sadece yeni başlayan veya uyum geçmişi bulunan çocuklarda görünür.
-
-Aktif süreçte gösterilenler:
-
-- Gün sayacı
-- 30 günlük ilerleme
-- Uyum skoru
-- Emoji geçmişi
-- Bugünün özeti
-- Öğretmen notu
-- Ağlama trendi
-- Dönüm noktaları
-- Kalan gün kartı
-
-İlk öğretmen kaydı yoksa:
-
-```txt
-Skor Bekleniyor
-İlk öğretmen kaydı bekleniyor
-```
-
-30 gün sonunda:
-
-- Aktif takip kapanır.
-- Kayıtlar silinmez.
-- Veli geçmiş uyum raporunu görmeye devam eder.
-
-### Veli Yemek Ekranı
-
-- Bugünün yemekleri gösterilir.
-- Kahvaltı, öğle ve ara öğün ayrı ayrı listelenir.
-- Öğretmen fotoğraf eklediyse veli fotoğrafı görür.
-- Aylık menü ve öğretmen günlük bildirimi birlikte desteklenir.
-- Son 7 günlük yemek kayıtları görüntülenebilir.
-
-### Veli Anket Ekranı
-
-- Aktif kurum/sınıf anketleri görünür.
-- Seçenek kartlarına basarak cevap verilir.
-- Cevap kaydedildikten sonra `Cevabı değiştir` butonu ile yeni cevap seçilebilir.
-- Seçili cevap görsel olarak vurgulanır.
-
-### Veli Galeri Ekranı
-
-- Fotoğraf ve video paylaşımları gösterilir.
-- Fotoğrafa basınca uygulama içi görüntüleyici açılır.
-- Video uygulama içinde oynatılır.
-- Kaydet butonu ile medya cihaz galerisine kaydedilebilir.
-- Çoklu medya kartları grid yapısında gösterilir.
-- 24 saatlik görünürlük mantığı desteklenir.
-
----
-
-## Öğretmen Paneli
-
-Öğretmen paneli sınıf bazlı günlük akışı yönetmek için tasarlanmıştır.
-
-Başlıca ekranlar:
-
-- Çocuklarım
-- Günlük Rapor
-- Yoklama
-- Uyum Modülü
-- Fiziksel Gelişim
-- Haftanın Yıldızı
-- Doğum Günleri
-- Yemek Listesi
+- Rozetlerim
+- Uyum Skoru
+- Yoklama geçmişi
+- Yemek listesi
 - Galeri
-- Medikal
-- Duyurular
-- Mesajlar
-- Tema Ayarları
-- Profil
-
-### Öğretmen Uyum Takibi
-
-Uyum Takibi ekranı sadece aktif uyum sürecindeki çocukları listeler.
-
-Filtre mantığı:
-
-```txt
-uyumTakibiAktif == true
-uyumDurumu == aktif
-sinifId == öğretmenin sınıfı
-```
-
-Günlük form alanları:
-
-- Sabah nasıldı?
-- Ağladı mı? Kaç dakika?
-- Öğle yemeği
-- Akşam çıkışı
-- Uyku süresi
-- Arkadaşlarla oyun
-- Dönüm noktaları
-- Öğretmen notu
-
-Skor hesabı:
-
-```txt
-Sabah durumu: 0-20 puan
-Ağlama süresi: 0-20 puan
-Yemek: 0-15 puan
-Uyku: 0-15 puan
-Oyun: 0-15 puan
-Çıkış: 0-15 puan
-Toplam: 100
-```
-
-30. gün ve sonrasında kayıt girilirse çocuk kaydında:
-
-```txt
-uyumDurumu: tamamlandi
-uyumTakibiAktif: false
-uyumTamamlanmaTarihi: YYYY-MM-DD
-```
-
-şeklinde güncelleme yapılır.
-
-### Öğretmen Fiziksel Gelişim
-
-- Öğretmen sınıfındaki çocuk için boy, kilo ve baş çevresi ölçümü girebilir.
-- `Kayıt Gir` ve `Geçmiş` tabları bulunur.
-- Fiziksel gelişim geçmişinde sınıf kayıtları listelenir.
-- Bu kayıtlar veli gelişim ekranında aylık gelişim ve sınıf ortalaması hesaplarında kullanılır.
-
-### Öğretmen Haftanın Yıldızı
-
-- Haftanın Yıldızı rozeti sadece cuma günü verilebilir.
-- Öğretmen aynı cuma günü sınıftan birden fazla çocuğa ayrı ayrı rozet verebilir.
-- Aynı hafta aynı çocuğa ikinci kez kayıt yapılırsa mevcut kayıt güncellenir.
-- Verilen rozet sadece seçilen çocuğun velisinde görünür.
-- Diğer öğrenci velileri bu rozeti göremez.
+- Medikal takip
+- Ödeme ekranı
+- Anketler
+- Mesajlaşma
+- Kurum Zili
+- Bildirim merkezi
+- Yasal metinler
 
 ---
 
-## Admin / Yönetici Paneli
+## Sınıf Ortalaması Gizlilik Kuralı
 
-Admin paneli kurum, sınıf, çocuk, öğretmen, veli ve kurum içi operasyonları yönetmek için tasarlanmıştır.
+Veli gelişim ekranında sınıf ortalaması sadece anonim ve toplu şekilde gösterilir.
 
-Başlıca görevler:
-
-- Kurum bilgilerini yönetme
-- Sınıf oluşturma ve düzenleme
-- Öğretmen ekleme
-- Veli ekleme
-- Çocuk ekleme ve veli/sınıf bağlama
-- Çocuk için uyum modülünü açma/kapatma
-- Duyuru oluşturma
-- Anket oluşturma
-- Galeri paylaşımı
-- Yemek listesi yönetimi
-- Ödeme takibi
-- Tema ayarları
-- Abonelik / paket kontrolü
-
-### Çocuk Formu / Uyum Ayarı
-
-Çocuk ekleme veya düzenleme formunda `Uyum Modülü` kartı bulunur.
-
-Seçenekler:
+Kurallar:
 
 ```txt
-Mevcut öğrenci
-Yeni başlayan
+Minimum 5 çocuk ölçümü şartı
+Başka çocuk adı gösterilmez
+Sıralama / derece yok
+4/18, ilk %25, en iyi / en kötü ifadeleri yok
 ```
 
-Yeni başlayan seçilirse:
+Yorum dili:
 
-- Uyum başlangıç tarihi girilir.
-- 30 günlük uyum süreci başlatılır.
-- Öğretmen uyum takibi ekranında çocuk görünür.
-- Veli tarafında Uyum Skoru görünür.
-
-Mevcut öğrenci seçilirse:
-
-- Uyum takibi açılmaz.
-- Veli tarafında Uyum Skoru kartı görünmez.
-- Öğretmen uyum listesine düşmez.
+```txt
+Ortalamaya yakın
+Ortalamanın üzerinde
+Ortalamanın altında
+```
 
 ---
 
-## Firebase Veri Yapısı
+## Galeri
 
-Temel node yapısı:
-
-```txt
-kullanicilar/
-kurumlar/
-siniflar/
-cocuklar/
-gunlukRaporlar/
-yoklamalar/
-yemekListeleri/
-etkinlikler/
-duyurular/
-anketler/
-anketCevaplari/
-mesajlar/
-bildirimler/
-fizikselGelisim/
-haftaninRozetleri/
-uyumKayitlari/
-galeri/
-odemeler/
-```
-
-### cocuklar/{cocukId}
-
-Uyum modülüyle birlikte çocuk kaydında şu alanlar desteklenir:
-
-```txt
-ad
-soyad
-dogumTarihi
-sinifId
-kresId
-veliIds
-
-yeniBaslayan
-uyumTakibiAktif
-uyumBaslangicTarihi
-uyumSureGun
-uyumDurumu
-uyumTamamlanmaTarihi
-sonUyumSkoru
-createdAt
-updatedAt
-```
-
-### uyumKayitlari/{cocukId}_{YYYY-MM-DD}
-
-```txt
-kresId
-sinifId
-cocukId
-tarih
-gunNo
-sabahDurumu
-aglamaDakika
-yemekDurumu
-cikisDurumu
-uykuDakika
-oyunDurumu
-milestones
-ogretmenNotu
-skor
-kaydedenId
-kaydedenAd
-createdAt
-updatedAt
-```
-
-### fizikselGelisim/{recordId}
-
-```txt
-kresId
-sinifId
-cocukId
-boy
-kilo
-basCevresi
-tarih / olcumTarihi
-not
-kaydedenId
-kaydedenAd
-createdAt
-updatedAt
-```
-
-Bu kayıtlar:
-
-- Öğretmen fiziksel gelişim geçmişinde,
-- Veli aylık gelişim ekranında,
-- Veli sınıf ortalaması tabında
-
-kullanılır.
-
----
-
-## Galeri ve Medya
-
-Galeri ortak altyapısı:
-
-```txt
-src/screens/shared/GalleryScreenBase.js
-src/screens/parent/ParentGalleryScreen.js
-src/screens/admin/AdminGalleryScreen.js
-src/screens/teacher/TeacherGalleryScreen.js
-src/utils/saveGalleryMedia.js
-```
+Galeri modülü admin, öğretmen ve veli tarafında ortak altyapıyla çalışır.
 
 Özellikler:
 
-- Fotoğraf ve video desteklenir.
-- Çoklu medya seçimi desteklenir.
-- 1 medya büyük kart, 3 medya özel kompozisyon, 4+ medya grid ve `+N` overlay mantığıyla gösterilir.
-- Medyaya tıklayınca uygulama içi viewer açılır.
-- Video uygulama içinde oynatılır.
-- `Kaydet` butonu medyayı cihaz galerisine indirir.
-- Kaydedilen medya `Yumurcak` albümüne eklenir.
+- Tek fotoğraf yükleme
+- Çoklu fotoğraf yükleme
+- Video yükleme
+- 24 saat aktif görünürlük
+- Uygulama içi fotoğraf görüntüleme
+- Uygulama içi video oynatma
+- Cihaza kaydetme butonu
+- `Yumurcak` albümüne kaydetme
+- 1, 3 ve 4+ medya için düzenli grid tasarımı
 
-Gerekli paketler:
-
-```txt
-expo-file-system
-expo-media-library
-```
-
----
-
-## Build / Kurulum
-
-Bağımlılıkları yükle:
-
-```bash
-npm install --legacy-peer-deps
-```
-
-Expo kontrolü:
-
-```bash
-npx expo-doctor
-```
-
-Android prebuild:
-
-```bash
-npx expo prebuild --clean --platform android
-```
-
-Codemagic / release build öncesi kontrol:
+Veri yolu:
 
 ```txt
-- package-lock güncel mi?
-- google-services.json doğru yerde mi?
-- Firebase Realtime Database rules doğru mu?
-- Firebase Storage rules doğru mu?
-- Android targetSdkVersion 35 mi?
-- EAS/Codemagic env değişkenleri doğru mu?
-- RevenueCat ürünleri Google Play ile eşleşiyor mu?
+galeri/{galleryId}
+```
+
+Storage yolu:
+
+```txt
+galeri/{kresId}/{galleryId}/...
 ```
 
 ---
 
-## Test Senaryoları
+## Firebase Ana Veri Yapıları
 
-### Uyum Modülü
-
-1. Admin çocuk eklerken `Yeni başlayan` seç.
-2. Uyum başlangıç tarihi gir.
-3. Öğretmen hesabına geç.
-4. Öğretmen panelinde `Uyum Modülü` kartını aç.
-5. Çocuğun listede göründüğünü doğrula.
-6. Günlük uyum formunu doldur ve kaydet.
-7. Firebase `uyumKayitlari` node'una kayıt düştüğünü kontrol et.
-8. Veli hesabına geç.
-9. Veli ana ekranda `Uyum Skoru` kartının göründüğünü kontrol et.
-10. İlk kayıt varsa skorun, yoksa `Skor Bekleniyor` durumunun göründüğünü kontrol et.
-11. 30. gün sonunda aktif takip kapanırken geçmiş raporun kaldığını doğrula.
-
-### Sınıf Ortalaması
-
-1. Aynı sınıftaki en az 5 çocuk için aynı ay fiziksel ölçüm gir.
-2. Veli hesabına geç.
-3. `Gelişim > Sınıf Ortalaması` tabını aç.
-4. Boy/kilo/baş çevresi barlarının göründüğünü kontrol et.
-5. Başka çocuk adı veya tekil veri görünmediğini doğrula.
-6. 5 kayıt altına düşen senaryoda gizlilik uyarısının çıktığını kontrol et.
-
-### Galeri Kaydetme
-
-1. Öğretmen veya admin galeriye fotoğraf/video yükle.
-2. Veli galeri ekranında medyayı aç.
-3. Fotoğrafın uygulama içinde açıldığını doğrula.
-4. Videonun uygulama içinde oynadığını doğrula.
-5. `Kaydet` butonuna bas.
-6. İzin ver.
-7. Medyanın cihaz galerisindeki `Yumurcak` albümüne düştüğünü kontrol et.
+```txt
+kullanicilar
+kresler
+siniflar
+cocuklar
+duyurular
+anketler
+odemeler
+mesajlar
+bildirimler
+gunlukRaporlar
+yoklamalar
+yemekListeleri
+galeri
+medikalBilgiler
+fizikselGelisim
+uyumKayitlari
+haftaninRozetleri
+abonelikler
+```
 
 ---
 
-## Bilinen Kalan İşler
+## Cloud Functions Deploy
 
-- Cloud Functions ile 24 saatten eski galeri dosyalarını Storage’dan fiziksel silme.
-- Push notification gerçek cihaz testi.
-- RevenueCat / Google Play abonelik ürün eşleştirme testi.
-- Kapalı test build doğrulaması.
-- Firebase security rules detaylı rol bazlı test.
-- Sınıf Ortalaması için ileride admin kurum ayarı eklenebilir: `Velilere anonim sınıf ortalaması gösterilsin mi?`
-- PDF rapor indirme özelliği şimdilik eklenmedi; ileride `expo-print` / paylaşım akışıyla değerlendirilebilir.
+Doğru Firebase projesi:
+
+```txt
+yumurcak-app
+```
+
+Deploy komutu:
+
+```bash
+firebase deploy --only functions --project yumurcak-app
+```
+
+Dikkat:
+
+```txt
+Başka Firebase projesi aktif olsa bile --project yumurcak-app kullanılmalıdır.
+Eski başka proje function'ları silinmemelidir.
+```
 
 ---
 
-## Notlar
+## Son Test Listesi
 
-- Sınıf ortalaması ekranı tıbbi değerlendirme değildir.
-- Sıralama ve çocuklar arası rekabet oluşturacak ifadeler özellikle kullanılmaz.
-- Uyum skoru öğretmene günlük takip kolaylığı sağlamak için tasarlanmıştır; çocuğu etiketlemek veya kesin değerlendirme yapmak için kullanılmaz.
-- Veliye gösterilen tüm karşılaştırmalar bilgilendirme amaçlıdır.
+Canlı öncesi yapılacak son kontrol listesi:
+
+1. Admin girişi
+2. Öğretmen girişi
+3. Veli girişi
+4. Admin sınıf / çocuk / öğretmen / veli bağlantıları
+5. Öğretmen günlük rapor girer
+6. Günlük rapor bildirimi veliye düşer
+7. Öğretmen yoklama girer
+8. Yoklama bildirimi veliye düşer
+9. Öğretmen fiziksel gelişim girer
+10. Gelişim bildirimi veliye düşer
+11. Öğretmen uyum kaydı girer
+12. Uyum bildirimi veliye düşer
+13. Öğretmen rozet verir
+14. Rozet bildirimi veliye düşer
+15. Galeriye fotoğraf/video yüklenir
+16. Galeri bildirimi veliye düşer
+17. Admin duyuru oluşturur
+18. Duyuru bildirimi hedef kullanıcıya düşer
+19. Admin anket oluşturur
+20. Anket bildirimi veliye düşer
+21. Admin ödeme kaydı oluşturur
+22. Ödeme bildirimi veliye düşer
+23. Veli Kurum Zili gönderir
+24. Kurum Zili bildirimi admin/öğretmene düşer
+25. Mesaj gönderilir
+26. Mesaj bildirimi karşı tarafa düşer
+27. Bildirim kaydında `pushStatus: sent` kontrol edilir
+28. RevenueCat ürünleri gerçek cihazda görünür
+29. Google Play satın alma popup'ı açılır
+30. Restore testi yapılır
+31. Firebase Database Rules son kontrol edilir
+32. Firebase Storage Rules son kontrol edilir
+33. Android release build alınır
+34. Play Console kapalı test başlatılır
+
+---
+
+## Kalan İşler
+
+Canlıya engel ana geliştirme işi kalmamıştır. Kalanlar son kontrol ve opsiyonel geliştirmelerdir.
+
+### Zorunlu Son Kontroller
+
+```txt
+- Gerçek cihaz push testi
+- RevenueCat / Google Play satın alma testi
+- Restore testi
+- Firebase Realtime Database rules kontrolü
+- Firebase Storage rules kontrolü
+- Kapalı test build kontrolü
+```
+
+### Opsiyonel Sonraki Fazlar
+
+```txt
+- Abonelik bitiş uyarısı için zamanlı Cloud Function
+- Doğum günü bildirimi için zamanlı Cloud Function
+- 24 saat dolan galeri Storage dosyaları için otomatik temizlik Function'ı
+- Admin raporlama / kullanım analitiği
+- Web tanıtım sayfası
+```
+
+---
+
+## Not
+
+Yumurcak şu an özellik kapsamı bakımından canlı pilot / kapalı test için hazır seviyededir. Bundan sonraki ana karar; gerçek cihaz testleri, kapalı test kullanıcıları ve ilk pilot kreş kullanım sürecidir.
