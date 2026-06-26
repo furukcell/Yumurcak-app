@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Linking,
   Modal,
   Platform,
   SafeAreaView,
@@ -21,6 +20,7 @@ import { onValue, push, ref as dbRef, remove, set } from 'firebase/database';
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -117,7 +117,7 @@ function normalizeTargetType(item) {
 
 function normalizeMediaItems(item) {
   const mediaItems = asArray(item?.mediaItems)
-    .map((media, index) => safeObject(media))
+    .map((media) => safeObject(media))
     .filter((media) => media.url)
     .map((media, index) => ({
       id: media.id || `${item?.id || 'media'}-${index}`,
@@ -183,6 +183,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [savingMediaId, setSavingMediaId] = useState('');
   const [caption, setCaption] = useState('');
   const [targetType, setTargetType] = useState('all');
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -387,13 +388,22 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     setViewerIndex(0);
   }
 
-  async function downloadMedia(media) {
-    if (!media?.url) return;
+  async function saveMedia(media) {
+    if (!media?.url || savingMediaId) return;
+
     try {
-      await Linking.openURL(media.url);
+      setSavingMediaId(media.id || media.url);
+      await saveGalleryMediaToDevice(media);
+      Alert.alert('Kaydedildi', media.type === 'video' ? 'Video telefon galerisine kaydedildi.' : 'Fotoğraf telefon galerisine kaydedildi.');
     } catch (error) {
-      console.error(error);
-      Alert.alert('İndirilemedi', 'Medya bağlantısı açılamadı.');
+      console.error('Galeri medyası kaydedilemedi:', error?.message || error);
+      if (error?.code === 'permission-denied') {
+        Alert.alert('İzin Gerekli', 'Medyanın telefona kaydedilebilmesi için galeri izni vermen gerekiyor.');
+        return;
+      }
+      Alert.alert('Kaydedilemedi', 'Medya telefona kaydedilemedi. Lütfen izinleri ve internet bağlantısını kontrol et.');
+    } finally {
+      setSavingMediaId('');
     }
   }
 
@@ -433,13 +443,16 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     const media = mediaItems[viewerIndex] || mediaItems[0];
     if (!viewerItem || !media) return null;
     const isVideo = media.type === 'video';
+    const isSaving = savingMediaId === (media.id || media.url);
     return (
       <Modal visible={!!viewerItem} transparent animationType="fade" onRequestClose={closeViewer}>
         <SafeAreaView style={styles.viewerBackdrop}>
           <View style={styles.viewerHeader}>
             <TouchableOpacity style={styles.viewerTopButton} onPress={closeViewer}><Text style={styles.viewerTopButtonText}>Kapat</Text></TouchableOpacity>
             <Text style={styles.viewerCounter}>{viewerIndex + 1} / {mediaItems.length}</Text>
-            <TouchableOpacity style={styles.viewerTopButton} onPress={() => downloadMedia(media)}><Text style={styles.viewerTopButtonText}>İndir</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.viewerTopButton, isSaving && styles.viewerTopButtonDisabled]} onPress={() => saveMedia(media)} disabled={isSaving}>
+              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.viewerTopButtonText}>Kaydet</Text>}
+            </TouchableOpacity>
           </View>
           <View style={styles.viewerStage}>{isVideo ? <GalleryVideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
           {mediaItems.length > 1 ? (
@@ -584,6 +597,7 @@ const styles = StyleSheet.create({
   viewerBackdrop: { flex: 1, backgroundColor: '#050508' },
   viewerHeader: { paddingHorizontal: 14, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 8, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   viewerTopButton: { minWidth: 74, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center' },
+  viewerTopButtonDisabled: { opacity: 0.55 },
   viewerTopButtonText: { color: '#fff', fontWeight: '900' },
   viewerCounter: { color: '#fff', fontWeight: '900' },
   viewerStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
