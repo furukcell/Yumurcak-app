@@ -2,9 +2,9 @@
 
 Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır. Amaç; kreşteki günlük akışı, çocuk takibini, veli iletişimini, duyuru/anket süreçlerini, yemek, galeri, gelişim, ödeme, uyum ve bildirim süreçlerini tek uygulamada toplamaktır.
 
-Proje şu an **canlı öncesi hazır / son gerçek cihaz kontrolü** seviyesindedir. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri, uyum, rozet, gelişim, sınıf ortalaması ve bildirim kapsamı güncellenmiştir.
+Proje şu an **canlı öncesi hazır / son gerçek cihaz kontrolü** seviyesindedir. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri medya optimizasyonu eklenmiş; uyum, rozet, gelişim, sınıf ortalaması ve bildirim kapsamı güncellenmiştir.
 
-> Son güncelleme: 26 Haziran 2026
+> Son güncelleme: 27 Haziran 2026
 
 ---
 
@@ -15,7 +15,7 @@ Durum: Canlı öncesi hazır
 Ana modüller: Tamamlandı
 Push bildirim: Firebase Cloud Functions ile aktif
 Abonelik: RevenueCat + Google Play ürünleri bağlı
-Galeri: Uygulama içi görüntüleme, video oynatma ve cihaza kaydetme aktif
+Galeri: Uygulama içi görüntüleme, video oynatma, cihaza kaydetme ve medya optimizasyonu aktif
 Uyum Modülü: Admin / öğretmen / veli tarafı aktif
 Rozetlerim / Haftanın Yıldızı: Öğretmen verir, veli geçmişini görür
 Sınıf Ortalaması: Veli gelişim ekranında anonim karşılaştırma aktif
@@ -38,6 +38,8 @@ Firebase Cloud Functions: push bildirim ve otomatik bildirim tetikleyicileri
 RevenueCat: react-native-purchases 9.0.0
 Push: expo-notifications + Expo Push API
 Medya seçimi: expo-image-picker
+Fotoğraf optimizasyonu: expo-image-manipulator
+Video optimizasyonu: react-native-compressor
 Medya indirme / cihaz galerisine kaydetme: expo-file-system + expo-media-library
 Android sistem bar: expo-navigation-bar
 Android klavye davranışı: softwareKeyboardLayoutMode = resize
@@ -97,6 +99,7 @@ Firebase project: yumurcak-app
 - Yemek listesi ve aylık yemek listesi sistemi
 - Galeri fotoğraf / video paylaşımı
 - Galeri medya görüntüleme, uygulama içi video oynatma ve cihaz galerisine kaydetme
+- Galeri fotoğraf / video yükleme öncesi medya optimizasyonu
 - Medikal bilgi takibi
 - Fiziksel gelişim kaydı ve geçmişi
 - Duyuru sistemi
@@ -348,12 +351,31 @@ Galeri modülü admin, öğretmen ve veli tarafında ortak altyapıyla çalış�
 - Tek fotoğraf yükleme
 - Çoklu fotoğraf yükleme
 - Video yükleme
+- Fotoğraf yükleme öncesi otomatik 1920px / %80 kalite optimizasyonu
+- Video yükleme öncesi otomatik 720p civarı sıkıştırma
+- Video süresi üst sınırı: 2 dakika
+- Tek paylaşım medya üst sınırı: 10 medya
+- Tek paylaşım video üst sınırı: 2 video
+- Sıkıştırma sonrası video üst sınırı: 50 MB
+- Yükleme sırasında `Fotoğraf hazırlanıyor`, `Video optimize ediliyor`, `Medya yükleniyor` durum mesajları
 - 24 saat aktif görünürlük
 - Uygulama içi fotoğraf görüntüleme
 - Uygulama içi video oynatma
 - Cihaza kaydetme butonu
 - `Yumurcak` albümüne kaydetme
 - 1, 3 ve 4+ medya için düzenli grid tasarımı
+
+Medya optimizasyon kuralları:
+
+```txt
+Fotoğraf max genişlik: 1920px
+Fotoğraf kalite: 0.8
+Video max süre: 120 saniye
+Video hedef çözünürlük: 720p civarı
+Video max boyut: 50 MB
+Tek paylaşım max medya: 10
+Tek paylaşım max video: 2
+```
 
 Veri yolu:
 
@@ -436,25 +458,29 @@ Canlı öncesi yapılacak son kontrol listesi:
 13. Öğretmen rozet verir
 14. Rozet bildirimi veliye düşer
 15. Galeriye fotoğraf/video yüklenir
-16. Galeri bildirimi veliye düşer
-17. Admin duyuru oluşturur
-18. Duyuru bildirimi hedef kullanıcıya düşer
-19. Admin anket oluşturur
-20. Anket bildirimi veliye düşer
-21. Admin ödeme kaydı oluşturur
-22. Ödeme bildirimi veliye düşer
-23. Veli Kurum Zili gönderir
-24. Kurum Zili bildirimi admin/öğretmene düşer
-25. Mesaj gönderilir
-26. Mesaj bildirimi karşı tarafa düşer
-27. Bildirim kaydında `pushStatus: sent` kontrol edilir
-28. RevenueCat ürünleri gerçek cihazda görünür
-29. Google Play satın alma popup'ı açılır
-30. Restore testi yapılır
-31. Firebase Database Rules son kontrol edilir
-32. Firebase Storage Rules son kontrol edilir
-33. Android release build alınır
-34. Play Console kapalı test başlatılır
+16. Galeri fotoğraf optimizasyonu gerçek cihazda test edilir
+17. Galeri video optimizasyonu gerçek cihazda test edilir
+18. 2 dakikadan uzun video uyarısı kontrol edilir
+19. 50 MB üstü video sınırı kontrol edilir
+20. Galeri bildirimi veliye düşer
+21. Admin duyuru oluşturur
+22. Duyuru bildirimi hedef kullanıcıya düşer
+23. Admin anket oluşturur
+24. Anket bildirimi veliye düşer
+25. Admin ödeme kaydı oluşturur
+26. Ödeme bildirimi veliye düşer
+27. Veli Kurum Zili gönderir
+28. Kurum Zili bildirimi admin/öğretmene düşer
+29. Mesaj gönderilir
+30. Mesaj bildirimi karşı tarafa düşer
+31. Bildirim kaydında `pushStatus: sent` kontrol edilir
+32. RevenueCat ürünleri gerçek cihazda görünür
+33. Google Play satın alma popup'ı açılır
+34. Restore testi yapılır
+35. Firebase Database Rules son kontrol edilir
+36. Firebase Storage Rules son kontrol edilir
+37. Android release build alınır
+38. Play Console kapalı test başlatılır
 
 ---
 
@@ -468,6 +494,7 @@ Canlıya engel ana geliştirme işi kalmamıştır. Kalanlar son kontrol ve opsi
 - Gerçek cihaz push testi
 - RevenueCat / Google Play satın alma testi
 - Restore testi
+- Galeri fotoğraf / video optimizasyonu gerçek cihaz testi
 - Firebase Realtime Database rules kontrolü
 - Firebase Storage rules kontrolü
 - Kapalı test build kontrolü
