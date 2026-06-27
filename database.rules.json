@@ -1,48 +1,57 @@
 {
-  "rules": {
-    ".read": true,
-    ".write": true,
-    "kresler": {
-      "$kresId": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "siniflar": {
-      "$sinifId": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "cocuklar": {
-      "$cocukId": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "gunlukRaporlar": {
-      "$raporId": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "duyurular": {
-      "$duyuruId": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "kullanicilar": {
-      "$uid": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "users": {
-      "$uid": {
-        ".read": true,
-        ".write": true
-      }
-    }
-  }
+"rules": {
+".read": "auth != null",
+".write": "auth != null",
+
+
+"kullanicilar": {
+  ".indexOn": ["email", "rol", "kresId", "sinifId", "authUid"]
+},
+
+"kresler": {
+  ".indexOn": ["olusturmaTarihi", "aktif"]
+},
+
+"siniflar": {
+  ".indexOn": ["kresId", "ad", "aktif"]
+},
+
+"cocuklar": {
+  ".indexOn": ["kresId", "sinifId", "veliId", "aktif"]
+},
+
+"yemekListeleri": {
+  ".indexOn": ["kresId", "sinifId", "tarih", "ayKey", "baslangicTarihi"]
+},
+
+"duyurular": {
+  ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
+},
+
+"etkinlikler": {
+  ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
+},
+
+"yoklamalar": {
+  ".indexOn": ["kresId", "sinifId", "tarih", "cocukId"]
+},
+
+"odemeler": {
+  ".indexOn": ["kresId", "veliId", "cocukId", "tarih", "donem", "durum"]
+},
+
+"raporlar": {
+  ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+},
+
+"mesajlar": {
+  ".indexOn": ["kresId", "sinifId", "createdAt", "updatedAt"]
+},
+
+"gelisimler": {
+  ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+}
+
+
+}
 }
