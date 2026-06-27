@@ -8,18 +8,21 @@ export const REVENUECAT_ANDROID_PUBLIC_KEY = 'goog_WqntzZwxdOpqOYBOtuKyYaMwfIg';
 export const REVENUECAT_OFFERING_ID = 'default';
 export const REVENUECAT_ENTITLEMENT_ID = 'YUMURCAK Pro';
 
+// RevenueCat package identifier, Google Play product identifier ve base plan
+// isimleri farklı formatlarda gelebilir. Bu yüzden her plan için olası
+// identifier alternatiflerini birlikte tutuyoruz.
 export const REVENUECAT_PACKAGE_IDS = {
   baslangic: {
-    aylik: 'baslangic_aylik',
-    yillik: 'baslangic_yillik',
+    aylik: ['baslangic_aylik', 'baslangic-aylik', 'yumurcak_baslangic_aylik'],
+    yillik: ['baslangic_yillik', 'baslangic-yillik', 'yumurcak_baslangic_yillik'],
   },
   profesyonel: {
-    aylik: 'profesyonel_aylik',
-    yillik: 'profesyonel_yillik',
+    aylik: ['profesyonel_aylik', 'profesyonel-aylik', 'yumurcak_profesyonel_aylik'],
+    yillik: ['profesyonel_yillik', 'profesyonel-yillik', 'yumurcak_profesyonel_yillik'],
   },
   kurum: {
-    aylik: 'kurum_aylik',
-    yillik: 'kurum_yillik',
+    aylik: ['kurum_aylik', 'kurum-aylik', 'yumurcak_kurum_aylik'],
+    yillik: ['kurum_yillik', 'kurum-yillik', 'yumurcak_kurum_yillik'],
   },
 };
 
@@ -29,17 +32,49 @@ function normalizeUserId(appUserId) {
   return String(appUserId || 'anonymous').trim() || 'anonymous';
 }
 
+function normalizeIdentifier(value) {
+  return String(value || '').trim();
+}
+
+function getProductIdentifiers(pkg = {}) {
+  const product = pkg.product || {};
+  return [
+    pkg.identifier,
+    product.identifier,
+    product.productIdentifier,
+    product.id,
+  ]
+    .map(normalizeIdentifier)
+    .filter(Boolean);
+}
+
 function buildPackageMap(packages = []) {
   return packages.reduce((acc, item) => {
-    if (item?.identifier) acc[item.identifier] = item;
+    getProductIdentifiers(item).forEach((id) => {
+      acc[id] = item;
+    });
     return acc;
   }, {});
 }
 
 export function getRevenueCatPackageForPlan(packagesResult, tierId, period) {
-  const key = REVENUECAT_PACKAGE_IDS?.[tierId]?.[period];
-  if (!key) return null;
-  return packagesResult?.byId?.[key] || null;
+  const keys = REVENUECAT_PACKAGE_IDS?.[tierId]?.[period];
+  const candidates = Array.isArray(keys) ? keys : [keys].filter(Boolean);
+  if (!candidates.length) return null;
+
+  for (const key of candidates) {
+    if (packagesResult?.byId?.[key]) return packagesResult.byId[key];
+  }
+
+  const normalizedCandidates = candidates.map((item) => String(item || '').replace(/[-_]/g, '').toLowerCase());
+  const packages = packagesResult?.packages || [];
+
+  return packages.find((item) => {
+    return getProductIdentifiers(item).some((id) => {
+      const normalized = String(id || '').replace(/[-_]/g, '').toLowerCase();
+      return normalizedCandidates.includes(normalized);
+    });
+  }) || null;
 }
 
 export async function configureRevenueCat(appUserId) {
