@@ -15,6 +15,9 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
+import { Video } from 'react-native-compressor';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { onValue, push, ref as dbRef, remove, set } from 'firebase/database';
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
@@ -23,6 +26,12 @@ import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_MEDIA_PER_POST = 10;
+const MAX_VIDEO_PER_POST = 2;
+const MAX_VIDEO_DURATION_MS = 120 * 1000;
+const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_IMAGE_WIDTH = 1920;
+const IMAGE_COMPRESS = 0.8;
 
 const THEME = {
   primary: '#6C3DEB',
@@ -92,6 +101,108 @@ function getFileInfo(asset) {
   const extension = (rawExt || (isVideo ? 'mp4' : 'jpg')).toLowerCase();
   const contentType = asset?.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg');
   return { isVideo, extension, contentType };
+}
+
+  async function getLocalFileSize(uri) {
+  if (!uri) return 0;
+  try {
+    const info = await FileSystem.getInfoAsync(uri, { size: true });
+    return Number(info?.size || 0);
+  } catch (error) {
+    return 0;
+  }
+}
+
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0);
+  if (!value) return '';
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function getAssetDurationMs(asset) {
+  const raw = Number(asset?.duration || asset?.durationMillis || 0);
+  if (!raw) return 0;
+  return raw > 1000 ? raw : raw * 1000;
+}
+
+function countVideoAssets(assets = []) {
+  return assets.filter((asset) => getFileInfo(asset).isVideo).length;
+}
+
+async function optimizeImageAsset(asset) {
+  const actions = [];
+
+  if (asset?.width && Number(asset.width) > MAX_IMAGE_WIDTH) {
+    actions.push({ resize: { width: MAX_IMAGE_WIDTH } });
+  }
+
+  const result = await ImageManipulator.manipulateAsync(
+    asset.uri,
+    actions,
+    {
+      compress: IMAGE_COMPRESS,
+      format: ImageManipulator.SaveFormat.JPEG,
+    }
+  );
+
+  const optimizedSize = await getLocalFileSize(result.uri);
+
+  return {
+    ...asset,
+    uri: result.uri,
+    width: result.width || asset.width,
+    height: result.height || asset.height,
+    mimeType: 'image/jpeg',
+    fileName: `${String(asset.fileName || 'foto').split('.')[0]}_optimized.jpg`,
+    fileSize: optimizedSize || asset.fileSize || 0,
+    originalFileSize: asset.fileSize || 0,
+    optimized: true,
+  };
+}
+
+async function optimizeVideoAsset(asset, onProgress) {
+  const durationMs = getAssetDurationMs(asset);
+
+  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) {
+    throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
+  }
+
+  const originalSize = asset.fileSize || await getLocalFileSize(asset.uri);
+
+  const compressedUri = await Video.compress(
+    asset.uri,
+    {
+      compressionMethod: 'auto',
+      maxSize: 1280,
+    },
+    (progress) => {
+      if (typeof onProgress === 'function') onProgress(progress);
+    }
+  );
+
+  const optimizedSize = await getLocalFileSize(compressedUri);
+
+  if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
+    throw new Error(`Video optimize edildi ama hâlâ çok büyük (${formatFileSize(optimizedSize)}). Lütfen daha kısa bir video seç.`);
+  }
+
+  return {
+    ...asset,
+    uri: compressedUri,
+    type: 'video',
+    mimeType: 'video/mp4',
+    fileName: `${String(asset.fileName || 'video').split('.')[0]}_optimized.mp4`,
+    fileSize: optimizedSize || originalSize || 0,
+    originalFileSize: originalSize || 0,
+    optimized: true,
+  };
+}
+
+async function optimizeGalleryAsset(asset, onProgress) {
+  const { isVideo } = getFileInfo(asset);
+  if (isVideo) return optimizeVideoAsset(asset, onProgress);
+  return optimizeImageAsset(asset);
 }
 
 function readAssetAsBlob(uri) {
@@ -183,6 +294,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [savingMediaId, setSavingMediaId] = useState('');
   const [caption, setCaption] = useState('');
   const [targetType, setTargetType] = useState('all');
@@ -298,11 +410,24 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         allowsMultipleSelection: true,
         selectionLimit: 10,
         quality: 0.78,
-        videoMaxDuration: 90,
+        videoMaxDuration: 120,
       });
 
       const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
       if (assets.length === 0) return;
+      if (assets.length > MAX_MEDIA_PER_POST) {
+      return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
+    }
+
+      const videoCount = countVideoAssets(assets);
+      if (videoCount > MAX_VIDEO_PER_POST) {
+      return Alert.alert('Çok Fazla Video', `Tek paylaşımda en fazla ${MAX_VIDEO_PER_POST} video seçebilirsin.`);
+    }
+
+      const longVideo = assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS);
+      if (longVideo) {
+       return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
+    }
 
       setUploading(true);
       const itemRef = push(dbRef(database, 'galeri'));
@@ -310,24 +435,46 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       const createdAt = Date.now();
       const mediaItems = [];
 
-      for (let index = 0; index < assets.length; index += 1) {
-        const asset = assets[index];
-        const { isVideo, extension, contentType } = getFileInfo(asset);
-        const mediaId = `${galleryId}-${index}`;
-        const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
-        const blob = await readAssetAsBlob(asset.uri);
-        const fileRef = storageRef(storage, storagePath);
-        await uploadBytes(fileRef, blob, { contentType });
-        const url = await getDownloadURL(fileRef);
-        mediaItems.push({
-          id: mediaId,
-          type: isVideo ? 'video' : 'image',
-          url,
-          thumbnailUrl: '',
-          storagePath,
-          fileName: asset.fileName || `${mediaId}.${extension}`,
-        });
-      }
+     for (let index = 0; index < assets.length; index += 1) {
+     const rawAsset = assets[index];
+     const rawInfo = getFileInfo(rawAsset);
+
+  setUploadStatus(
+    rawInfo.isVideo
+      ? `Video optimize ediliyor... (${index + 1}/${assets.length})`
+      : `Fotoğraf hazırlanıyor... (${index + 1}/${assets.length})`
+  );
+
+  const asset = await optimizeGalleryAsset(rawAsset, (progress) => {
+    if (rawInfo.isVideo) {
+      const percent = Math.round(Number(progress || 0) * 100);
+      setUploadStatus(`Video optimize ediliyor... %${percent}`);
+    }
+  });
+
+  const { isVideo, extension, contentType } = getFileInfo(asset);
+  const mediaId = `${galleryId}-${index}`;
+  const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
+
+  setUploadStatus(`Medya yükleniyor... (${index + 1}/${assets.length})`);
+
+  const blob = await readAssetAsBlob(asset.uri);
+  const fileRef = storageRef(storage, storagePath);
+  await uploadBytes(fileRef, blob, { contentType });
+  const url = await getDownloadURL(fileRef);
+
+  mediaItems.push({
+    id: mediaId,
+    type: isVideo ? 'video' : 'image',
+    url,
+    thumbnailUrl: '',
+    storagePath,
+    fileName: asset.fileName || `${mediaId}.${extension}`,
+    fileSize: asset.fileSize || 0,
+    originalFileSize: asset.originalFileSize || rawAsset.fileSize || 0,
+    optimized: asset.optimized === true,
+  });
+}
 
       await set(itemRef, {
         kresId,
@@ -361,7 +508,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       console.error('Galeri yüklemesi yapılamadı:', error?.code || error?.message || error);
       Alert.alert('Hata', `Galeri yüklemesi yapılamadı. ${error?.code || error?.message || 'Storage ayarlarını kontrol et.'}`);
     } finally {
-      setUploading(false);
+       setUploadStatus('');
+       setUploading(false);
     }
   }
 
@@ -503,7 +651,16 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             {targetType === 'child' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>{myChildren.map((child) => <TouchableOpacity key={child.id} style={[styles.childChip, selectedChildId === child.id && styles.childChipActive]} onPress={() => setSelectedChildId(child.id)}><Text style={[styles.childChipText, selectedChildId === child.id && styles.childChipTextActive]}>{getChildName(child)}</Text></TouchableOpacity>)}</ScrollView> : null}
             <View style={styles.targetPreview}><Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text></View>
             <TextInput value={caption} onChangeText={setCaption} placeholder="Başlık / açıklama ekle (opsiyonel)" placeholderTextColor={THEME.muted} style={styles.input} multiline />
-            <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>{uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>}</TouchableOpacity>
+            <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>
+            {uploading ? (
+            <View style={styles.uploadingButtonContent}>
+            <ActivityIndicator color="#fff" />
+           <Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text>
+           </View>
+       ) : (
+           <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>
+       )}
+           </TouchableOpacity>
           </View>
         ) : null}
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
@@ -561,6 +718,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 52, backgroundColor: '#FAF9FF', borderWidth: 1, borderColor: THEME.border, borderRadius: 16, padding: 12, color: THEME.text, fontWeight: '700', marginTop: 12 },
   primaryButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
   primaryButtonText: { color: '#fff', fontWeight: '900' },
+  uploadingButtonContent: { alignItems: 'center', justifyContent: 'center', gap: 8 },
   disabledButton: { opacity: 0.65 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
   emptyCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
