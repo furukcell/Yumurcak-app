@@ -95,11 +95,26 @@ function remainingText(expiresAt, now) {
 }
 
 function getFileInfo(asset) {
-  const isVideo = asset?.type === 'video';
+  const rawType = String(asset?.type || asset?.mediaType || '').toLowerCase();
+  const mimeType = String(asset?.mimeType || '').toLowerCase();
   const uriPart = String(asset?.uri || '').split('?')[0];
-  const rawExt = uriPart.includes('.') ? uriPart.split('.').pop() : '';
+  const fileNamePart = String(asset?.fileName || '').split('?')[0];
+  const combined = `${uriPart} ${fileNamePart}`.toLowerCase();
+
+  const isVideo =
+    rawType === 'video' ||
+    mimeType.startsWith('video/') ||
+    combined.includes('.mp4') ||
+    combined.includes('.mov') ||
+    combined.includes('.m4v') ||
+    combined.includes('.3gp') ||
+    combined.includes('.webm');
+
+  const sourceForExt = fileNamePart || uriPart;
+  const rawExt = sourceForExt.includes('.') ? sourceForExt.split('.').pop() : '';
   const extension = (rawExt || (isVideo ? 'mp4' : 'jpg')).toLowerCase();
   const contentType = asset?.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg');
+
   return { isVideo, extension, contentType };
 }
 
