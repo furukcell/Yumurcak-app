@@ -21,6 +21,7 @@ const MENU = [
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
   { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
   { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals', bg: '#FFE8DC', border: '#F4A47E' },
+  { icon: '📁', title: 'Dokümanlar', desc: 'A4 belge fotoğrafı yükle', route: 'TeacherDocuments', bg: '#F2EAFE', border: '#BA9BEA' },
   { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery', bg: '#E8F5F0', border: '#7CC8AA' },
   { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical', bg: '#E4FAF7', border: '#6DD3C8' },
   { icon: '📈', title: 'Fiziksel Gelişim', desc: 'Boy ve kilo ölçümü gir', route: 'TeacherPhysicalDevelopment', bg: '#E9EEFF', border: '#9AAEF5' },
