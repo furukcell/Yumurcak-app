@@ -13,22 +13,24 @@ import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const MENU = [
   { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
-  { icon: '🌱', title: 'Uyum Modülü', desc: 'Yeni başlayan çocukların 30 günlük uyumu', route: 'TeacherAdaptationTracking', bg: '#EAF2FF', border: '#8DB2FF' },
-  { icon: '🎂', title: 'Doğum Günleri', desc: 'Yaklaşan doğum günleri', route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
-  { icon: '🌟', title: 'Haftanın Yıldızı', desc: 'Cuma rozeti ver', route: 'TeacherWeeklyStar', bg: '#FFF7E8', border: '#FFE0A3' },
-  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
   { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
+  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
-  { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
   { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals', bg: '#FFE8DC', border: '#F4A47E' },
-  { icon: '📁', title: 'Dokümanlar', desc: 'A4 belge fotoğrafı yükle', route: 'TeacherDocuments', bg: '#F2EAFE', border: '#BA9BEA' },
+  { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages', bg: '#EAF7FF', border: '#77C7EA' },
   { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery', bg: '#E8F5F0', border: '#7CC8AA' },
+  { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements', bg: '#FFF6CF', border: '#E8C94F' },
+  { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
+  { icon: '🌱', title: 'Uyum Modülü', desc: 'Yeni başlayan çocukların 30 günlük uyumu', route: 'TeacherAdaptationTracking', bg: '#EAF2FF', border: '#8DB2FF' },
+  { icon: '📁', title: 'Dokümanlar', desc: 'A4 belge fotoğrafı yükle', route: 'TeacherDocuments', bg: '#F2EAFE', border: '#BA9BEA' },
+  { icon: '🌟', title: 'Haftanın Yıldızı', desc: 'Cuma rozeti ver', route: 'TeacherWeeklyStar', bg: '#FFF7E8', border: '#FFE0A3' },
   { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical', bg: '#E4FAF7', border: '#6DD3C8' },
+  { icon: '🎂', title: 'Doğum Günleri', desc: 'Yaklaşan doğum günleri', route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
   { icon: '📈', title: 'Fiziksel Gelişim', desc: 'Boy ve kilo ölçümü gir', route: 'TeacherPhysicalDevelopment', bg: '#E9EEFF', border: '#9AAEF5' },
   { icon: '🎨', title: 'Tema Ayarları', desc: 'Sınıf temasını değiştir', route: 'TeacherTheme', bg: '#F0E7FF', border: '#B99AF5' },
-  { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements', bg: '#FFF6CF', border: '#E8C94F' },
-  { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages', bg: '#EAF7FF', border: '#77C7EA' },
   { icon: '👤', title: 'Profil', desc: 'Bilgiler ve çıkış', route: 'TeacherProfile', bg: '#F2EDE7', border: '#CDB8A6' },
+  
+   
 ];
 
 export default function TeacherDashboardScreen() {
