@@ -3,7 +3,7 @@
 // Öğretmen parça parça günlük yemek girişi + aylık kurum listesi görünümü
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, push, remove, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -377,77 +377,88 @@ export default function TeacherMealsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={`${selectedMeal.title} kaydedildi`} onHide={() => setSuccessToast(false)} />
       <ScreenHeader navigation={navigation} title="Yemek Listesi" subtitle={currentClass?.ad || 'Sınıfım'} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.tabRow}>
-          <TouchableOpacity style={[styles.tab, tab === 'today' && styles.tabActive]} onPress={() => setTab('today')} activeOpacity={0.85}>
-            <Text style={[styles.tabText, tab === 'today' && styles.tabTextActive]}>Bugün</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.tab, tab === 'daily' && styles.tabActive]} onPress={() => setTab('daily')} activeOpacity={0.85}>
-            <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Liste</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.tab, tab === 'monthly' && styles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
-            <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık</Text>
-          </TouchableOpacity>
-        </View>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        >
+          <View style={styles.tabRow}>
+            <TouchableOpacity style={[styles.tab, tab === 'today' && styles.tabActive]} onPress={() => setTab('today')} activeOpacity={0.85}>
+              <Text style={[styles.tabText, tab === 'today' && styles.tabTextActive]}>Bugün</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tab, tab === 'daily' && styles.tabActive]} onPress={() => setTab('daily')} activeOpacity={0.85}>
+              <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Liste</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tab, tab === 'monthly' && styles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
+              <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık</Text>
+            </TouchableOpacity>
+          </View>
 
-        {tab === 'today' ? (
-          <>
-            <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" editable onMealPress={openMealEditor} />
-            <View style={styles.editorCard}>
-              <Text style={styles.editorTitle}>{selectedMeal.icon} {selectedMeal.title} ekle / güncelle</Text>
-              <Text style={styles.editorDesc}>Aylık menü varsa bilgiler otomatik gelir. Değişiklik veya fotoğraf eklediğinde sadece seçili öğün güncellenir ve veli ekranında görünür.</Text>
+          {tab === 'today' ? (
+            <>
+              <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" editable onMealPress={openMealEditor} />
+              <View style={styles.editorCard}>
+                <Text style={styles.editorTitle}>{selectedMeal.icon} {selectedMeal.title} ekle / güncelle</Text>
+                <Text style={styles.editorDesc}>Aylık menü varsa bilgiler otomatik gelir. Değişiklik veya fotoğraf eklediğinde sadece seçili öğün güncellenir ve veli ekranında görünür.</Text>
 
-              <View style={styles.mealSelectorRow}>
-                {MEALS.map((meal) => (
-                  <TouchableOpacity key={meal.key} style={[styles.mealSelector, selectedMealKey === meal.key && styles.mealSelectorActive]} onPress={() => openMealEditor(meal.key)} activeOpacity={0.85}>
-                    <Text style={[styles.mealSelectorText, selectedMealKey === meal.key && styles.mealSelectorTextActive]}>{meal.icon} {meal.title}</Text>
+                <View style={styles.mealSelectorRow}>
+                  {MEALS.map((meal) => (
+                    <TouchableOpacity key={meal.key} style={[styles.mealSelector, selectedMealKey === meal.key && styles.mealSelectorActive]} onPress={() => openMealEditor(meal.key)} activeOpacity={0.85}>
+                      <Text style={[styles.mealSelectorText, selectedMealKey === meal.key && styles.mealSelectorTextActive]}>{meal.icon} {meal.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TextInput style={styles.input} value={mealText} onChangeText={setMealText} placeholder={`${selectedMeal.title} açıklaması`} placeholderTextColor="#999" multiline />
+
+                {previewPhoto ? (
+                  <View style={styles.photoPreviewWrap}>
+                    <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
+                    <TouchableOpacity style={styles.removePhotoButton} onPress={() => { setMealPhoto(null); setRemoveExistingPhoto(true); }} activeOpacity={0.85}>
+                      <Text style={styles.removePhotoText}>Fotoğrafı kaldır</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+
+                <View style={styles.photoButtonRow}>
+                  <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('gallery')} activeOpacity={0.85}>
+                    <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-
-              <TextInput style={styles.input} value={mealText} onChangeText={setMealText} placeholder={`${selectedMeal.title} açıklaması`} placeholderTextColor="#999" multiline />
-
-              {previewPhoto ? (
-                <View style={styles.photoPreviewWrap}>
-                  <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
-                  <TouchableOpacity style={styles.removePhotoButton} onPress={() => { setMealPhoto(null); setRemoveExistingPhoto(true); }} activeOpacity={0.85}>
-                    <Text style={styles.removePhotoText}>Fotoğrafı kaldır</Text>
+                  <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('camera')} activeOpacity={0.85}>
+                    <Text style={styles.photoButtonText}>📷 Kamera</Text>
                   </TouchableOpacity>
                 </View>
-              ) : null}
 
-              <View style={styles.photoButtonRow}>
-                <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('gallery')} activeOpacity={0.85}>
-                  <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('camera')} activeOpacity={0.85}>
-                  <Text style={styles.photoButtonText}>📷 Kamera</Text>
+                <TouchableOpacity style={styles.saveButton} onPress={saveSelectedMeal} disabled={saving} activeOpacity={0.85}>
+                  {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{selectedMeal.title} Kaydet</Text>}
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity style={styles.saveButton} onPress={saveSelectedMeal} disabled={saving} activeOpacity={0.85}>
-                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{selectedMeal.title} Kaydet</Text>}
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : tab === 'monthly' ? (
-          monthlyMeals.length === 0 ? (
-            <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
-          ) : (
-            <>
-              <View style={styles.monthInfoCard}>
-                <Text style={styles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
-                <Text style={styles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
-              </View>
-              {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
             </>
-          )
-        ) : dailyMeals.length === 0 ? (
-          <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
-        ) : (
-          dailyMeals.map((item) => <MealCard key={item.id} item={item} />)
-        )}
-      </ScrollView>
+          ) : tab === 'monthly' ? (
+            monthlyMeals.length === 0 ? (
+              <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
+            ) : (
+              <>
+                <View style={styles.monthInfoCard}>
+                  <Text style={styles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
+                  <Text style={styles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
+                </View>
+                {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
+              </>
+            )
+          ) : dailyMeals.length === 0 ? (
+            <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
+          ) : (
+            dailyMeals.map((item) => <MealCard key={item.id} item={item} />)
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -488,7 +499,8 @@ function renderMeals(item) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
-  content: { padding: 16, paddingBottom: 32 },
+  keyboardView: { flex: 1 },
+  content: { padding: 16, paddingBottom: 180 },
   tabRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tab: { flex: 1, backgroundColor: THEME.card, borderRadius: 14, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   tabActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
