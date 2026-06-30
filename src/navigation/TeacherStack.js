@@ -8,6 +8,7 @@ import TeacherAttendanceScreen from '../screens/teacher/TeacherAttendanceScreen'
 import TeacherScheduleScreen from '../screens/teacher/TeacherScheduleScreen';
 import TeacherEventsScreen from '../screens/teacher/TeacherEventsScreen';
 import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
+import TeacherDocumentsScreen from '../screens/teacher/TeacherDocumentsScreen';
 import TeacherMedicalScreen from '../screens/teacher/TeacherMedicalScreen';
 import TeacherPhysicalDevelopmentScreen from '../screens/teacher/TeacherPhysicalDevelopmentScreen';
 import UyumTakibiScreen from '../screens/teacher/TeacherAdaptationTrackingScreen';
@@ -35,6 +36,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherSchedule" component={TeacherScheduleScreen} />
       <Stack.Screen name="TeacherEvents" component={TeacherEventsScreen} />
       <Stack.Screen name="TeacherMeals" component={TeacherMealsScreen} />
+      <Stack.Screen name="TeacherDocuments" component={TeacherDocumentsScreen} />
       <Stack.Screen name="TeacherMedical" component={TeacherMedicalScreen} />
       <Stack.Screen name="TeacherPhysicalDevelopment" component={TeacherPhysicalDevelopmentScreen} />
       <Stack.Screen name="TeacherAdaptationTracking" component={UyumTakibiScreen} />
