@@ -1,13 +1,11 @@
 // ============================================================
 // YUMURCAK — TeacherMealsScreen.js
-// Öğretmen parça parça günlük yemek girişi + aylık kurum listesi görünümü
+// Öğretmen günlük yemek girişi + aylık kurum listesi görünümü
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, push, remove, update } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import * as ImagePicker from 'expo-image-picker';
-import { database, storage } from '../../config/firebase';
+import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -31,6 +29,13 @@ function getMealDateKey(item) {
   return String(item?.tarih || item?.baslangicTarihi || '').slice(0, 10);
 }
 
+function parseDateKey(dateKey) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return null;
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 function getTodayStart() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -41,13 +46,6 @@ function getLast7DaysStart() {
   const minDate = getTodayStart();
   minDate.setDate(minDate.getDate() - 6);
   return minDate;
-}
-
-function parseDateKey(dateKey) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return null;
-  const date = new Date(`${dateKey}T00:00:00`);
-  date.setHours(0, 0, 0, 0);
-  return date;
 }
 
 function isDateInLast7Days(dateKey) {
@@ -73,74 +71,6 @@ function isExpiredDailyMeal(item) {
 function getMealPhotoPath(value) {
   if (!value || typeof value === 'string') return '';
   return value.fotoPath || value.photoPath || value.imagePath || value.storagePath || '';
-}
-
-function getPhotoFileInfo(asset, mealKey) {
-  const contentType = asset?.mimeType || 'image/jpeg';
-  const uriPart = String(asset?.uri || '').split('?')[0];
-  const rawExt = uriPart.includes('.') ? uriPart.split('.').pop() : '';
-  let extension = String(rawExt || '').toLowerCase();
-
-  if (!extension || extension.length > 5) {
-    if (contentType.includes('png')) extension = 'png';
-    else if (contentType.includes('webp')) extension = 'webp';
-    else if (contentType.includes('heic') || contentType.includes('heif')) extension = 'heic';
-    else extension = 'jpg';
-  }
-
-  const fileName = `${Date.now()}_${mealKey}.${extension}`;
-  return { contentType, fileName };
-}
-
-function readAssetAsBlob(uri) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.onload = () => resolve(xhr.response);
-    xhr.onerror = () => reject(new Error('Fotoğraf dosyası okunamadı.'));
-    xhr.responseType = 'blob';
-    xhr.open('GET', uri, true);
-    xhr.send(null);
-  });
-}
-
-async function uploadMealPhoto(asset, kresId, sinifId, mealKey) {
-  if (!asset?.uri) return { url: '', path: '' };
-
-  const blob = await readAssetAsBlob(asset.uri);
-  const { contentType, fileName } = getPhotoFileInfo(asset, mealKey);
-  const safeKresId = kresId || 'kres';
-  const safeSinifId = sinifId || 'sinif';
-  const paths = [
-    `yemekFotograflari/${safeKresId}/${safeSinifId}/${fileName}`,
-    `galeri/${safeKresId}/yemekFotograflari/${safeSinifId}/${fileName}`,
-  ];
-
-  let lastError = null;
-
-  for (const path of paths) {
-    try {
-      const fileRef = storageRef(storage, path);
-      await uploadBytes(fileRef, blob, { contentType });
-      const url = await getDownloadURL(fileRef);
-      return { url, path };
-    } catch (err) {
-      lastError = err;
-      console.warn('Yemek fotoğrafı yükleme denemesi başarısız:', path, err?.code || err?.message || err);
-    }
-  }
-
-  throw lastError || new Error('Yemek fotoğrafı yüklenemedi.');
-}
-
-async function deleteMealPhoto(value) {
-  const path = getMealPhotoPath(value);
-  if (!path) return;
-
-  try {
-    await deleteObject(storageRef(storage, path));
-  } catch (err) {
-    console.warn('Yemek fotoğrafı silinemedi:', err?.message || err);
-  }
 }
 
 function buildEmptyTodayMeal(kresId, classItem) {
@@ -189,8 +119,8 @@ function mergeTodayMeal({ kresId, classItem, monthlyMeal, dailyMeal }) {
   };
 }
 
-function getMealConfig(key) {
-  return MEALS.find((item) => item.key === key) || MEALS[0];
+function buildEmptyMealTexts() {
+  return { kahvalti: '', ogle: '', araOgun: '' };
 }
 
 export default function TeacherMealsScreen() {
@@ -200,10 +130,7 @@ export default function TeacherMealsScreen() {
   const [tab, setTab] = useState('today');
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
-  const [selectedMealKey, setSelectedMealKey] = useState('kahvalti');
-  const [mealText, setMealText] = useState('');
-  const [mealPhoto, setMealPhoto] = useState(null);
-  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
+  const [mealTexts, setMealTexts] = useState(buildEmptyMealTexts);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
@@ -242,12 +169,6 @@ export default function TeacherMealsScreen() {
         if (cancelled) return;
 
         try {
-          const ogunler = item.ogunler || {};
-          await Promise.all([
-            deleteMealPhoto(ogunler.kahvalti),
-            deleteMealPhoto(ogunler.ogle),
-            deleteMealPhoto(ogunler.araOgun),
-          ]);
           await remove(ref(database, `yemekListeleri/${item.id}`));
         } catch (err) {
           console.warn('Süresi geçen yemek listesi temizlenemedi:', err?.message || err);
@@ -263,119 +184,81 @@ export default function TeacherMealsScreen() {
   }, [loading, visibleMeals]);
 
   useEffect(() => {
-    const value = todayMeal?.ogunler?.[selectedMealKey];
-    setMealText(getMealText(value));
-    setMealPhoto(null);
-    setRemoveExistingPhoto(false);
-  }, [selectedMealKey, todayMeal?.dailySourceId, todayMeal?.monthlySourceId, todayMeal?.updatedAt, todayMeal?.createdAt]);
+    const ogunler = todayMeal?.ogunler || {};
+
+    setMealTexts({
+      kahvalti: getMealText(ogunler.kahvalti),
+      ogle: getMealText(ogunler.ogle),
+      araOgun: getMealText(ogunler.araOgun),
+    });
+  }, [todayMeal?.dailySourceId, todayMeal?.monthlySourceId, todayMeal?.updatedAt, todayMeal?.createdAt]);
 
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
 
-  const pickMealPhoto = async (source) => {
-    try {
-      if (source === 'camera') {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permission.granted) return Alert.alert('İzin Gerekli', 'Kamera kullanımı için izin vermelisin.');
-      } else {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permission.granted) return Alert.alert('İzin Gerekli', 'Galeriden fotoğraf seçmek için izin vermelisin.');
-      }
-
-      const picker = source === 'camera' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-      const result = await picker({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.75,
-      });
-
-      if (result.canceled || !result.assets?.[0]?.uri) return;
-      setMealPhoto(result.assets[0]);
-      setRemoveExistingPhoto(false);
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
-    }
+  const updateMealText = (mealKey, value) => {
+    setMealTexts((prev) => ({ ...prev, [mealKey]: value }));
   };
 
-  const openMealEditor = (mealKey) => {
-    const value = todayMeal?.ogunler?.[mealKey];
-    setSelectedMealKey(mealKey);
-    setMealText(getMealText(value));
-    setMealPhoto(null);
-    setRemoveExistingPhoto(false);
-    setTab('today');
-  };
+  const saveTodayMeals = async () => {
+    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı. Öğretmenin bir sınıfa bağlı olması gerekiyor.');
 
-  const saveSelectedMeal = async () => {
-    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
-    if (!mealText.trim() && !mealPhoto && !getMealPhoto(todayMeal?.ogunler?.[selectedMealKey])) {
-      return Alert.alert('Eksik Bilgi', 'Bu öğün için yazı veya fotoğraf eklemelisin.');
+    const hasAnyText = MEALS.some((meal) => String(mealTexts[meal.key] || '').trim());
+    const hasAnyPhoto = MEALS.some((meal) => getMealPhoto(todayMeal?.ogunler?.[meal.key]));
+
+    if (!hasAnyText && !hasAnyPhoto) {
+      return Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir öğün bilgisi girmelisin.');
     }
 
     setSaving(true);
     try {
       const finalKresId = kresId || currentClass.kresId || '';
-      const currentValue = todayMeal?.ogunler?.[selectedMealKey] || {};
-      let photoData = {
-        url: removeExistingPhoto ? '' : getMealPhoto(currentValue),
-        path: removeExistingPhoto ? '' : getMealPhotoPath(currentValue),
-      };
-
-      if (mealPhoto?.uri) {
-        photoData = await uploadMealPhoto(mealPhoto, finalKresId, currentClass.id, selectedMealKey);
-      }
-
-      const mealPayload = {
-        text: mealText.trim(),
-        fotoUrl: photoData.url,
-        fotoPath: photoData.path,
-        updatedAt: Date.now(),
-      };
-
       const now = Date.now();
-      const dailyId = todayMeal?.dailySourceId || todayMeal?.id;
-      if (dailyId) {
-        await update(ref(database, `yemekListeleri/${dailyId}`), {
-          [`ogunler/${selectedMealKey}`]: mealPayload,
+      const ogunler = MEALS.reduce((acc, meal) => {
+        const currentValue = todayMeal?.ogunler?.[meal.key] || {};
+        acc[meal.key] = {
+          text: String(mealTexts[meal.key] || '').trim(),
+          fotoUrl: getMealPhoto(currentValue),
+          fotoPath: getMealPhotoPath(currentValue),
           updatedAt: now,
-        });
+        };
+        return acc;
+      }, {});
+
+      const payload = {
+        kresId: finalKresId,
+        sinifId: currentClass.id,
+        sinifAdi: currentClass.ad || '',
+        olusturanId: teacherId || '',
+        olusturanRol: 'ogretmen',
+        tip: 'gunluk',
+        kaynak: 'ogretmen_gunluk',
+        tarih: todayString(),
+        baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
+        ogunler,
+        monthlySourceId: todayMeal?.monthlySourceId || '',
+        aktif: true,
+        updatedAt: now,
+      };
+
+      if (todayMeal?.dailySourceId) {
+        await update(ref(database, `yemekListeleri/${todayMeal.dailySourceId}`), payload);
       } else {
         const newRef = push(ref(database, 'yemekListeleri'));
-        await update(newRef, {
-          kresId: finalKresId,
-          sinifId: currentClass.id,
-          olusturanId: teacherId || '',
-          olusturanRol: 'ogretmen',
-          tip: 'gunluk',
-          kaynak: 'ogretmen_gunluk',
-          tarih: todayString(),
-          baslik: `${currentClass.ad || 'Sınıf'} Günlük Yemek Listesi`,
-          ogunler: { [selectedMealKey]: mealPayload },
-          monthlySourceId: todayMeal?.monthlySourceId || '',
-          aktif: true,
-          createdAt: now,
-          updatedAt: now,
-        });
+        await update(newRef, { ...payload, createdAt: now });
       }
 
-      setMealPhoto(null);
-      setRemoveExistingPhoto(false);
       setSuccessToast(true);
     } catch (err) {
-      console.error('Öğün kaydedilemedi:', err?.code || err?.message || err);
-      Alert.alert('Hata', `Öğün kaydedilemedi. ${err?.code || err?.message || 'Fotoğraf yükleme izni veya internet bağlantısını kontrol et.'}`);
+      console.error('Yemek listesi kaydedilemedi:', err?.code || err?.message || err);
+      Alert.alert('Hata', `Yemek listesi kaydedilemedi. ${err?.code || err?.message || 'İnternet bağlantısını kontrol et.'}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const selectedMeal = getMealConfig(selectedMealKey);
-  const existingPhoto = getMealPhoto(todayMeal?.ogunler?.[selectedMealKey]);
-  const previewPhoto = mealPhoto?.uri || (!removeExistingPhoto ? existingPhoto : '');
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast visible={successToast} message={`${selectedMeal.title} kaydedildi`} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message="Yemek listesi kaydedildi" onHide={() => setSuccessToast(false)} />
       <ScreenHeader navigation={navigation} title="Yemek Listesi" subtitle={currentClass?.ad || 'Sınıfım'} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -400,43 +283,31 @@ export default function TeacherMealsScreen() {
             </TouchableOpacity>
           </View>
 
-          {tab === 'today' ? (
+          {!currentClass ? (
+            <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Öğretmenin yemek listesi girebilmesi için yönetici tarafından bir sınıfa atanması gerekir." />
+          ) : tab === 'today' ? (
             <>
-              <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" editable onMealPress={openMealEditor} />
+              <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" />
               <View style={styles.editorCard}>
-                <Text style={styles.editorTitle}>{selectedMeal.icon} {selectedMeal.title} ekle / güncelle</Text>
-                <Text style={styles.editorDesc}>Aylık menü varsa bilgiler otomatik gelir. Değişiklik veya fotoğraf eklediğinde sadece seçili öğün güncellenir ve veli ekranında görünür.</Text>
+                <Text style={styles.editorTitle}>🍽️ Bugünün yemek listesini gir</Text>
+                <Text style={styles.editorDesc}>Öğretmen bu ekrandan kendi sınıfı için günlük kahvaltı, öğle yemeği ve ara öğün yazabilir. Kaydedince veli ekranında sınıf listesi olarak görünür.</Text>
 
-                <View style={styles.mealSelectorRow}>
-                  {MEALS.map((meal) => (
-                    <TouchableOpacity key={meal.key} style={[styles.mealSelector, selectedMealKey === meal.key && styles.mealSelectorActive]} onPress={() => openMealEditor(meal.key)} activeOpacity={0.85}>
-                      <Text style={[styles.mealSelectorText, selectedMealKey === meal.key && styles.mealSelectorTextActive]}>{meal.icon} {meal.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TextInput style={styles.input} value={mealText} onChangeText={setMealText} placeholder={`${selectedMeal.title} açıklaması`} placeholderTextColor="#999" multiline />
-
-                {previewPhoto ? (
-                  <View style={styles.photoPreviewWrap}>
-                    <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
-                    <TouchableOpacity style={styles.removePhotoButton} onPress={() => { setMealPhoto(null); setRemoveExistingPhoto(true); }} activeOpacity={0.85}>
-                      <Text style={styles.removePhotoText}>Fotoğrafı kaldır</Text>
-                    </TouchableOpacity>
+                {MEALS.map((meal) => (
+                  <View key={meal.key} style={styles.mealInputCard}>
+                    <Text style={styles.mealInputTitle}>{meal.icon} {meal.title}</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={mealTexts[meal.key]}
+                      onChangeText={(value) => updateMealText(meal.key, value)}
+                      placeholder={`${meal.title} yaz`}
+                      placeholderTextColor="#999"
+                      multiline
+                    />
                   </View>
-                ) : null}
+                ))}
 
-                <View style={styles.photoButtonRow}>
-                  <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('gallery')} activeOpacity={0.85}>
-                    <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('camera')} activeOpacity={0.85}>
-                    <Text style={styles.photoButtonText}>📷 Kamera</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.saveButton} onPress={saveSelectedMeal} disabled={saving} activeOpacity={0.85}>
-                  {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{selectedMeal.title} Kaydet</Text>}
+                <TouchableOpacity style={styles.saveButton} onPress={saveTodayMeals} disabled={saving} activeOpacity={0.85}>
+                  {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Bugünün Listesini Kaydet</Text>}
                 </TouchableOpacity>
               </View>
             </>
@@ -509,19 +380,9 @@ const styles = StyleSheet.create({
   editorCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
   editorTitle: { color: THEME.primary, fontWeight: '900', fontSize: 17 },
   editorDesc: { color: THEME.muted, fontWeight: '700', fontSize: 12, lineHeight: 17, marginTop: 4, marginBottom: 12 },
-  mealSelectorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  mealSelector: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 99, backgroundColor: THEME.primarySoft, borderWidth: 1, borderColor: THEME.border },
-  mealSelectorActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  mealSelectorText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
-  mealSelectorTextActive: { color: '#FFF' },
-  input: { minHeight: 54, backgroundColor: THEME.bg, borderRadius: 14, padding: 12, marginBottom: 10, color: THEME.text, borderWidth: 1, borderColor: THEME.border, textAlignVertical: 'top', fontWeight: '700' },
-  photoButtonRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  photoButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
-  photoButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
-  photoPreviewWrap: { marginBottom: 10 },
-  photoPreview: { width: '100%', height: 160, borderRadius: 16, backgroundColor: THEME.bg },
-  removePhotoButton: { marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#FFE4E8', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 10 },
-  removePhotoText: { color: THEME.red, fontWeight: '900', fontSize: 12 },
+  mealInputCard: { backgroundColor: THEME.bg, borderRadius: 18, borderWidth: 1, borderColor: THEME.border, padding: 10, marginBottom: 10 },
+  mealInputTitle: { color: THEME.text, fontWeight: '900', fontSize: 14, marginBottom: 7 },
+  input: { minHeight: 54, backgroundColor: THEME.card, borderRadius: 14, padding: 12, color: THEME.text, borderWidth: 1, borderColor: THEME.border, textAlignVertical: 'top', fontWeight: '700' },
   saveButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
   saveText: { color: '#FFF', fontWeight: '900' },
   monthInfoCard: { backgroundColor: THEME.primarySoft, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
