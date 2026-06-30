@@ -3,7 +3,7 @@
 // Öğretmen ders programı görüntüleme / basit giriş
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -72,37 +72,49 @@ export default function TeacherScheduleScreen() {
         rightText={editing ? 'Kaydet' : 'Düzenle'}
         onRightPress={editing ? save : startEdit}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {!currentClass ? (
-          <EmptyState icon="📚" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlanınca program görüntülenir." />
-        ) : (
-          DAYS.map((day) => (
-            <View key={day} style={styles.dayCard}>
-              <Text style={styles.dayTitle}>{LABELS[day]}</Text>
-              {editing ? (
-                <TextInput
-                  style={styles.input}
-                  value={String(source[day] || '')}
-                  onChangeText={(text) => updateDay(day, text)}
-                  placeholder="Örn: 09:00 Serbest oyun, 10:00 Müzik"
-                  multiline
-                  placeholderTextColor="#999"
-                />
-              ) : (
-                <Text style={styles.programText}>{source[day] || 'Program girilmemiş.'}</Text>
-              )}
-            </View>
-          ))
-        )}
-        {saving ? <ActivityIndicator color={THEME.primary} style={{ marginTop: 12 }} /> : null}
-      </ScrollView>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        >
+          {!currentClass ? (
+            <EmptyState icon="📚" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlanınca program görüntülenir." />
+          ) : (
+            DAYS.map((day) => (
+              <View key={day} style={styles.dayCard}>
+                <Text style={styles.dayTitle}>{LABELS[day]}</Text>
+                {editing ? (
+                  <TextInput
+                    style={styles.input}
+                    value={String(source[day] || '')}
+                    onChangeText={(text) => updateDay(day, text)}
+                    placeholder="Örn: 09:00 Serbest oyun, 10:00 Müzik"
+                    multiline
+                    placeholderTextColor="#999"
+                  />
+                ) : (
+                  <Text style={styles.programText}>{source[day] || 'Program girilmemiş.'}</Text>
+                )}
+              </View>
+            ))
+          )}
+          {saving ? <ActivityIndicator color={THEME.primary} style={{ marginTop: 12 }} /> : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
-  content: { padding: 16, paddingBottom: 32 },
+  keyboardView: { flex: 1 },
+  content: { padding: 16, paddingBottom: 180 },
   dayCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
   dayTitle: { color: THEME.primary, fontSize: 16, fontWeight: '900', marginBottom: 8 },
   programText: { color: THEME.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
