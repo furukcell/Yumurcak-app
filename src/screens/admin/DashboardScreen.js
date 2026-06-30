@@ -32,23 +32,23 @@ const THEME = {
 };
 
 const MENU_ITEMS = [
-  { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres ve iletişim', color: THEME.primaryDark, bgColor: THEME.primarySoft },
-  { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', desc: 'Renk ve arka plan', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
+  { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
+  { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
+  { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Çocuk kayıtları', color: THEME.orange, bgColor: '#FFF6E8' },
+  { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
   { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
   { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum gelişim özeti', color: THEME.blue, bgColor: '#EEF4FF' },
   { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', desc: 'Fotoğraf / video', color: THEME.teal, bgColor: '#E0F7FA' },
   { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', desc: 'Ay bazlı kurum menüsü', color: THEME.orange, bgColor: '#FFF6E8' },
-  { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
-  { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Çocuk kayıtları', color: THEME.orange, bgColor: '#FFF6E8' },
-  { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
-  { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
   { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
-  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
   { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', desc: 'Veli anketleri', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', desc: 'Kapı / geliyorum', color: THEME.red, bgColor: '#FFE8EC' },
   { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
   { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', desc: 'Etkinlik takvimi', color: '#E67E22', bgColor: '#FCEEE0' },
+  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
+  { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', desc: 'Kapı / geliyorum', color: THEME.red, bgColor: '#FFE8EC' },
+  { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres ve iletişim', color: THEME.primaryDark, bgColor: THEME.primarySoft },
+  { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', desc: 'Renk ve arka plan', color: THEME.purple, bgColor: '#F3E8FA' },
+  { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
 ];
 
 const OZET_ITEMS = [
