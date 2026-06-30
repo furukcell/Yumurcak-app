@@ -7,6 +7,8 @@ import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Ale
 import { onValue, ref, set } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState } from './teacherShared';
@@ -14,6 +16,8 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 
 const MAX_DOCUMENT_SIZE_MB = 8;
 const MAX_DOCUMENT_SIZE_BYTES = MAX_DOCUMENT_SIZE_MB * 1024 * 1024;
+const DOCUMENT_IMAGE_MAX_WIDTH = 2000;
+const DOCUMENT_IMAGE_COMPRESS = 0.82;
 
 const DOCUMENT_TYPES = [
   { key: 'yemekListesi', icon: '🍽️', title: 'Yemek Listesi', desc: 'A4 yemek listesi fotoğrafı yükle' },
@@ -31,6 +35,59 @@ function formatDateTime(value) {
   return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0);
+  if (!value) return '';
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+async function getLocalFileSize(uri) {
+  if (!uri) return 0;
+  try {
+    const info = await FileSystem.getInfoAsync(uri, { size: true });
+    return Number(info?.size || 0);
+  } catch (error) {
+    return 0;
+  }
+}
+
+async function optimizeDocumentImage(asset) {
+  const width = Number(asset?.width || 0);
+  const height = Number(asset?.height || 0);
+  const longestSide = Math.max(width, height);
+  const actions = [];
+
+  if (longestSide > DOCUMENT_IMAGE_MAX_WIDTH) {
+    if (height >= width) actions.push({ resize: { height: DOCUMENT_IMAGE_MAX_WIDTH } });
+    else actions.push({ resize: { width: DOCUMENT_IMAGE_MAX_WIDTH } });
+  }
+
+  const result = await ImageManipulator.manipulateAsync(
+    asset.uri,
+    actions,
+    {
+      compress: DOCUMENT_IMAGE_COMPRESS,
+      format: ImageManipulator.SaveFormat.JPEG,
+    }
+  );
+
+  const optimizedSize = await getLocalFileSize(result.uri);
+  const originalSize = asset?.fileSize || await getLocalFileSize(asset.uri);
+
+  return {
+    ...asset,
+    uri: result.uri,
+    width: result.width || asset.width,
+    height: result.height || asset.height,
+    mimeType: 'image/jpeg',
+    fileName: `${String(asset.fileName || 'dokuman').split('.')[0]}_optimized.jpg`,
+    fileSize: optimizedSize || originalSize || 0,
+    originalFileSize: originalSize || 0,
+    optimized: true,
+  };
+}
+
 function readAssetAsBlob(uri) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -40,21 +97,6 @@ function readAssetAsBlob(uri) {
     xhr.open('GET', uri, true);
     xhr.send(null);
   });
-}
-
-function getAssetExtension(asset) {
-  const mimeType = asset?.mimeType || 'image/jpeg';
-  const uri = String(asset?.uri || '').split('?')[0];
-  const rawExt = uri.includes('.') ? uri.split('.').pop() : '';
-  let extension = String(rawExt || '').toLowerCase();
-
-  if (!extension || extension.length > 5) {
-    if (mimeType.includes('png')) extension = 'png';
-    else if (mimeType.includes('webp')) extension = 'webp';
-    else extension = 'jpg';
-  }
-
-  return extension;
 }
 
 export default function TeacherDocumentsScreen() {
@@ -111,18 +153,11 @@ export default function TeacherDocumentsScreen() {
       const result = await picker({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.8,
+        quality: 1,
       });
 
       if (result.canceled || !result.assets?.[0]?.uri) return;
-
-      const asset = result.assets[0];
-      if (asset.fileSize && asset.fileSize > MAX_DOCUMENT_SIZE_BYTES) {
-        Alert.alert('Dosya Büyük', `Belge fotoğrafı en fazla ${MAX_DOCUMENT_SIZE_MB} MB olabilir.`);
-        return;
-      }
-
-      await uploadDocument(asset);
+      await uploadDocument(result.assets[0]);
     } catch (err) {
       console.error('Belge seçme hatası:', err?.code || err?.message || err);
       Alert.alert('Hata', 'Belge fotoğrafı seçilemedi.');
@@ -135,20 +170,33 @@ export default function TeacherDocumentsScreen() {
     try {
       const finalKresId = kresId || currentClass?.kresId || 'kres';
       const finalSinifId = currentClass?.id || 'sinif';
-      const extension = getAssetExtension(asset);
       const now = Date.now();
-      const blob = await readAssetAsBlob(asset.uri);
+      const optimizedAsset = await optimizeDocumentImage(asset);
 
-      if (blob?.size && blob.size > MAX_DOCUMENT_SIZE_BYTES) {
-        Alert.alert('Dosya Büyük', `Belge fotoğrafı en fazla ${MAX_DOCUMENT_SIZE_MB} MB olabilir.`);
+      if (optimizedAsset.fileSize && optimizedAsset.fileSize > MAX_DOCUMENT_SIZE_BYTES) {
+        Alert.alert(
+          'Dosya Büyük',
+          `Belge fotoğrafı sıkıştırıldı ama hâlâ çok büyük (${formatFileSize(optimizedAsset.fileSize)}). Lütfen biraz daha uzaktan değil, daha net ve sadece A4 kağıdı kadraja alarak tekrar çek.`
+        );
         setUploading(false);
         return;
       }
 
-      const fileName = `${selectedType}_${now}.${extension}`;
+      const blob = await readAssetAsBlob(optimizedAsset.uri);
+
+      if (blob?.size && blob.size > MAX_DOCUMENT_SIZE_BYTES) {
+        Alert.alert(
+          'Dosya Büyük',
+          `Belge fotoğrafı sıkıştırıldı ama hâlâ çok büyük (${formatFileSize(blob.size)}). Maksimum sınır ${MAX_DOCUMENT_SIZE_MB} MB.`
+        );
+        setUploading(false);
+        return;
+      }
+
+      const fileName = `${selectedType}_${now}.jpg`;
       const filePath = `dokumanlar/${finalKresId}/${finalSinifId}/${fileName}`;
       const fileRef = storageRef(storage, filePath);
-      await uploadBytes(fileRef, blob, { contentType: asset?.mimeType || blob?.type || 'image/jpeg' });
+      await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
       const url = await getDownloadURL(fileRef);
 
       const documentId = makeDocumentId(finalSinifId, selectedType);
@@ -161,8 +209,11 @@ export default function TeacherDocumentsScreen() {
         aciklama: selectedConfig.desc,
         belgeUrl: url,
         belgePath: filePath,
-        mimeType: asset?.mimeType || blob?.type || 'image/jpeg',
-        sizeBytes: blob?.size || asset?.fileSize || 0,
+        mimeType: 'image/jpeg',
+        sizeBytes: blob?.size || optimizedAsset.fileSize || 0,
+        originalSizeBytes: optimizedAsset.originalFileSize || asset?.fileSize || 0,
+        compressed: true,
+        maxSizeMb: MAX_DOCUMENT_SIZE_MB,
         olusturanId: teacherId || '',
         olusturanRol: 'ogretmen',
         aktif: true,
@@ -188,7 +239,7 @@ export default function TeacherDocumentsScreen() {
           <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Doküman yüklemek için öğretmenin bir sınıfa atanması gerekir." />
         ) : (
           <>
-            <Text style={styles.infoText}>A4 kağıdı fotoğraf olarak yükle. Veli ekranında aynı belge görüntülenir. Maksimum dosya boyutu: {MAX_DOCUMENT_SIZE_MB} MB.</Text>
+            <Text style={styles.infoText}>A4 kağıdı fotoğraf olarak yükle. Fotoğraf önce okunaklı kalacak şekilde sıkıştırılır, sonra yüklenir. Maksimum yükleme sınırı: {MAX_DOCUMENT_SIZE_MB} MB.</Text>
 
             <View style={styles.cardGrid}>
               {DOCUMENT_TYPES.map((item) => {
@@ -230,7 +281,12 @@ export default function TeacherDocumentsScreen() {
                 </TouchableOpacity>
               </View>
 
-              {uploading ? <ActivityIndicator color={THEME.primary} style={{ marginTop: 12 }} /> : null}
+              {uploading ? (
+                <View style={styles.uploadingBox}>
+                  <ActivityIndicator color={THEME.primary} />
+                  <Text style={styles.uploadingText}>Belge sıkıştırılıyor ve yükleniyor...</Text>
+                </View>
+              ) : null}
             </View>
           </>
         )}
@@ -270,6 +326,8 @@ const styles = StyleSheet.create({
   buttonRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   actionButton: { flex: 1, backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 13, alignItems: 'center' },
   actionText: { color: '#FFF', fontWeight: '900' },
+  uploadingBox: { marginTop: 12, alignItems: 'center' },
+  uploadingText: { color: THEME.muted, fontWeight: '700', marginTop: 8, fontSize: 12 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', padding: 14, justifyContent: 'center' },
   modalClose: { position: 'absolute', top: 44, right: 18, zIndex: 10, backgroundColor: '#FFF', borderRadius: 16, paddingVertical: 9, paddingHorizontal: 14 },
   modalCloseText: { color: THEME.text, fontWeight: '900' },
