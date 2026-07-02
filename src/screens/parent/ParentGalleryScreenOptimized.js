@@ -262,6 +262,22 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
           </View>
           <View style={styles.viewerStage}>{isVideo ? <VideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
           {mediaItems.length > 1 ? <View style={styles.viewerNavRow}><TouchableOpacity disabled={viewerIndex === 0} style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.max(0, index - 1))}><Text style={styles.viewerButtonText}>‹ Önceki</Text></TouchableOpacity><TouchableOpacity disabled={viewerIndex === mediaItems.length - 1} style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.min(mediaItems.length - 1, index + 1))}><Text style={styles.viewerButtonText}>Sonraki ›</Text></TouchableOpacity></View> : null}
+          {mediaItems.length > 1 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
+              {mediaItems.map((thumb, index) => {
+                const active = viewerIndex === index;
+                return (
+                  <TouchableOpacity key={thumb.id || `${viewerItem.id}-thumb-${index}`} style={[styles.viewerThumb, active && styles.viewerThumbActive]} onPress={() => setViewerIndex(index)} activeOpacity={0.82}>
+                    {thumb.type === 'video' ? (
+                      <View style={styles.viewerThumbVideo}><Text style={styles.viewerThumbVideoText}>▶</Text></View>
+                    ) : (
+                      <Image source={{ uri: thumb.thumbnailUrl || thumb.url }} style={styles.viewerThumbImage} resizeMode="cover" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : null}
         </SafeAreaView>
       </Modal>
     );
@@ -329,7 +345,14 @@ const styles = StyleSheet.create({
   viewerStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   viewerImage: { width: '100%', height: '100%' },
   videoFallback: { width: '86%', borderRadius: 28, padding: 24, backgroundColor: '#171821', alignItems: 'center' },
-  viewerNavRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
+  viewerNavRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
   viewerNavButton: { backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14 },
   viewerNavButtonDisabled: { opacity: 0.35 },
+  viewerThumbRow: { maxHeight: 78, paddingBottom: Platform.OS === 'android' ? 10 : 14 },
+  viewerThumbContent: { paddingHorizontal: 14, gap: 8, alignItems: 'center' },
+  viewerThumb: { width: 58, height: 58, borderRadius: 13, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.10)' },
+  viewerThumbActive: { borderColor: '#fff', transform: [{ scale: 1.05 }] },
+  viewerThumbImage: { width: '100%', height: '100%' },
+  viewerThumbVideo: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.dark },
+  viewerThumbVideoText: { color: '#fff', fontSize: 20, fontWeight: '900' },
 });
