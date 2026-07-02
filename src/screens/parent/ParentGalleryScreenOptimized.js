@@ -244,6 +244,37 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
     }
   }
 
+  function renderMediaTile(item, media, index, total) {
+    const hiddenCount = total > 4 && index === 3 ? total - 4 : 0;
+    const isVideo = media.type === 'video';
+    return (
+      <TouchableOpacity key={media.id || `${item.id}-${index}`} style={[styles.gridTile, total === 1 && styles.singleTile, total === 3 && index === 0 && styles.largeTile]} onPress={() => openViewer(item, index)} activeOpacity={0.88}>
+        {isVideo ? (
+          <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>Video</Text></View>
+        ) : (
+          <Image source={{ uri: media.thumbnailUrl || media.url }} style={styles.tileImage} resizeMode="cover" />
+        )}
+        {hiddenCount > 0 ? <View style={styles.moreOverlay}><Text style={styles.moreText}>+{hiddenCount}</Text></View> : null}
+      </TouchableOpacity>
+    );
+  }
+
+  function renderPreviewGrid(item) {
+    const mediaItems = normalizeMediaItems(item);
+    const previewItems = mediaItems.slice(0, 4);
+    const count = mediaItems.length;
+    if (count === 1) return <View style={styles.singleGrid}>{renderMediaTile(item, previewItems[0], 0, count)}</View>;
+    if (count === 3) {
+      return (
+        <View style={styles.threeGrid}>
+          <View style={styles.threeLeft}>{renderMediaTile(item, previewItems[0], 0, count)}</View>
+          <View style={styles.threeRight}>{renderMediaTile(item, previewItems[1], 1, count)}{renderMediaTile(item, previewItems[2], 2, count)}</View>
+        </View>
+      );
+    }
+    return <View style={styles.gridWrap}>{previewItems.map((media, index) => renderMediaTile(item, media, index, count))}</View>;
+  }
+
   function renderViewer() {
     const mediaItems = normalizeMediaItems(viewerItem);
     const media = mediaItems[viewerIndex] || mediaItems[0];
@@ -262,22 +293,20 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
           </View>
           <View style={styles.viewerStage}>{isVideo ? <VideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
           {mediaItems.length > 1 ? <View style={styles.viewerNavRow}><TouchableOpacity disabled={viewerIndex === 0} style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.max(0, index - 1))}><Text style={styles.viewerButtonText}>‹ Önceki</Text></TouchableOpacity><TouchableOpacity disabled={viewerIndex === mediaItems.length - 1} style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.min(mediaItems.length - 1, index + 1))}><Text style={styles.viewerButtonText}>Sonraki ›</Text></TouchableOpacity></View> : null}
-          {mediaItems.length > 1 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
-              {mediaItems.map((thumb, index) => {
-                const active = viewerIndex === index;
-                return (
-                  <TouchableOpacity key={thumb.id || `${viewerItem.id}-thumb-${index}`} style={[styles.viewerThumb, active && styles.viewerThumbActive]} onPress={() => setViewerIndex(index)} activeOpacity={0.82}>
-                    {thumb.type === 'video' ? (
-                      <View style={styles.viewerThumbVideo}><Text style={styles.viewerThumbVideoText}>▶</Text></View>
-                    ) : (
-                      <Image source={{ uri: thumb.thumbnailUrl || thumb.url }} style={styles.viewerThumbImage} resizeMode="cover" />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          ) : null}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
+            {mediaItems.map((thumb, index) => {
+              const active = viewerIndex === index;
+              return (
+                <TouchableOpacity key={thumb.id || `${viewerItem.id}-thumb-${index}`} style={[styles.viewerThumb, active && styles.viewerThumbActive]} onPress={() => setViewerIndex(index)} activeOpacity={0.82}>
+                  {thumb.type === 'video' ? (
+                    <View style={styles.viewerThumbVideo}><Text style={styles.viewerThumbVideoText}>▶</Text></View>
+                  ) : (
+                    <Image source={{ uri: thumb.thumbnailUrl || thumb.url }} style={styles.viewerThumbImage} resizeMode="cover" />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     );
@@ -292,8 +321,7 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
         {visibleGallery.length === 0 ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>Aktif galeri yok</Text><Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text></View> : visibleGallery.map((item) => {
           const mediaItems = normalizeMediaItems(item);
-          const firstMedia = mediaItems[0];
-          return <View key={item.id} style={styles.mediaCard}><TouchableOpacity style={styles.previewBox} onPress={() => openViewer(item, 0)} activeOpacity={0.88}>{firstMedia?.type === 'video' ? <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>Video</Text></View> : <Image source={{ uri: firstMedia?.thumbnailUrl || firstMedia?.url }} style={styles.previewImage} resizeMode="cover" />}{mediaItems.length > 1 ? <View style={styles.moreOverlay}><Text style={styles.moreText}>+{mediaItems.length - 1}</Text></View> : null}</TouchableOpacity><View style={styles.mediaBody}><View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getTitle(item)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View></View><Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || item.targetType || 'Kurum'}</Text><Text style={styles.mediaMeta}>Yüklenme: {getDateText(item.createdAt)}</Text><View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {getRemainingText(item.expiresAt, now)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>Aç</Text></TouchableOpacity></View></View></View>;
+          return <View key={item.id} style={styles.mediaCard}>{renderPreviewGrid(item)}<View style={styles.mediaBody}><View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getTitle(item)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View></View><Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || item.targetType || 'Kurum'}</Text><Text style={styles.mediaMeta}>Yüklenme: {getDateText(item.createdAt)}</Text><View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {getRemainingText(item.expiresAt, now)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>Aç</Text></TouchableOpacity></View></View></View>;
         })}
       </ScrollView>
       {renderViewer()}
@@ -319,6 +347,15 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
   emptyDesc: { fontSize: 13, color: THEME.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
   mediaCard: { backgroundColor: THEME.card, borderRadius: 26, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 12, elevation: 3 },
+  singleGrid: { height: 250, backgroundColor: THEME.primarySoft },
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', height: 250, backgroundColor: THEME.primarySoft },
+  threeGrid: { flexDirection: 'row', height: 250, backgroundColor: THEME.primarySoft },
+  threeLeft: { flex: 1.15, marginRight: 2 },
+  threeRight: { flex: 0.85, gap: 2 },
+  gridTile: { width: '50%', height: 125, borderWidth: 1, borderColor: '#fff', overflow: 'hidden', backgroundColor: THEME.dark },
+  singleTile: { width: '100%', height: '100%', borderWidth: 0 },
+  largeTile: { width: '100%', height: '100%' },
+  tileImage: { width: '100%', height: '100%' },
   previewBox: { height: 250, backgroundColor: THEME.primarySoft },
   previewImage: { width: '100%', height: '100%' },
   videoTile: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.dark },
