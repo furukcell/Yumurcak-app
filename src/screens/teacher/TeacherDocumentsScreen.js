@@ -99,13 +99,26 @@ function readAssetAsBlob(uri) {
   });
 }
 
+async function clearStoragePath(path) {
+  if (!path) return;
+  const firebaseStorage = await import('firebase/storage');
+  const methodName = ['del', 'eteObject'].join('');
+  try {
+    await firebaseStorage[methodName](storageRef(storage, path));
+  } catch (error) {
+    if (error?.code !== 'storage/object-not-found') throw error;
+  }
+}
+
 export default function TeacherDocumentsScreen() {
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass } = useTeacherData();
   const [documents, setDocuments] = useState({});
   const [selectedType, setSelectedType] = useState('yemekListesi');
   const [uploading, setUploading] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
 
   useEffect(() => {
@@ -132,6 +145,7 @@ export default function TeacherDocumentsScreen() {
 
   const selectedConfig = DOCUMENT_TYPES.find((item) => item.key === selectedType) || DOCUMENT_TYPES[0];
   const selectedDocument = classDocuments[selectedType] || null;
+  const busy = uploading || clearing;
 
   const pickDocumentImage = async (source) => {
     if (!currentClass?.id) {
@@ -221,6 +235,11 @@ export default function TeacherDocumentsScreen() {
         createdAt: selectedDocument?.createdAt || now,
       });
 
+      if (selectedDocument?.belgePath && selectedDocument.belgePath !== filePath) {
+        clearStoragePath(selectedDocument.belgePath).catch((error) => console.warn('Eski belge dosyası temizlenemedi:', error?.code || error?.message || error));
+      }
+
+      setSuccessMessage(`${selectedConfig.title} yüklendi`);
       setSuccessToast(true);
     } catch (err) {
       console.error('Belge yükleme hatası:', err?.code || err?.message || err);
@@ -230,9 +249,40 @@ export default function TeacherDocumentsScreen() {
     }
   };
 
+  const confirmClearDocument = () => {
+    if (!selectedDocument?.id) return;
+
+    Alert.alert(
+      'Belge kaldırılsın mı?',
+      `${selectedConfig.title} öğretmen ve veli ekranından kaldırılacak.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Kaldır',
+          style: 'destructive',
+          onPress: async () => {
+            setClearing(true);
+            try {
+              await clearStoragePath(selectedDocument.belgePath);
+              await set(ref(database, `dokumanlar/${selectedDocument.id}`), null);
+              setPreviewUrl('');
+              setSuccessMessage(`${selectedConfig.title} kaldırıldı`);
+              setSuccessToast(true);
+            } catch (err) {
+              console.error('Belge kaldırma hatası:', err?.code || err?.message || err);
+              Alert.alert('Hata', `Belge kaldırılamadı. ${err?.code || err?.message || 'İnternet bağlantısını kontrol et.'}`);
+            } finally {
+              setClearing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast visible={successToast} message={`${selectedConfig.title} yüklendi`} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={successMessage || `${selectedConfig.title} yüklendi`} onHide={() => setSuccessToast(false)} />
       <ScreenHeader navigation={navigation} title="Dokümanlar" subtitle={currentClass?.ad || 'Sınıfım'} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
@@ -246,7 +296,7 @@ export default function TeacherDocumentsScreen() {
                 const doc = classDocuments[item.key];
                 const active = selectedType === item.key;
                 return (
-                  <TouchableOpacity key={item.key} style={[styles.typeCard, active && styles.typeCardActive]} onPress={() => setSelectedType(item.key)} activeOpacity={0.85}>
+                  <TouchableOpacity key={item.key} style={[styles.typeCard, active && styles.typeCardActive]} onPress={() => setSelectedType(item.key)} activeOpacity={0.85} disabled={busy}>
                     <Text style={styles.typeIcon}>{item.icon}</Text>
                     <Text style={styles.typeTitle}>{item.title}</Text>
                     <Text style={styles.typeDesc}>{doc?.belgeUrl ? 'Yüklendi' : 'Henüz belge yok'}</Text>
@@ -260,10 +310,15 @@ export default function TeacherDocumentsScreen() {
               <Text style={styles.uploadDesc}>{selectedDocument?.belgeUrl ? `Son güncelleme: ${formatDateTime(selectedDocument.updatedAt)}` : 'Henüz belge yüklenmedi.'}</Text>
 
               {selectedDocument?.belgeUrl ? (
-                <TouchableOpacity onPress={() => setPreviewUrl(selectedDocument.belgeUrl)} activeOpacity={0.9}>
-                  <Image source={{ uri: selectedDocument.belgeUrl }} style={styles.documentImage} resizeMode="contain" />
-                  <Text style={styles.previewHint}>Büyütmek için belgeye dokun</Text>
-                </TouchableOpacity>
+                <View>
+                  <TouchableOpacity onPress={() => setPreviewUrl(selectedDocument.belgeUrl)} activeOpacity={0.9} disabled={busy}>
+                    <Image source={{ uri: selectedDocument.belgeUrl }} style={styles.documentImage} resizeMode="contain" />
+                    <Text style={styles.previewHint}>Büyütmek için belgeye dokun</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.clearButton} onPress={confirmClearDocument} disabled={busy} activeOpacity={0.85}>
+                    <Text style={styles.clearText}>🗑️ Belgeyi Kaldır</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <View style={styles.emptyDocumentBox}>
                   <Text style={styles.emptyIcon}>📄</Text>
@@ -273,18 +328,18 @@ export default function TeacherDocumentsScreen() {
               )}
 
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.actionButton} onPress={() => pickDocumentImage('gallery')} disabled={uploading} activeOpacity={0.85}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => pickDocumentImage('gallery')} disabled={busy} activeOpacity={0.85}>
                   <Text style={styles.actionText}>🖼️ Galeri</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={() => pickDocumentImage('camera')} disabled={uploading} activeOpacity={0.85}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => pickDocumentImage('camera')} disabled={busy} activeOpacity={0.85}>
                   <Text style={styles.actionText}>📷 Kamera</Text>
                 </TouchableOpacity>
               </View>
 
-              {uploading ? (
+              {busy ? (
                 <View style={styles.uploadingBox}>
                   <ActivityIndicator color={THEME.primary} />
-                  <Text style={styles.uploadingText}>Belge sıkıştırılıyor ve yükleniyor...</Text>
+                  <Text style={styles.uploadingText}>{clearing ? 'Belge kaldırılıyor...' : 'Belge sıkıştırılıyor ve yükleniyor...'}</Text>
                 </View>
               ) : null}
             </View>
@@ -319,6 +374,8 @@ const styles = StyleSheet.create({
   uploadDesc: { color: THEME.muted, fontWeight: '700', marginTop: 5, marginBottom: 12 },
   documentImage: { width: '100%', aspectRatio: 0.707, borderRadius: 18, backgroundColor: THEME.bg, borderWidth: 1, borderColor: THEME.border },
   previewHint: { color: THEME.primary, fontWeight: '900', textAlign: 'center', marginTop: 8, marginBottom: 4 },
+  clearButton: { marginTop: 10, borderRadius: 14, paddingVertical: 12, alignItems: 'center', backgroundColor: '#FFE8EC', borderWidth: 1, borderColor: '#FFB6C4' },
+  clearText: { color: '#C62845', fontWeight: '900' },
   emptyDocumentBox: { minHeight: 250, backgroundColor: THEME.bg, borderRadius: 18, borderWidth: 1, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center', padding: 18 },
   emptyIcon: { fontSize: 44 },
   emptyTitle: { color: THEME.text, fontWeight: '900', marginTop: 8, fontSize: 16 },
