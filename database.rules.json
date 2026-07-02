@@ -1,57 +1,114 @@
 {
-"rules": {
-".read": "auth != null",
-".write": "auth != null",
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
 
+    "kullanicilar": {
+      ".indexOn": ["email", "rol", "kresId", "sinifId", "authUid"]
+    },
+    "authKullaniciIndex": {
+      ".indexOn": [".value"]
+    },
+    "kresler": {
+      ".indexOn": ["olusturmaTarihi", "aktif"]
+    },
+    "abonelikler": {
+      ".indexOn": ["durum", "plan", "bitisTarihi"]
+    },
+    "siniflar": {
+      ".indexOn": ["kresId", "ad", "aktif"]
+    },
+    "cocuklar": {
+      ".indexOn": ["kresId", "sinifId", "veliId", "parentId", "aktif"]
+    },
+    "galeri": {
+      ".indexOn": ["kresId", "sinifId", "classId", "cocukId", "studentId", "createdAt", "expiresAt"]
+    },
 
-"kullanicilar": {
-  ".indexOn": ["email", "rol", "kresId", "sinifId", "authUid"]
-},
+    "kresOzetleri": {
+      ".indexOn": ["updatedAt"]
+    },
+    "indexBackfills": {
+      ".indexOn": ["lastRunAt", "version"]
+    },
+    "kresKullanicilari": {
+      ".indexOn": [".value"]
+    },
+    "kullaniciKresleri": {
+      ".indexOn": [".value"]
+    },
+    "kresSiniflari": {
+      ".indexOn": [".value"]
+    },
+    "ogretmenSiniflari": {
+      ".indexOn": [".value"]
+    },
+    "kresCocuklari": {
+      ".indexOn": [".value"]
+    },
+    "sinifCocuklari": {
+      ".indexOn": [".value"]
+    },
+    "veliCocuklari": {
+      ".indexOn": [".value"]
+    },
+    "kresGalerileri": {
+      ".indexOn": [".value"]
+    },
+    "sinifGalerileri": {
+      ".indexOn": [".value"]
+    },
+    "cocukGalerileri": {
+      ".indexOn": [".value"]
+    },
 
-"kresler": {
-  ".indexOn": ["olusturmaTarihi", "aktif"]
-},
-
-"siniflar": {
-  ".indexOn": ["kresId", "ad", "aktif"]
-},
-
-"cocuklar": {
-  ".indexOn": ["kresId", "sinifId", "veliId", "aktif"]
-},
-
-"yemekListeleri": {
-  ".indexOn": ["kresId", "sinifId", "tarih", "ayKey", "baslangicTarihi"]
-},
-
-"duyurular": {
-  ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
-},
-
-"etkinlikler": {
-  ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
-},
-
-"yoklamalar": {
-  ".indexOn": ["kresId", "sinifId", "tarih", "cocukId"]
-},
-
-"odemeler": {
-  ".indexOn": ["kresId", "veliId", "cocukId", "tarih", "donem", "durum"]
-},
-
-"raporlar": {
-  ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
-},
-
-"mesajlar": {
-  ".indexOn": ["kresId", "sinifId", "createdAt", "updatedAt"]
-},
-
-"gelisimler": {
-  ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
-}
-
-
-}
+    "yemekListeleri": {
+      ".indexOn": ["kresId", "sinifId", "tarih", "ayKey", "baslangicTarihi"]
+    },
+    "duyurular": {
+      ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
+    },
+    "etkinlikler": {
+      ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
+    },
+    "dersProgramlari": {
+      ".indexOn": ["kresId", "sinifId", "createdAt"]
+    },
+    "yoklamalar": {
+      ".indexOn": ["kresId", "sinifId", "tarih", "cocukId"]
+    },
+    "gunlukRaporlar": {
+      ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+    },
+    "medikalBilgiler": {
+      ".indexOn": ["kresId", "sinifId", "cocukId"]
+    },
+    "odemeler": {
+      ".indexOn": ["kresId", "veliId", "cocukId", "tarih", "donem", "durum"]
+    },
+    "raporlar": {
+      ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+    },
+    "mesajlar": {
+      ".indexOn": ["kresId", "sinifId", "createdAt", "updatedAt"]
+    },
+    "gelisimler": {
+      ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+    },
+    "mesajKonusmalari": {
+      ".indexOn": ["kresId", "sinifId", "cocukId", "updatedAt", "createdAt"]
+    },
+    "kullaniciKonusmalari": {
+      ".indexOn": [".value"]
+    },
+    "kresKonusmalari": {
+      ".indexOn": [".value"]
+    },
+    "cocukKonusmalari": {
+      ".indexOn": [".value"]
+    },
+    "sinifKonusmalari": {
+      ".indexOn": [".value"]
+    }
+  }
 }
