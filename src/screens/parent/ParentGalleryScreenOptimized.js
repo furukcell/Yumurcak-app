@@ -43,6 +43,16 @@ function includesId(value, id) {
   return asArray(value).map((item) => String(item)).includes(String(id));
 }
 
+function normalizeTargetType(item) {
+  if (item?.targetType) return item.targetType;
+  if (item?.hedef === 'kurum') return 'school';
+  if (item?.hedef === 'sinif') return 'class';
+  if (item?.hedef === 'cocuk') return 'student';
+  if (item?.studentId || item?.cocukId || asArray(item?.cocukIds).length > 0) return 'student';
+  if (item?.classId || item?.sinifId) return 'class';
+  return 'school';
+}
+
 function normalizeMediaItems(item) {
   const items = asArray(item?.mediaItems)
     .map((media) => safeObject(media))
@@ -210,15 +220,16 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
 
   const visibleGallery = useMemo(() => gallery
     .filter((item) => Number(item.expiresAt || 0) > now)
+    .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
     .filter((item) => normalizeMediaItems(item).length > 0)
     .filter((item) => {
-      const target = item.targetType || (item.hedef === 'kurum' ? 'school' : item.hedef === 'sinif' ? 'class' : item.hedef === 'cocuk' ? 'student' : 'school');
-      if (target === 'school') return true;
+      const target = normalizeTargetType(item);
       const itemClassId = item.classId || item.sinifId;
       const itemStudentIds = asArray(item.studentId || item.cocukIds || item.cocukId);
-      if (itemClassId && classIds.has(String(itemClassId))) return true;
+      if (target === 'school') return true;
+      if (target === 'class' && itemClassId && classIds.has(String(itemClassId))) return true;
       return itemStudentIds.some((id) => childIds.has(String(id)));
-    }), [childIds, classIds, gallery, now]);
+    }), [childIds, classIds, gallery, kresId, now]);
 
   function openViewer(item, index = 0) {
     setViewerItem(item);
