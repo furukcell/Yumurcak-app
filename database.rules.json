@@ -167,6 +167,14 @@
       }
     },
 
+    "dokumanlar": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      },
+      ".indexOn": ["kresId", "sinifId", "type", "tip", "updatedAt", "createdAt", "aktif"]
+    },
+
     "kresOzetleri": {
       ".read": "auth != null",
       ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
