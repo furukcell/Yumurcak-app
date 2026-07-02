@@ -43,6 +43,40 @@ export const getUserName = (user) => {
   return `${user.ad || ''} ${user.soyad || ''}`.trim() || user.kullaniciAdi || '-';
 };
 
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
+
+function toList(data) {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data).map(([id, item]) => ({ id, ...safeObject(item) }));
+}
+
+function indexIds(data) {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data)
+    .filter(([, value]) => value !== false && value !== null)
+    .map(([id]) => id);
+}
+
+function listenValue(path, onData, onError) {
+  const r = ref(database, path);
+  return onValue(r, (snapshot) => onData(snapshot.val()), () => {
+    if (typeof onError === 'function') onError();
+  });
+}
+
+function uniqueIds(values) {
+  return Array.from(new Set(values.filter(Boolean).map((id) => String(id))));
+}
+
 export function ScreenHeader({ title, subtitle, navigation, showBack = true, rightText, onRightPress }) {
   const themedStyles = useTeacherSharedStyles();
   return (
@@ -102,8 +136,8 @@ export function useTeacherData() {
   const { kullanici, cikisYap } = useAuth();
   const teacherId = kullanici?.uid || kullanici?.id;
   const [loading, setLoading] = useState(true);
-  const [classes, setClasses] = useState([]);
-  const [children, setChildren] = useState([]);
+  const [currentClass, setCurrentClass] = useState(null);
+  const [classChildren, setClassChildren] = useState([]);
   const [users, setUsers] = useState({});
   const [kresler, setKresler] = useState({});
   const [reports, setReports] = useState([]);
@@ -115,43 +149,193 @@ export function useTeacherData() {
   const [medicalMap, setMedicalMap] = useState({});
 
   useEffect(() => {
-    const unsubs = [];
-    const listen = (path, setter, mapper) => {
-      const r = ref(database, path);
-      const unsub = onValue(r, (snapshot) => {
-        const data = snapshot.val();
-        setter(mapper ? mapper(data) : data || {});
+    if (!teacherId) {
+      setCurrentClass(null);
+      setLoading(false);
+      return undefined;
+    }
+
+    setLoading(true);
+    let classUnsub = null;
+    let fallbackUnsub = null;
+
+    const clearClassListener = () => {
+      if (classUnsub) classUnsub();
+      classUnsub = null;
+    };
+
+    const startFallback = () => {
+      clearClassListener();
+      if (fallbackUnsub) return;
+      fallbackUnsub = listenValue('siniflar', (data) => {
+        const classes = toList(data);
+        const found = classes.find((item) => asArray(item.ogretmenIds).includes(teacherId)) ||
+          classes.find((item) => item.ogretmenId === teacherId || item.id === kullanici?.sinifId) ||
+          null;
+        setCurrentClass(found);
+        setLoading(false);
+      }, () => {
+        setCurrentClass(null);
         setLoading(false);
       });
-      unsubs.push(unsub);
     };
-    listen('siniflar', setClasses, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('cocuklar', setChildren, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('kullanicilar', setUsers, (data) => data || {});
-    listen('kresler', setKresler, (data) => data || {});
-    listen('gunlukRaporlar', setReports, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('duyurular', setAnnouncements, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('yemekListeleri', setMeals, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('etkinlikler', setEvents, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('dersProgramlari', setSchedules, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('yoklamalar', setAttendance, (data) => data ? Object.entries(data).map(([id, item]) => ({ id, ...item })) : []);
-    listen('medikalBilgiler', setMedicalMap, (data) => data || {});
-    return () => unsubs.forEach((unsub) => unsub && unsub());
-  }, []);
 
-  const currentClass = useMemo(() => {
-    if (!teacherId) return null;
-    return classes.find((item) => Array.isArray(item.ogretmenIds) && item.ogretmenIds.includes(teacherId)) || classes.find((item) => item.id === kullanici?.sinifId) || null;
-  }, [classes, teacherId, kullanici?.sinifId]);
+    const indexUnsub = listenValue(`ogretmenSiniflari/${teacherId}`, (data) => {
+      const ids = indexIds(data);
+      const classId = ids[0] || kullanici?.sinifId || null;
+      if (!classId) {
+        startFallback();
+        return;
+      }
 
-  const classChildren = useMemo(() => {
-    if (!currentClass?.id) return [];
-    return children.filter((child) => child.sinifId === currentClass.id).sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr'));
-  }, [children, currentClass?.id]);
+      if (fallbackUnsub) {
+        fallbackUnsub();
+        fallbackUnsub = null;
+      }
+      clearClassListener();
+      classUnsub = listenValue(`siniflar/${classId}`, (classData) => {
+        const classObj = safeObject(classData);
+        if (Object.keys(classObj).length === 0) {
+          startFallback();
+          return;
+        }
+        setCurrentClass({ id: classId, ...classObj });
+        setLoading(false);
+      }, startFallback);
+    }, startFallback);
+
+    return () => {
+      indexUnsub && indexUnsub();
+      clearClassListener();
+      if (fallbackUnsub) fallbackUnsub();
+    };
+  }, [teacherId, kullanici?.sinifId]);
+
+  useEffect(() => {
+    const classId = currentClass?.id;
+    if (!classId) {
+      setClassChildren([]);
+      return undefined;
+    }
+
+    let childUnsubs = [];
+    let fallbackUnsub = null;
+
+    const clearChildListeners = () => {
+      childUnsubs.forEach((unsub) => unsub && unsub());
+      childUnsubs = [];
+    };
+
+    const startFallback = () => {
+      clearChildListeners();
+      if (fallbackUnsub) return;
+      fallbackUnsub = listenValue('cocuklar', (data) => {
+        const children = toList(data)
+          .filter((child) => child.sinifId === classId)
+          .sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr'));
+        setClassChildren(children);
+      }, () => setClassChildren([]));
+    };
+
+    const indexUnsub = listenValue(`sinifCocuklari/${classId}`, (data) => {
+      const ids = indexIds(data);
+      if (ids.length === 0) {
+        startFallback();
+        return;
+      }
+
+      if (fallbackUnsub) {
+        fallbackUnsub();
+        fallbackUnsub = null;
+      }
+      clearChildListeners();
+      const childMap = {};
+      let loadedCount = 0;
+      const publish = () => {
+        setClassChildren(
+          ids
+            .map((id) => childMap[id])
+            .filter(Boolean)
+            .sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr'))
+        );
+      };
+
+      ids.forEach((childId) => {
+        const unsub = listenValue(`cocuklar/${childId}`, (childData) => {
+          const child = safeObject(childData);
+          if (Object.keys(child).length > 0) childMap[childId] = { id: childId, ...child };
+          else delete childMap[childId];
+          loadedCount += 1;
+          if (loadedCount >= ids.length) publish();
+          else setClassChildren(Object.values(childMap));
+        }, () => {
+          loadedCount += 1;
+          delete childMap[childId];
+          if (loadedCount >= ids.length) publish();
+        });
+        childUnsubs.push(unsub);
+      });
+    }, startFallback);
+
+    return () => {
+      indexUnsub && indexUnsub();
+      clearChildListeners();
+      if (fallbackUnsub) fallbackUnsub();
+    };
+  }, [currentClass?.id]);
 
   const kresId = currentClass?.kresId || kullanici?.kresId || classChildren[0]?.kresId || null;
   const kurum = kresId ? kresler[kresId] : null;
   const kresAdi = kurum?.ad || 'Yumurcak';
+
+  useEffect(() => {
+    if (!kresId) {
+      setKresler({});
+      return undefined;
+    }
+    return listenValue(`kresler/${kresId}`, (data) => setKresler({ [kresId]: { id: kresId, ...safeObject(data) } }), () => setKresler({}));
+  }, [kresId]);
+
+  const parentIds = useMemo(() => uniqueIds(classChildren.flatMap((child) => [...asArray(child.veliIds), child.veliId, child.parentId])), [classChildren]);
+  const adminId = kurum?.yoneticiId || kurum?.adminId || null;
+
+  useEffect(() => {
+    const ids = uniqueIds([teacherId, adminId, ...parentIds]);
+    if (ids.length === 0) {
+      setUsers({});
+      return undefined;
+    }
+
+    const map = {};
+    const unsubs = ids.map((userId) => listenValue(`kullanicilar/${userId}`, (userData) => {
+      const user = safeObject(userData);
+      if (Object.keys(user).length > 0) map[userId] = { id: userId, ...user };
+      else delete map[userId];
+      setUsers({ ...map });
+    }, () => {
+      delete map[userId];
+      setUsers({ ...map });
+    }));
+
+    return () => unsubs.forEach((unsub) => unsub && unsub());
+  }, [teacherId, adminId, parentIds.join('|')]);
+
+  useEffect(() => {
+    const unsubs = [];
+    const listen = (path, setter, mapper) => {
+      const unsub = listenValue(path, (data) => setter(mapper ? mapper(data) : data || {}));
+      unsubs.push(unsub);
+    };
+
+    listen('gunlukRaporlar', setReports, (data) => toList(data));
+    listen('duyurular', setAnnouncements, (data) => toList(data));
+    listen('yemekListeleri', setMeals, (data) => toList(data));
+    listen('etkinlikler', setEvents, (data) => toList(data));
+    listen('dersProgramlari', setSchedules, (data) => toList(data));
+    listen('yoklamalar', setAttendance, (data) => toList(data));
+    listen('medikalBilgiler', setMedicalMap, (data) => data || {});
+    return () => unsubs.forEach((unsub) => unsub && unsub());
+  }, []);
 
   const classReports = useMemo(() => {
     const childIds = new Set(classChildren.map((child) => child.id));

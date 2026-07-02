@@ -116,15 +116,55 @@ export function toList(data) {
   return Object.entries(data).map(([id, item]) => ({ id, ...safeObject(item) }));
 }
 
+function indexIds(data) {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data)
+    .filter(([, value]) => value !== false && value !== null)
+    .map(([id]) => id);
+}
+
+function listenValue(path, onData, onError) {
+  const r = ref(database, path);
+  return onValue(
+    r,
+    (snap) => onData(snap.val()),
+    () => {
+      if (typeof onError === 'function') onError();
+    }
+  );
+}
+
+function compactUserMap(entries) {
+  return entries.reduce((acc, [id, user]) => {
+    if (id && user && Object.keys(user).length > 0) acc[id] = user;
+    return acc;
+  }, {});
+}
+
 export function useParentBase() {
   const { kullanici, cikisYap } = useAuth();
   const [children, setChildren] = useState([]);
-  const [siniflar, setSiniflar] = useState({});
-  const [kullanicilar, setKullanicilar] = useState({});
-  const [kresler, setKresler] = useState({});
+  const [parentRecord, setParentRecord] = useState({});
+  const [sinif, setSinif] = useState(null);
+  const [kres, setKres] = useState(null);
+  const [ogretmen, setOgretmen] = useState(null);
+  const [yonetici, setYonetici] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const parentId = kullanici?.uid || kullanici?.id;
+
+  useEffect(() => {
+    if (!parentId) {
+      setParentRecord({});
+      return undefined;
+    }
+
+    return listenValue(
+      `kullanicilar/${parentId}`,
+      (data) => setParentRecord(safeObject(data)),
+      () => setParentRecord({})
+    );
+  }, [parentId]);
 
   useEffect(() => {
     if (!parentId) {
@@ -134,65 +174,141 @@ export function useParentBase() {
     }
 
     setLoading(true);
-    const childrenRef = ref(database, 'cocuklar');
-    const unsubscribe = onValue(
-      childrenRef,
-      (snapshot) => {
-        const data = snapshot.val();
-        const myChildren = [];
-        if (data && typeof data === 'object') {
-          Object.entries(data).forEach(([id, childData]) => {
-            const child = safeObject(childData);
-            if (includesId(child.veliIds, parentId) || child.veliId === parentId || child.parentId === parentId) {
-              myChildren.push({ id, ...child });
-            }
-          });
+    let scopedUnsubs = [];
+    let fallbackUnsub = null;
+    let usingFallback = false;
+
+    const cleanupScoped = () => {
+      scopedUnsubs.forEach((unsub) => unsub && unsub());
+      scopedUnsubs = [];
+    };
+
+    const cleanupFallback = () => {
+      if (fallbackUnsub) fallbackUnsub();
+      fallbackUnsub = null;
+      usingFallback = false;
+    };
+
+    const startFallback = () => {
+      cleanupScoped();
+      if (usingFallback) return;
+      usingFallback = true;
+
+      fallbackUnsub = listenValue(
+        'cocuklar',
+        (data) => {
+          const myChildren = [];
+          if (data && typeof data === 'object') {
+            Object.entries(data).forEach(([id, childData]) => {
+              const child = safeObject(childData);
+              if (includesId(child.veliIds, parentId) || child.veliId === parentId || child.parentId === parentId) {
+                myChildren.push({ id, ...child });
+              }
+            });
+          }
+          setChildren(myChildren);
+          setLoading(false);
+        },
+        () => {
+          setChildren([]);
+          setLoading(false);
         }
-        setChildren(myChildren);
-        setLoading(false);
+      );
+    };
+
+    const indexUnsub = listenValue(
+      `veliCocuklari/${parentId}`,
+      (data) => {
+        const ids = indexIds(data);
+
+        if (ids.length === 0) {
+          startFallback();
+          return;
+        }
+
+        cleanupFallback();
+        cleanupScoped();
+
+        const childMap = {};
+        let loadedCount = 0;
+        const publish = () => {
+          setChildren(
+            ids
+              .map((id) => childMap[id])
+              .filter(Boolean)
+              .sort((a, b) => `${a.ad || a.adSoyad || ''}`.localeCompare(`${b.ad || b.adSoyad || ''}`, 'tr'))
+          );
+          setLoading(false);
+        };
+
+        ids.forEach((childId) => {
+          const unsub = listenValue(
+            `cocuklar/${childId}`,
+            (childData) => {
+              const child = safeObject(childData);
+              if (Object.keys(child).length > 0) childMap[childId] = { id: childId, ...child };
+              else delete childMap[childId];
+
+              loadedCount += 1;
+              if (loadedCount >= ids.length) publish();
+              else setChildren(Object.values(childMap));
+            },
+            () => {
+              loadedCount += 1;
+              delete childMap[childId];
+              if (loadedCount >= ids.length) publish();
+            }
+          );
+          scopedUnsubs.push(unsub);
+        });
       },
-      () => {
-        setChildren([]);
-        setLoading(false);
-      }
+      startFallback
     );
 
-    return () => unsubscribe();
+    return () => {
+      indexUnsub && indexUnsub();
+      cleanupScoped();
+      cleanupFallback();
+    };
   }, [parentId]);
 
-  useEffect(() => {
-    const r = ref(database, 'siniflar');
-    const unsub = onValue(r, (snap) => setSiniflar(safeObject(snap.val())), () => setSiniflar({}));
-    return () => unsub();
-  }, []);
-
-  useEffect(() => {
-    const r = ref(database, 'kullanicilar');
-    const unsub = onValue(r, (snap) => setKullanicilar(safeObject(snap.val())), () => setKullanicilar({}));
-    return () => unsub();
-  }, []);
-
-  useEffect(() => {
-    const r = ref(database, 'kresler');
-    const unsub = onValue(r, (snap) => setKresler(safeObject(snap.val())), () => setKresler({}));
-    return () => unsub();
-  }, []);
-
-  const parentRecord = parentId ? safeObject(kullanicilar[parentId]) : {};
+  const selectedChild = children[0] || null;
   const mergedKullanici = {
     ...safeObject(kullanici),
-    ...parentRecord,
+    ...safeObject(parentRecord),
     uid: kullanici?.uid || parentRecord.uid || parentId,
     id: kullanici?.id || parentRecord.id || parentId,
   };
   const parentPhotoUrl = getProfilePhotoUrl(mergedKullanici);
 
-  const selectedChild = children[0] || null;
   const kresId = selectedChild?.kresId || mergedKullanici?.kresId || null;
   const sinifId = selectedChild?.sinifId || null;
-  const sinif = sinifId ? safeObject(siniflar[sinifId]) : null;
-  const kres = kresId ? safeObject(kresler[kresId]) : null;
-  const kresAdi = kres?.ad || kres?.adi || 'Yumurcak';
+
+  useEffect(() => {
+    if (!sinifId) {
+      setSinif(null);
+      return undefined;
+    }
+
+    return listenValue(
+      `siniflar/${sinifId}`,
+      (data) => setSinif({ id: sinifId, ...safeObject(data) }),
+      () => setSinif(null)
+    );
+  }, [sinifId]);
+
+  useEffect(() => {
+    if (!kresId) {
+      setKres(null);
+      return undefined;
+    }
+
+    return listenValue(
+      `kresler/${kresId}`,
+      (data) => setKres({ id: kresId, ...safeObject(data) }),
+      () => setKres(null)
+    );
+  }, [kresId]);
 
   const ogretmenId = useMemo(() => {
     if (selectedChild?.ogretmenId) return selectedChild.ogretmenId;
@@ -201,8 +317,45 @@ export function useParentBase() {
     return null;
   }, [selectedChild, sinif]);
 
-  const ogretmen = ogretmenId ? safeObject(kullanicilar[ogretmenId]) : null;
-  const yonetici = kres?.yoneticiId ? safeObject(kullanicilar[kres.yoneticiId]) : null;
+  const yoneticiId = kres?.yoneticiId || kres?.adminId || null;
+
+  useEffect(() => {
+    if (!ogretmenId) {
+      setOgretmen(null);
+      return undefined;
+    }
+
+    return listenValue(
+      `kullanicilar/${ogretmenId}`,
+      (data) => setOgretmen({ id: ogretmenId, ...safeObject(data) }),
+      () => setOgretmen(null)
+    );
+  }, [ogretmenId]);
+
+  useEffect(() => {
+    if (!yoneticiId) {
+      setYonetici(null);
+      return undefined;
+    }
+
+    return listenValue(
+      `kullanicilar/${yoneticiId}`,
+      (data) => setYonetici({ id: yoneticiId, ...safeObject(data) }),
+      () => setYonetici(null)
+    );
+  }, [yoneticiId]);
+
+  const siniflar = useMemo(() => (sinifId && sinif ? { [sinifId]: sinif } : {}), [sinifId, sinif]);
+  const kullanicilar = useMemo(
+    () => compactUserMap([
+      [parentId, parentRecord],
+      [ogretmenId, ogretmen],
+      [yoneticiId, yonetici],
+    ]),
+    [parentId, parentRecord, ogretmenId, ogretmen, yoneticiId, yonetici]
+  );
+  const kresler = useMemo(() => (kresId && kres ? { [kresId]: kres } : {}), [kresId, kres]);
+  const kresAdi = kres?.ad || kres?.adi || 'Yumurcak';
 
   const childName = selectedChild
     ? `${selectedChild.ad || selectedChild.adSoyad || selectedChild.isim || 'Çocuğum'} ${selectedChild.soyad || ''}`.trim()
@@ -233,6 +386,7 @@ export function useParentBase() {
     yonetici,
     siniflar,
     kullanicilar,
+    kresler,
     loading,
   };
 }
