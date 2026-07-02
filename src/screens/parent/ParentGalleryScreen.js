@@ -1,8 +1,8 @@
 import React from 'react';
-import GalleryScreenBase from '../shared/GalleryScreenBase';
+import ParentGalleryScreenOptimized from './ParentGalleryScreenOptimized';
 
 function ParentGalleryScreen(props) {
-  return <GalleryScreenBase mode="parent" navigation={props.navigation} />;
+  return <ParentGalleryScreenOptimized navigation={props.navigation} />;
 }
 
 export default ParentGalleryScreen;
