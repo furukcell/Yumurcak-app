@@ -3,11 +3,8 @@
 // Çocuk ekleme/düzenleme formu
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, TextInput, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator
-} from 'react-native';
-import { ref, set, get } from 'firebase/database';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { ref, get, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -15,6 +12,13 @@ import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import { formatChildBirthDate, getChildBirthDate, normalizeChildBirthDate } from '../../utils/childDates';
 import { bugunKey } from '../../utils/uyum';
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
 
 export default function ChildFormScreen() {
   const route = useRoute();
@@ -37,17 +41,18 @@ export default function ChildFormScreen() {
 
   useEffect(() => {
     const yukle = async () => {
+      const kresId = kullanici?.kresId;
       const sinifSnap = await get(ref(database, 'siniflar'));
       if (sinifSnap.exists()) {
         const data = sinifSnap.val();
-        setSiniflar(Object.entries(data).map(([id, v]) => ({ id, ...v })));
+        setSiniflar(Object.entries(data).map(([id, v]) => ({ id, ...v })).filter((s) => !kresId || !s.kresId || s.kresId === kresId));
       }
 
       const kullaniciSnap = await get(ref(database, 'kullanicilar'));
       if (kullaniciSnap.exists()) {
         const data = kullaniciSnap.val();
         const veliListesi = Object.entries(data)
-          .filter(([_, v]) => v.rol === 'veli')
+          .filter(([_, v]) => v.rol === 'veli' && (!kresId || !v.kresId || v.kresId === kresId))
           .map(([id, v]) => ({ id, ...v }));
         setVeliler(veliListesi);
       }
@@ -68,12 +73,10 @@ export default function ChildFormScreen() {
       setFetching(false);
     };
     yukle();
-  }, [childId]);
+  }, [childId, kullanici?.kresId]);
 
   const veliToggle = (id) => {
-    setSeciliVeliIds(prev =>
-      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
-    );
+    setSeciliVeliIds((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
   };
 
   const handleSave = async () => {
@@ -99,13 +102,14 @@ export default function ChildFormScreen() {
       const existingSnap = childId ? await get(ref(database, `cocuklar/${childId}`)) : null;
       const existing = existingSnap?.exists?.() ? existingSnap.val() : {};
       const uyumAktif = yeniBaslayan && uyumDurumu !== 'tamamlandi';
+      const kresId = kullanici?.kresId || existing?.kresId || 'default-kres';
 
-      await set(ref(database, `cocuklar/${id}`), {
+      const childPayload = {
         ...existing,
         ad: ad.trim(),
         dogumTarihi: normalizedBirthDate,
         sinifId,
-        kresId: kullanici?.kresId || existing?.kresId || 'default-kres',
+        kresId,
         veliIds: seciliVeliIds,
         yeniBaslayan,
         uyumTakibiAktif: uyumAktif,
@@ -114,12 +118,29 @@ export default function ChildFormScreen() {
         uyumDurumu: yeniBaslayan ? (uyumDurumu === 'tamamlandi' ? 'tamamlandi' : 'aktif') : 'pasif',
         createdAt: existing?.createdAt || Date.now(),
         updatedAt: Date.now(),
+      };
+
+      const updates = {
+        [`cocuklar/${id}`]: childPayload,
+        [`kresCocuklari/${kresId}/${id}`]: true,
+        [`sinifCocuklari/${sinifId}/${id}`]: true,
+      };
+
+      if (existing?.kresId && existing.kresId !== kresId) updates[`kresCocuklari/${existing.kresId}/${id}`] = null;
+      if (existing?.sinifId && existing.sinifId !== sinifId) updates[`sinifCocuklari/${existing.sinifId}/${id}`] = null;
+
+      const oldParents = [...asArray(existing?.veliIds), existing?.veliId, existing?.parentId].filter(Boolean);
+      oldParents.forEach((veliId) => {
+        if (!seciliVeliIds.includes(veliId)) updates[`veliCocuklari/${veliId}/${id}`] = null;
+      });
+      seciliVeliIds.forEach((veliId) => {
+        if (veliId) updates[`veliCocuklari/${veliId}/${id}`] = true;
       });
 
+      await update(ref(database), updates);
+
       setSuccessToast(true);
-      setTimeout(() => {
-        navigation.goBack();
-      }, 900);
+      setTimeout(() => navigation.goBack(), 900);
     } catch (error) {
       Alert.alert('Hata', 'Çocuk kaydedilemedi');
       console.error(error);
@@ -129,122 +150,58 @@ export default function ChildFormScreen() {
   };
 
   if (fetching) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#712B13" />
-      </View>
-    );
+    return <View style={styles.center}><ActivityIndicator size="large" color="#712B13" /></View>;
   }
 
   return (
     <View style={styles.screen}>
-      <AppSuccessToast
-        visible={successToast}
-        message={childId ? 'Çocuk bilgileri güncellendi' : 'Çocuk kaydedildi'}
-        onHide={() => setSuccessToast(false)}
-      />
-
+      <AppSuccessToast visible={successToast} message={childId ? 'Çocuk bilgileri güncellendi' : 'Çocuk kaydedildi'} onHide={() => setSuccessToast(false)} />
       <ScrollView style={styles.container}>
         <View style={styles.form}>
-
           <View style={styles.field}>
             <Text style={styles.label}>Çocuk Adı *</Text>
-            <TextInput
-              style={styles.input}
-              value={ad}
-              onChangeText={setAd}
-              placeholder="Örn: Ali Yılmaz"
-              placeholderTextColor="#999"
-            />
+            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder="Örn: Ali Yılmaz" placeholderTextColor="#999" />
           </View>
-
           <View style={styles.field}>
             <Text style={styles.label}>Doğum Tarihi *</Text>
-            <TextInput
-              style={styles.input}
-              value={dogumTarihi}
-              onChangeText={setDogumTarihi}
-              placeholder="15.05.2022"
-              placeholderTextColor="#999"
-            />
+            <TextInput style={styles.input} value={dogumTarihi} onChangeText={setDogumTarihi} placeholder="15.05.2022" placeholderTextColor="#999" />
             <Text style={styles.hint}>Kaydedilince sistem 2022-05-15 olarak saklar, ekranlarda 15.05.2022 gösterir.</Text>
           </View>
-
           <View style={styles.field}>
             <Text style={styles.label}>Sınıf *</Text>
-            {siniflar.length === 0 ? (
-              <Text style={styles.bilgi}>Önce sınıf oluşturun</Text>
-            ) : (
-              siniflar.map((s) => (
-                <TouchableOpacity
-                  key={s.id}
-                  style={[styles.seciBtn, sinifId === s.id && styles.seciBtnAktif]}
-                  onPress={() => setSinifId(s.id)}
-                >
-                  <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYaziAktif]}>
-                    {s.ad} — {s.yasGrubu}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            )}
+            {siniflar.length === 0 ? <Text style={styles.bilgi}>Önce sınıf oluşturun</Text> : siniflar.map((s) => (
+              <TouchableOpacity key={s.id} style={[styles.seciBtn, sinifId === s.id && styles.seciBtnAktif]} onPress={() => setSinifId(s.id)}>
+                <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYaziAktif]}>{s.ad} — {s.yasGrubu}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-
           <View style={styles.uyumCard}>
             <Text style={styles.uyumTitle}>🌱 Uyum Modülü</Text>
             <Text style={styles.uyumDesc}>Bu çocuk kreşe yeni başlayan öğrenci mi? Seçilirse 30 günlük uyum takibi öğretmen ve veli tarafında açılır.</Text>
             <View style={styles.segmentRow}>
-              <TouchableOpacity style={[styles.segment, !yeniBaslayan && styles.segmentActive]} onPress={() => { setYeniBaslayan(false); setUyumDurumu('pasif'); }}>
-                <Text style={[styles.segmentText, !yeniBaslayan && styles.segmentTextActive]}>Mevcut öğrenci</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.segment, yeniBaslayan && styles.segmentActiveGreen]} onPress={() => { setYeniBaslayan(true); setUyumDurumu('aktif'); }}>
-                <Text style={[styles.segmentText, yeniBaslayan && styles.segmentTextActive]}>Yeni başlayan</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, !yeniBaslayan && styles.segmentActive]} onPress={() => { setYeniBaslayan(false); setUyumDurumu('pasif'); }}><Text style={[styles.segmentText, !yeniBaslayan && styles.segmentTextActive]}>Mevcut öğrenci</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, yeniBaslayan && styles.segmentActiveGreen]} onPress={() => { setYeniBaslayan(true); setUyumDurumu('aktif'); }}><Text style={[styles.segmentText, yeniBaslayan && styles.segmentTextActive]}>Yeni başlayan</Text></TouchableOpacity>
             </View>
             {yeniBaslayan ? (
               <View style={styles.uyumOpenBox}>
                 <Text style={styles.label}>Uyum başlangıç tarihi</Text>
                 <TextInput style={styles.input} value={uyumBaslangicTarihi} onChangeText={setUyumBaslangicTarihi} placeholder="2026-06-26" placeholderTextColor="#999" />
                 <Text style={styles.hint}>30 gün sonunda aktif takip kapanır, kayıtlar veli geçmişinde kalır.</Text>
-                {childId ? (
-                  <View style={styles.segmentRowSmall}>
-                    <TouchableOpacity style={[styles.statusBtn, uyumDurumu !== 'tamamlandi' && styles.statusBtnOn]} onPress={() => setUyumDurumu('aktif')}><Text style={[styles.statusText, uyumDurumu !== 'tamamlandi' && styles.statusTextOn]}>Aktif</Text></TouchableOpacity>
-                    <TouchableOpacity style={[styles.statusBtn, uyumDurumu === 'tamamlandi' && styles.statusBtnDone]} onPress={() => setUyumDurumu('tamamlandi')}><Text style={[styles.statusText, uyumDurumu === 'tamamlandi' && styles.statusTextOn]}>Tamamlandı</Text></TouchableOpacity>
-                  </View>
-                ) : null}
+                {childId ? <View style={styles.segmentRowSmall}><TouchableOpacity style={[styles.statusBtn, uyumDurumu !== 'tamamlandi' && styles.statusBtnOn]} onPress={() => setUyumDurumu('aktif')}><Text style={[styles.statusText, uyumDurumu !== 'tamamlandi' && styles.statusTextOn]}>Aktif</Text></TouchableOpacity><TouchableOpacity style={[styles.statusBtn, uyumDurumu === 'tamamlandi' && styles.statusBtnDone]} onPress={() => setUyumDurumu('tamamlandi')}><Text style={[styles.statusText, uyumDurumu === 'tamamlandi' && styles.statusTextOn]}>Tamamlandı</Text></TouchableOpacity></View> : null}
               </View>
             ) : null}
           </View>
-
           <View style={styles.field}>
             <Text style={styles.label}>Veli Bağla (opsiyonel)</Text>
-            {veliler.length === 0 ? (
-              <Text style={styles.bilgi}>Henüz veli yok</Text>
-            ) : (
-              veliler.map((v) => (
-                <TouchableOpacity
-                  key={v.id}
-                  style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtnAktif]}
-                  onPress={() => veliToggle(v.id)}
-                >
-                  <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYaziAktif]}>
-                    {v.ad} ({v.kullaniciAdi})
-                  </Text>
-                </TouchableOpacity>
-              ))
-            )}
+            {veliler.length === 0 ? <Text style={styles.bilgi}>Henüz veli yok</Text> : veliler.map((v) => (
+              <TouchableOpacity key={v.id} style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtnAktif]} onPress={() => veliToggle(v.id)}>
+                <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYaziAktif]}>{v.ad} ({v.kullaniciAdi})</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-
-          <TouchableOpacity
-            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={loading}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.saveButtonText}>{childId ? 'Güncelle' : 'Oluştur'}</Text>
-            }
+          <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{childId ? 'Güncelle' : 'Oluştur'}</Text>}
           </TouchableOpacity>
-
         </View>
       </ScrollView>
     </View>
@@ -258,16 +215,10 @@ const styles = StyleSheet.create({
   form: { padding: 20 },
   field: { marginBottom: 20 },
   label: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 8 },
-  input: {
-    backgroundColor: '#fff', borderRadius: 8, padding: 12,
-    fontSize: 16, borderWidth: 1, borderColor: '#ddd',
-  },
+  input: { backgroundColor: '#fff', borderRadius: 8, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#ddd' },
   hint: { color: '#777', fontSize: 12, marginTop: 6, lineHeight: 17 },
   bilgi: { color: '#999', fontStyle: 'italic' },
-  seciBtn: {
-    padding: 12, borderRadius: 8, borderWidth: 1,
-    borderColor: '#ddd', marginBottom: 8, backgroundColor: '#fff',
-  },
+  seciBtn: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', marginBottom: 8, backgroundColor: '#fff' },
   seciBtnAktif: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
   seciBtnYazi: { fontSize: 15, color: '#333' },
   seciBtnYaziAktif: { fontWeight: '700', color: '#712B13' },
@@ -287,10 +238,7 @@ const styles = StyleSheet.create({
   statusBtnDone: { backgroundColor: '#6C3DEB', borderColor: '#6C3DEB' },
   statusText: { color: '#555', fontWeight: '900' },
   statusTextOn: { color: '#fff' },
-  saveButton: {
-    backgroundColor: '#712B13', padding: 15, borderRadius: 10,
-    alignItems: 'center', marginTop: 10,
-  },
+  saveButton: { backgroundColor: '#712B13', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
