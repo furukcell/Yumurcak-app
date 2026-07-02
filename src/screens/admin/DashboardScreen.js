@@ -58,16 +58,41 @@ const OZET_ITEMS = [
   { key: 'veliSayisi', label: 'Veli', icon: '👨‍👩‍👧', color: THEME.green },
 ];
 
+const EMPTY_STATS = {
+  sinifSayisi: 0,
+  cocukSayisi: 0,
+  ogretmenSayisi: 0,
+  veliSayisi: 0,
+};
+
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function hasSummaryCounts(data) {
+  if (!data || typeof data !== 'object') return false;
+  return ['sinifSayisi', 'cocukSayisi', 'ogretmenSayisi', 'veliSayisi'].some((key) => typeof data[key] === 'number');
+}
+
+function normalizeStats(data = {}) {
+  return {
+    sinifSayisi: Number(data.sinifSayisi || 0),
+    cocukSayisi: Number(data.cocukSayisi || 0),
+    ogretmenSayisi: Number(data.ogretmenSayisi || 0),
+    veliSayisi: Number(data.veliSayisi || 0),
+  };
+}
+
+function countIndex(data) {
+  if (!data || typeof data !== 'object') return null;
+  return Object.values(data).filter((value) => value !== false && value !== null).length;
+}
+
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { kullanici, cikisYap } = useAuth();
 
-  const [istatistik, setIstatistik] = useState({
-    sinifSayisi: 0,
-    cocukSayisi: 0,
-    ogretmenSayisi: 0,
-    veliSayisi: 0,
-  });
+  const [istatistik, setIstatistik] = useState(EMPTY_STATS);
   const [kresAdi, setKresAdi] = useState('Kurum');
   const [abonelik, setAbonelik] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -86,41 +111,104 @@ export default function DashboardScreen() {
       setAbonelik(snap.val() || null);
     });
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      const data = snap.val();
-      setIstatistik((prev) => ({
-        ...prev,
-        sinifSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0,
-      }));
-    });
+    let fallbackUnsubs = [];
+    let summaryActive = false;
+    const indexCounts = {
+      sinifSayisi: null,
+      cocukSayisi: null,
+      ogretmenSayisi: null,
+      veliSayisi: null,
+    };
+    const loadedIndexes = new Set();
 
-    const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
-      const data = snap.val();
-      setIstatistik((prev) => ({
-        ...prev,
-        cocukSayisi: data ? Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length : 0,
-      }));
-    });
+    const stopFallback = () => {
+      fallbackUnsubs.forEach((unsub) => unsub && unsub());
+      fallbackUnsubs = [];
+    };
 
-    const kullaniciUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
-      const data = snap.val();
-      if (data) {
+    const startFallback = () => {
+      if (summaryActive || fallbackUnsubs.length > 0) return;
+
+      const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
+        const data = safeObject(snap.val());
+        setIstatistik((prev) => ({
+          ...prev,
+          sinifSayisi: Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length,
+        }));
+      });
+
+      const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
+        const data = safeObject(snap.val());
+        setIstatistik((prev) => ({
+          ...prev,
+          cocukSayisi: Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length,
+        }));
+      });
+
+      const kullaniciUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
+        const data = safeObject(snap.val());
         const liste = Object.values(data).filter((u) => !u.kresId || u.kresId === kresId);
         setIstatistik((prev) => ({
           ...prev,
           ogretmenSayisi: liste.filter((u) => u.rol === 'ogretmen').length,
           veliSayisi: liste.filter((u) => u.rol === 'veli').length,
         }));
+        setYukleniyor(false);
+      });
+
+      fallbackUnsubs = [sinifUnsub, cocukUnsub, kullaniciUnsub];
+    };
+
+    const publishIndexCounts = () => {
+      if (summaryActive) return;
+      const hasAnyIndex = Object.values(indexCounts).some((value) => value !== null);
+
+      if (hasAnyIndex) {
+        stopFallback();
+        setIstatistik({
+          sinifSayisi: indexCounts.sinifSayisi || 0,
+          cocukSayisi: indexCounts.cocukSayisi || 0,
+          ogretmenSayisi: indexCounts.ogretmenSayisi || 0,
+          veliSayisi: indexCounts.veliSayisi || 0,
+        });
+        setYukleniyor(false);
+        return;
       }
-      setYukleniyor(false);
+
+      if (loadedIndexes.size >= 4) startFallback();
+    };
+
+    const summaryUnsub = onValue(ref(database, `kresOzetleri/${kresId}`), (snap) => {
+      const data = snap.val();
+      if (hasSummaryCounts(data)) {
+        summaryActive = true;
+        stopFallback();
+        setIstatistik(normalizeStats(data));
+        setYukleniyor(false);
+        return;
+      }
+
+      summaryActive = false;
+      publishIndexCounts();
     });
+
+    const indexListeners = [
+      ['sinifSayisi', `kresSiniflari/${kresId}`],
+      ['cocukSayisi', `kresCocuklari/${kresId}`],
+      ['ogretmenSayisi', `kresKullanicilari/${kresId}/ogretmenler`],
+      ['veliSayisi', `kresKullanicilari/${kresId}/veliler`],
+    ].map(([key, path]) => onValue(ref(database, path), (snap) => {
+      loadedIndexes.add(key);
+      indexCounts[key] = countIndex(snap.val());
+      publishIndexCounts();
+    }));
 
     return () => {
       kresUnsub();
       subUnsub();
-      sinifUnsub();
-      cocukUnsub();
-      kullaniciUnsub();
+      summaryUnsub();
+      indexListeners.forEach((unsub) => unsub && unsub());
+      stopFallback();
     };
   }, [kresId]);
 
