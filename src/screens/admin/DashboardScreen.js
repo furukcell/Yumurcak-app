@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import AppNotificationButton from '../../components/AppNotificationButton';
 import ThemedBackground from '../../components/ThemedBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
+import { rebuildKresRealtimeIndexes } from '../../utils/realtimeIndexBackfill';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -30,6 +31,8 @@ const THEME = {
   card: '#FFFFFF',
   border: '#EEEAF8',
 };
+
+const backfillRunCache = new Set();
 
 const MENU_ITEMS = [
   { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
@@ -100,6 +103,14 @@ export default function DashboardScreen() {
   const kresId = kullanici?.kresId || 'kres001';
   const adminId = kullanici?.uid || kullanici?.id;
   const unreadMessages = useUnreadMessagesCount(adminId);
+
+  useEffect(() => {
+    if (!kresId || backfillRunCache.has(kresId)) return;
+    backfillRunCache.add(kresId);
+    rebuildKresRealtimeIndexes(kresId).catch((error) => {
+      console.warn('Realtime index backfill çalıştırılamadı:', error?.message || error);
+    });
+  }, [kresId]);
 
   useEffect(() => {
     const kresUnsub = onValue(ref(database, `kresler/${kresId}`), (snap) => {
@@ -217,109 +228,60 @@ export default function DashboardScreen() {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView
-          style={styles.screen}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
             <View style={styles.topBarLeft}>
-              <View style={styles.logoCircle}>
-                <Text style={styles.logoEmoji}>🍼</Text>
-              </View>
-
+              <View style={styles.logoCircle}><Text style={styles.logoEmoji}>🍼</Text></View>
               <View style={styles.topTitleBlock}>
-                <Text style={styles.brandLabel} numberOfLines={1} ellipsizeMode="tail">
-                  YUMURCAK KREŞ
-                </Text>
-                <View style={styles.brandNamePill}>
-                  <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
-                    {kresAdi}
-                  </Text>
-                </View>
-                <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">
-                  Yönetim Paneli
-                </Text>
+                <Text style={styles.brandLabel} numberOfLines={1} ellipsizeMode="tail">YUMURCAK KREŞ</Text>
+                <View style={styles.brandNamePill}><Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">{kresAdi}</Text></View>
+                <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">Yönetim Paneli</Text>
               </View>
             </View>
-
             <View style={styles.topActions}>
               <AppNotificationButton navigation={navigation} />
-              <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}>
-                <Text style={styles.cikisBtnText}>↩</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}><Text style={styles.cikisBtnText}>↩</Text></TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.welcomeCard}>
             <View style={styles.welcomeLeft}>
               <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
-              <Text style={styles.welcomeName} numberOfLines={1} ellipsizeMode="tail">
-                {adSoyad}
-              </Text>
-              <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">
-                {getSubscriptionText(abonelik)}
-              </Text>
+              <Text style={styles.welcomeName} numberOfLines={1} ellipsizeMode="tail">{adSoyad}</Text>
+              <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">{getSubscriptionText(abonelik)}</Text>
             </View>
-
-            <View style={styles.welcomeIcon}>
-              <Text style={styles.welcomeIconText}>👑</Text>
-            </View>
+            <View style={styles.welcomeIcon}><Text style={styles.welcomeIconText}>👑</Text></View>
           </View>
 
           <Text style={styles.sectionTitle}>Genel Özet</Text>
-
           {yukleniyor ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={THEME.primary} />
-            </View>
+            <View style={styles.loadingBox}><ActivityIndicator color={THEME.primary} /></View>
           ) : (
             <View style={styles.ozetGrid}>
               {OZET_ITEMS.map((item) => (
                 <View key={item.key} style={styles.ozetKart}>
                   <Text style={styles.ozetIcon}>{item.icon}</Text>
-                  <Text style={[styles.ozetSayi, { color: item.color }]} numberOfLines={1}>
-                    {istatistik[item.key]}
-                  </Text>
-                  <Text style={styles.ozetLabel} numberOfLines={1}>
-                    {item.label}
-                  </Text>
+                  <Text style={[styles.ozetSayi, { color: item.color }]} numberOfLines={1}>{istatistik[item.key]}</Text>
+                  <Text style={styles.ozetLabel} numberOfLines={1}>{item.label}</Text>
                 </View>
               ))}
             </View>
           )}
 
           <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
-
           {MENU_ITEMS.map((item) => {
             const isMessages = item.screen === 'AdminMessages';
             const badgeCount = isMessages ? unreadMessages : 0;
-
             return (
-              <TouchableOpacity
-                key={item.title}
-                style={styles.menuKart}
-                onPress={() => navigation.navigate(item.screen)}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity key={item.title} style={styles.menuKart} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.8}>
                 <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
                   <Text style={styles.menuIcon}>{item.icon}</Text>
-                  {badgeCount > 0 ? (
-                    <View style={styles.menuBadge}>
-                      <Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
-                    </View>
-                  ) : null}
+                  {badgeCount > 0 ? <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text></View> : null}
                 </View>
-
                 <View style={styles.menuTextBlock}>
-                  <Text style={[styles.menuTitle, badgeCount > 0 && styles.menuTitleUnread]} numberOfLines={1} ellipsizeMode="tail">
-                    {item.title}
-                  </Text>
-                  <Text style={styles.menuDesc} numberOfLines={1} ellipsizeMode="tail">
-                    {item.desc}
-                  </Text>
+                  <Text style={[styles.menuTitle, badgeCount > 0 && styles.menuTitleUnread]} numberOfLines={1} ellipsizeMode="tail">{item.title}</Text>
+                  <Text style={styles.menuDesc} numberOfLines={1} ellipsizeMode="tail">{item.desc}</Text>
                 </View>
-
                 <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
               </TouchableOpacity>
             );
@@ -338,55 +300,17 @@ function getSubscriptionText(sub) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0,
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
+  safeArea: { flex: 1, backgroundColor: 'transparent', paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0 },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   scrollContent: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 34 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 },
   topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   topTitleBlock: { flex: 1, minWidth: 0 },
-  logoCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 9,
-    flexShrink: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(108,61,235,0.16)',
-    shadowColor: '#6C3DEB',
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
+  logoCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center', marginRight: 9, flexShrink: 0, borderWidth: 1, borderColor: 'rgba(108,61,235,0.16)', shadowColor: '#6C3DEB', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   logoEmoji: { fontSize: 22 },
-  brandLabel: {
-    color: THEME.muted,
-    fontWeight: '900',
-    fontSize: 9,
-    letterSpacing: 1.1,
-    marginBottom: 2,
-  },
-  brandNamePill: {
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(108,61,235,0.14)',
-  },
+  brandLabel: { color: THEME.muted, fontWeight: '900', fontSize: 9, letterSpacing: 1.1, marginBottom: 2 },
+  brandNamePill: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(108,61,235,0.14)' },
   appName: { fontSize: 18, fontWeight: '900', color: THEME.primary, flexShrink: 1, letterSpacing: 0.1 },
   panelLabel: { fontSize: 11, color: THEME.muted, fontWeight: '700', flexShrink: 1, marginTop: 2 },
   cikisBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.95)', borderWidth: 1, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
