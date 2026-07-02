@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { onValue, ref } from 'firebase/database';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -51,10 +52,19 @@ function normalizeMediaItems(item) {
       type: media.type === 'video' ? 'video' : 'image',
       url: media.url,
       thumbnailUrl: media.thumbnailUrl || '',
+      storagePath: media.storagePath || '',
+      fileName: media.fileName || '',
     }));
   if (items.length > 0) return items;
   if (!item?.url) return [];
-  return [{ id: `${item?.id || 'legacy'}-0`, type: item.type === 'video' ? 'video' : 'image', url: item.url, thumbnailUrl: item.thumbnailUrl || '' }];
+  return [{
+    id: `${item?.id || 'legacy'}-0`,
+    type: item.type === 'video' ? 'video' : 'image',
+    url: item.url,
+    thumbnailUrl: item.thumbnailUrl || '',
+    storagePath: item.storagePath || '',
+    fileName: item.fileName || '',
+  }];
 }
 
 function getTitle(item) {
@@ -92,6 +102,7 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
   const [now, setNow] = useState(Date.now());
   const [viewerItem, setViewerItem] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [savingMediaId, setSavingMediaId] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60 * 1000);
@@ -214,18 +225,40 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
     setViewerIndex(index);
   }
 
+  async function saveMedia(media) {
+    if (!media?.url || savingMediaId) return;
+
+    try {
+      setSavingMediaId(media.id || media.url);
+      await saveGalleryMediaToDevice(media);
+      Alert.alert('Kaydedildi', media.type === 'video' ? 'Video telefon galerisine kaydedildi.' : 'Fotoğraf telefon galerisine kaydedildi.');
+    } catch (error) {
+      console.error('Galeri medyası kaydedilemedi:', error?.message || error);
+      if (error?.code === 'permission-denied') {
+        Alert.alert('İzin Gerekli', 'Medyanın telefona kaydedilebilmesi için galeri izni vermen gerekiyor.');
+        return;
+      }
+      Alert.alert('Kaydedilemedi', 'Medya telefona kaydedilemedi. Lütfen izinleri ve internet bağlantısını kontrol et.');
+    } finally {
+      setSavingMediaId('');
+    }
+  }
+
   function renderViewer() {
     const mediaItems = normalizeMediaItems(viewerItem);
     const media = mediaItems[viewerIndex] || mediaItems[0];
     if (!viewerItem || !media) return null;
     const isVideo = media.type === 'video';
+    const isSaving = savingMediaId === (media.id || media.url);
     return (
       <Modal visible={!!viewerItem} transparent animationType="fade" onRequestClose={() => setViewerItem(null)}>
         <SafeAreaView style={styles.viewerBackdrop}>
           <View style={styles.viewerHeader}>
             <TouchableOpacity style={styles.viewerButton} onPress={() => setViewerItem(null)}><Text style={styles.viewerButtonText}>Kapat</Text></TouchableOpacity>
             <Text style={styles.viewerCounter}>{viewerIndex + 1} / {mediaItems.length}</Text>
-            <View style={styles.viewerButton} />
+            <TouchableOpacity style={[styles.viewerButton, isSaving && styles.viewerButtonDisabled]} onPress={() => saveMedia(media)} disabled={isSaving}>
+              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.viewerButtonText}>Kaydet</Text>}
+            </TouchableOpacity>
           </View>
           <View style={styles.viewerStage}>{isVideo ? <VideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
           {mediaItems.length > 1 ? <View style={styles.viewerNavRow}><TouchableOpacity disabled={viewerIndex === 0} style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.max(0, index - 1))}><Text style={styles.viewerButtonText}>‹ Önceki</Text></TouchableOpacity><TouchableOpacity disabled={viewerIndex === mediaItems.length - 1} style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.min(mediaItems.length - 1, index + 1))}><Text style={styles.viewerButtonText}>Sonraki ›</Text></TouchableOpacity></View> : null}
@@ -290,6 +323,7 @@ const styles = StyleSheet.create({
   viewerBackdrop: { flex: 1, backgroundColor: '#050508' },
   viewerHeader: { paddingHorizontal: 14, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 8, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   viewerButton: { minWidth: 74, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center' },
+  viewerButtonDisabled: { opacity: 0.55 },
   viewerButtonText: { color: '#fff', fontWeight: '900' },
   viewerCounter: { color: '#fff', fontWeight: '900' },
   viewerStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
