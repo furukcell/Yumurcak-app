@@ -67,6 +67,28 @@ function includesId(value, id) {
   return asArray(value).map((item) => String(item)).includes(String(id));
 }
 
+function indexIds(data) {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data)
+    .filter(([, value]) => value !== false && value !== null)
+    .map(([id]) => id);
+}
+
+function listenValue(path, onData, onError) {
+  const r = dbRef(database, path);
+  return onValue(
+    r,
+    (snapshot) => onData(snapshot.val()),
+    () => {
+      if (typeof onError === 'function') onError();
+    }
+  );
+}
+
+function uniqueIds(values) {
+  return Array.from(new Set(values.filter(Boolean).map((id) => String(id))));
+}
+
 function getChildName(child) {
   return `${child?.ad || child?.adSoyad || child?.isim || 'Çocuk'} ${child?.soyad || ''}`.trim();
 }
@@ -118,7 +140,7 @@ function getFileInfo(asset) {
   return { isVideo, extension, contentType };
 }
 
-  async function getLocalFileSize(uri) {
+async function getLocalFileSize(uri) {
   if (!uri) return 0;
   try {
     const info = await FileSystem.getInfoAsync(uri, { size: true });
@@ -147,20 +169,12 @@ function countVideoAssets(assets = []) {
 
 async function optimizeImageAsset(asset) {
   const actions = [];
+  if (asset?.width && Number(asset.width) > MAX_IMAGE_WIDTH) actions.push({ resize: { width: MAX_IMAGE_WIDTH } });
 
-  if (asset?.width && Number(asset.width) > MAX_IMAGE_WIDTH) {
-    actions.push({ resize: { width: MAX_IMAGE_WIDTH } });
-  }
-
-  const result = await ImageManipulator.manipulateAsync(
-    asset.uri,
-    actions,
-    {
-      compress: IMAGE_COMPRESS,
-      format: ImageManipulator.SaveFormat.JPEG,
-    }
-  );
-
+  const result = await ImageManipulator.manipulateAsync(asset.uri, actions, {
+    compress: IMAGE_COMPRESS,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
   const optimizedSize = await getLocalFileSize(result.uri);
 
   return {
@@ -178,24 +192,12 @@ async function optimizeImageAsset(asset) {
 
 async function optimizeVideoAsset(asset, onProgress) {
   const durationMs = getAssetDurationMs(asset);
-
-  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) {
-    throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
-  }
+  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
 
   const originalSize = asset.fileSize || await getLocalFileSize(asset.uri);
-
-  const compressedUri = await Video.compress(
-    asset.uri,
-    {
-      compressionMethod: 'auto',
-      maxSize: 1280,
-    },
-    (progress) => {
-      if (typeof onProgress === 'function') onProgress(progress);
-    }
-  );
-
+  const compressedUri = await Video.compress(asset.uri, { compressionMethod: 'auto', maxSize: 1280 }, (progress) => {
+    if (typeof onProgress === 'function') onProgress(progress);
+  });
   const optimizedSize = await getLocalFileSize(compressedUri);
 
   if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
@@ -278,9 +280,7 @@ function GalleryVideoPlayer({ uri }) {
 
   useEffect(() => {
     return () => {
-      try {
-        player?.pause?.();
-      } catch (error) {}
+      try { player?.pause?.(); } catch (error) {}
     };
   }, [player]);
 
@@ -329,42 +329,253 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   }, []);
 
   useEffect(() => {
-    const unsubs = [
-      onValue(dbRef(database, 'galeri'), (snap) => setGallery(toList(snap.val())), () => setGallery([])),
-      onValue(dbRef(database, 'cocuklar'), (snap) => setChildren(toList(snap.val())), () => setChildren([])),
-      onValue(dbRef(database, 'siniflar'), (snap) => setClasses(toList(snap.val())), () => setClasses([])),
-      onValue(dbRef(database, 'kullanicilar'), (snap) => setUsers(safeObject(snap.val())), () => setUsers({})),
-    ];
-    setLoading(false);
-    return () => unsubs.forEach((unsubscribe) => unsubscribe && unsubscribe());
-  }, []);
+    if (!userId && mode !== 'admin') {
+      setChildren([]);
+      setClasses([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    let classUnsub = null;
+    let classFallbackUnsub = null;
+    let childUnsubs = [];
+    let childFallbackUnsub = null;
+
+    const cleanupClass = () => {
+      if (classUnsub) classUnsub();
+      classUnsub = null;
+    };
+    const cleanupChildren = () => {
+      childUnsubs.forEach((unsub) => unsub && unsub());
+      childUnsubs = [];
+    };
+
+    const setChildrenFromIds = (ids) => {
+      cleanupChildren();
+      if (ids.length === 0) {
+        setChildren([]);
+        return;
+      }
+      const map = {};
+      ids.forEach((childId) => {
+        const unsub = listenValue(`cocuklar/${childId}`, (data) => {
+          const child = safeObject(data);
+          if (Object.keys(child).length > 0) map[childId] = { id: childId, ...child };
+          else delete map[childId];
+          setChildren(Object.values(map).sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr')));
+        });
+        childUnsubs.push(unsub);
+      });
+    };
+
+    const fallbackChildrenByFilter = (filterFn) => {
+      cleanupChildren();
+      if (childFallbackUnsub) return;
+      childFallbackUnsub = listenValue('cocuklar', (data) => {
+        setChildren(toList(data).filter(filterFn).sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr')));
+      }, () => setChildren([]));
+    };
+
+    if (mode === 'teacher') {
+      const startClassFallback = () => {
+        cleanupClass();
+        if (classFallbackUnsub) return;
+        classFallbackUnsub = listenValue('siniflar', (data) => {
+          const list = toList(data);
+          const found = list.find((item) => includesId(item.ogretmenIds, userId)) || list.find((item) => item.ogretmenId === userId || item.id === kullanici?.sinifId) || null;
+          setClasses(found ? [found] : []);
+          if (found?.id) {
+            fallbackChildrenByFilter((child) => child.sinifId === found.id);
+          }
+          setLoading(false);
+        }, () => setLoading(false));
+      };
+
+      const indexUnsub = listenValue(`ogretmenSiniflari/${userId}`, (data) => {
+        const classId = indexIds(data)[0] || kullanici?.sinifId || null;
+        if (!classId) {
+          startClassFallback();
+          return;
+        }
+        if (classFallbackUnsub) {
+          classFallbackUnsub();
+          classFallbackUnsub = null;
+        }
+        cleanupClass();
+        classUnsub = listenValue(`siniflar/${classId}`, (classData) => {
+          const classObj = safeObject(classData);
+          setClasses(Object.keys(classObj).length > 0 ? [{ id: classId, ...classObj }] : []);
+          setLoading(false);
+        }, startClassFallback);
+      }, startClassFallback);
+
+      return () => {
+        indexUnsub && indexUnsub();
+        cleanupClass();
+        cleanupChildren();
+        if (classFallbackUnsub) classFallbackUnsub();
+        if (childFallbackUnsub) childFallbackUnsub();
+      };
+    }
+
+    if (mode === 'parent') {
+      const startParentFallback = () => fallbackChildrenByFilter((child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
+      const indexUnsub = listenValue(`veliCocuklari/${userId}`, (data) => {
+        const ids = indexIds(data);
+        if (ids.length === 0) startParentFallback();
+        else {
+          if (childFallbackUnsub) {
+            childFallbackUnsub();
+            childFallbackUnsub = null;
+          }
+          setChildrenFromIds(ids);
+        }
+        setLoading(false);
+      }, () => {
+        startParentFallback();
+        setLoading(false);
+      });
+
+      return () => {
+        indexUnsub && indexUnsub();
+        cleanupChildren();
+        if (childFallbackUnsub) childFallbackUnsub();
+      };
+    }
+
+    const adminKresId = kullanici?.kresId || 'kres001';
+    const classIndexUnsub = listenValue(`kresSiniflari/${adminKresId}`, (data) => {
+      const ids = indexIds(data);
+      if (ids.length === 0) {
+        if (!classFallbackUnsub) {
+          classFallbackUnsub = listenValue('siniflar', (allData) => setClasses(toList(allData).filter((item) => !item.kresId || item.kresId === adminKresId)), () => setClasses([]));
+        }
+        return;
+      }
+      if (classFallbackUnsub) {
+        classFallbackUnsub();
+        classFallbackUnsub = null;
+      }
+      const map = {};
+      cleanupClass();
+      ids.forEach((classId) => {
+        classUnsub = listenValue(`siniflar/${classId}`, (classData) => {
+          const classObj = safeObject(classData);
+          if (Object.keys(classObj).length > 0) map[classId] = { id: classId, ...classObj };
+          setClasses(Object.values(map).sort((a, b) => getClassName(a).localeCompare(getClassName(b), 'tr')));
+        });
+      });
+    });
+    const childIndexUnsub = listenValue(`kresCocuklari/${adminKresId}`, (data) => {
+      const ids = indexIds(data);
+      if (ids.length === 0) fallbackChildrenByFilter((child) => !child.kresId || child.kresId === adminKresId);
+      else setChildrenFromIds(ids);
+      setLoading(false);
+    }, () => setLoading(false));
+
+    return () => {
+      classIndexUnsub && classIndexUnsub();
+      childIndexUnsub && childIndexUnsub();
+      cleanupClass();
+      cleanupChildren();
+      if (classFallbackUnsub) classFallbackUnsub();
+      if (childFallbackUnsub) childFallbackUnsub();
+    };
+  }, [kullanici?.kresId, kullanici?.sinifId, mode, userId]);
 
   const currentClass = useMemo(() => {
-    if (mode !== 'teacher' || !userId) return null;
-    return classes.find((item) => includesId(item.ogretmenIds, userId)) || classes.find((item) => item.ogretmenId === userId || item.id === kullanici?.sinifId) || null;
-  }, [classes, kullanici?.sinifId, mode, userId]);
+    if (mode !== 'teacher') return null;
+    return classes[0] || null;
+  }, [classes, mode]);
 
   const myChildren = useMemo(() => {
-    if (mode === 'parent') return children.filter((child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
+    if (mode === 'parent') return children;
     if (mode === 'teacher') return currentClass?.id ? children.filter((child) => child.sinifId === currentClass.id) : [];
     const userKresId = kullanici?.kresId || children[0]?.kresId || null;
     return children.filter((child) => !userKresId || child.kresId === userKresId);
-  }, [children, currentClass?.id, kullanici?.kresId, mode, userId]);
+  }, [children, currentClass?.id, kullanici?.kresId, mode]);
 
   const kresId = useMemo(() => {
     if (mode === 'teacher') return currentClass?.kresId || kullanici?.kresId || myChildren[0]?.kresId || null;
     if (mode === 'parent') return myChildren[0]?.kresId || kullanici?.kresId || null;
-    return kullanici?.kresId || myChildren[0]?.kresId || null;
+    return kullanici?.kresId || myChildren[0]?.kresId || 'kres001';
   }, [currentClass?.kresId, kullanici?.kresId, mode, myChildren]);
 
-  const availableClasses = useMemo(() => {
-    return classes
-      .filter((classItem) => !kresId || !classItem.kresId || classItem.kresId === kresId)
-      .sort((a, b) => getClassName(a).localeCompare(getClassName(b), 'tr'));
-  }, [classes, kresId]);
-
+  const availableClasses = useMemo(() => classes.filter((classItem) => !kresId || !classItem.kresId || classItem.kresId === kresId).sort((a, b) => getClassName(a).localeCompare(getClassName(b), 'tr')), [classes, kresId]);
   const childIds = useMemo(() => new Set(myChildren.map((child) => String(child.id))), [myChildren]);
   const classIds = useMemo(() => new Set(myChildren.map((child) => String(child.sinifId)).filter(Boolean)), [myChildren]);
+
+  useEffect(() => {
+    if (!kresId) return undefined;
+
+    setLoading(true);
+    let galleryUnsubs = [];
+    let fallbackUnsub = null;
+
+    const cleanupGallery = () => {
+      galleryUnsubs.forEach((unsub) => unsub && unsub());
+      galleryUnsubs = [];
+    };
+
+    const startFallback = () => {
+      cleanupGallery();
+      if (fallbackUnsub) return;
+      fallbackUnsub = listenValue('galeri', (data) => {
+        setGallery(toList(data).filter((item) => !item.kresId || item.kresId === kresId));
+        setLoading(false);
+      }, () => {
+        setGallery([]);
+        setLoading(false);
+      });
+    };
+
+    const indexUnsub = listenValue(`kresGalerileri/${kresId}`, (data) => {
+      const ids = indexIds(data);
+      if (ids.length === 0) {
+        startFallback();
+        return;
+      }
+
+      if (fallbackUnsub) {
+        fallbackUnsub();
+        fallbackUnsub = null;
+      }
+      cleanupGallery();
+      const map = {};
+      ids.forEach((galleryId) => {
+        const unsub = listenValue(`galeri/${galleryId}`, (galleryData) => {
+          const item = safeObject(galleryData);
+          if (Object.keys(item).length > 0) map[galleryId] = { id: galleryId, ...item };
+          else delete map[galleryId];
+          setGallery(Object.values(map));
+          setLoading(false);
+        }, () => setLoading(false));
+        galleryUnsubs.push(unsub);
+      });
+    }, startFallback);
+
+    return () => {
+      indexUnsub && indexUnsub();
+      cleanupGallery();
+      if (fallbackUnsub) fallbackUnsub();
+    };
+  }, [kresId]);
+
+  useEffect(() => {
+    const uploaderIds = uniqueIds(gallery.map((item) => item.yukleyenId));
+    if (uploaderIds.length === 0) {
+      setUsers({});
+      return undefined;
+    }
+    const map = {};
+    const unsubs = uploaderIds.map((id) => listenValue(`kullanicilar/${id}`, (userData) => {
+      const user = safeObject(userData);
+      if (Object.keys(user).length > 0) map[id] = { id, ...user };
+      else delete map[id];
+      setUsers({ ...map });
+    }));
+    return () => unsubs.forEach((unsub) => unsub && unsub());
+  }, [gallery]);
 
   const visibleGallery = useMemo(() => {
     return gallery
@@ -430,19 +641,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
 
       const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
       if (assets.length === 0) return;
-      if (assets.length > MAX_MEDIA_PER_POST) {
-      return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
-    }
-
-      const videoCount = countVideoAssets(assets);
-      if (videoCount > MAX_VIDEO_PER_POST) {
-      return Alert.alert('Çok Fazla Video', `Tek paylaşımda en fazla ${MAX_VIDEO_PER_POST} video seçebilirsin.`);
-    }
-
-      const longVideo = assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS);
-      if (longVideo) {
-       return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
-    }
+      if (assets.length > MAX_MEDIA_PER_POST) return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
+      if (countVideoAssets(assets) > MAX_VIDEO_PER_POST) return Alert.alert('Çok Fazla Video', `Tek paylaşımda en fazla ${MAX_VIDEO_PER_POST} video seçebilirsin.`);
+      if (assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS)) return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
 
       setUploading(true);
       const itemRef = push(dbRef(database, 'galeri'));
@@ -450,48 +651,39 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       const createdAt = Date.now();
       const mediaItems = [];
 
-     for (let index = 0; index < assets.length; index += 1) {
-     const rawAsset = assets[index];
-     const rawInfo = getFileInfo(rawAsset);
+      for (let index = 0; index < assets.length; index += 1) {
+        const rawAsset = assets[index];
+        const rawInfo = getFileInfo(rawAsset);
+        setUploadStatus(rawInfo.isVideo ? `Video optimize ediliyor... (${index + 1}/${assets.length})` : `Fotoğraf hazırlanıyor... (${index + 1}/${assets.length})`);
 
-  setUploadStatus(
-    rawInfo.isVideo
-      ? `Video optimize ediliyor... (${index + 1}/${assets.length})`
-      : `Fotoğraf hazırlanıyor... (${index + 1}/${assets.length})`
-  );
+        const asset = await optimizeGalleryAsset(rawAsset, (progress) => {
+          if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
+        });
 
-  const asset = await optimizeGalleryAsset(rawAsset, (progress) => {
-    if (rawInfo.isVideo) {
-      const percent = Math.round(Number(progress || 0) * 100);
-      setUploadStatus(`Video optimize ediliyor... %${percent}`);
-    }
-  });
+        const { isVideo, extension, contentType } = getFileInfo(asset);
+        const mediaId = `${galleryId}-${index}`;
+        const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
-  const { isVideo, extension, contentType } = getFileInfo(asset);
-  const mediaId = `${galleryId}-${index}`;
-  const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
+        setUploadStatus(`Medya yükleniyor... (${index + 1}/${assets.length})`);
+        const blob = await readAssetAsBlob(asset.uri);
+        const fileRef = storageRef(storage, storagePath);
+        await uploadBytes(fileRef, blob, { contentType });
+        const url = await getDownloadURL(fileRef);
 
-  setUploadStatus(`Medya yükleniyor... (${index + 1}/${assets.length})`);
+        mediaItems.push({
+          id: mediaId,
+          type: isVideo ? 'video' : 'image',
+          url,
+          thumbnailUrl: '',
+          storagePath,
+          fileName: asset.fileName || `${mediaId}.${extension}`,
+          fileSize: asset.fileSize || 0,
+          originalFileSize: asset.originalFileSize || rawAsset.fileSize || 0,
+          optimized: asset.optimized === true,
+        });
+      }
 
-  const blob = await readAssetAsBlob(asset.uri);
-  const fileRef = storageRef(storage, storagePath);
-  await uploadBytes(fileRef, blob, { contentType });
-  const url = await getDownloadURL(fileRef);
-
-  mediaItems.push({
-    id: mediaId,
-    type: isVideo ? 'video' : 'image',
-    url,
-    thumbnailUrl: '',
-    storagePath,
-    fileName: asset.fileName || `${mediaId}.${extension}`,
-    fileSize: asset.fileSize || 0,
-    originalFileSize: asset.originalFileSize || rawAsset.fileSize || 0,
-    optimized: asset.optimized === true,
-  });
-}
-
-      await set(itemRef, {
+      const galleryRecord = {
         kresId,
         targetType: uploadTarget.targetType,
         classId: uploadTarget.classId || '',
@@ -512,7 +704,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         yukleyenRol: mode === 'admin' ? 'yonetici' : 'ogretmen',
         createdAt,
         expiresAt: createdAt + DAY_MS,
-      });
+      };
+
+      await set(itemRef, galleryRecord);
+      await Promise.all([
+        set(dbRef(database, `kresGalerileri/${kresId}/${galleryId}`), true),
+        galleryRecord.classId ? set(dbRef(database, `sinifGalerileri/${galleryRecord.classId}/${galleryId}`), true) : Promise.resolve(),
+        ...asArray(galleryRecord.cocukIds).map((childId) => set(dbRef(database, `cocukGalerileri/${childId}/${galleryId}`), true)),
+      ]);
 
       setCaption('');
       setSelectedClassId('');
@@ -523,8 +722,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       console.error('Galeri yüklemesi yapılamadı:', error?.code || error?.message || error);
       Alert.alert('Hata', `Galeri yüklemesi yapılamadı. ${error?.code || error?.message || 'Storage ayarlarını kontrol et.'}`);
     } finally {
-       setUploadStatus('');
-       setUploading(false);
+      setUploadStatus('');
+      setUploading(false);
     }
   }
 
@@ -532,7 +731,12 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     try {
       const mediaItems = normalizeMediaItems(item);
       await remove(dbRef(database, `galeri/${item.id}`));
-      await Promise.all(mediaItems.map((media) => media.storagePath ? deleteObject(storageRef(storage, media.storagePath)).catch(() => null) : Promise.resolve(null)));
+      await Promise.all([
+        remove(dbRef(database, `kresGalerileri/${item.kresId}/${item.id}`)).catch(() => null),
+        item.classId || item.sinifId ? remove(dbRef(database, `sinifGalerileri/${item.classId || item.sinifId}/${item.id}`)).catch(() => null) : Promise.resolve(),
+        ...asArray(item.cocukIds || item.cocukId || item.studentId).map((childId) => remove(dbRef(database, `cocukGalerileri/${childId}/${item.id}`)).catch(() => null)),
+        ...mediaItems.map((media) => media.storagePath ? deleteObject(storageRef(storage, media.storagePath)).catch(() => null) : Promise.resolve(null)),
+      ]);
       if (item.storagePath) await deleteObject(storageRef(storage, item.storagePath)).catch(() => null);
       if (showAlert) Alert.alert('Silindi', 'Galeri kaydı kaldırıldı.');
     } catch (error) {
@@ -667,15 +871,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             <View style={styles.targetPreview}><Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text></View>
             <TextInput value={caption} onChangeText={setCaption} placeholder="Başlık / açıklama ekle (opsiyonel)" placeholderTextColor={THEME.muted} style={styles.input} multiline />
             <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>
-            {uploading ? (
-            <View style={styles.uploadingButtonContent}>
-            <ActivityIndicator color="#fff" />
-           <Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text>
-           </View>
-       ) : (
-           <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>
-       )}
-           </TouchableOpacity>
+              {uploading ? <View style={styles.uploadingButtonContent}><ActivityIndicator color="#fff" /><Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text></View> : <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>}
+            </TouchableOpacity>
           </View>
         ) : null}
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
@@ -719,44 +916,44 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   cardText: { color: THEME.muted, fontWeight: '700', lineHeight: 19, marginTop: 6 },
   segmentRow: { flexDirection: 'row', backgroundColor: THEME.primarySoft, padding: 4, borderRadius: 16, marginTop: 14 },
-  segment: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 13, marginHorizontal: 2 },
+  segment: { flex: 1, paddingVertical: 10, borderRadius: 13, alignItems: 'center' },
   segmentActive: { backgroundColor: THEME.primary },
-  segmentText: { color: THEME.primary, fontWeight: '900', fontSize: 12, textAlign: 'center' },
+  segmentText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
   segmentTextActive: { color: '#fff' },
   childPicker: { marginTop: 12 },
-  childChip: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: '#F3F1FA', marginRight: 8, borderWidth: 1, borderColor: THEME.border },
-  childChipActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  childChipText: { color: THEME.text, fontWeight: '800' },
+  childChip: { paddingHorizontal: 12, paddingVertical: 9, backgroundColor: THEME.primarySoft, borderRadius: 99, marginRight: 8 },
+  childChipActive: { backgroundColor: THEME.primary },
+  childChipText: { color: THEME.primary, fontWeight: '900' },
   childChipTextActive: { color: '#fff' },
-  targetPreview: { alignSelf: 'flex-start', marginTop: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F3F1FA', borderRadius: 99, borderWidth: 1, borderColor: THEME.border },
-  targetPreviewText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
-  input: { minHeight: 52, backgroundColor: '#FAF9FF', borderWidth: 1, borderColor: THEME.border, borderRadius: 16, padding: 12, color: THEME.text, fontWeight: '700', marginTop: 12 },
-  primaryButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
-  primaryButtonText: { color: '#fff', fontWeight: '900' },
-  uploadingButtonContent: { alignItems: 'center', justifyContent: 'center', gap: 8 },
-  disabledButton: { opacity: 0.65 },
+  targetPreview: { backgroundColor: '#FFF6E8', borderRadius: 14, padding: 11, marginTop: 12 },
+  targetPreviewText: { color: THEME.orange, fontWeight: '900' },
+  input: { minHeight: 48, borderRadius: 16, borderWidth: 1, borderColor: THEME.border, padding: 12, color: THEME.text, fontWeight: '700', marginTop: 12, backgroundColor: '#fff' },
+  primaryButton: { backgroundColor: THEME.primary, borderRadius: 16, padding: 14, alignItems: 'center', marginTop: 12 },
+  disabledButton: { opacity: 0.7 },
+  uploadingButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  primaryButtonText: { color: '#fff', fontWeight: '900', textAlign: 'center' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
-  emptyCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  emptyCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   emptyIcon: { fontSize: 42, marginBottom: 8 },
-  emptyTitle: { fontSize: 17, fontWeight: '900', color: THEME.text },
-  emptyDesc: { fontSize: 13, color: THEME.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
-  mediaCard: { backgroundColor: THEME.card, borderRadius: 26, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 12, elevation: 3 },
-  singleGrid: { height: 250, backgroundColor: THEME.primarySoft },
-  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', height: 250, backgroundColor: THEME.primarySoft },
-  threeGrid: { flexDirection: 'row', height: 250, backgroundColor: THEME.primarySoft },
-  threeLeft: { flex: 1.15, marginRight: 2 },
-  threeRight: { flex: 0.85 },
-  gridTile: { width: '50%', height: 125, borderWidth: 1, borderColor: '#fff', overflow: 'hidden', backgroundColor: THEME.dark },
-  singleTile: { width: '100%', height: '100%', borderWidth: 0 },
+  emptyTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
+  emptyDesc: { color: THEME.muted, textAlign: 'center', lineHeight: 20, marginTop: 6, fontWeight: '700' },
+  mediaCard: { backgroundColor: THEME.card, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: THEME.border, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  singleGrid: { height: 260 },
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, backgroundColor: THEME.border },
+  threeGrid: { flexDirection: 'row', height: 260, gap: 2, backgroundColor: THEME.border },
+  threeLeft: { flex: 1.25 },
+  threeRight: { flex: 1, gap: 2 },
+  gridTile: { width: '49.7%', height: 130, backgroundColor: THEME.dark, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  singleTile: { width: '100%', height: '100%' },
   largeTile: { width: '100%', height: '100%' },
   tileImage: { width: '100%', height: '100%' },
-  videoTile: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.dark },
-  playIcon: { color: '#fff', fontSize: 36, fontWeight: '900' },
+  videoTile: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.dark },
+  playIcon: { color: '#fff', fontSize: 34, fontWeight: '900' },
   videoTileText: { color: '#fff', fontWeight: '900', marginTop: 6 },
-  moreOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.48)' },
-  moreText: { color: '#fff', fontWeight: '900', fontSize: 34 },
+  moreOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center' },
+  moreText: { color: '#fff', fontWeight: '900', fontSize: 28 },
   mediaBody: { padding: 14 },
-  mediaTitleRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  mediaTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   mediaTitle: { flex: 1, color: THEME.text, fontWeight: '900', fontSize: 17, paddingRight: 8 },
   countBadge: { backgroundColor: THEME.primarySoft, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99 },
   countBadgeText: { color: THEME.primary, fontWeight: '900', fontSize: 11 },
