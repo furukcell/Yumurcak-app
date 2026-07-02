@@ -1,114 +1,251 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
+    ".read": false,
+    ".write": false,
+
+    "authKullaniciIndex": {
+      "$authUid": {
+        ".read": "auth != null && auth.uid === $authUid",
+        ".write": "auth != null && auth.uid === $authUid"
+      }
+    },
+
+    "authPushTokenIndex": {
+      "$authUid": {
+        ".read": "auth != null && auth.uid === $authUid",
+        ".write": "auth != null && auth.uid === $authUid"
+      }
+    },
 
     "kullanicilar": {
-      ".indexOn": ["email", "rol", "kresId", "sinifId", "authUid"]
-    },
-    "authKullaniciIndex": {
-      ".indexOn": [".value"]
-    },
-    "kresler": {
-      ".indexOn": ["olusturmaTarihi", "aktif"]
-    },
-    "abonelikler": {
-      ".indexOn": ["durum", "plan", "bitisTarihi"]
-    },
-    "siniflar": {
-      ".indexOn": ["kresId", "ad", "aktif"]
-    },
-    "cocuklar": {
-      ".indexOn": ["kresId", "sinifId", "veliId", "parentId", "aktif"]
-    },
-    "galeri": {
-      ".indexOn": ["kresId", "sinifId", "classId", "cocukId", "studentId", "createdAt", "expiresAt"]
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('authKullaniciIndex').child(auth.uid).val() === $uid || (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === (data.exists() ? data.child('kresId').val() : newData.child('kresId').val())))"
+      }
     },
 
-    "kresOzetleri": {
-      ".indexOn": ["updatedAt"]
+    "kresler": {
+      ".read": "auth != null",
+      "$kresId": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || ((root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen') && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === $kresId))"
+      }
     },
-    "indexBackfills": {
-      ".indexOn": ["lastRunAt", "version"]
+
+    "siniflar": {
+      ".read": "auth != null",
+      "$sinifId": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
+      }
     },
-    "kresKullanicilari": {
-      ".indexOn": [".value"]
+
+    "cocuklar": {
+      ".read": "auth != null",
+      "$cocukId": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "kullaniciKresleri": {
-      ".indexOn": [".value"]
+
+    "medikalBilgiler": {
+      ".read": "auth != null",
+      "$medikalId": {
+        ".write": "auth != null && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== ''"
+      }
     },
-    "kresSiniflari": {
-      ".indexOn": [".value"]
+
+    "fizikselGelisim": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "ogretmenSiniflari": {
-      ".indexOn": [".value"]
+
+    "uyumKayitlari": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "kresCocuklari": {
-      ".indexOn": [".value"]
+
+    "haftaninRozetleri": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "sinifCocuklari": {
-      ".indexOn": [".value"]
+
+    "yoklamalar": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "veliCocuklari": {
-      ".indexOn": [".value"]
-    },
-    "kresGalerileri": {
-      ".indexOn": [".value"]
-    },
-    "sinifGalerileri": {
-      ".indexOn": [".value"]
-    },
-    "cocukGalerileri": {
-      ".indexOn": [".value"]
+
+    "gunlukRaporlar": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
 
     "yemekListeleri": {
-      ".indexOn": ["kresId", "sinifId", "tarih", "ayKey", "baslangicTarihi"]
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "duyurular": {
-      ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
-    },
-    "etkinlikler": {
-      ".indexOn": ["kresId", "sinifId", "tarih", "createdAt"]
-    },
+
     "dersProgramlari": {
-      ".indexOn": ["kresId", "sinifId", "createdAt"]
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "yoklamalar": {
-      ".indexOn": ["kresId", "sinifId", "tarih", "cocukId"]
+
+    "duyurular": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "gunlukRaporlar": {
-      ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+
+    "etkinlikler": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
     },
-    "medikalBilgiler": {
-      ".indexOn": ["kresId", "sinifId", "cocukId"]
+
+    "anketler": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== ''"
+      }
     },
+
+    "kurumZili": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== ''"
+      }
+    },
+
     "odemeler": {
-      ".indexOn": ["kresId", "veliId", "cocukId", "tarih", "donem", "durum"]
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
+      }
     },
-    "raporlar": {
-      ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+
+    "abonelikler": {
+      ".read": "auth != null",
+      "$kresId": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
+      }
     },
-    "mesajlar": {
-      ".indexOn": ["kresId", "sinifId", "createdAt", "updatedAt"]
+
+    "promosyonKodlari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
     },
-    "gelisimler": {
-      ".indexOn": ["kresId", "sinifId", "cocukId", "tarih", "createdAt"]
+
+    "promosyonKullanimlari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
     },
+
+    "servisBilgileri": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
+      }
+    },
+
+    "galeri": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+      }
+    },
+
+    "kresOzetleri": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
+    },
+
+    "indexBackfills": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
+    },
+
+    "kresKullanicilari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "kullaniciKresleri": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "kresSiniflari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "ogretmenSiniflari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "kresCocuklari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "sinifCocuklari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "veliCocuklari": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "kresGalerileri": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "sinifGalerileri": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "cocukGalerileri": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+    },
+
+    "bildirimler": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null"
+      }
+    },
+
     "mesajKonusmalari": {
-      ".indexOn": ["kresId", "sinifId", "cocukId", "updatedAt", "createdAt"]
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== ''"
+      }
     },
-    "kullaniciKonusmalari": {
-      ".indexOn": [".value"]
-    },
-    "kresKonusmalari": {
-      ".indexOn": [".value"]
-    },
-    "cocukKonusmalari": {
-      ".indexOn": [".value"]
-    },
-    "sinifKonusmalari": {
-      ".indexOn": [".value"]
+
+    "mesajlar": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== ''"
+      }
     }
   }
 }
