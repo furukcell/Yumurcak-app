@@ -7,12 +7,19 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator
 } from 'react-native';
-import { ref, set, get } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
 
 export default function ClassFormScreen() {
   const route = useRoute();
@@ -59,20 +66,34 @@ export default function ClassFormScreen() {
       const classRef = ref(database, `siniflar/${id}`);
       const existingSnap = await get(classRef);
       const existingData = existingSnap.exists() ? (existingSnap.val() || {}) : {};
-      const existingTeacherIds = Array.isArray(existingData.ogretmenIds) ? existingData.ogretmenIds : [];
+      const existingTeacherIds = asArray(existingData.ogretmenIds);
       const now = Date.now();
+      const nextKresId = existingData.kresId || kullanici?.kresId || 'default-kres';
 
       const classData = {
         ...existingData,
         ad: ad.trim(),
         yasGrubu: yasGrubu.trim(),
         ogretmenIds: existingTeacherIds,
-        kresId: existingData.kresId || kullanici?.kresId || 'default-kres',
+        kresId: nextKresId,
         createdAt: existingData.createdAt || now,
         updatedAt: now,
       };
 
-      await set(classRef, classData);
+      const updates = {
+        [`siniflar/${id}`]: classData,
+        [`kresSiniflari/${nextKresId}/${id}`]: true,
+      };
+
+      if (existingData.kresId && existingData.kresId !== nextKresId) {
+        updates[`kresSiniflari/${existingData.kresId}/${id}`] = null;
+      }
+
+      existingTeacherIds.forEach((teacherId) => {
+        if (teacherId) updates[`ogretmenSiniflari/${teacherId}/${id}`] = true;
+      });
+
+      await update(ref(database), updates);
 
       setSuccessToast(true);
 
