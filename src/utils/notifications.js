@@ -10,6 +10,8 @@ import { database } from '../config/firebase';
 import { ROLLER } from '../constants';
 import { findUserIdByAuthUid } from './authHelpers';
 
+const EXPO_PROJECT_ID = '522bbf0b-0a2c-4198-93b8-429848df9a43';
+
 // Bildirim handler'ı ayarla
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -51,16 +53,18 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
 
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId: EXPO_PROJECT_ID });
     const token = tokenData?.data;
 
     if (token) {
       console.log('Push token alındı:', token);
+    } else {
+      console.warn('Push token boş döndü');
     }
 
     return token || null;
   } catch (error) {
-    console.warn('Bildirim token alınamadı:', error.message);
+    console.warn('Bildirim token alınamadı:', error?.message || error);
     return null;
   }
 }
@@ -83,21 +87,21 @@ export async function savePushTokenToDatabase(token, userId) {
 
     await update(ref(database, `kullanicilar/${resolvedUserId}`), {
       pushToken: token,
+      expoPushToken: token,
+      notificationToken: token,
       pushPlatform: Platform.OS,
       pushTokenUpdatedAt: now,
     });
 
-    if (resolvedUserId !== userId) {
-      await set(ref(database, `authPushTokenIndex/${userId}`), {
-        userId: resolvedUserId,
-        pushToken: token,
-        updatedAt: now,
-      });
-    }
+    await set(ref(database, `authPushTokenIndex/${userId}`), {
+      userId: resolvedUserId,
+      pushToken: token,
+      updatedAt: now,
+    }).catch(() => null);
 
-    console.log('Push token kaydedildi');
+    console.log('Push token kaydedildi:', resolvedUserId);
   } catch (error) {
-    console.warn('Push token kaydedilemedi:', error.message);
+    console.warn('Push token kaydedilemedi:', error?.message || error);
   }
 }
 
