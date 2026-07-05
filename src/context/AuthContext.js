@@ -4,15 +4,30 @@
 // ============================================================
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
 import { auth, database } from '../config/firebase';
-import { getKresForUser, findUserIdByAuthUid } from '../utils/authHelpers';
+import { getKresForUser, findUserIdByAuthUid, usernameToEmail } from '../utils/authHelpers';
 
 const AuthContext = createContext(null);
 
 const USER_KEY = 'yumurcak_kullanici';
 const KRES_KEY = 'yumurcak_kres';
+
+function getStoredPassword(user) {
+  return String(
+    user?.sifre ??
+    user?.['şifre'] ??
+    user?.password ??
+    user?.parola ??
+    user?.pass ??
+    ''
+  ).trim();
+}
+
+function getStoredEmail(user) {
+  return String(user?.email || usernameToEmail(user?.kullaniciAdi || user?.username || '')).trim().toLowerCase();
+}
 
 export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null);
@@ -20,6 +35,24 @@ export function AuthProvider({ children }) {
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const isSigningOutRef = useRef(false);
+  const restoringAuthRef = useRef(false);
+
+  const restoreFirebaseSession = async (user) => {
+    if (auth.currentUser || restoringAuthRef.current || isSigningOutRef.current) return;
+
+    const email = getStoredEmail(user);
+    const password = getStoredPassword(user);
+    if (!email || !password || password.length < 6) return;
+
+    restoringAuthRef.current = true;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.warn('Firebase oturumu geri açılamadı:', error?.code || error?.message || error);
+    } finally {
+      restoringAuthRef.current = false;
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -107,8 +140,10 @@ export function AuthProvider({ children }) {
       if (snap.exists()) {
         const freshUser = { ...kullaniciObj, uid: legacyId, id: legacyId, ...snap.val() };
         const kresObj = kayitliKres ? JSON.parse(kayitliKres) : await getKresForUser(freshUser);
+
         setKullanici(freshUser);
         setKres(kresObj);
+        restoreFirebaseSession(freshUser).catch((error) => console.warn('Otomatik auth yenileme hatası:', error?.message || error));
       } else {
         await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
         setKullanici(null);
@@ -140,6 +175,7 @@ export function AuthProvider({ children }) {
 
     setKullanici(normalizedUser);
     setKres(kresObj || null);
+    restoreFirebaseSession(normalizedUser).catch((error) => console.warn('Giriş sonrası auth yenileme hatası:', error?.message || error));
   };
 
   const cikisYap = async () => {
