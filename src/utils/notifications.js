@@ -16,6 +16,8 @@ const EXPO_PROJECT_ID = '522bbf0b-0a2c-4198-93b8-429848df9a43';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
