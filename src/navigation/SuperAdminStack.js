@@ -9,6 +9,7 @@ import SuperAdminDashboardScreen from '../screens/superadmin/SuperAdminDashboard
 import SuperAdminKresDetailScreen from '../screens/superadmin/SuperAdminKresDetailScreen';
 import SuperAdminKresCreateScreen from '../screens/superadmin/SuperAdminKresCreateScreen';
 import SuperAdminIndexMigrationScreen from '../screens/superadmin/SuperAdminIndexMigrationScreen';
+import SuperAdminSupportScreen from '../screens/superadmin/SuperAdminSupportScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +25,7 @@ export default function SuperAdminStack() {
       <Stack.Screen name="SuperAdminKresDetail" component={SuperAdminKresDetailScreen} />
       <Stack.Screen name="SuperAdminKresCreate" component={SuperAdminKresCreateScreen} />
       <Stack.Screen name="SuperAdminIndexMigration" component={SuperAdminIndexMigrationScreen} />
+      <Stack.Screen name="SuperAdminSupport" component={SuperAdminSupportScreen} />
     </Stack.Navigator>
   );
 }
