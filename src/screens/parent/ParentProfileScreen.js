@@ -191,6 +191,19 @@ export default function ParentProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🌈 Yumurcak</Text>
+          <Text style={styles.cardText}>Uygulama hakkında bilgi alabilir veya Yumurcak destek ekibine mesaj gönderebilirsin.</Text>
+
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('ParentAbout')} activeOpacity={0.85}>
+            <Text style={styles.secondaryButtonText}>Hakkımızda</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.secondaryButton, local.supportButton]} onPress={() => navigation.navigate('ParentSupport')} activeOpacity={0.85}>
+            <Text style={styles.secondaryButtonText}>Bize Yazın</Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity style={styles.secondaryButton} onPress={cikisYap} activeOpacity={0.85}>
           <Text style={styles.secondaryButtonText}>↩ Çıkış Yap</Text>
         </TouchableOpacity>
@@ -221,4 +234,5 @@ const local = {
     marginTop: 8,
   },
   removeButtonText: { color: '#FF4D6D', fontWeight: '900' },
+  supportButton: { marginTop: 10 },
 };
