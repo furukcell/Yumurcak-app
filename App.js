@@ -2,8 +2,8 @@
 // YUMURCAK — App.js
 // SafeAreaProvider + StatusBar + Push token + Android navigation bar + Notification deep links
 // ============================================================
-import { useEffect } from 'react';
-import { Linking, Platform } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AppState, Linking, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
@@ -79,27 +79,44 @@ export default function App() {
 
 function PushTokenSync() {
   const { kullanici } = useAuth();
+  const syncingRef = useRef(false);
+  const lastTokenRef = useRef('');
 
   useEffect(() => {
-    if (!kullanici?.id && !kullanici?.uid) return;
+    const userId = kullanici?.id || kullanici?.uid;
+    if (!userId) return undefined;
 
     let cancelled = false;
 
     const syncToken = async () => {
+      if (syncingRef.current || cancelled) return;
+      syncingRef.current = true;
+
       try {
         const token = await registerForPushNotificationsAsync();
         if (!token || cancelled) return;
 
-        await savePushTokenToDatabase(token, kullanici.id || kullanici.uid);
+        if (lastTokenRef.current === token) return;
+        await savePushTokenToDatabase(token, userId);
+        lastTokenRef.current = token;
       } catch (error) {
-        console.warn('Bildirim token kaydedilemedi:', error);
+        console.warn('Bildirim token kaydedilemedi:', error?.message || error);
+      } finally {
+        syncingRef.current = false;
       }
     };
 
     syncToken();
+    const retryTimer = setTimeout(syncToken, 2500);
+
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') syncToken();
+    });
 
     return () => {
       cancelled = true;
+      clearTimeout(retryTimer);
+      appStateSubscription?.remove?.();
     };
   }, [kullanici?.id, kullanici?.uid]);
 
