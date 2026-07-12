@@ -161,6 +161,7 @@ const TYPE_MAP = {
     payment: 'yumurcak://parent/payments',
     zil: 'yumurcak://parent/bell',
     bell: 'yumurcak://parent/bell',
+    kurumzili: 'yumurcak://parent/bell',
     medikal: 'yumurcak://parent/medical',
     medical: 'yumurcak://parent/medical',
   },
@@ -195,6 +196,9 @@ const TYPE_MAP = {
     adaptation: 'yumurcak://teacher/adaptation',
     rozet: 'yumurcak://teacher/badges',
     badge: 'yumurcak://teacher/badges',
+    zil: 'yumurcak://notifications',
+    bell: 'yumurcak://notifications',
+    kurumzili: 'yumurcak://notifications',
   },
   admin: {
     galeri: 'yumurcak://admin/gallery',
@@ -216,6 +220,7 @@ const TYPE_MAP = {
     payment: 'yumurcak://admin/payments',
     zil: 'yumurcak://admin/bell',
     bell: 'yumurcak://admin/bell',
+    kurumzili: 'yumurcak://admin/bell',
     ders: 'yumurcak://admin/schedule',
     program: 'yumurcak://admin/schedule',
     schedule: 'yumurcak://admin/schedule',
@@ -247,17 +252,42 @@ function getRoleGroup(role) {
   return 'parent';
 }
 
+function roleHomeUrl(group) {
+  if (group === 'teacher') return 'yumurcak://teacher/home';
+  if (group === 'admin') return 'yumurcak://admin/home';
+  return 'yumurcak://parent/home';
+}
+
+function roleMessagesUrl(group) {
+  if (group === 'teacher') return 'yumurcak://teacher/messages';
+  if (group === 'admin') return 'yumurcak://admin/messages';
+  return 'yumurcak://parent/messages';
+}
+
 function routeUrlForRole(route, role) {
   if (!route) return null;
   const group = getRoleGroup(role);
 
+  if (route === 'MessageDetail') return roleMessagesUrl(group);
+  if (route === 'AdminBell' && group === 'teacher') return 'yumurcak://notifications';
+  if (route === 'AdminBell' && group === 'parent') return 'yumurcak://parent/bell';
+  if (route === 'ParentAnnouncements' && group === 'teacher') return 'yumurcak://teacher/announcements';
+  if (route === 'ParentAnnouncements' && group === 'admin') return 'yumurcak://admin/announcements';
+  if (route === 'TeacherAnnouncements' && group === 'parent') return 'yumurcak://parent/announcements';
   if (route === 'TeacherMedical' && group === 'admin') return 'yumurcak://admin/children';
   if (route === 'ParentPolls' && group === 'admin') return 'yumurcak://admin/polls';
   if (route === 'ParentPayments' && group === 'admin') return 'yumurcak://admin/payments';
   if (route === 'ParentGallery' && group === 'admin') return 'yumurcak://admin/gallery';
   if (route === 'ParentMeals' && group === 'admin') return 'yumurcak://admin/meals';
 
-  return ROUTE_TO_URL[route] || null;
+  const url = ROUTE_TO_URL[route];
+  if (!url) return null;
+
+  if (group === 'teacher' && url.startsWith('yumurcak://parent/')) return roleHomeUrl(group);
+  if (group === 'parent' && url.startsWith('yumurcak://teacher/')) return roleHomeUrl(group);
+  if (group !== 'admin' && url.startsWith('yumurcak://admin/')) return roleHomeUrl(group);
+
+  return url;
 }
 
 function urlFromType(type, role) {
