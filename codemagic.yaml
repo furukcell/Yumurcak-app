@@ -23,48 +23,16 @@ workflows:
         script: |
           npx expo prebuild --clean --platform android
 
-      - name: Prepare Android release signing
-        script: |
-          if [ -n "$CM_KEYSTORE" ]; then
-            echo "CM_KEYSTORE bulundu, keystore dosyası hazırlanıyor..."
-            echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/yumurcak-release.keystore"
-            echo "CM_KEYSTORE_PATH=$CM_BUILD_DIR/yumurcak-release.keystore" >> "$CM_ENV"
-          elif [ -n "$CM_KEYSTORE_PATH" ]; then
-            echo "CM_KEYSTORE_PATH bulundu: $CM_KEYSTORE_PATH"
-          else
-            echo "HATA: Release imza dosyası bulunamadı. Codemagic yumurcak environment group içine CM_KEYSTORE base64 veya CM_KEYSTORE_PATH eklenmeli."
-            exit 1
-          fi
-
-          if [ -z "$CM_KEYSTORE_PASSWORD" ]; then
-            echo "HATA: CM_KEYSTORE_PASSWORD eksik."
-            exit 1
-          fi
-
-          if [ -z "$CM_KEY_ALIAS" ]; then
-            echo "HATA: CM_KEY_ALIAS eksik."
-            exit 1
-          fi
-
-          if [ -z "$CM_KEY_PASSWORD" ]; then
-            echo "HATA: CM_KEY_PASSWORD eksik."
-            exit 1
-          fi
-
       - name: Build Google Play AAB with Gradle
         script: |
           cd android
           chmod +x ./gradlew
-          ./gradlew clean bundleRelease \
-            -Pandroid.injected.signing.store.file="$CM_KEYSTORE_PATH" \
-            -Pandroid.injected.signing.store.password="$CM_KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$CM_KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$CM_KEY_PASSWORD"
+          ./gradlew clean bundleRelease
 
       - name: Show build outputs
         script: |
           echo "AAB dosyaları:"
-          find android/app/build/outputs/bundle/release -name "*.aab" -maxdepth 1 -type f -print || true
+          find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name "*.aab" -print || true
 
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
