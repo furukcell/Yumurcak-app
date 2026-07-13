@@ -1,6 +1,6 @@
 workflows:
-  yumurcak-android:
-    name: Yumurcak Android Build
+  yumurcak-android-aab:
+    name: Yumurcak Android AAB
     instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
