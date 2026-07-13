@@ -7,32 +7,190 @@ workflows:
     environment:
       groups:
         - yumurcak
+
+      android_signing:
+        - keystore: gayit
+          keystore_environment_variable: GAYIT_KEYSTORE_PATH
+          keystore_password_environment_variable: GAYIT_KEYSTORE_PASSWORD
+          key_alias_environment_variable: GAYIT_KEY_ALIAS
+          key_password_environment_variable: GAYIT_KEY_PASSWORD
+
+        - keystore: recber
+          keystore_environment_variable: RECBER_KEYSTORE_PATH
+          keystore_password_environment_variable: RECBER_KEYSTORE_PASSWORD
+          key_alias_environment_variable: RECBER_KEY_ALIAS
+          key_password_environment_variable: RECBER_KEY_PASSWORD
+
+      vars:
+        EXPECTED_UPLOAD_SHA1_PREFIX: "BA:F2:E7:B1:85:4C"
+
       node: 20.18.0
       java: 17
 
     scripts:
+      - name: Find correct Google Play signing key
+        script: |
+          set -e
+
+          echo "Mevcut Android anahtarları kontrol ediliyor..."
+
+          GAYIT_SHA1=$(keytool -list -v \
+            -keystore "$GAYIT_KEYSTORE_PATH" \
+            -storepass "$GAYIT_KEYSTORE_PASSWORD" \
+            -alias "$GAYIT_KEY_ALIAS" 2>/dev/null |
+            awk -F'SHA1: ' '/SHA1:/{print $2; exit}')
+
+          RECBER_SHA1=$(keytool -list -v \
+            -keystore "$RECBER_KEYSTORE_PATH" \
+            -storepass "$RECBER_KEYSTORE_PASSWORD" \
+            -alias "$RECBER_KEY_ALIAS" 2>/dev/null |
+            awk -F'SHA1: ' '/SHA1:/{print $2; exit}')
+
+          echo "gayit SHA1 : $GAYIT_SHA1"
+          echo "recber SHA1: $RECBER_SHA1"
+          echo "Beklenen     : $EXPECTED_UPLOAD_SHA1_PREFIX..."
+
+          case "$GAYIT_SHA1" in
+            "$EXPECTED_UPLOAD_SHA1_PREFIX"*)
+              echo "Doğru anahtar bulundu: gayit"
+
+              echo "CM_KEYSTORE_PATH=$GAYIT_KEYSTORE_PATH" >> "$CM_ENV"
+              echo "CM_KEYSTORE_PASSWORD=$GAYIT_KEYSTORE_PASSWORD" >> "$CM_ENV"
+              echo "CM_KEY_ALIAS=$GAYIT_KEY_ALIAS" >> "$CM_ENV"
+              echo "CM_KEY_PASSWORD=$GAYIT_KEY_PASSWORD" >> "$CM_ENV"
+              echo "SELECTED_KEYSTORE_NAME=gayit" >> "$CM_ENV"
+              ;;
+
+            *)
+              case "$RECBER_SHA1" in
+                "$EXPECTED_UPLOAD_SHA1_PREFIX"*)
+                  echo "Doğru anahtar bulundu: recber"
+
+                  echo "CM_KEYSTORE_PATH=$RECBER_KEYSTORE_PATH" >> "$CM_ENV"
+                  echo "CM_KEYSTORE_PASSWORD=$RECBER_KEYSTORE_PASSWORD" >> "$CM_ENV"
+                  echo "CM_KEY_ALIAS=$RECBER_KEY_ALIAS" >> "$CM_ENV"
+                  echo "CM_KEY_PASSWORD=$RECBER_KEY_PASSWORD" >> "$CM_ENV"
+                  echo "SELECTED_KEYSTORE_NAME=recber" >> "$CM_ENV"
+                  ;;
+
+                *)
+                  echo "HATA: Google Play'in beklediği anahtar bulunamadı."
+                  echo "Beklenen başlangıç: $EXPECTED_UPLOAD_SHA1_PREFIX"
+                  echo "gayit: $GAYIT_SHA1"
+                  echo "recber: $RECBER_SHA1"
+                  echo "Yumurcak anahtarı EAS'ta veya başka bir yerde olabilir."
+                  exit 1
+                  ;;
+              esac
+              ;;
+          esac
+
       - name: Install dependencies
         script: |
           npm install --legacy-peer-deps
 
       - name: Check app config
         script: |
-          node -e "const app=require('./app.json').expo; console.log('App:', app.name, app.version); console.log('Android package:', app.android.package); console.log('Android versionCode:', app.android.versionCode); console.log('SDK:', app.android.compileSdkVersion, app.android.targetSdkVersion, app.android.minSdkVersion);"
+          node -e "
+          const app = require('./app.json').expo;
+          console.log('App:', app.name, app.version);
+          console.log('Android package:', app.android.package);
+          console.log('Android versionCode:', app.android.versionCode);
+          console.log(
+            'SDK:',
+            app.android.compileSdkVersion,
+            app.android.targetSdkVersion,
+            app.android.minSdkVersion
+          );
+          "
 
       - name: Expo prebuild Android
         script: |
           npx expo prebuild --clean --platform android
 
+      - name: Configure release signing
+        script: |
+          set -e
+
+          echo "Kullanılacak anahtar: $SELECTED_KEYSTORE_NAME"
+          echo "Gradle release imzalaması yapılandırılıyor..."
+
+          cat >> android/app/build.gradle <<'EOF'
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("CM_KEYSTORE_PATH"))
+                      storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("CM_KEY_ALIAS")
+                      keyPassword System.getenv("CM_KEY_PASSWORD")
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+
+          echo "Release signing ayarı eklendi."
+
       - name: Build Google Play AAB with Gradle
         script: |
+          set -e
+
           cd android
           chmod +x ./gradlew
           ./gradlew clean bundleRelease
 
+      - name: Verify generated AAB signature
+        script: |
+          set -e
+
+          AAB_PATH=$(find \
+            android/app/build/outputs/bundle/release \
+            -maxdepth 1 \
+            -type f \
+            -name "*.aab" |
+            head -n 1)
+
+          if [ -z "$AAB_PATH" ]; then
+            echo "HATA: AAB dosyası bulunamadı."
+            exit 1
+          fi
+
+          echo "Oluşturulan AAB: $AAB_PATH"
+
+          AAB_SHA1=$(keytool -printcert \
+            -jarfile "$AAB_PATH" 2>/dev/null |
+            awk -F'SHA1: ' '/SHA1:/{print $2; exit}')
+
+          echo "AAB SHA1    : $AAB_SHA1"
+          echo "Beklenen SHA1 başlangıcı: $EXPECTED_UPLOAD_SHA1_PREFIX"
+
+          case "$AAB_SHA1" in
+            "$EXPECTED_UPLOAD_SHA1_PREFIX"*)
+              echo "BAŞARILI: AAB doğru Google Play anahtarıyla imzalandı."
+              ;;
+
+            *)
+              echo "HATA: Üretilen AAB hâlâ yanlış anahtarla imzalanmış."
+              exit 1
+              ;;
+          esac
+
       - name: Show build outputs
         script: |
           echo "AAB dosyaları:"
-          find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name "*.aab" -print || true
+
+          find \
+            android/app/build/outputs/bundle/release \
+            -maxdepth 1 \
+            -type f \
+            -name "*.aab" \
+            -print || true
 
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
