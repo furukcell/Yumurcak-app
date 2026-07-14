@@ -1,8 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 
-const ALBUM_NAME = 'Yumurcak';
-
 function getExtension(media) {
   const rawName = String(media?.fileName || '').split('?')[0];
   const nameExt = rawName.includes('.') ? rawName.split('.').pop() : '';
@@ -25,24 +23,20 @@ function getFileName(media) {
 export async function saveGalleryMediaToDevice(media) {
   if (!media?.url) throw new Error('Medya bağlantısı bulunamadı.');
 
-  const permission = await MediaLibrary.requestPermissionsAsync();
-  if (!permission.granted) {
-    const error = new Error('Galeri izni verilmedi.');
-    error.code = 'permission-denied';
-    throw error;
-  }
-
   const fileName = getFileName(media);
   const localUri = `${FileSystem.cacheDirectory}${Date.now()}-${fileName}`;
   const savedFile = await FileSystem.downloadAsync(media.url, localUri);
-  const asset = await MediaLibrary.createAssetAsync(savedFile.uri);
-  const album = await MediaLibrary.getAlbumAsync(ALBUM_NAME);
 
-  if (album) {
-    await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-  } else {
-    await MediaLibrary.createAlbumAsync(ALBUM_NAME, asset, false);
+  try {
+    await MediaLibrary.saveToLibraryAsync(savedFile.uri);
+  } catch (cause) {
+    const error = new Error('Medya cihaz galerisine kaydedilemedi.');
+    error.code = String(cause?.message || '').toLowerCase().includes('permission')
+      ? 'permission-denied'
+      : 'save-failed';
+    error.cause = cause;
+    throw error;
   }
 
-  return asset;
+  return { uri: savedFile.uri };
 }
