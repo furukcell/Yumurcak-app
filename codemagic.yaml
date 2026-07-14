@@ -19,7 +19,7 @@ workflows:
           eas whoami || true
       - name: Build Android AAB with EAS
         script: |
-          eas build --platform android --profile production --non-interactive
+          eas build --platform android --profile production --non-interactive --clear-cache
     artifacts:
       - "*.aab"
       - "**/*.aab"
