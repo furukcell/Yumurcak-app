@@ -3,7 +3,7 @@
     "name": "Yumurcak Kreş",
     "slug": "yumurcak-app-",
     "scheme": "yumurcak",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./icon.png",
     "userInterfaceStyle": "light",
@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.furukcell.yumurcakapp",
-      "versionCode": 2,
+      "versionCode": 3,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
       "minSdkVersion": 24,
