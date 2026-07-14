@@ -32,6 +32,11 @@
       "targetSdkVersion": 35,
       "minSdkVersion": 24,
       "softwareKeyboardLayoutMode": "resize",
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./icon.png",
         "backgroundColor": "#FFFFFF"
@@ -43,7 +48,8 @@
         {
           "photosPermission": "Yumurcak fotoğraf ve videoları göstermek için galeri erişimi ister.",
           "savePhotosPermission": "Yumurcak fotoğraf ve videoları cihaz galerisine kaydetmek için izin ister.",
-          "isAccessMediaLocationEnabled": false
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": []
         }
       ],
       [
