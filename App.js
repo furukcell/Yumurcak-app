@@ -80,10 +80,11 @@ export default function App() {
 function PushTokenSync() {
   const { kullanici } = useAuth();
   const syncingRef = useRef(false);
-  const lastTokenRef = useRef('');
+  const lastTokenOwnerRef = useRef('');
 
   useEffect(() => {
     const userId = kullanici?.id || kullanici?.uid;
+    const authUid = kullanici?.authUid || '';
     if (!userId) return undefined;
 
     let cancelled = false;
@@ -96,9 +97,11 @@ function PushTokenSync() {
         const token = await registerForPushNotificationsAsync();
         if (!token || cancelled) return;
 
-        if (lastTokenRef.current === token) return;
-        await savePushTokenToDatabase(token, userId);
-        lastTokenRef.current = token;
+        const tokenOwnerKey = `${userId}:${authUid || 'legacy'}:${token}`;
+        if (lastTokenOwnerRef.current === tokenOwnerKey) return;
+
+        await savePushTokenToDatabase(token, userId, authUid);
+        lastTokenOwnerRef.current = tokenOwnerKey;
       } catch (error) {
         console.warn('Bildirim token kaydedilemedi:', error?.message || error);
       } finally {
@@ -118,7 +121,7 @@ function PushTokenSync() {
       clearTimeout(retryTimer);
       appStateSubscription?.remove?.();
     };
-  }, [kullanici?.id, kullanici?.uid]);
+  }, [kullanici?.id, kullanici?.uid, kullanici?.authUid]);
 
   return null;
 }
