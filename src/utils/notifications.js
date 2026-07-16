@@ -12,6 +12,10 @@ import { findUserIdByAuthUid } from './authHelpers';
 
 const EXPO_PROJECT_ID = '522bbf0b-0a2c-4198-93b8-429848df9a43';
 
+function tokenKeyForDatabase(token = '') {
+  return String(token).replace(/[.#$/[\]]/g, '_');
+}
+
 // Bildirim handler'ı ayarla
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -74,18 +78,20 @@ export async function registerForPushNotificationsAsync() {
 /**
  * Push token'ı Firebase'e kaydet
  * @param {string} token - Expo push token
- * @param {string} userId - Firebase Auth uid veya legacy kullanıcı id
+ * @param {string} userId - legacy kullanıcı id veya Firebase Auth uid
+ * @param {string} authUid - Firebase Auth uid
  */
-export async function savePushTokenToDatabase(token, userId) {
+export async function savePushTokenToDatabase(token, userId, authUid = '') {
   try {
     if (!token || !userId) {
       console.warn('Token veya userId eksik');
       return;
     }
 
-    const legacyUserId = await findUserIdByAuthUid(userId);
+    const legacyUserId = authUid ? await findUserIdByAuthUid(authUid) : await findUserIdByAuthUid(userId);
     const resolvedUserId = legacyUserId || userId;
     const now = Date.now();
+    const tokenKey = tokenKeyForDatabase(token);
 
     await update(ref(database, `kullanicilar/${resolvedUserId}`), {
       pushToken: token,
@@ -93,11 +99,23 @@ export async function savePushTokenToDatabase(token, userId) {
       notificationToken: token,
       pushPlatform: Platform.OS,
       pushTokenUpdatedAt: now,
+      pushTokenAuthUid: authUid || null,
+      pushTokenUserId: resolvedUserId,
+      [`pushTokens/${tokenKey}`]: {
+        token,
+        platform: Platform.OS,
+        authUid: authUid || null,
+        updatedAt: now,
+        active: true,
+      },
     });
 
-    await set(ref(database, `authPushTokenIndex/${userId}`), {
+    const indexKey = authUid || userId;
+    await set(ref(database, `authPushTokenIndex/${indexKey}`), {
       userId: resolvedUserId,
+      authUid: authUid || null,
       pushToken: token,
+      platform: Platform.OS,
       updatedAt: now,
     }).catch(() => null);
 
@@ -125,6 +143,8 @@ export async function sendNotification(toToken, title, body, data = {}) {
         body,
         data,
         sound: 'default',
+        priority: 'high',
+        channelId: 'default',
       }),
     });
 
