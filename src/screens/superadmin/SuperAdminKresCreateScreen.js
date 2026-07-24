@@ -1,4 +1,3 @@
-
 // ============================================================
 // YUMURCAK — SuperAdminKresCreateScreen.js
 // FAZ 17: Yeni kreş oluştururken index kayıtları helper ile yazılır
@@ -18,8 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
-import { getApps, initializeApp } from 'firebase/app';
+import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { push, ref, update } from 'firebase/database';
 import { database, firebaseConfig } from '../../config/firebase';
 import { usernameToEmail } from '../../utils/authHelpers';
@@ -115,14 +114,17 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
       const adminEmail = usernameToEmail(cleanUsername);
       const adminPassword = form.sifre.trim();
 
-      const secondaryAuth = getSecondaryAuth();
+      const secondaryApp = initializeApp(firebaseConfig, `yumurcak-create-${Date.now()}`);
+      const secondaryAuth = getAuth(secondaryApp);
+
       const credential = await createUserWithEmailAndPassword(
         secondaryAuth,
         adminEmail,
         adminPassword
       );
       const authUid = credential.user.uid;
-      await signOut(secondaryAuth).catch(() => {});
+
+      await deleteApp(secondaryApp); // signOut değil, TÜM app'i siliyoruz
 
       const kresRecord = {
         id: kresId,
@@ -267,13 +269,6 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function getSecondaryAuth() {
-  const name = 'yumurcak-superadmin-create';
-  const existing = getApps().find((app) => app.name === name);
-  const app = existing || initializeApp(firebaseConfig, name);
-  return getAuth(app);
 }
 
 function normalizeUsername(value) {
