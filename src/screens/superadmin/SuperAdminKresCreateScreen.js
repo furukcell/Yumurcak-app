@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — SuperAdminKresCreateScreen.js
-// FAZ 17: Yeni kreş oluştururken index kayıtları helper ile yazılır
+// FAZ 18: Auth kullanıcısı REST API ile oluşturuluyor (session karışmasını önlemek için)
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import {
@@ -17,8 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { initializeApp, deleteApp } from 'firebase/app';
 import { push, ref, update } from 'firebase/database';
 import { database, firebaseConfig } from '../../config/firebase';
 import { usernameToEmail } from '../../utils/authHelpers';
@@ -114,17 +112,8 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
       const adminEmail = usernameToEmail(cleanUsername);
       const adminPassword = form.sifre.trim();
 
-      const secondaryApp = initializeApp(firebaseConfig, `yumurcak-create-${Date.now()}`);
-      const secondaryAuth = getAuth(secondaryApp);
-
-      const credential = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        adminEmail,
-        adminPassword
-      );
-      const authUid = credential.user.uid;
-
-      await deleteApp(secondaryApp); // signOut değil, TÜM app'i siliyoruz
+      // FAZ 18: Superadmin oturumuna hiç dokunmadan, REST API ile Auth kullanıcısı oluştur
+      const authUid = await createAuthUserViaRest(adminEmail, adminPassword);
 
       const kresRecord = {
         id: kresId,
@@ -269,6 +258,25 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+async function createAuthUserViaRest(email, password) {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = data?.error?.message || 'AUTH_REST_ERROR';
+    const e = new Error(msg);
+    e.code = msg.includes('EMAIL_EXISTS') ? 'auth/email-already-in-use' : msg;
+    throw e;
+  }
+  return data.localId;
 }
 
 function normalizeUsername(value) {
