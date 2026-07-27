@@ -1,7 +1,7 @@
 // ============================================================
 // DashboardScreen.js
-// Admin ana ekran
-// Tema arka planı + kompakt dashboard + kurum adı vitrini
+// FAZ 19: Fallback tam-tablo taraması kaldırıldı (veri sızıntısı düzeltmesi)
+// Boş index artık "yüklenmedi" değil "0" olarak sayılıyor
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
@@ -68,10 +68,6 @@ const EMPTY_STATS = {
   veliSayisi: 0,
 };
 
-function safeObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-}
-
 function hasSummaryCounts(data) {
   if (!data || typeof data !== 'object') return false;
   return ['sinifSayisi', 'cocukSayisi', 'ogretmenSayisi', 'veliSayisi'].some((key) => typeof data[key] === 'number');
@@ -86,8 +82,9 @@ function normalizeStats(data = {}) {
   };
 }
 
+// Boş/olmayan index artık 0 olarak sayılır — "yüklenmedi" varsayımı kaldırıldı
 function countIndex(data) {
-  if (!data || typeof data !== 'object') return null;
+  if (!data || typeof data !== 'object') return 0;
   return Object.values(data).filter((value) => value !== false && value !== null).length;
 }
 
@@ -122,78 +119,24 @@ export default function DashboardScreen() {
       setAbonelik(snap.val() || null);
     });
 
-    let fallbackUnsubs = [];
     let summaryActive = false;
     const indexCounts = {
-      sinifSayisi: null,
-      cocukSayisi: null,
-      ogretmenSayisi: null,
-      veliSayisi: null,
-    };
-    const loadedIndexes = new Set();
-
-    const stopFallback = () => {
-      fallbackUnsubs.forEach((unsub) => unsub && unsub());
-      fallbackUnsubs = [];
-    };
-
-    const startFallback = () => {
-      if (summaryActive || fallbackUnsubs.length > 0) return;
-
-      const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-        const data = safeObject(snap.val());
-        setIstatistik((prev) => ({
-          ...prev,
-          sinifSayisi: Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length,
-        }));
-      });
-
-      const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
-        const data = safeObject(snap.val());
-        setIstatistik((prev) => ({
-          ...prev,
-          cocukSayisi: Object.values(data).filter((x) => !x.kresId || x.kresId === kresId).length,
-        }));
-      });
-
-      const kullaniciUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
-        const data = safeObject(snap.val());
-        const liste = Object.values(data).filter((u) => !u.kresId || u.kresId === kresId);
-        setIstatistik((prev) => ({
-          ...prev,
-          ogretmenSayisi: liste.filter((u) => u.rol === 'ogretmen').length,
-          veliSayisi: liste.filter((u) => u.rol === 'veli').length,
-        }));
-        setYukleniyor(false);
-      });
-
-      fallbackUnsubs = [sinifUnsub, cocukUnsub, kullaniciUnsub];
+      sinifSayisi: 0,
+      cocukSayisi: 0,
+      ogretmenSayisi: 0,
+      veliSayisi: 0,
     };
 
     const publishIndexCounts = () => {
       if (summaryActive) return;
-      const hasAnyIndex = Object.values(indexCounts).some((value) => value !== null);
-
-      if (hasAnyIndex) {
-        stopFallback();
-        setIstatistik({
-          sinifSayisi: indexCounts.sinifSayisi || 0,
-          cocukSayisi: indexCounts.cocukSayisi || 0,
-          ogretmenSayisi: indexCounts.ogretmenSayisi || 0,
-          veliSayisi: indexCounts.veliSayisi || 0,
-        });
-        setYukleniyor(false);
-        return;
-      }
-
-      if (loadedIndexes.size >= 4) startFallback();
+      setIstatistik({ ...indexCounts });
+      setYukleniyor(false);
     };
 
     const summaryUnsub = onValue(ref(database, `kresOzetleri/${kresId}`), (snap) => {
       const data = snap.val();
       if (hasSummaryCounts(data)) {
         summaryActive = true;
-        stopFallback();
         setIstatistik(normalizeStats(data));
         setYukleniyor(false);
         return;
@@ -209,7 +152,6 @@ export default function DashboardScreen() {
       ['ogretmenSayisi', `kresKullanicilari/${kresId}/ogretmenler`],
       ['veliSayisi', `kresKullanicilari/${kresId}/veliler`],
     ].map(([key, path]) => onValue(ref(database, path), (snap) => {
-      loadedIndexes.add(key);
       indexCounts[key] = countIndex(snap.val());
       publishIndexCounts();
     }));
@@ -219,7 +161,6 @@ export default function DashboardScreen() {
       subUnsub();
       summaryUnsub();
       indexListeners.forEach((unsub) => unsub && unsub());
-      stopFallback();
     };
   }, [kresId]);
 
