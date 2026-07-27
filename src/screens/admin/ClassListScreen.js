@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — ClassListScreen.js
-// FAZ 2: Sınıf listesi profesyonel arayüz
+// FAZ 19: Sadece kendi kreşinin sınıfları gösterilecek şekilde
+// kresSiniflari index'i üzerinden veri çekilir (veri sızıntısı düzeltmesi)
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -12,9 +13,10 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 const THEME = {
   primary: '#0B5EAD',
@@ -34,29 +36,54 @@ const THEME = {
 
 export default function ClassListScreen() {
   const navigation = useNavigation();
+  const { kullanici, kres } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
+
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const classesRef = ref(database, 'siniflar');
-    const unsubscribe = onValue(classesRef, (snapshot) => {
-      const data = snapshot.val();
+    if (!kresId) {
+      setClasses([]);
+      setLoading(false);
+      return;
+    }
 
-      if (data) {
-        const classesArray = Object.entries(data)
-          .map(([id, value]) => ({ id, ...value }))
+    const indexRef = ref(database, `kresSiniflari/${kresId}`);
+
+    const unsubscribe = onValue(indexRef, (snapshot) => {
+      const idsData = snapshot.val();
+
+      if (!idsData) {
+        setClasses([]);
+        setLoading(false);
+        return;
+      }
+
+      const classIds = Object.keys(idsData);
+
+      Promise.all(
+        classIds.map((id) =>
+          get(ref(database, `siniflar/${id}`)).then((s) =>
+            s.exists() ? { id, ...s.val() } : null
+          )
+        )
+      ).then((results) => {
+        const classesArray = results
+          .filter(Boolean)
           .sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
 
         setClasses(classesArray);
-      } else {
+        setLoading(false);
+      }).catch((error) => {
+        console.warn('Sınıf listesi çekme hatası:', error);
         setClasses([]);
-      }
-
-      setLoading(false);
+        setLoading(false);
+      });
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [kresId]);
 
   const toplamOgretmen = useMemo(() => {
     return classes.reduce((total, item) => total + (item.ogretmenIds?.length || 0), 0);
