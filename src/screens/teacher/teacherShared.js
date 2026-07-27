@@ -8,7 +8,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -69,6 +69,21 @@ function indexIds(data) {
 function listenValue(path, onData, onError) {
   const r = ref(database, path);
   return onValue(r, (snapshot) => onData(snapshot.val()), () => {
+    if (typeof onError === 'function') onError();
+  });
+}
+
+// Rules artık bu node'larda çıplak "tüm node'u oku" isteğini reddediyor;
+// sadece kresId'ye göre filtrelenmiş sorguya izin veriyor. Bu yüzden
+// duyurular, yemekListeleri, etkinlikler, dersProgramlari, yoklamalar,
+// gunlukRaporlar, medikalBilgiler burada kresId sorgusuyla çekiliyor.
+function listenByKresId(path, kresId, onData, onError) {
+  if (!kresId) {
+    onData(null);
+    return () => {};
+  }
+  const q = query(ref(database, path), orderByChild('kresId'), equalTo(kresId));
+  return onValue(q, (snapshot) => onData(snapshot.val()), () => {
     if (typeof onError === 'function') onError();
   });
 }
@@ -321,21 +336,35 @@ export function useTeacherData() {
   }, [teacherId, adminId, parentIds.join('|')]);
 
   useEffect(() => {
+    if (!kresId) {
+      setReports([]);
+      setAnnouncements([]);
+      setMeals([]);
+      setEvents([]);
+      setSchedules([]);
+      setAttendance([]);
+      setMedicalMap({});
+      return undefined;
+    }
+
     const unsubs = [];
-    const listen = (path, setter, mapper) => {
-      const unsub = listenValue(path, (data) => setter(mapper ? mapper(data) : data || {}));
+    const listenList = (path, setter) => {
+      const unsub = listenByKresId(path, kresId, (data) => setter(toList(data)), () => setter([]));
       unsubs.push(unsub);
     };
 
-    listen('gunlukRaporlar', setReports, (data) => toList(data));
-    listen('duyurular', setAnnouncements, (data) => toList(data));
-    listen('yemekListeleri', setMeals, (data) => toList(data));
-    listen('etkinlikler', setEvents, (data) => toList(data));
-    listen('dersProgramlari', setSchedules, (data) => toList(data));
-    listen('yoklamalar', setAttendance, (data) => toList(data));
-    listen('medikalBilgiler', setMedicalMap, (data) => data || {});
+    listenList('gunlukRaporlar', setReports);
+    listenList('duyurular', setAnnouncements);
+    listenList('yemekListeleri', setMeals);
+    listenList('etkinlikler', setEvents);
+    listenList('dersProgramlari', setSchedules);
+    listenList('yoklamalar', setAttendance);
+
+    const medicalUnsub = listenByKresId('medikalBilgiler', kresId, (data) => setMedicalMap(data || {}), () => setMedicalMap({}));
+    unsubs.push(medicalUnsub);
+
     return () => unsubs.forEach((unsub) => unsub && unsub());
-  }, []);
+  }, [kresId]);
 
   const classReports = useMemo(() => {
     const childIds = new Set(classChildren.map((child) => child.id));
