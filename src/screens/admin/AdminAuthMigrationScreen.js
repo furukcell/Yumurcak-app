@@ -51,12 +51,29 @@ export default function AdminAuthMigrationScreen({ navigation }) {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const snap = await get(ref(database, 'kullanicilar'));
-      const data = snap.val() || {};
-      const list = Object.entries(data)
+      // Artık tüm 'kullanicilar' node'u çekilmiyor.
+      // Önce bu kreşe ait userId'ler index üzerinden bulunuyor,
+      // sonra sadece o kullanıcılar tek tek getiriliyor.
+      const indexSnap = await get(ref(database, `kresKullanicilari/${kresId}`));
+      const indexData = indexSnap.val() || {};
+
+      const userIds = new Set();
+      Object.values(indexData).forEach((rolGrubu) => {
+        Object.keys(rolGrubu || {}).forEach((uid) => userIds.add(uid));
+      });
+
+      const entries = await Promise.all(
+        Array.from(userIds).map(async (uid) => {
+          const snap = await get(ref(database, `kullanicilar/${uid}`));
+          const val = snap.val();
+          return val ? [uid, val] : null;
+        })
+      );
+
+      const list = entries
+        .filter(Boolean)
         .map(([id, user]) => ({ id, uid: id, ...user }))
         .filter((user) => user.aktif !== false)
-        .filter((user) => !user.kresId || user.kresId === kresId)
         .sort((a, b) => String(a.rol || '').localeCompare(String(b.rol || ''), 'tr'));
 
       setUsers(list);
