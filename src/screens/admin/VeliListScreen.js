@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — VeliListScreen.js
-// FAZ 2: Profesyonel veli listesi arayüzü
+// FAZ 19: Sadece kendi kreşinin velileri index üzerinden çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 const THEME = {
   primary: '#3C3489',
@@ -31,76 +32,132 @@ const THEME = {
   border: '#EEEAF8',
 };
 
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
+
 export default function VeliListScreen() {
   const navigation = useNavigation();
+  const { kullanici, kres } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
+
   const [veliler, setVeliler] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let kullanicilar = {};
-    let cocuklar = {};
-    let siniflar = {};
-    let kulLoaded = false;
-    let cocukLoaded = false;
-    let sinifLoaded = false;
-
-    function buildList() {
-      if (!kulLoaded || !cocukLoaded || !sinifLoaded) return;
-
-      const liste = Object.entries(kullanicilar)
-        .filter(([, v]) => v.rol === 'veli')
-        .map(([id, v]) => {
-          const bagliCocuklar = Object.entries(cocuklar)
-            .filter(([, c]) => c.veliIds && c.veliIds.includes(id))
-            .map(([cocukId, c]) => {
-              const sinif = c.sinifId ? siniflar[c.sinifId] : null;
-              return {
-                id: cocukId,
-                ad: `${c.ad || ''} ${c.soyad || ''}`.trim() || '-',
-                sinifAd: sinif ? sinif.ad : c.sinifId || null,
-              };
-            });
-
-          return {
-            id,
-            ad: `${v.ad || ''} ${v.soyad || ''}`.trim() || v.kullaniciAdi || id,
-            kullaniciAdi: v.kullaniciAdi || '-',
-            telefon: v.telefon || null,
-            email: v.email || v.eposta || null,
-            aktif: v.aktif !== false,
-            cocuklar: bagliCocuklar,
-          };
-        })
-        .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
-
-      setVeliler(liste);
+    if (!kresId) {
+      setVeliler([]);
       setLoading(false);
+      return;
     }
 
-    const kulUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
-      kullanicilar = snap.val() || {};
-      kulLoaded = true;
+    const veliIndexRef = ref(database, `kresKullanicilari/${kresId}/veliler`);
+    const cocukIndexRef = ref(database, `kresCocuklari/${kresId}`);
+
+    let veliIds = [];
+    let cocukIds = [];
+    let veliLoaded = false;
+    let cocukLoaded = false;
+
+    async function buildList() {
+      if (!veliLoaded || !cocukLoaded) return;
+
+      try {
+        // ── Veli kullanıcılarını çek ────────────────────────
+        const veliResults = await Promise.all(
+          veliIds.map((id) =>
+            get(ref(database, `kullanicilar/${id}`)).then((s) =>
+              s.exists() ? [id, s.val()] : null
+            )
+          )
+        );
+        const kullanicilarMap = Object.fromEntries(veliResults.filter(Boolean));
+
+        // ── Çocukları çek ────────────────────────────────────
+        const cocukResults = await Promise.all(
+          cocukIds.map((id) =>
+            get(ref(database, `cocuklar/${id}`)).then((s) =>
+              s.exists() ? [id, s.val()] : null
+            )
+          )
+        );
+        const cocuklarMap = Object.fromEntries(cocukResults.filter(Boolean));
+
+        // ── Bu çocukların sınıflarını topla ─────────────────
+        const sinifIdSet = new Set();
+        Object.values(cocuklarMap).forEach((c) => {
+          if (c.sinifId) sinifIdSet.add(c.sinifId);
+        });
+
+        const sinifResults = await Promise.all(
+          Array.from(sinifIdSet).map((id) =>
+            get(ref(database, `siniflar/${id}`)).then((s) =>
+              s.exists() ? [id, s.val()] : null
+            )
+          )
+        );
+        const siniflarMap = Object.fromEntries(sinifResults.filter(Boolean));
+
+        // ── Listeyi kur ──────────────────────────────────────
+        const liste = veliIds
+          .filter((id) => kullanicilarMap[id])
+          .map((id) => {
+            const v = kullanicilarMap[id];
+
+            const bagliCocuklar = Object.entries(cocuklarMap)
+              .filter(([, c]) => asArray(c.veliIds).includes(id))
+              .map(([cocukId, c]) => {
+                const sinif = c.sinifId ? siniflarMap[c.sinifId] : null;
+                return {
+                  id: cocukId,
+                  ad: `${c.ad || ''} ${c.soyad || ''}`.trim() || '-',
+                  sinifAd: sinif ? sinif.ad : c.sinifId || null,
+                };
+              });
+
+            return {
+              id,
+              ad: `${v.ad || ''} ${v.soyad || ''}`.trim() || v.kullaniciAdi || id,
+              kullaniciAdi: v.kullaniciAdi || '-',
+              telefon: v.telefon || null,
+              email: v.email || v.eposta || null,
+              aktif: v.aktif !== false,
+              cocuklar: bagliCocuklar,
+            };
+          })
+          .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+
+        setVeliler(liste);
+        setLoading(false);
+      } catch (error) {
+        console.warn('Veli listesi çekme hatası:', error);
+        setVeliler([]);
+        setLoading(false);
+      }
+    }
+
+    const veliUnsub = onValue(veliIndexRef, (snap) => {
+      const data = snap.val();
+      veliIds = data ? Object.keys(data) : [];
+      veliLoaded = true;
       buildList();
     });
 
-    const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
-      cocuklar = snap.val() || {};
+    const cocukUnsub = onValue(cocukIndexRef, (snap) => {
+      const data = snap.val();
+      cocukIds = data ? Object.keys(data) : [];
       cocukLoaded = true;
       buildList();
     });
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      siniflar = snap.val() || {};
-      sinifLoaded = true;
-      buildList();
-    });
-
     return () => {
-      kulUnsub();
+      veliUnsub();
       cocukUnsub();
-      sinifUnsub();
     };
-  }, []);
+  }, [kresId]);
 
   const aktifVeliSayisi = veliler.filter((v) => v.aktif).length;
   const cocukBagliVeliSayisi = veliler.filter((v) => v.cocuklar.length > 0).length;
