@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — ChildListScreen.js
-// FAZ 2: Çocuk listesi modern kart arayüzü
+// FAZ 19: Sadece kendi kreşinin verisi index üzerinden çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 import { calculateChildAge, formatChildBirthDate, getChildBirthDate } from '../../utils/childDates';
 
 const THEME = {
@@ -34,88 +35,133 @@ const THEME = {
   border: '#EEEAF8',
 };
 
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
+
 export default function ChildListScreen() {
   const navigation = useNavigation();
+  const { kullanici, kres } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
+
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cocuklar = {};
-    let siniflar = {};
-    let kullanicilar = {};
-    let cocukLoaded = false;
-    let sinifLoaded = false;
-    let kulLoaded = false;
-
-    function buildList() {
-      if (!cocukLoaded || !sinifLoaded || !kulLoaded) return;
-
-      const liste = Object.entries(cocuklar)
-        .map(([id, c]) => {
-          const sinif = c.sinifId ? siniflar[c.sinifId] : null;
-          const birthDate = getChildBirthDate(c);
-
-          const veliBilgileri = c.veliIds
-            ? c.veliIds
-                .filter((vid) => kullanicilar[vid])
-                .map((vid) => {
-                  const v = kullanicilar[vid];
-                  return {
-                    ad: `${v.ad || ''} ${v.soyad || ''}`.trim() || v.kullaniciAdi || vid,
-                    telefon: v.telefon || null,
-                  };
-                })
-            : [];
-
-          let ogretmenAd = null;
-          if (sinif && sinif.ogretmenIds && sinif.ogretmenIds.length > 0) {
-            const ogId = sinif.ogretmenIds[0];
-            const og = kullanicilar[ogId];
-            if (og) {
-              ogretmenAd = `${og.ad || ''} ${og.soyad || ''}`.trim() || og.kullaniciAdi || null;
-            }
-          }
-
-          return {
-            id,
-            ad: `${c.ad || ''} ${c.soyad || ''}`.trim() || c.ad || id,
-            dogumTarihi: birthDate,
-            yas: calculateChildAge(birthDate),
-            sinifAd: sinif ? sinif.ad : c.sinifId || null,
-            veliler: veliBilgileri,
-            ogretmenAd,
-          };
-        })
-        .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
-
-      setChildren(liste);
+    if (!kresId) {
+      setChildren([]);
       setLoading(false);
+      return;
     }
 
-    const cocukUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
-      cocuklar = snap.val() || {};
-      cocukLoaded = true;
-      buildList();
+    const cocukIndexRef = ref(database, `kresCocuklari/${kresId}`);
+
+    const unsubscribe = onValue(cocukIndexRef, async (snapshot) => {
+      const idsData = snapshot.val();
+
+      if (!idsData) {
+        setChildren([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const cocukIds = Object.keys(idsData);
+
+        // ── Çocukları çek ──────────────────────────────────
+        const cocukResults = await Promise.all(
+          cocukIds.map((id) =>
+            get(ref(database, `cocuklar/${id}`)).then((s) =>
+              s.exists() ? { id, ...s.val() } : null
+            )
+          )
+        );
+        const cocuklarArr = cocukResults.filter(Boolean);
+
+        // ── Bu çocukların bağlı olduğu sınıf ve veli ID'lerini topla ─
+        const sinifIdSet = new Set();
+        const veliIdSet = new Set();
+        cocuklarArr.forEach((c) => {
+          if (c.sinifId) sinifIdSet.add(c.sinifId);
+          asArray(c.veliIds).forEach((vid) => vid && veliIdSet.add(vid));
+        });
+
+        // ── Sınıfları çek ──────────────────────────────────
+        const sinifResults = await Promise.all(
+          Array.from(sinifIdSet).map((id) =>
+            get(ref(database, `siniflar/${id}`)).then((s) =>
+              s.exists() ? [id, s.val()] : null
+            )
+          )
+        );
+        const siniflarMap = Object.fromEntries(sinifResults.filter(Boolean));
+
+        // ── Sınıflardaki öğretmen ID'lerini de topla ───────
+        Object.values(siniflarMap).forEach((sinif) => {
+          asArray(sinif.ogretmenIds).forEach((oid) => oid && veliIdSet.add(oid));
+        });
+
+        // ── Veli + öğretmen kullanıcılarını çek ────────────
+        const kullaniciResults = await Promise.all(
+          Array.from(veliIdSet).map((id) =>
+            get(ref(database, `kullanicilar/${id}`)).then((s) =>
+              s.exists() ? [id, s.val()] : null
+            )
+          )
+        );
+        const kullanicilarMap = Object.fromEntries(kullaniciResults.filter(Boolean));
+
+        // ── Listeyi kur ─────────────────────────────────────
+        const liste = cocuklarArr
+          .map((c) => {
+            const sinif = c.sinifId ? siniflarMap[c.sinifId] : null;
+            const birthDate = getChildBirthDate(c);
+
+            const veliBilgileri = asArray(c.veliIds)
+              .filter((vid) => kullanicilarMap[vid])
+              .map((vid) => {
+                const v = kullanicilarMap[vid];
+                return {
+                  ad: `${v.ad || ''} ${v.soyad || ''}`.trim() || v.kullaniciAdi || vid,
+                  telefon: v.telefon || null,
+                };
+              });
+
+            let ogretmenAd = null;
+            const ogretmenIds = sinif ? asArray(sinif.ogretmenIds) : [];
+            if (ogretmenIds.length > 0) {
+              const og = kullanicilarMap[ogretmenIds[0]];
+              if (og) {
+                ogretmenAd = `${og.ad || ''} ${og.soyad || ''}`.trim() || og.kullaniciAdi || null;
+              }
+            }
+
+            return {
+              id: c.id,
+              ad: `${c.ad || ''} ${c.soyad || ''}`.trim() || c.ad || c.id,
+              dogumTarihi: birthDate,
+              yas: calculateChildAge(birthDate),
+              sinifAd: sinif ? sinif.ad : c.sinifId || null,
+              veliler: veliBilgileri,
+              ogretmenAd,
+            };
+          })
+          .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+
+        setChildren(liste);
+        setLoading(false);
+      } catch (error) {
+        console.warn('Çocuk listesi çekme hatası:', error);
+        setChildren([]);
+        setLoading(false);
+      }
     });
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      siniflar = snap.val() || {};
-      sinifLoaded = true;
-      buildList();
-    });
-
-    const kulUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
-      kullanicilar = snap.val() || {};
-      kulLoaded = true;
-      buildList();
-    });
-
-    return () => {
-      cocukUnsub();
-      sinifUnsub();
-      kulUnsub();
-    };
-  }, []);
+    return () => unsubscribe();
+  }, [kresId]);
 
   const renderItem = ({ item }) => {
     const veliText = item.veliler.length > 0
