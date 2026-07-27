@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — ChildFormScreen.js
-// Çocuk ekleme/düzenleme formu
+// FAZ 19: Sınıf/veli listesi artık index üzerinden, sadece kendi kreşinden çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
@@ -42,19 +42,44 @@ export default function ChildFormScreen() {
   useEffect(() => {
     const yukle = async () => {
       const kresId = kullanici?.kresId;
-      const sinifSnap = await get(ref(database, 'siniflar'));
-      if (sinifSnap.exists()) {
-        const data = sinifSnap.val();
-        setSiniflar(Object.entries(data).map(([id, v]) => ({ id, ...v })).filter((s) => !kresId || !s.kresId || s.kresId === kresId));
-      }
 
-      const kullaniciSnap = await get(ref(database, 'kullanicilar'));
-      if (kullaniciSnap.exists()) {
-        const data = kullaniciSnap.val();
-        const veliListesi = Object.entries(data)
-          .filter(([_, v]) => v.rol === 'veli' && (!kresId || !v.kresId || v.kresId === kresId))
-          .map(([id, v]) => ({ id, ...v }));
-        setVeliler(veliListesi);
+      try {
+        if (kresId) {
+          // ── Sınıflar: kresSiniflari index'i üzerinden ────────
+          const sinifIndexSnap = await get(ref(database, `kresSiniflari/${kresId}`));
+          if (sinifIndexSnap.exists()) {
+            const sinifIds = Object.keys(sinifIndexSnap.val());
+            const sinifResults = await Promise.all(
+              sinifIds.map((id) =>
+                get(ref(database, `siniflar/${id}`)).then((s) => (s.exists() ? { id, ...s.val() } : null))
+              )
+            );
+            setSiniflar(sinifResults.filter(Boolean));
+          } else {
+            setSiniflar([]);
+          }
+
+          // ── Veliler: kresKullanicilari index'i üzerinden ─────
+          const veliIndexSnap = await get(ref(database, `kresKullanicilari/${kresId}/veliler`));
+          if (veliIndexSnap.exists()) {
+            const veliIds = Object.keys(veliIndexSnap.val());
+            const veliResults = await Promise.all(
+              veliIds.map((id) =>
+                get(ref(database, `kullanicilar/${id}`)).then((v) => (v.exists() ? { id, ...v.val() } : null))
+              )
+            );
+            setVeliler(veliResults.filter(Boolean));
+          } else {
+            setVeliler([]);
+          }
+        } else {
+          setSiniflar([]);
+          setVeliler([]);
+        }
+      } catch (error) {
+        console.warn('Sınıf/veli listesi çekme hatası:', error);
+        setSiniflar([]);
+        setVeliler([]);
       }
 
       if (childId) {
