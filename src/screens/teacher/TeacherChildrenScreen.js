@@ -29,20 +29,33 @@ export default function TeacherChildrenScreen() {
   const [veliLoading, setVeliLoading] = useState(true);
 
   // Veli bilgileri (ad, telefon) çocuk kaydında tutulmuyor — kullanicilar/{veliId}
-  // altında, rol: 'veli' olarak duruyor. Tüm velileri çekip id'ye göre haritalıyoruz.
+  // altında, rol: 'veli' olarak duruyor. Sadece bu sınıftaki çocukların
+  // veliIds'lerini topluyor, o kullanıcıları tek tek çekiyoruz.
+  // (Önceden tüm 'kullanicilar' node'u çekilip client-side filtreleniyordu —
+  // bu, tüm kreşlerin veli verisini cihaza indiriyordu.)
   useEffect(() => {
     let cancelled = false;
 
     const loadVeliler = async () => {
+      setVeliLoading(true);
       try {
-        const snap = await get(ref(database, 'kullanicilar'));
-        if (!cancelled && snap.exists()) {
-          const data = snap.val();
+        const veliIds = new Set();
+        (classChildren || []).forEach((child) => {
+          (Array.isArray(child.veliIds) ? child.veliIds : []).forEach((id) => veliIds.add(id));
+        });
+
+        const entries = await Promise.all(
+          Array.from(veliIds).map(async (id) => {
+            const snap = await get(ref(database, `kullanicilar/${id}`));
+            const val = snap.val();
+            return val ? [id, val] : null;
+          })
+        );
+
+        if (!cancelled) {
           const map = {};
-          Object.entries(data).forEach(([id, v]) => {
-            if (v.rol === 'veli') {
-              map[id] = v;
-            }
+          entries.filter(Boolean).forEach(([id, v]) => {
+            if (v.rol === 'veli') map[id] = v;
           });
           setVeliMap(map);
         }
@@ -58,7 +71,7 @@ export default function TeacherChildrenScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [classChildren]);
 
   const today = todayString();
 
