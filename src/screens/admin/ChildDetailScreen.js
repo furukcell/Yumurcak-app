@@ -1,16 +1,23 @@
 // ============================================================
 // YUMURCAK — ChildDetailScreen.js
-// Çocuk detay ekranı — veli, sınıf, öğretmen bilgileri
+// FAZ 19: Sadece ilgili sınıf ve kullanıcı kayıtları tekil çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { calculateChildAge, formatChildBirthDate, getChildBirthDate } from '../../utils/childDates';
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'object') return Object.values(value);
+  return [value];
+}
 
 export default function ChildDetailScreen() {
   const navigation = useNavigation();
@@ -24,87 +31,84 @@ export default function ChildDetailScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cocukData = null;
-    let siniflar = {};
-    let kullanicilar = {};
-    let cocukLoaded = false;
-    let sinifLoaded = false;
-    let kulLoaded = false;
+    const cocukUnsub = onValue(ref(database, `cocuklar/${childId}`), async (snap) => {
+      const cocukData = snap.val();
 
-    function buildDetail() {
-      if (!cocukLoaded || !sinifLoaded || !kulLoaded) return;
-      if (!cocukData) { setLoading(false); return; }
-
-      // Sınıf
-      const s = cocukData.sinifId ? siniflar[cocukData.sinifId] : null;
-      setSinif(s ? { id: cocukData.sinifId, ...s } : null);
-
-      // Veliler
-      const veliList = (cocukData.veliIds || [])
-        .filter((vid) => kullanicilar[vid])
-        .map((vid) => {
-          const v = kullanicilar[vid];
-          return {
-            id: vid,
-            ad: `${v.ad || ''} ${v.soyad || ''}`.trim() || v.kullaniciAdi || vid,
-            kullaniciAdi: v.kullaniciAdi || '-',
-            telefon: v.telefon || null,
-          };
-        });
-      setVeliler(veliList);
-
-      // Öğretmen
-      if (s && s.ogretmenIds && s.ogretmenIds.length > 0) {
-        const ogId = s.ogretmenIds[0];
-        const og = kullanicilar[ogId];
-        if (og) {
-          setOgretmen({
-            id: ogId,
-            ad: `${og.ad || ''} ${og.soyad || ''}`.trim() || og.kullaniciAdi || ogId,
-            kullaniciAdi: og.kullaniciAdi || '-',
-          });
-        }
+      if (!cocukData) {
+        setCocuk(null);
+        setLoading(false);
+        return;
       }
 
-      const birthDate = getChildBirthDate(cocukData);
-      const formattedBirthDate = formatChildBirthDate(birthDate);
-      const age = calculateChildAge(birthDate);
+      try {
+        // ── Sınıf (varsa) ────────────────────────────────────
+        let s = null;
+        if (cocukData.sinifId) {
+          const sinifSnap = await get(ref(database, `siniflar/${cocukData.sinifId}`));
+          if (sinifSnap.exists()) {
+            s = { id: cocukData.sinifId, ...sinifSnap.val() };
+          }
+        }
+        setSinif(s);
 
-      setCocuk({
-        id: childId,
-        ad: `${cocukData.ad || ''} ${cocukData.soyad || ''}`.trim() || cocukData.ad || childId,
-        dogumTarihi: birthDate || null,
-        dogumTarihiText: formattedBirthDate,
-        yasText: age,
-        sinifId: cocukData.sinifId || null,
-      });
+        // ── Veliler ──────────────────────────────────────────
+        const veliIds = asArray(cocukData.veliIds);
+        const veliResults = await Promise.all(
+          veliIds.map((vid) =>
+            get(ref(database, `kullanicilar/${vid}`)).then((vSnap) =>
+              vSnap.exists() ? { id: vid, ...vSnap.val() } : null
+            )
+          )
+        );
+        const veliList = veliResults
+          .filter(Boolean)
+          .map((v) => ({
+            id: v.id,
+            ad: `${v.ad || ''} ${v.soyad || ''}`.trim() || v.kullaniciAdi || v.id,
+            kullaniciAdi: v.kullaniciAdi || '-',
+            telefon: v.telefon || null,
+          }));
+        setVeliler(veliList);
 
-      setLoading(false);
-    }
+        // ── Öğretmen (sınıfın ilk öğretmeni) ─────────────────
+        const ogretmenIds = s ? asArray(s.ogretmenIds) : [];
+        if (ogretmenIds.length > 0) {
+          const ogSnap = await get(ref(database, `kullanicilar/${ogretmenIds[0]}`));
+          if (ogSnap.exists()) {
+            const og = ogSnap.val();
+            setOgretmen({
+              id: ogretmenIds[0],
+              ad: `${og.ad || ''} ${og.soyad || ''}`.trim() || og.kullaniciAdi || ogretmenIds[0],
+              kullaniciAdi: og.kullaniciAdi || '-',
+            });
+          } else {
+            setOgretmen(null);
+          }
+        } else {
+          setOgretmen(null);
+        }
 
-    const cocukUnsub = onValue(ref(database, `cocuklar/${childId}`), (snap) => {
-      cocukData = snap.val();
-      cocukLoaded = true;
-      buildDetail();
+        const birthDate = getChildBirthDate(cocukData);
+        const formattedBirthDate = formatChildBirthDate(birthDate);
+        const age = calculateChildAge(birthDate);
+
+        setCocuk({
+          id: childId,
+          ad: `${cocukData.ad || ''} ${cocukData.soyad || ''}`.trim() || cocukData.ad || childId,
+          dogumTarihi: birthDate || null,
+          dogumTarihiText: formattedBirthDate,
+          yasText: age,
+          sinifId: cocukData.sinifId || null,
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.warn('Çocuk detay çekme hatası:', error);
+        setLoading(false);
+      }
     });
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      siniflar = snap.val() || {};
-      sinifLoaded = true;
-      buildDetail();
-    });
-
-    const kulUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
-      kullanicilar = snap.val() || {};
-      kulLoaded = true;
-      buildDetail();
-    });
-
-    return () => {
-      cocukUnsub();
-      sinifUnsub();
-      kulUnsub();
-    };
+    return () => cocukUnsub();
   }, [childId]);
 
   if (loading) {
