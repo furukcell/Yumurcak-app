@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — TeacherListScreen.js
-// FAZ 2: Öğretmen listesi kartlı/profesyonel arayüz
+// FAZ 19: Sadece kendi kreşinin öğretmenleri index üzerinden çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -33,64 +34,102 @@ const THEME = {
 
 export default function TeacherListScreen() {
   const navigation = useNavigation();
+  const { kullanici, kres } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
+
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let kullanicilar = {};
-    let siniflar = {};
-    let kulLoaded = false;
-    let sinifLoaded = false;
-
-    function buildList() {
-      if (!kulLoaded || !sinifLoaded) return;
-
-      const sinifListesi = Object.entries(siniflar || {}).map(([id, s]) => ({ id, ...s }));
-
-      const ogretmenler = Object.entries(kullanicilar || {})
-        .filter(([, u]) => u?.rol === 'ogretmen')
-        .map(([id, u]) => {
-          const atanmisSiniflar = sinifListesi.filter(
-            (s) => Array.isArray(s.ogretmenIds) && s.ogretmenIds.includes(id)
-          );
-
-          const adSoyad = `${u.ad || ''} ${u.soyad || ''}`.trim();
-          const sinifAdlari = atanmisSiniflar.map((s) => s.ad).filter(Boolean);
-
-          return {
-            id,
-            ad: adSoyad || u.kullaniciAdi || 'İsimsiz öğretmen',
-            kullaniciAdi: u.kullaniciAdi || '-',
-            telefon: u.telefon || u.tel || '-',
-            email: u.email || '-',
-            aktif: u.aktif !== false,
-            sinifAdlari,
-            sinifSayisi: sinifAdlari.length,
-          };
-        })
-        .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
-
-      setTeachers(ogretmenler);
+    if (!kresId) {
+      setTeachers([]);
       setLoading(false);
+      return;
     }
 
-    const kulUnsub = onValue(ref(database, 'kullanicilar'), (snap) => {
-      kullanicilar = snap.val() || {};
-      kulLoaded = true;
+    const ogretmenIndexRef = ref(database, `kresKullanicilari/${kresId}/ogretmenler`);
+    const sinifIndexRef = ref(database, `kresSiniflari/${kresId}`);
+
+    let ogretmenIds = [];
+    let sinifIds = [];
+    let ogretmenLoaded = false;
+    let sinifLoaded = false;
+
+    async function buildList() {
+      if (!ogretmenLoaded || !sinifLoaded) return;
+
+      try {
+        const sinifResults = await Promise.all(
+          sinifIds.map((id) =>
+            get(ref(database, `siniflar/${id}`)).then((s) =>
+              s.exists() ? { id, ...s.val() } : null
+            )
+          )
+        );
+        const sinifListesi = sinifResults.filter(Boolean);
+
+        const ogretmenResults = await Promise.all(
+          ogretmenIds.map((id) =>
+            get(ref(database, `kullanicilar/${id}`)).then((s) =>
+              s.exists() ? [id, s.val()] : null
+            )
+          )
+        );
+        const kullanicilarMap = Object.fromEntries(ogretmenResults.filter(Boolean));
+
+        const ogretmenler = ogretmenIds
+          .filter((id) => kullanicilarMap[id])
+          .map((id) => {
+            const u = kullanicilarMap[id];
+
+            const atanmisSiniflar = sinifListesi.filter(
+              (s) => Array.isArray(s.ogretmenIds) && s.ogretmenIds.includes(id)
+            );
+
+            const adSoyad = `${u.ad || ''} ${u.soyad || ''}`.trim();
+            const sinifAdlari = atanmisSiniflar.map((s) => s.ad).filter(Boolean);
+
+            return {
+              id,
+              ad: adSoyad || u.kullaniciAdi || 'İsimsiz öğretmen',
+              kullaniciAdi: u.kullaniciAdi || '-',
+              telefon: u.telefon || u.tel || '-',
+              email: u.email || '-',
+              aktif: u.aktif !== false,
+              sinifAdlari,
+              sinifSayisi: sinifAdlari.length,
+            };
+          })
+          .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+
+        setTeachers(ogretmenler);
+        setLoading(false);
+      } catch (error) {
+        console.warn('Öğretmen listesi çekme hatası:', error);
+        setTeachers([]);
+        setLoading(false);
+      }
+    }
+
+    const ogretmenUnsub = onValue(ogretmenIndexRef, (snap) => {
+      const data = snap.val();
+      ogretmenIds = data ? Object.keys(data) : [];
+      ogretmenLoaded = true;
       buildList();
     });
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      siniflar = snap.val() || {};
+    const sinifUnsub = onValue(sinifIndexRef, (snap) => {
+      const data = snap.val();
+      sinifIds = data ? Object.keys(data) : [];
       sinifLoaded = true;
       buildList();
     });
 
     return () => {
-      kulUnsub();
+      ogretmenUnsub();
       sinifUnsub();
     };
-  }, []);
+  }, [kresId]);
 
   const aktifSayisi = teachers.filter((t) => t.aktif).length;
   const atanmisSayisi = teachers.filter((t) => t.sinifSayisi > 0).length;
