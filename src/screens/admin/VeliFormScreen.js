@@ -9,7 +9,7 @@ import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth'
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
-import { usernameToEmail } from '../../utils/authHelpers';
+import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -85,10 +85,14 @@ export default function VeliFormScreen() {
       }
 
       const nextKresId = oldVeli.kresId || kullanici?.kresId || 'default-kres';
+      const nextUsername = kullaniciAdi.trim();
+      const cleanNewUsername = normalizeUsername(nextUsername);
+      const cleanOldUsername = oldVeli.kullaniciAdi ? normalizeUsername(oldVeli.kullaniciAdi) : null;
+
       const updates = {};
       updates[`kullanicilar/${id}`] = {
         ...oldVeli,
-        kullaniciAdi: kullaniciAdi.trim(),
+        kullaniciAdi: nextUsername,
         sifre: kaydedilenSifre,
         ad: ad.trim(),
         telefon: telefon.trim(),
@@ -106,6 +110,14 @@ export default function VeliFormScreen() {
       updates[`kresKullanicilari/${nextKresId}/veliler/${id}`] = true;
       updates[`kullaniciKresleri/${id}/${nextKresId}`] = true;
       if (oldVeli.kresId && oldVeli.kresId !== nextKresId) updates[`kresKullanicilari/${oldVeli.kresId}/veliler/${id}`] = null;
+
+      // Login'de tüm kullanicilar node'u çekilmeden username -> uid bulunabilsin diye
+      if (cleanNewUsername) {
+        updates[`kullaniciAdiIndex/${cleanNewUsername}`] = id;
+      }
+      if (cleanOldUsername && cleanOldUsername !== cleanNewUsername) {
+        updates[`kullaniciAdiIndex/${cleanOldUsername}`] = null;
+      }
 
       await update(ref(database), updates);
       setSuccessToast(true);
