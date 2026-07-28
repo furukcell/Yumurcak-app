@@ -1,12 +1,14 @@
 // ============================================================
 // YUMURCAK — firebaseIndexHelpers.js
 // FAZ 17: Firebase kreş bazlı index yardımcıları
+// FAZ 18: kullaniciAdiIndex ile login sızıntısı düzeltmesi
 // Amaç:
 // Ana veriyi taşımadan ek index node'ları üretmek.
 // ============================================================
 
 import { ref, update } from 'firebase/database';
 import { database } from '../config/firebase';
+import { normalizeUsername } from './authHelpers';
 
 export function getRoleIndexGroup(role) {
   switch (role) {
@@ -30,6 +32,16 @@ export function addUserIndexUpdates(updates, userId, user = {}) {
 
   updates[`kresKullanicilari/${user.kresId}/${group}/${userId}`] = true;
   updates[`kullaniciKresleri/${userId}/${user.kresId}`] = true;
+
+  // Login sırasında username'e göre arama yapabilmek için (tüm kullanicilar
+  // node'unu çekmeden) küçük bir index tutuyoruz: kullaniciAdiIndex/{username} -> uid
+  const rawUsername = user.kullaniciAdi ?? user.kullanici_adi ?? user.username ?? user.userName;
+  if (rawUsername) {
+    const cleanUsername = normalizeUsername(rawUsername);
+    if (cleanUsername) {
+      updates[`kullaniciAdiIndex/${cleanUsername}`] = userId;
+    }
+  }
 
   return updates;
 }
