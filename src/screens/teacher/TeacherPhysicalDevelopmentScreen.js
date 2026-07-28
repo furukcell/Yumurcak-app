@@ -15,7 +15,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { ref, push, onValue } from 'firebase/database';
+import { ref, push, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
@@ -49,12 +49,18 @@ export default function TeacherPhysicalDevelopmentScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const unsub = onValue(ref(database, 'fizikselGelisim'), (snap) => {
+    if (!kresId) {
+      setRecords([]);
+      return undefined;
+    }
+    // Artık tüm 'fizikselGelisim' node'u çekilmiyor, sadece bu kreşe ait kayıtlar sorgulanıyor.
+    const q = query(ref(database, 'fizikselGelisim'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => {
       setRecords(toList(snap.val()));
     }, () => setRecords([]));
 
     return () => unsub();
-  }, []);
+  }, [kresId]);
 
   const selectedChild = useMemo(() => {
     return classChildren.find((child) => child.id === selectedChildId) || null;
