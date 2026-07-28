@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { onValue, ref, update } from 'firebase/database';
+import { onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
@@ -39,12 +39,18 @@ export default function TeacherWeeklyStarScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const unsub = onValue(ref(database, 'haftaninRozetleri'), (snap) => {
+    if (!kresId) {
+      setRecords([]);
+      return undefined;
+    }
+    // Artık tüm 'haftaninRozetleri' node'u çekilmiyor, sadece bu kreşe ait kayıtlar sorgulanıyor.
+    const q = query(ref(database, 'haftaninRozetleri'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => {
       setRecords(toList(snap.val()));
     }, () => setRecords([]));
 
     return () => unsub();
-  }, []);
+  }, [kresId]);
 
   const weekKey = getWeekKey();
   const weekRange = getWeekRange();
