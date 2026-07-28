@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — AdminAuthMigrationScreen.js
 // FAZ 11 v2: Modern Yumurcak arayüzü
+// FAZ 12: kullaniciAdiIndex backfill eklendi
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -20,7 +21,7 @@ import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth'
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
-import { usernameToEmail } from '../../utils/authHelpers';
+import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -43,6 +44,9 @@ export default function AdminAuthMigrationScreen({ navigation }) {
   const [running, setRunning] = useState(false);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
+
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillLogs, setBackfillLogs] = useState([]);
 
   useEffect(() => {
     loadUsers();
@@ -93,6 +97,10 @@ export default function AdminAuthMigrationScreen({ navigation }) {
 
   const addLog = (message) => {
     setLogs((prev) => [`${new Date().toLocaleTimeString('tr-TR')} · ${message}`, ...prev].slice(0, 80));
+  };
+
+  const addBackfillLog = (message) => {
+    setBackfillLogs((prev) => [`${new Date().toLocaleTimeString('tr-TR')} · ${message}`, ...prev].slice(0, 80));
   };
 
   const runMigration = async () => {
@@ -164,6 +172,74 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       Alert.alert('Hata', 'Auth geçiş işlemi başlatılamadı.');
     } finally {
       setRunning(false);
+    }
+  };
+
+  const runUsernameIndexBackfill = () => {
+    if (backfillRunning) return;
+
+    Alert.alert(
+      'Kullanıcı Adı Index Backfill',
+      'Tüm kullanıcılar taranıp kullaniciAdiIndex node\'u oluşturulacak. Bu işlem sadece bir kez çalıştırılmalı. Devam edilsin mi?',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Başlat', onPress: startUsernameIndexBackfill },
+      ]
+    );
+  };
+
+  const startUsernameIndexBackfill = async () => {
+    setBackfillRunning(true);
+    addBackfillLog('Tüm kullanıcılar okunuyor...');
+
+    try {
+      // Bu ekran superadmin/yönetici yetkisiyle açıldığı için 'kullanicilar'
+      // node'unun tamamını okuyabiliyor (rules zaten buna izin veriyor).
+      // Bu, backfill için tek meşru "tüm node'u oku" noktası.
+      const usersSnap = await get(ref(database, 'kullanicilar'));
+      const usersData = usersSnap.val() || {};
+      const entries = Object.entries(usersData);
+
+      if (entries.length === 0) {
+        addBackfillLog('Hiç kullanıcı bulunamadı.');
+        setBackfillRunning(false);
+        return;
+      }
+
+      const updates = {};
+      let skipped = 0;
+
+      entries.forEach(([userId, user]) => {
+        const rawUsername = user?.kullaniciAdi ?? user?.kullanici_adi ?? user?.username ?? user?.userName;
+        if (!rawUsername) {
+          skipped += 1;
+          return;
+        }
+        const cleanUsername = normalizeUsername(rawUsername);
+        if (!cleanUsername) {
+          skipped += 1;
+          return;
+        }
+        updates[`kullaniciAdiIndex/${cleanUsername}`] = userId;
+      });
+
+      const writeCount = Object.keys(updates).length;
+
+      if (writeCount === 0) {
+        addBackfillLog('Yazılacak kayıt yok.');
+        setBackfillRunning(false);
+        return;
+      }
+
+      await update(ref(database), updates);
+      addBackfillLog(`Tamamlandı: ${writeCount} kullanıcı index'lendi, ${skipped} kullanıcı kullanıcı adı olmadığı için atlandı.`);
+      Alert.alert('Tamamlandı', `${writeCount} kullanıcı için kullaniciAdiIndex oluşturuldu.`);
+    } catch (error) {
+      console.error(error);
+      addBackfillLog(`Hata: ${error?.code || error?.message || 'bilinmeyen hata'}`);
+      Alert.alert('Hata', 'Backfill işlemi başlatılamadı.');
+    } finally {
+      setBackfillRunning(false);
     }
   };
 
@@ -240,6 +316,36 @@ export default function AdminAuthMigrationScreen({ navigation }) {
             </View>
           ))
         )}
+
+        <View style={styles.divider} />
+
+        <View style={styles.hero}>
+          <Text style={styles.heroIcon}>🔎</Text>
+          <Text style={styles.heroTitle}>Kullanıcı Adı Index Backfill</Text>
+          <Text style={styles.heroDesc}>Giriş ekranında tüm kullanıcı verisi çekilmesin diye kullaniciAdiIndex node'unu geçmişe dönük oluşturur. Sadece bir kez çalıştırılmalı.</Text>
+        </View>
+
+        <View style={styles.warningCard}>
+          <Text style={styles.warningTitle}>Önemli Not</Text>
+          <Text style={styles.warningText}>
+            Bu işlem tüm 'kullanicilar' node'unu bir kere okur (sadece bu ekranda, superadmin/yönetici yetkisiyle izinlidir). Her kullanıcı için kullaniciAdiIndex/&#123;kullaniciAdi&#125; -&gt; uid kaydı oluşturur. Zaten oluşturulmuş kayıtların üzerine güvenle yazar, veri kaybetmez.
+          </Text>
+        </View>
+
+        <TouchableOpacity style={[styles.runButton, styles.backfillButton, backfillRunning && { opacity: 0.6 }]} onPress={runUsernameIndexBackfill} disabled={backfillRunning}>
+          {backfillRunning ? <ActivityIndicator color="#FFF" /> : <Text style={styles.runText}>Backfill'i Başlat</Text>}
+        </TouchableOpacity>
+
+        <Text style={styles.sectionTitle}>Backfill Log</Text>
+        {backfillLogs.length === 0 ? (
+          <View style={styles.logEmpty}><Text style={styles.logText}>Henüz işlem yok.</Text></View>
+        ) : (
+          backfillLogs.map((line, index) => (
+            <View key={`${line}_${index}`} style={styles.logLine}>
+              <Text style={styles.logText}>{line}</Text>
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -307,6 +413,7 @@ const styles = StyleSheet.create({
   warningTitle: { color: '#8A6500', fontWeight: '900', fontSize: 16, marginBottom: 6 },
   warningText: { color: '#7A5A00', fontWeight: '700', lineHeight: 20 },
   runButton: { backgroundColor: THEME.primary, borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 18 },
+  backfillButton: { backgroundColor: THEME.orange },
   runText: { color: '#FFF', fontWeight: '900', fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 10, marginTop: 8 },
   userCard: { backgroundColor: THEME.card, borderRadius: 16, padding: 13, marginBottom: 9, borderWidth: 1, borderColor: THEME.border, flexDirection: 'row', alignItems: 'center' },
@@ -318,4 +425,5 @@ const styles = StyleSheet.create({
   logEmpty: { backgroundColor: THEME.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: THEME.border },
   logLine: { backgroundColor: THEME.card, borderRadius: 12, padding: 10, marginBottom: 7, borderWidth: 1, borderColor: THEME.border },
   logText: { color: THEME.muted, fontWeight: '700', lineHeight: 18 },
+  divider: { height: 1, backgroundColor: THEME.border, marginVertical: 20 },
 });
