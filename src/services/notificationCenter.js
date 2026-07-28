@@ -1,4 +1,4 @@
-import { onValue, push, ref, serverTimestamp, update } from 'firebase/database';
+import { onValue, push, query, orderByChild, equalTo, ref, serverTimestamp, update } from 'firebase/database';
 import { database } from '../config/firebase';
 
 const PATH = 'bildirimler';
@@ -73,8 +73,20 @@ export function isRead(bildirim, kullanici = {}) {
   return !!bildirim?.okunduBy?.[userKey] || (authKey ? !!bildirim?.okunduBy?.[authKey] : false);
 }
 
+// Artık tüm 'bildirimler' node'u çekilmiyor. Kullanıcının kendi kresId'sine
+// göre filtrelenmiş bir sorgu ile çekiliyor, geri kalan hedefleme
+// (rol, sınıf, kullanıcı id) client-side visibleToUser ile uygulanıyor.
 export function listenNotifications(kullanici, callback) {
-  return onValue(ref(database, PATH), (snap) => {
+  const kresId = kullanici?.kresId;
+
+  if (!kresId) {
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(ref(database, PATH), orderByChild('kresId'), equalTo(kresId));
+
+  return onValue(q, (snap) => {
     const data = snap.val() || {};
     const list = Object.entries(data)
       .map(([id, value]) => item(id, value))
