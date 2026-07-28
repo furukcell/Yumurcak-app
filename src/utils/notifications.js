@@ -156,20 +156,33 @@ export async function sendNotification(toToken, title, body, data = {}) {
 }
 
 /**
- * Tüm velilere bildirim gönder
+ * Bir kreşin tüm velilerine bildirim gönder.
+ * Artık tüm 'kullanicilar' node'u çekilmiyor. kresKullanicilari/{kresId}/veliler
+ * index'i üzerinden sadece o kreşin veli id'leri bulunuyor, sonra sadece
+ * o kullanıcılar tek tek getirilip pushToken'ları toplanıyor.
+ * @param {string} kresId - Bildirim gönderilecek kreşin id'si
  */
-export async function broadcastNotificationToParents(title, body, data = {}) {
+export async function broadcastNotificationToParents(kresId, title, body, data = {}) {
   try {
-    const usersRef = ref(database, 'kullanicilar');
-    const snapshot = await get(usersRef);
+    if (!kresId) {
+      console.warn('broadcastNotificationToParents: kresId eksik');
+      return;
+    }
 
-    if (!snapshot.exists()) return;
+    const indexSnap = await get(ref(database, `kresKullanicilari/${kresId}/veliler`));
+    if (!indexSnap.exists()) return;
 
-    const users = snapshot.val();
+    const veliIds = Object.keys(indexSnap.val() || {});
+    if (veliIds.length === 0) return;
+
+    const userSnaps = await Promise.all(
+      veliIds.map((veliId) => get(ref(database, `kullanicilar/${veliId}`)))
+    );
+
     const tokens = [];
-
-    Object.values(users).forEach(user => {
-      if (user.rol === ROLLER.VELI && user.pushToken) {
+    userSnaps.forEach((snap) => {
+      const user = snap.val();
+      if (user && user.rol === ROLLER.VELI && user.pushToken) {
         tokens.push(user.pushToken);
       }
     });
