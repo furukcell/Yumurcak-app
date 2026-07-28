@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — authHelpers.js
 // FAZ 10: Firebase Auth geçiş yardımcıları
+// FAZ 11: kullaniciAdiIndex ile login sızıntısı düzeltmesi
 // ============================================================
 import { get, ref } from 'firebase/database';
 import { database } from '../config/firebase';
@@ -12,7 +13,6 @@ export function normalizeUsername(value) {
 export function usernameToEmail(username) {
   const clean = normalizeUsername(username);
   if (clean.includes('@')) return clean;
-
   const safe = clean
     .replace(/ğ/g, 'g')
     .replace(/ü/g, 'u')
@@ -21,20 +21,19 @@ export function usernameToEmail(username) {
     .replace(/ö/g, 'o')
     .replace(/ç/g, 'c')
     .replace(/[^a-z0-9._-]/g, '');
-
   return `${safe || 'kullanici'}@yumurcak.local`;
 }
 
 export async function findUserIdByAuthUid(authUid) {
   if (!authUid) return null;
-
   const indexSnap = await get(ref(database, `authKullaniciIndex/${authUid}`));
   if (indexSnap.exists()) return indexSnap.val();
 
-  const usersSnap = await get(ref(database, 'kullanicilar'));
-  const users = usersSnap.val() || {};
-  const found = Object.entries(users).find(([, user]) => user?.authUid === authUid);
-  return found ? found[0] : null;
+  // Fallback: authKullaniciIndex'te yoksa kullaniciAdiIndex üzerinden de bulunamaz
+  // (o index username bazlı, authUid bazlı değil). Bu durumda güvenli bir
+  // alternatif yok; null dönüyoruz. Bu satıra düşülmesi normalde beklenmez,
+  // beklenirse addUserIndexUpdates'te authKullaniciIndex yazımı kontrol edilmeli.
+  return null;
 }
 
 export async function getKresForUser(userData) {
@@ -48,39 +47,30 @@ export async function findLegacyUserByUsernameAndPassword(username, password) {
   const cleanUsername = normalizeUsername(username);
   const cleanPassword = normalizeUsername(password);
 
-  const usersSnap = await get(ref(database, 'kullanicilar'));
-  const users = usersSnap.val() || {};
+  // Artık tüm 'kullanicilar' node'u çekilmiyor. Önce küçük bir index
+  // (kullaniciAdiIndex/{username}: uid) üzerinden ilgili kullanıcının
+  // id'si bulunuyor, sonra sadece o tek kullanıcı kaydı çekiliyor.
+  const indexSnap = await get(ref(database, `kullaniciAdiIndex/${cleanUsername}`));
+  if (!indexSnap.exists()) return { status: 'not_found' };
 
-  const list = Object.entries(users).map(([uid, user]) => ({ uid, id: uid, ...user }));
+  const uid = indexSnap.val();
+  const userSnap = await get(ref(database, `kullanicilar/${uid}`));
+  if (!userSnap.exists()) return { status: 'not_found' };
 
-  const sameUsername = list.filter((user) => {
-    const recordUsername = normalizeUsername(
-      user.kullaniciAdi ??
-      user.kullanici_adi ??
-      user.username ??
-      user.userName ??
-      ''
-    );
-    return recordUsername === cleanUsername;
-  });
+  const user = { uid, id: uid, ...userSnap.val() };
 
-  if (sameUsername.length === 0) return { status: 'not_found' };
+  const recordPassword = normalizeUsername(
+    user.sifre ??
+    user['şifre'] ??
+    user.password ??
+    user.parola ??
+    user.pass ??
+    ''
+  );
 
-  const matched = sameUsername.find((user) => {
-    const recordPassword = normalizeUsername(
-      user.sifre ??
-      user['şifre'] ??
-      user.password ??
-      user.parola ??
-      user.pass ??
-      ''
-    );
-    return recordPassword === cleanPassword;
-  });
-
-  if (!matched) return { status: 'wrong_password', fields: Object.keys(sameUsername[0] || {}) };
-
-  if (matched.aktif === false) return { status: 'passive' };
-
-  return { status: 'ok', user: matched };
+  if (recordPassword !== cleanPassword) {
+    return { status: 'wrong_password', fields: Object.keys(user || {}) };
+  }
+  if (user.aktif === false) return { status: 'passive' };
+  return { status: 'ok', user };
 }
