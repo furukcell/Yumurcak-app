@@ -9,7 +9,7 @@ import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth'
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
-import { usernameToEmail } from '../../utils/authHelpers';
+import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -29,6 +29,7 @@ export default function TeacherFormScreen() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [successToast, setSuccessToast] = useState(false);
+  const [oldKullaniciAdi, setOldKullaniciAdi] = useState('');
 
   useEffect(() => {
     const yukle = async () => {
@@ -45,6 +46,7 @@ export default function TeacherFormScreen() {
         if (snap.exists()) {
           const data = snap.val();
           setKullaniciAdi(data.kullaniciAdi || '');
+          setOldKullaniciAdi(data.kullaniciAdi || '');
           setAd(data.ad || '');
           setSinifId(data.sinifId || '');
         }
@@ -88,11 +90,15 @@ export default function TeacherFormScreen() {
       const siniflarSnap = await get(ref(database, 'siniflar'));
       const siniflarData = siniflarSnap.exists() ? (siniflarSnap.val() || {}) : {};
       const nextKresId = oldTeacher.kresId || kullanici?.kresId || 'default-kres';
+      const nextUsername = kullaniciAdi.trim();
+      const cleanNewUsername = normalizeUsername(nextUsername);
+      const cleanOldUsername = oldTeacher.kullaniciAdi ? normalizeUsername(oldTeacher.kullaniciAdi) : null;
+
       const updates = {};
 
       updates[`kullanicilar/${id}`] = {
         ...oldTeacher,
-        kullaniciAdi: kullaniciAdi.trim(),
+        kullaniciAdi: nextUsername,
         sifre: kaydedilenSifre,
         ad: ad.trim(),
         rol: 'ogretmen',
@@ -111,6 +117,14 @@ export default function TeacherFormScreen() {
       updates[`kresKullanicilari/${nextKresId}/ogretmenler/${id}`] = true;
       updates[`kullaniciKresleri/${id}/${nextKresId}`] = true;
       if (oldTeacher.kresId && oldTeacher.kresId !== nextKresId) updates[`kresKullanicilari/${oldTeacher.kresId}/ogretmenler/${id}`] = null;
+
+      // Login'de tüm kullanicilar node'u çekilmeden username -> uid bulunabilsin diye
+      if (cleanNewUsername) {
+        updates[`kullaniciAdiIndex/${cleanNewUsername}`] = id;
+      }
+      if (cleanOldUsername && cleanOldUsername !== cleanNewUsername) {
+        updates[`kullaniciAdiIndex/${cleanOldUsername}`] = null;
+      }
 
       Object.entries(siniflarData).forEach(([classId, classData]) => {
         const mevcutIds = Array.isArray(classData?.ogretmenIds) ? classData.ogretmenIds.map(String) : [];
@@ -168,7 +182,7 @@ export default function TeacherFormScreen() {
               <TextInput style={styles.passwordInput} value={sifre} onChangeText={setSifre} placeholder={teacherId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
               <TouchableOpacity style={styles.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={styles.passwordToggleText}>{sifreGoster ? 'Gizle' : 'Göster'}</Text></TouchableOpacity>
             </View>
-            <Text style={styles.sifreNotu}>{teacherId ? 'Boş bırakırsan mevcut şifre korunur.' : 'Boş bırakırsan varsayılan şifre 123456 olur.'}</Text>
+            <Text style={styles.sifreNotu}>{teacherId ? 'Boş bırakılırsa mevcut şifre korunur.' : 'Boş bırakılırsa varsayılan şifre 123456 olur.'}</Text>
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>Sınıf Ata (opsiyonel)</Text>
