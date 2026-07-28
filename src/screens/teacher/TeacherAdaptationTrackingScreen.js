@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Platform, StatusBar, Alert, ActivityIndicator } from 'react-native';
-import { ref, set, update, onValue } from 'firebase/database';
+import { ref, set, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useTeacherData, LoadingState, EmptyState, getChildName } from './teacherShared';
 import { bugunKey, tarihTr, uyumAktifMi, uyumEmoji, uyumGunNo, uyumKalanGun, uyumOzet, uyumSkoru, UYUM_GUN } from '../../utils/uyum';
@@ -43,12 +43,18 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
   const todayRecord = selectedChild ? selectedRecords.find((r) => r.tarih === today) : null;
 
   React.useEffect(() => {
-    const unsub = onValue(ref(database, 'uyumKayitlari'), (snap) => {
+    if (!data.kresId) {
+      setUyumKayitlari([]);
+      return undefined;
+    }
+    // Artık tüm 'uyumKayitlari' node'u çekilmiyor, sadece bu kreşe ait kayıtlar sorgulanıyor.
+    const q = query(ref(database, 'uyumKayitlari'), orderByChild('kresId'), equalTo(data.kresId));
+    const unsub = onValue(q, (snap) => {
       const val = snap.val() || {};
       setUyumKayitlari(Object.entries(val).map(([id, item]) => ({ id, ...(item || {}) })));
     }, () => setUyumKayitlari([]));
     return () => unsub && unsub();
-  }, []);
+  }, [data.kresId]);
 
   React.useEffect(() => {
     if (!selectedChild?.id) {
