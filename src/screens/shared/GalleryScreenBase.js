@@ -19,7 +19,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Video } from 'react-native-compressor';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { onValue, push, ref as dbRef, remove, set } from 'firebase/database';
+import { onValue, push, query, orderByChild, equalTo, ref as dbRef, remove, set } from 'firebase/database';
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -83,6 +83,20 @@ function listenValue(path, onData, onError) {
       if (typeof onError === 'function') onError();
     }
   );
+}
+
+// Index boşsa/eksikse artık tüm node çekilmiyor. Sadece bilinen kresId'ye göre
+// sorgulanıyor — index gerçekten boşsa (o kreşte veri yoksa) sonuç zaten boş döner,
+// tüm tabloyu taramaya gerek kalmaz.
+function listenByKresId(path, kresId, onData, onError) {
+  if (!kresId) {
+    onData(null);
+    return () => {};
+  }
+  const q = query(dbRef(database, path), orderByChild('kresId'), equalTo(kresId));
+  return onValue(q, (snapshot) => onData(snapshot.val()), () => {
+    if (typeof onError === 'function') onError();
+  });
 }
 
 function uniqueIds(values) {
@@ -368,24 +382,28 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       });
     };
 
-    const fallbackChildrenByFilter = (filterFn) => {
+    // Fallback artık tüm 'cocuklar' node'unu çekmiyor, bilinen kresId'ye göre sorguluyor.
+    const fallbackChildrenByFilter = (fallbackKresId, filterFn) => {
       cleanupChildren();
       if (childFallbackUnsub) return;
-      childFallbackUnsub = listenValue('cocuklar', (data) => {
+      childFallbackUnsub = listenByKresId('cocuklar', fallbackKresId, (data) => {
         setChildren(toList(data).filter(filterFn).sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr')));
       }, () => setChildren([]));
     };
 
     if (mode === 'teacher') {
+      const teacherKresId = kullanici?.kresId || null;
+
+      // Fallback artık tüm 'siniflar' node'unu çekmiyor, öğretmenin kendi kresId'sine göre sorguluyor.
       const startClassFallback = () => {
         cleanupClass();
         if (classFallbackUnsub) return;
-        classFallbackUnsub = listenValue('siniflar', (data) => {
+        classFallbackUnsub = listenByKresId('siniflar', teacherKresId, (data) => {
           const list = toList(data);
           const found = list.find((item) => includesId(item.ogretmenIds, userId)) || list.find((item) => item.ogretmenId === userId || item.id === kullanici?.sinifId) || null;
           setClasses(found ? [found] : []);
           if (found?.id) {
-            fallbackChildrenByFilter((child) => child.sinifId === found.id);
+            fallbackChildrenByFilter(teacherKresId, (child) => child.sinifId === found.id);
           }
           setLoading(false);
         }, () => setLoading(false));
@@ -419,7 +437,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     }
 
     if (mode === 'parent') {
-      const startParentFallback = () => fallbackChildrenByFilter((child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
+      const parentKresId = kullanici?.kresId || null;
+
+      const startParentFallback = () => fallbackChildrenByFilter(parentKresId, (child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
       const indexUnsub = listenValue(`veliCocuklari/${userId}`, (data) => {
         const ids = indexIds(data);
         if (ids.length === 0) startParentFallback();
@@ -447,8 +467,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     const classIndexUnsub = listenValue(`kresSiniflari/${adminKresId}`, (data) => {
       const ids = indexIds(data);
       if (ids.length === 0) {
+        // Fallback artık tüm 'siniflar' node'unu çekmiyor, sadece bu kreşe göre sorguluyor.
         if (!classFallbackUnsub) {
-          classFallbackUnsub = listenValue('siniflar', (allData) => setClasses(toList(allData).filter((item) => !item.kresId || item.kresId === adminKresId)), () => setClasses([]));
+          classFallbackUnsub = listenByKresId('siniflar', adminKresId, (allData) => setClasses(toList(allData)), () => setClasses([]));
         }
         return;
       }
@@ -468,7 +489,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     });
     const childIndexUnsub = listenValue(`kresCocuklari/${adminKresId}`, (data) => {
       const ids = indexIds(data);
-      if (ids.length === 0) fallbackChildrenByFilter((child) => !child.kresId || child.kresId === adminKresId);
+      if (ids.length === 0) fallbackChildrenByFilter(adminKresId, () => true);
       else setChildrenFromIds(ids);
       setLoading(false);
     }, () => setLoading(false));
@@ -517,11 +538,12 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       galleryUnsubs = [];
     };
 
+    // Fallback artık tüm 'galeri' node'unu çekmiyor, bu kreşe göre sorguluyor.
     const startFallback = () => {
       cleanupGallery();
       if (fallbackUnsub) return;
-      fallbackUnsub = listenValue('galeri', (data) => {
-        setGallery(toList(data).filter((item) => !item.kresId || item.kresId === kresId));
+      fallbackUnsub = listenByKresId('galeri', kresId, (data) => {
+        setGallery(toList(data));
         setLoading(false);
       }, () => {
         setGallery([]);
