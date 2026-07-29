@@ -8,7 +8,7 @@ import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator, Switch
 } from 'react-native';
-import { ref, set, push, get } from 'firebase/database';
+import { ref, set, push, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -44,12 +44,13 @@ export default function AnnouncementFormScreen() {
   useEffect(() => {
     const loadClasses = async () => {
       try {
-        const snapshot = await get(ref(database, 'siniflar'));
+        // Artık tüm 'siniflar' node'u çekilmiyor, sadece bu kreşe ait sınıflar sorgulanıyor.
+        const q = query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId));
+        const snapshot = await get(q);
         const data = snapshot.val() || {};
 
         const list = Object.entries(data)
           .map(([id, value]) => ({ id, ...value }))
-          .filter((item) => !item.kresId || item.kresId === kresId)
           .sort((a, b) => String(a.ad || '').localeCompare(String(b.ad || ''), 'tr'));
 
         setClasses(list);
