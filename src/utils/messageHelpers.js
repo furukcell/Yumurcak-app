@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — messageHelpers.js
 // Build fix + FAZ 16 message helper + FAZ 17 toplam okunmamış sayaç
+// FAZ 18: unread sayacı artık kullaniciKonusmalari index'i üzerinden
 // Konum: src/utils/messageHelpers.js
 // ============================================================
 import { useEffect, useState } from 'react';
@@ -109,12 +110,19 @@ export function normalizeConversationMeta(meta = {}) {
   });
 }
 
+function indexIds(data) {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data)
+    .filter(([, value]) => value !== false && value !== null)
+    .map(([id]) => id);
+}
+
 // ============================================================
 // FAZ 17: Toplam okunmamış mesaj sayacı (ana sayfa badge'leri için)
-// 'mesajKonusmalari' düğümünü dinler, kullanıcının katıldığı
-// her görüşmedeki okunmamisSayac/{userId} değerlerini toplar.
-// Admin / Öğretmen / Veli dashboard'larında "Mesajlar" kartına
-// badge basmak için kullanılır.
+// FAZ 18: Artık tüm 'mesajKonusmalari' node'u çekilmiyor. Önce
+// kullaniciKonusmalari/{userId} index'inden bu kullanıcının katıldığı
+// konuşma id'leri bulunuyor, sonra sadece o konuşmaların meta verisi
+// tek tek dinlenip okunmamisSayac toplanıyor.
 // ============================================================
 export function useUnreadMessagesCount(userId) {
   const [total, setTotal] = useState(0);
@@ -125,18 +133,48 @@ export function useUnreadMessagesCount(userId) {
       return undefined;
     }
 
-    const unsub = onValue(ref(database, 'mesajKonusmalari'), (snapshot) => {
-      const data = snapshot.val() || {};
-      let sum = 0;
+    let metaUnsubs = [];
+    let indexUnsub = null;
 
-      Object.values(data).forEach((meta) => {
-        sum += safeUnread(meta, userId);
+    const clearMetaListeners = () => {
+      metaUnsubs.forEach((unsub) => unsub && unsub());
+      metaUnsubs = [];
+    };
+
+    indexUnsub = onValue(ref(database, `kullaniciKonusmalari/${userId}`), (snapshot) => {
+      const ids = indexIds(snapshot.val());
+
+      clearMetaListeners();
+
+      if (ids.length === 0) {
+        setTotal(0);
+        return;
+      }
+
+      const sums = {};
+      const publish = () => {
+        setTotal(Object.values(sums).reduce((acc, value) => acc + value, 0));
+      };
+
+      ids.forEach((conversationId) => {
+        const unsub = onValue(ref(database, `mesajKonusmalari/${conversationId}`), (metaSnap) => {
+          sums[conversationId] = safeUnread(metaSnap.val(), userId);
+          publish();
+        }, () => {
+          sums[conversationId] = 0;
+          publish();
+        });
+        metaUnsubs.push(unsub);
       });
-
-      setTotal(sum);
+    }, () => {
+      clearMetaListeners();
+      setTotal(0);
     });
 
-    return () => unsub();
+    return () => {
+      indexUnsub && indexUnsub();
+      clearMetaListeners();
+    };
   }, [userId]);
 
   return total;
