@@ -1,6 +1,8 @@
 // ============================================================
 // YUMURCAK — TeacherMessagesScreen.js
 // Öğretmen mesaj merkezi - çekmeceli yeni mesaj seçimi
+// FAZ 18: Artık tüm 'mesajKonusmalari' node'u çekilmiyor, sadece
+// bu öğretmeni ilgilendiren (deterministik id'li) konuşmalar tek tek dinleniyor.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput } from 'react-native';
@@ -38,17 +40,46 @@ export default function TeacherMessagesScreen() {
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const [drawerQuery, setDrawerQuery] = useState('');
 
-  useEffect(() => {
-    const unsub = onValue(ref(database, 'mesajKonusmalari'), (snap) => {
-      setConversations(snap.val() || {});
+  const adminId = kurum?.yoneticiId || Object.entries(users || {}).find(([, u]) => u?.rol === 'yonetici' && (!u.kresId || u.kresId === kresId))?.[0] || null;
+  const adminConversationId = teacherId && adminId ? `admin_${adminId}_ogretmen_${teacherId}` : null;
+
+  // Bu öğretmeni ilgilendiren konuşma id'leri deterministik olarak hesaplanıyor,
+  // tüm 'mesajKonusmalari' node'u çekilmeden sadece bu id'ler tek tek dinleniyor.
+  const conversationIds = useMemo(() => {
+    const ids = [];
+    if (adminConversationId) ids.push(adminConversationId);
+
+    classChildren.forEach((child) => {
+      const veliIds = Array.isArray(child.veliIds) ? child.veliIds : [];
+      veliIds.forEach((veliId) => {
+        if (!users[veliId]) return;
+        ids.push(`veli_${veliId}_ogretmen_${teacherId}_cocuk_${child.id}`);
+      });
     });
 
-    return () => unsub();
-  }, []);
+    return ids;
+  }, [adminConversationId, classChildren, users, teacherId]);
 
-  const adminId = kurum?.yoneticiId || Object.entries(users || {}).find(([, u]) => u?.rol === 'yonetici' && (!u.kresId || u.kresId === kresId))?.[0] || null;
+  useEffect(() => {
+    if (conversationIds.length === 0) {
+      setConversations({});
+      return undefined;
+    }
 
-  const adminConversationId = teacherId && adminId ? `admin_${adminId}_ogretmen_${teacherId}` : null;
+    const map = {};
+    const unsubs = conversationIds.map((id) => onValue(ref(database, `mesajKonusmalari/${id}`), (snap) => {
+      const val = snap.val();
+      if (val) map[id] = val;
+      else delete map[id];
+      setConversations({ ...map });
+    }, () => {
+      delete map[id];
+      setConversations({ ...map });
+    }));
+
+    return () => unsubs.forEach((unsub) => unsub && unsub());
+  }, [conversationIds.join('|')]);
+
   const adminMeta = adminConversationId ? conversations[adminConversationId] || {} : {};
   const adminUnread = safeUnread(adminMeta, teacherId);
 
