@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — MessageDetailScreen.js
 // FAZ 16: Son 20 mesaj + Daha fazla yükle + Okundu bildirimi
+// FAZ 17: Konuşma index'i (kullaniciKonusmalari vb.) her mesajda güncelleniyor
 // Firebase:
 // mesajKonusmalari/{conversationId}
 // mesajlar/{conversationId}/{messageId}
@@ -43,6 +44,7 @@ import {
   normalizeConversationMeta,
 } from '../../utils/messageHelpers';
 import { createUserNotification } from '../../services/notificationCenter';
+import { addConversationIndexUpdates } from '../../utils/firebaseIndexHelpers';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -240,6 +242,15 @@ export default function MessageDetailScreen() {
         if (!participantId || participantId === currentUserId) return;
         updates[`okunmamisSayac/${participantId}`] = increment(1);
       });
+
+      // Kök seviyede index güncellemeleri (kullaniciKonusmalari, kresKonusmalari,
+      // cocukKonusmalari, sinifKonusmalari) ayrı bir update() ile yazılıyor —
+      // metaWithoutCounters'taki (increment gibi) özel değerlerle karışmasın diye.
+      const rootUpdates = {};
+      addConversationIndexUpdates(rootUpdates, conversationId, metaWithoutCounters);
+      if (Object.keys(rootUpdates).length > 0) {
+        await update(ref(database), rootUpdates);
+      }
 
       await update(ref(database, `mesajKonusmalari/${conversationId}`), updates);
 
