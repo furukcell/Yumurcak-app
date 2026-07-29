@@ -4,7 +4,7 @@
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
@@ -27,8 +27,18 @@ export default function ChildReportScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const reportsRef = ref(database, 'gunlukRaporlar');
-    const unsubscribe = onValue(reportsRef, (snapshot) => {
+    const kresId = child?.kresId;
+
+    if (!kresId) {
+      setReports([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    // Artık tüm 'gunlukRaporlar' node'u çekilmiyor, sadece bu kreşe ait
+    // kayıtlar sorgulanıp client-side cocukId'ye göre filtreleniyor.
+    const reportsQ = query(ref(database, 'gunlukRaporlar'), orderByChild('kresId'), equalTo(kresId));
+    const unsubscribe = onValue(reportsQ, (snapshot) => {
       const data = snapshot.val();
       const childReports = [];
 
@@ -43,10 +53,13 @@ export default function ChildReportScreen() {
 
       setReports(childReports);
       setLoading(false);
+    }, () => {
+      setReports([]);
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [child.id]);
+  }, [child.id, child?.kresId]);
 
   const getMoodIcon = (mood) => {
     const map = {
