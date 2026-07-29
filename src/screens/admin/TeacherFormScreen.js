@@ -4,7 +4,7 @@
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { ref, get, update } from 'firebase/database';
+import { ref, get, update, query, orderByChild, equalTo } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
@@ -34,11 +34,16 @@ export default function TeacherFormScreen() {
   useEffect(() => {
     const yukle = async () => {
       const kresId = kullanici?.kresId;
-      const sinifSnap = await get(ref(database, 'siniflar'));
-      if (sinifSnap.exists()) {
-        const data = sinifSnap.val();
-        const liste = Object.entries(data).map(([id, v]) => ({ id, ...v })).filter((s) => !kresId || !s.kresId || s.kresId === kresId);
-        setSiniflar(liste);
+
+      // Artık tüm 'siniflar' node'u çekilmiyor, sadece bu kreşe ait sınıflar sorgulanıyor.
+      if (kresId) {
+        const sinifQ = query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId));
+        const sinifSnap = await get(sinifQ);
+        if (sinifSnap.exists()) {
+          const data = sinifSnap.val();
+          const liste = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+          setSiniflar(liste);
+        }
       }
 
       if (teacherId) {
@@ -87,9 +92,13 @@ export default function TeacherFormScreen() {
         await signOut(secondaryAuth).catch(() => {});
       }
 
-      const siniflarSnap = await get(ref(database, 'siniflar'));
-      const siniflarData = siniflarSnap.exists() ? (siniflarSnap.val() || {}) : {};
       const nextKresId = oldTeacher.kresId || kullanici?.kresId || 'default-kres';
+
+      // Artık tüm 'siniflar' node'u çekilmiyor, sadece bu kreşe ait sınıflar sorgulanıyor.
+      const siniflarQ = query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(nextKresId));
+      const siniflarSnap = await get(siniflarQ);
+      const siniflarData = siniflarSnap.exists() ? (siniflarSnap.val() || {}) : {};
+
       const nextUsername = kullaniciAdi.trim();
       const cleanNewUsername = normalizeUsername(nextUsername);
       const cleanOldUsername = oldTeacher.kullaniciAdi ? normalizeUsername(oldTeacher.kullaniciAdi) : null;
