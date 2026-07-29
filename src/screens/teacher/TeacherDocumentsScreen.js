@@ -4,7 +4,7 @@
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, Modal } from 'react-native';
-import { onValue, ref, set } from 'firebase/database';
+import { onValue, ref, set, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -122,10 +122,15 @@ export default function TeacherDocumentsScreen() {
   const [previewUrl, setPreviewUrl] = useState('');
 
   useEffect(() => {
-    const r = ref(database, 'dokumanlar');
-    const unsub = onValue(r, (snap) => setDocuments(snap.val() || {}), () => setDocuments({}));
+    if (!kresId) {
+      setDocuments({});
+      return undefined;
+    }
+    // Artık tüm 'dokumanlar' node'u çekilmiyor, sadece bu kreşe ait belgeler sorgulanıyor.
+    const q = query(ref(database, 'dokumanlar'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => setDocuments(snap.val() || {}), () => setDocuments({}));
     return () => unsub();
-  }, []);
+  }, [kresId]);
 
   const classDocuments = useMemo(() => {
     if (!currentClass?.id) return {};
@@ -134,12 +139,11 @@ export default function TeacherDocumentsScreen() {
     Object.entries(documents || {}).forEach(([id, item]) => {
       if (item?.aktif === false) return;
       if (item?.sinifId !== currentClass.id) return;
-      if (kresId && item?.kresId && item.kresId !== kresId) return;
       result[item.type || item.tip || id] = { id, ...item };
     });
 
     return result;
-  }, [documents, currentClass?.id, kresId]);
+  }, [documents, currentClass?.id]);
 
   if (loading) return <LoadingState text="Dokümanlar hazırlanıyor..." />;
 
