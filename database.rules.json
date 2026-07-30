@@ -236,54 +236,111 @@
 
     "kresKullanicilari": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$kresId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === $kresId)"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "kullaniciKresleri": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$userId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('authKullaniciIndex').child(auth.uid).val() === $userId || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin')"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "kresSiniflari": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$kresId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === $kresId)"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "ogretmenSiniflari": {
   ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+  "$teacherId": {
+    ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('authKullaniciIndex').child(auth.uid).val() === $teacherId || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin')"
+  },
   ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
    },
 
     "kresCocuklari": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$kresId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === $kresId)"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "sinifCocuklari": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$sinifId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === root.child('siniflar').child($sinifId).child('kresId').val())"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "veliCocuklari": {
   ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+  "$veliId": {
+    ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('authKullaniciIndex').child(auth.uid).val() === $veliId || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
+  },
   ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici')"
    },
 
     "kresGalerileri": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$kresId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === $kresId)"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "sinifGalerileri": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$sinifId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === root.child('siniflar').child($sinifId).child('kresId').val())"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
     "cocukGalerileri": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
+      "$cocukId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === root.child('cocuklar').child($cocukId).child('kresId').val())"
+      },
       ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'yonetici' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'ogretmen')"
     },
 
+    "kullaniciKonusmalari": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== '')"
+      }
+    },
+
+    "kresKonusmalari": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== '')"
+      }
+    },
+
+    "cocukKonusmalari": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== '')"
+      }
+    },
+
+    "sinifKonusmalari": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== '')"
+      }
+    },
 
     "mesajKonusmalari": {
       ".read": "auth != null",
