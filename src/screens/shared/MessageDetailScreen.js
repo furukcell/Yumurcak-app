@@ -259,11 +259,12 @@ export default function MessageDetailScreen() {
       );
 
       if (receiverIds.length > 0) {
+        const senderName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yumurcak Kreş';
         try {
           await createUserNotification({
             kresId: kullanici?.kresId || mergedMeta.kresId || '',
             userIds: receiverIds,
-            baslik: '💬 Yeni mesaj',
+            baslik: `💬 ${senderName}`,
             mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
             tip: 'mesaj',
             routeName: 'MessageDetail',
