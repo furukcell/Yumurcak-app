@@ -64,8 +64,8 @@ export default function ClassFormScreen() {
     try {
       const id = classId || generateId();
       const classRef = ref(database, `siniflar/${id}`);
-      const existingSnap = await get(classRef);
-      const existingData = existingSnap.exists() ? (existingSnap.val() || {}) : {};
+      const existingSnap = classId ? await get(classRef) : null;
+      const existingData = existingSnap?.exists?.() ? (existingSnap.val() || {}) : {};
       const existingTeacherIds = asArray(existingData.ogretmenIds);
       const now = Date.now();
       const nextKresId = existingData.kresId || kullanici?.kresId || 'default-kres';
