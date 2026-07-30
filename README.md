@@ -4,22 +4,22 @@ Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / Reac
 
 Proje şu an **canlı öncesi hazır / son gerçek cihaz kontrolü** seviyesindedir. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri medya optimizasyonu eklenmiş; uyum, rozet, gelişim, sınıf ortalaması ve bildirim kapsamı güncellenmiştir.
 
-> Son güncelleme: 27 Haziran 2026
+> Son güncelleme: 30 Temmuz 2026
 
 ---
 
 ## Güncel Durum
 
 ```txt
-Durum: Canlı öncesi hazır
+Durum: Google Play'de yayında
 Ana modüller: Tamamlandı
 Push bildirim: Firebase Cloud Functions ile aktif
-Abonelik: RevenueCat + Google Play ürünleri bağlı
-Galeri: Uygulama içi görüntüleme, video oynatma, cihaza kaydetme ve medya optimizasyonu aktif
-Uyum Modülü: Admin / öğretmen / veli tarafı aktif
-Rozetlerim / Haftanın Yıldızı: Öğretmen verir, veli geçmişini görür
-Sınıf Ortalaması: Veli gelişim ekranında anonim karşılaştırma aktif
-Kalan ana iş: Gerçek cihaz son testleri ve Play kapalı test
+Abonelik: RevenueCat + Google Play aktif
+Pilot kullanım: Başladı
+Kalan ana işler:
+- App Store sürümü
+- Kurum demoları
+- İlk pilot kreşlerden geri bildirim toplama
 ```
 
 ---
@@ -439,78 +439,62 @@ Eski başka proje function'ları silinmemelidir.
 
 ---
 
-## Son Test Listesi
+## Tamamlanan Yayın Öncesi Testler
 
-Canlı öncesi yapılacak son kontrol listesi:
+Aşağıdaki testler tamamlanmış ve uygulama Google Play üretim sürümünde doğrulanmıştır.
 
-1. Admin girişi
-2. Öğretmen girişi
-3. Veli girişi
-4. Admin sınıf / çocuk / öğretmen / veli bağlantıları
-5. Öğretmen günlük rapor girer
-6. Günlük rapor bildirimi veliye düşer
-7. Öğretmen yoklama girer
-8. Yoklama bildirimi veliye düşer
-9. Öğretmen fiziksel gelişim girer
-10. Gelişim bildirimi veliye düşer
-11. Öğretmen uyum kaydı girer
-12. Uyum bildirimi veliye düşer
-13. Öğretmen rozet verir
-14. Rozet bildirimi veliye düşer
-15. Galeriye fotoğraf/video yüklenir
-16. Galeri fotoğraf optimizasyonu gerçek cihazda test edilir
-17. Galeri video optimizasyonu gerçek cihazda test edilir
-18. 2 dakikadan uzun video uyarısı kontrol edilir
-19. 50 MB üstü video sınırı kontrol edilir
-20. Galeri bildirimi veliye düşer
-21. Admin duyuru oluşturur
-22. Duyuru bildirimi hedef kullanıcıya düşer
-23. Admin anket oluşturur
-24. Anket bildirimi veliye düşer
-25. Admin ödeme kaydı oluşturur
-26. Ödeme bildirimi veliye düşer
-27. Veli Kurum Zili gönderir
-28. Kurum Zili bildirimi admin/öğretmene düşer
-29. Mesaj gönderilir
-30. Mesaj bildirimi karşı tarafa düşer
-31. Bildirim kaydında `pushStatus: sent` kontrol edilir
-32. RevenueCat ürünleri gerçek cihazda görünür
-33. Google Play satın alma popup'ı açılır
-34. Restore testi yapılır
-35. Firebase Database Rules son kontrol edilir
-36. Firebase Storage Rules son kontrol edilir
-37. Android release build alınır
-38. Play Console kapalı test başlatılır
+- ✅ Admin girişi
+- ✅ Öğretmen girişi
+- ✅ Veli girişi
+- ✅ Rol bazlı yönlendirme
+- ✅ Günlük rapor akışı
+- ✅ Yoklama sistemi
+- ✅ Fiziksel gelişim kayıtları
+- ✅ Uyum Modülü
+- ✅ Haftanın Yıldızı / Rozet sistemi
+- ✅ Galeri fotoğraf yükleme
+- ✅ Galeri video yükleme
+- ✅ Medya optimizasyonu
+- ✅ Duyuru sistemi
+- ✅ Anket sistemi
+- ✅ Ödeme sistemi
+- ✅ Kurum Zili
+- ✅ Mesajlaşma
+- ✅ Push bildirimleri
+- ✅ Firebase Cloud Functions
+- ✅ RevenueCat entegrasyonu
+- ✅ Google Play satın alma testi
+- ✅ Restore Purchase
+- ✅ Firebase Database Rules
+- ✅ Firebase Storage Rules
+- ✅ Android Release Build
+- ✅ Google Play Production Yayını
 
----
+
+
+✅ Google Play production yayını tamamlandı.
+
 
 ## Kalan İşler
 
-Canlıya engel ana geliştirme işi kalmamıştır. Kalanlar son kontrol ve opsiyonel geliştirmelerdir.
+### Yüksek Öncelik
 
-### Zorunlu Son Kontroller
+- [ ] iOS (App Store) sürümünün hazırlanması
+- [ ] App Store inceleme ve yayın sürecinin tamamlanması
+- [ ] Pilot kreşlere demo sunumlarının yapılması
+- [ ] İlk kullanıcı geri bildirimlerinin toplanması
 
-```txt
-- Gerçek cihaz push testi
-- RevenueCat / Google Play satın alma testi
-- Restore testi
-- Galeri fotoğraf / video optimizasyonu gerçek cihaz testi
-- Firebase Realtime Database rules kontrolü
-- Firebase Storage rules kontrolü
-- Kapalı test build kontrolü
-```
+### Orta Öncelik
 
-### Opsiyonel Sonraki Fazlar
+- [ ] Kullanıcı geri bildirimlerine göre hata düzeltmeleri
+- [ ] Performans optimizasyonları
+- [ ] Küçük UI/UX iyileştirmeleri
 
-```txt
-- Abonelik bitiş uyarısı için zamanlı Cloud Function
-- Doğum günü bildirimi için zamanlı Cloud Function
-- 24 saat dolan galeri Storage dosyaları için otomatik temizlik Function'ı
-- Admin raporlama / kullanım analitiği
-- Web tanıtım sayfası
-```
+### Gelecek Sürümler
 
----
+- [ ] Web tanıtım sitesi
+- [ ] Yönetici istatistik ve raporlama ekranlarının geliştirilmesi
+- [ ] Yeni modüller ve özellikler
 
 ## Not
 
