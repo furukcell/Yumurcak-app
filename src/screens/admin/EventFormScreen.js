@@ -11,6 +11,7 @@ import { ref, onValue, push, set, update, remove } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { parseChildBirthDate, normalizeChildBirthDate, formatChildBirthDate } from '../../utils/childDates';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
@@ -68,7 +69,7 @@ export default function EventFormScreen() {
       const data = snap.val();
       if (data) {
         setBaslik(data.baslik || '');
-        setTarih(data.tarih || '');
+        setTarih(data.tarih ? formatChildBirthDate(data.tarih) : '');
         setSaat(data.saat || '');
         setAciklama(data.aciklama || '');
         setAktif(data.aktif !== false);
@@ -93,7 +94,11 @@ export default function EventFormScreen() {
       return;
     }
     if (!tarih.trim()) {
-      Alert.alert('Eksik Bilgi', 'Lütfen etkinlik tarihini gir. (örn: 2026-06-25)');
+      Alert.alert('Eksik Bilgi', 'Lütfen etkinlik tarihini gir. (örn: 25.06.2026)');
+      return;
+    }
+    if (!parseChildBirthDate(tarih)) {
+      Alert.alert('Hata', 'Tarihi 25.06.2026 formatında gir.');
       return;
     }
     if (seciliSiniflar.length === 0) {
@@ -106,7 +111,7 @@ export default function EventFormScreen() {
       const veri = {
         kresId: kullanici?.kresId || '',
         baslik: baslik.trim(),
-        tarih: tarih.trim(),
+        tarih: normalizeChildBirthDate(tarih),
         saat: saat.trim(),
         sinifIds: seciliSiniflar,
         aciklama: aciklama.trim(),
@@ -184,7 +189,7 @@ export default function EventFormScreen() {
         <Text style={styles.label}>Tarih</Text>
         <TextInput
           style={styles.input}
-          placeholder="2026-06-25"
+          placeholder="25.06.2026"
           placeholderTextColor="#A6A8B8"
           value={tarih}
           onChangeText={setTarih}
