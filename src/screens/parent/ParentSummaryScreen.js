@@ -56,16 +56,6 @@ export default function ParentSummaryScreen({ navigation }) {
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const reports = useNodeList('gunlukRaporlar');
-  const meals = useNodeList('yemekListeleri');
-  const attendance = useNodeList('yoklamalar');
-  const events = useNodeList('etkinlikler');
-  const announcements = useNodeList('duyurular');
-  const schedules = useNodeList('dersProgramlari');
-  const payments = useNodeList('odemeler');
-  const polls = useNodeList('anketler');
-  const weeklyBadges = useNodeList('haftaninRozetleri');
-
   const {
     loading,
     selectedChild,
@@ -77,6 +67,17 @@ export default function ParentSummaryScreen({ navigation }) {
     parentId,
     parentPhotoUrl,
   } = base;
+
+  const reports = useNodeList('gunlukRaporlar', kresId);
+  const meals = useNodeList('yemekListeleri', kresId);
+  const attendance = useNodeList('yoklamalar', kresId);
+  const events = useNodeList('etkinlikler', kresId);
+  const announcements = useNodeList('duyurular', kresId);
+  const schedules = useNodeList('dersProgramlari', kresId);
+  const payments = useNodeList('odemeler', kresId);
+  const polls = useNodeList('anketler', kresId);
+  const weeklyBadges = useNodeList('haftaninRozetleri', kresId);
+
   const unreadMessages = useUnreadMessagesCount(parentId);
   const today = toDateKey(new Date());
   const weekKey = getWeekKey();
