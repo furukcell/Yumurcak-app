@@ -19,12 +19,13 @@ function getWeekLabel(item) {
 }
 
 export default function ParentBadgesScreen({ navigation }) {
-  const base = useParentBase();
-  const records = useNodeList('haftaninRozetleri');
-  const { theme } = useAppTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  
+ const base = useParentBase();
+ const { theme } = useAppTheme();
+ const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const { loading, selectedChild, childName } = base;
+ const { loading, selectedChild, childName, kresId } = base;
+ const records = useNodeList('haftaninRozetleri', kresId);
 
   const childBadges = useMemo(() => {
     if (!selectedChild?.id) return [];
