@@ -12,13 +12,14 @@ const STATUS_META = {
 };
 
 export default function ParentPaymentsScreen({ navigation }) {
+  
   const base = useParentBase();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const payments = useNodeList('odemeler');
   const [tab, setTab] = useState('son12');
 
   const { loading, selectedChild, children, parentId, kresId, kresAdi, kres } = base;
+  const payments = useNodeList('odemeler', kresId);
   const childIds = useMemo(() => children.map((c) => String(c.id)).filter(Boolean), [children]);
 
   const myPayments = useMemo(() => {
