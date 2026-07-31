@@ -17,8 +17,9 @@ const STATUS_LABELS = {
 };
 
 export default function ParentAttendanceScreen({ navigation }) {
-  const { loading, selectedChild } = useParentBase();
-  const raw = useNodeList('yoklamalar');
+   
+  const { loading, selectedChild, kresId } = useParentBase();
+  const raw = useNodeList('yoklamalar', kresId);
   const [selectedMonth, setSelectedMonth] = useState(null);
 
   const childRecords = useMemo(() => {
