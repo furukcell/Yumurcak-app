@@ -12,9 +12,10 @@ const BORDER = '#DDEFE3';
 const ORANGE = '#FF9F1C';
 
 export default function ParentAdaptationScoreScreen({ navigation }) {
+   
   const base = useParentBase();
-  const records = useNodeList('uyumKayitlari');
-  const { loading, selectedChild, childName, sinif } = base;
+  const { loading, selectedChild, childName, sinif, kresId } = base;
+  const records = useNodeList('uyumKayitlari', kresId);
 
   const childRecords = useMemo(() => {
     if (!selectedChild?.id) return [];
