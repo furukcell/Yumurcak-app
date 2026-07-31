@@ -11,7 +11,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -391,19 +391,19 @@ export function useParentBase() {
   };
 }
 
-export function useNodeList(node) {
+export function useNodeList(node, kresId) {
   const [list, setList] = useState([]);
 
   useEffect(() => {
-    if (!node) {
+    if (!node || !kresId) {
       setList([]);
       return undefined;
     }
 
-    const r = ref(database, node);
-    const unsub = onValue(r, (snap) => setList(toList(snap.val())), () => setList([]));
+    const q = query(ref(database, node), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => setList(toList(snap.val())), () => setList([]));
     return () => unsub();
-  }, [node]);
+  }, [node, kresId]);
 
   return list;
 }
