@@ -97,7 +97,7 @@ function mergeTodayMeal({ kresId, sinifId, childName, monthlyMeal, dailyMeal }) 
 
 export default function ParentMealsScreen({ navigation }) {
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
-  const meals = useNodeList('yemekListeleri');
+  const meals = useNodeList('yemekListeleri', kresId);
   const [tab, setTab] = useState('today');
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
