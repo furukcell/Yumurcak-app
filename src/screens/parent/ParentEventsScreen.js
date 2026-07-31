@@ -9,7 +9,8 @@ import { formatDisplayDate } from '../../utils/dateFormat';
 
 export default function ParentEventsScreen({ navigation }) {
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
-  const events = useNodeList('etkinlikler');
+ 
+  const events = useNodeList('etkinlikler', kresId);
 
   const visible = useMemo(() => {
     return events
