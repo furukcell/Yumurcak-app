@@ -12,7 +12,7 @@ import { ref, set, push, get, query, orderByChild, equalTo } from 'firebase/data
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import { createRoleNotification } from '../../services/notificationCenter';
+import { createRoleNotification, createUserNotification } from '../../services/notificationCenter';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 const TARGET_OPTIONS = [
@@ -101,6 +101,43 @@ export default function AnnouncementFormScreen() {
     return 'Bu duyuru tüm kuruma gönderilecek.';
   };
 
+  const getClassRecipientUserIds = async (sinifId) => {
+    const userIds = [];
+
+    try {
+      const sinifSnap = await get(ref(database, `siniflar/${sinifId}`));
+      const sinifData = sinifSnap.val() || {};
+      const ogretmenIds = sinifData.ogretmenIds
+        ? (Array.isArray(sinifData.ogretmenIds) ? sinifData.ogretmenIds : Object.keys(sinifData.ogretmenIds))
+        : [];
+      userIds.push(...ogretmenIds);
+    } catch (err) {
+      console.warn('Sınıf öğretmenleri okunamadı:', err);
+    }
+
+    try {
+      const cocukIndexSnap = await get(ref(database, `sinifCocuklari/${sinifId}`));
+      const cocukIds = cocukIndexSnap.exists() ? Object.keys(cocukIndexSnap.val()) : [];
+
+      const cocukSnaps = await Promise.all(
+        cocukIds.map((cocukId) => get(ref(database, `cocuklar/${cocukId}`)))
+      );
+
+      cocukSnaps.forEach((snap) => {
+        const cocuk = snap.val();
+        if (!cocuk) return;
+        const veliIds = cocuk.veliIds
+          ? (Array.isArray(cocuk.veliIds) ? cocuk.veliIds : Object.keys(cocuk.veliIds))
+          : [];
+        userIds.push(...veliIds, cocuk.veliId, cocuk.parentId);
+      });
+    } catch (err) {
+      console.warn('Sınıf velileri okunamadı:', err);
+    }
+
+    return [...new Set(userIds.filter(Boolean))];
+  };
+
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
       Alert.alert('Hata', 'Başlık ve mesaj alanları boş olamaz.');
@@ -136,19 +173,36 @@ export default function AnnouncementFormScreen() {
       }
 
       if (!announcementId) {
-        const roles = getNotificationRoles();
+        const baslik = isUrgent ? '🚨 Acil duyuru' : '📢 Yeni duyuru';
+        const routeName = targetRole === 'ogretmen' ? 'TeacherAnnouncements' : 'ParentAnnouncements';
+        const createdBy = kullanici?.uid || kullanici?.id || '';
 
-        await createRoleNotification({
-          kresId: data.kresId,
-          roles,
-          baslik: isUrgent ? '🚨 Acil duyuru' : '📢 Yeni duyuru',
-          mesaj: title.trim(),
-          tip: 'duyuru',
-          routeName: targetRole === 'ogretmen' ? 'TeacherAnnouncements' : 'ParentAnnouncements',
-          createdBy: kullanici?.uid || kullanici?.id || '',
-          targetRole,
-          sinifId: targetRole === 'sinif' ? selectedClassId : '',
-        });
+        if (targetRole === 'sinif') {
+          const userIds = await getClassRecipientUserIds(selectedClassId);
+          if (userIds.length > 0) {
+            await createUserNotification({
+              kresId: data.kresId,
+              userIds,
+              baslik,
+              mesaj: title.trim(),
+              tip: 'duyuru',
+              routeName,
+              createdBy,
+            });
+          }
+        } else {
+          const roles = getNotificationRoles();
+
+          await createRoleNotification({
+            kresId: data.kresId,
+            roles,
+            baslik,
+            mesaj: title.trim(),
+            tip: 'duyuru',
+            routeName,
+            createdBy,
+          });
+        }
       }
 
       setSuccessToast(true);
