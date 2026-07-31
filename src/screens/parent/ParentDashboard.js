@@ -8,12 +8,13 @@ import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { uyumGorunurMu } from '../../utils/uyum';
 
 export default function ParentDashboardScreen({ navigation }) {
-  const base = useParentBase();
-  const reports = useNodeList('gunlukRaporlar');
-  const { theme } = useAppTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl, parentId } = base;
-  const unreadMessages = useUnreadMessagesCount(parentId);
+  
+const base = useParentBase();
+const { theme } = useAppTheme();
+const styles = useMemo(() => createStyles(theme), [theme]);
+const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl, parentId, kresId } = base;
+const reports = useNodeList('gunlukRaporlar', kresId);
+const unreadMessages = useUnreadMessagesCount(parentId);
 
   const childReports = useMemo(() => {
     if (!selectedChild?.id) return [];
