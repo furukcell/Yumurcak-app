@@ -32,12 +32,13 @@ export default function ParentDevelopmentScreen({ navigation }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [activeTab, setActiveTab] = useState('monthly');
 
-  const physicalRaw = useNodeList('fizikselGelisim');
-  const reportsRaw = useNodeList('gunlukRaporlar');
-  const attendanceRaw = useNodeList('yoklamalar');
-  const eventsRaw = useNodeList('etkinlikler');
-  const mealsRaw = useNodeList('yemekListeleri');
-  const badgesRaw = useNodeList('haftaninRozetleri');
+ 
+ const physicalRaw = useNodeList('fizikselGelisim', kresId);
+ const reportsRaw = useNodeList('gunlukRaporlar', kresId);
+ const attendanceRaw = useNodeList('yoklamalar', kresId);
+ const eventsRaw = useNodeList('etkinlikler', kresId);
+ const mealsRaw = useNodeList('yemekListeleri', kresId);
+ const badgesRaw = useNodeList('haftaninRozetleri', kresId);
 
   const targetMonth = useMemo(() => {
     const now = new Date();
