@@ -42,7 +42,8 @@ function timeTextOf(item) {
 
 export default function ParentAnnouncementsScreen({ navigation }) {
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
-  const announcements = useNodeList('duyurular');
+  
+  const announcements = useNodeList('duyurular', kresId);
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
