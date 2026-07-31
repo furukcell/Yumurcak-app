@@ -11,11 +11,14 @@ export default function ParentPollsScreen({ navigation }) {
   const base = useParentBase();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const polls = useNodeList('anketler');
+
+  const { loading, kresId, sinifId, kullanici } = base;
+  
+  const polls = useNodeList('anketler', kresId);
   const [sendingId, setSendingId] = useState(null);
   const [expandedPollId, setExpandedPollId] = useState(null);
 
-  const { loading, kresId, sinifId, kullanici } = base;
+ 
   const veliId = kullanici?.uid || kullanici?.id;
 
   const activePolls = useMemo(() => {
