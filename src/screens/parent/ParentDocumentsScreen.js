@@ -20,7 +20,8 @@ function formatDateTime(value) {
 
 export default function ParentDocumentsScreen({ navigation }) {
   const { loading, selectedChild, sinifId, kresId, childName } = useParentBase();
-  const documents = useNodeList('dokumanlar');
+  
+  const documents = useNodeList('dokumanlar', kresId);
   const [selectedType, setSelectedType] = useState('yemekListesi');
   const [previewUrl, setPreviewUrl] = useState('');
 
