@@ -21,8 +21,9 @@ const STATUS_LABELS = {
 };
 
 export default function ParentReportsScreen({ navigation }) {
-  const { loading, selectedChild, kresAdi } = useParentBase();
-  const reports = useNodeList('gunlukRaporlar');
+ 
+  const { loading, selectedChild, kresAdi, kresId } = useParentBase();
+  const reports = useNodeList('gunlukRaporlar', kresId);
   const { theme } = useAppTheme();
   const localStyles = useMemo(() => createStyles(theme || THEME), [theme]);
   const [tab, setTab] = useState('daily');
