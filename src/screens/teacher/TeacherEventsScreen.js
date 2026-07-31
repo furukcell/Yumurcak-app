@@ -8,6 +8,7 @@ import { ref, push } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
+import { parseChildBirthDate, normalizeChildBirthDate, formatChildBirthDate } from '../../utils/childDates';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherEventsScreen() {
@@ -15,7 +16,7 @@ export default function TeacherEventsScreen() {
   const { loading, teacherId, kresId, currentClass, events } = useTeacherData();
   const [showForm, setShowForm] = useState(false);
   const [baslik, setBaslik] = useState('');
-  const [tarih, setTarih] = useState(todayString());
+  const [tarih, setTarih] = useState(formatChildBirthDate(todayString()));
   const [saat, setSaat] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,11 @@ export default function TeacherEventsScreen() {
     if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
     if (!baslik.trim() || !tarih.trim()) return Alert.alert('Eksik Bilgi', 'Başlık ve tarih zorunludur.');
 
+    if (!parseChildBirthDate(tarih)) {
+      Alert.alert('Hata', 'Tarihi 25.06.2026 formatında gir.');
+      return;
+    }
+
     setSaving(true);
     try {
       await push(ref(database, 'etkinlikler'), {
@@ -49,14 +55,14 @@ export default function TeacherEventsScreen() {
         olusturanId: teacherId || '',
         olusturanRol: 'ogretmen',
         baslik: baslik.trim(),
-        tarih: tarih.trim(),
+        tarih: normalizeChildBirthDate(tarih),
         saat: saat.trim(),
         aciklama: aciklama.trim(),
         aktif: true,
         createdAt: Date.now(),
       });
       setBaslik('');
-      setTarih(todayString());
+      setTarih(formatChildBirthDate(todayString()));
       setSaat('');
       setAciklama('');
       setShowForm(false);
@@ -89,7 +95,7 @@ export default function TeacherEventsScreen() {
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Sınıf Etkinliği</Text>
             <TextInput style={styles.input} value={baslik} onChangeText={setBaslik} placeholder="Etkinlik başlığı" placeholderTextColor="#999" />
-            <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder="2026-06-20" placeholderTextColor="#999" />
+            <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder="20.06.2026" placeholderTextColor="#999" />
             <TextInput style={styles.input} value={saat} onChangeText={setSaat} placeholder="Saat (opsiyonel)" placeholderTextColor="#999" />
             <TextInput style={[styles.input, styles.textArea]} value={aciklama} onChangeText={setAciklama} placeholder="Açıklama" multiline placeholderTextColor="#999" />
             <TouchableOpacity style={styles.saveButton} onPress={save} disabled={saving}>
