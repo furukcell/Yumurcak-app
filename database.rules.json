@@ -133,7 +133,7 @@
     "etkinlikHavuzu": {
       ".read": "auth != null",
       ".write": false,
-      ".indexOn": ["kategori"]
+      ".indexOn": ["kategori", "adNormalized"]
     },
 
     "_etkinlikHavuzuMeta": {
