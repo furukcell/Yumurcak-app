@@ -11,6 +11,7 @@ import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { getMonthKey } from '../../services/monthlyDocuments';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -45,11 +46,17 @@ export default function LessonScheduleListScreen() {
 
     function build() {
       if (!sinifLoaded || !programLoaded) return;
+      const currentMonthKey = getMonthKey(new Date());
       const liste = Object.entries(sinifData).map(([id, s]) => ({
         id,
         ad: s?.ad || 'İsimsiz Sınıf',
         yasGrubu: s?.yasGrubu || null,
-        programVarMi: !!programData[id],
+        // Yeni model: dersProgramlari artık gün-bazlı kayıtlardan oluşuyor
+        // (dersProgramlari/{randomId}), tek bir dersProgramlari/{sinifId} yok.
+        // "Programı var mı" = bu ay için yayınlanmış (aktif) en az bir gün var mı.
+        programVarMi: Object.values(programData).some(
+          (item) => item?.sinifId === id && item?.ayKey === currentMonthKey && item?.kaynak === 'admin_aylik' && item?.aktif !== false
+        ),
       }));
       setSiniflar(liste);
       setProgramlar(programData);
@@ -93,7 +100,7 @@ export default function LessonScheduleListScreen() {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('LessonScheduleForm', { sinifId: item.id, sinifAd: item.ad })}
+      onPress={() => navigation.navigate('AdminMonthlySchedule', { sinifId: item.id, sinifAd: item.ad })}
       activeOpacity={0.8}
     >
       <View style={styles.cardLeft}>

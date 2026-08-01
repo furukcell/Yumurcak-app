@@ -1,3 +1,9 @@
+// ============================================================
+// YUMURCAK — AdminMonthlyScheduleScreen.js
+// Ders programını da yemek listesiyle AYNI modele taşıyoruz:
+// haftalık serbest metin yerine, ay + gün bazlı, yayınla/kaldır akışı.
+// Sınıf bazlı çalışır (her sınıfın kendi aylık programı olur).
+// ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { onValue, ref } from 'firebase/database';
@@ -8,6 +14,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
+import { useRoute } from '@react-navigation/native';
 import { createNotification } from '../../services/notificationCenter';
 import {
   getDaysOfMonth,
@@ -19,49 +26,52 @@ import {
   publishMonth,
   unpublishMonth,
   copyFromPreviousMonth,
+  forClass,
 } from '../../services/monthlyDocuments';
 
-const NODE_PATH = 'yemekListeleri';
+const NODE_PATH = 'dersProgramlari';
 const KAYNAK = 'admin_aylik';
 
-function emptyMealValue() {
-  return { kahvalti: '', ogle: '', araOgun: '' };
+function emptyScheduleValue() {
+  return { etkinlik: '', aciklama: '' };
 }
 
-function hasMealContent(value) {
+function hasScheduleContent(value) {
   if (!value) return false;
-  return !!(String(value.kahvalti || '').trim() || String(value.ogle || '').trim() || String(value.araOgun || '').trim());
+  return !!(String(value.etkinlik || '').trim() || String(value.aciklama || '').trim());
 }
 
-function buildMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now }) {
+function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now, sinifId }) {
   return {
     kresId,
-    sinifId: null,
+    sinifId: sinifId || null,
     tip: 'aylik',
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: `${monthLabel} Yemek Listesi`,
-    ogunler: {
-      kahvalti: String(value.kahvalti || '').trim(),
-      ogle: String(value.ogle || '').trim(),
-      araOgun: String(value.araOgun || '').trim(),
-    },
+    baslik: `${monthLabel} Ders Programı`,
+    etkinlik: String(value.etkinlik || '').trim(),
+    aciklama: String(value.aciklama || '').trim(),
     aktif: true,
     createdAt: now,
     updatedAt: now,
   };
 }
 
-function mealPreview(value) {
-  if (!hasMealContent(value)) return '';
-  return [value?.kahvalti, value?.ogle, value?.araOgun].filter(Boolean).join(' · ');
+function schedulePreview(value) {
+  if (!hasScheduleContent(value)) return '';
+  return [value?.etkinlik, value?.aciklama].filter(Boolean).join(' · ');
 }
 
-export default function AdminMonthlyMealScreen({ navigation }) {
+export default function AdminMonthlyScheduleScreen({ navigation }) {
+  const route = useRoute();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  // Sınıf bazlı: ClassList'ten "bu sınıfın programını düzenle" ile gelinir.
+  const sinifId = route.params?.sinifId || null;
+  const sinifAd = route.params?.sinifAd || 'Sınıf';
 
   const kresId = kullanici?.kresId;
   const adminId = kullanici?.uid || kullanici?.id || null;
@@ -71,7 +81,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   const monthKey = useMemo(() => getMonthKey(monthDate), [monthDate]);
   const monthLabel = useMemo(() => getMonthLabel(monthDate), [monthDate]);
 
-  const [values, setValues] = useState(() => createInitialValues(days, emptyMealValue));
+  const [values, setValues] = useState(() => createInitialValues(days, emptyScheduleValue));
   const [view, setView] = useState('list');
   const [selectedDateKey, setSelectedDateKey] = useState('');
   const [saving, setSaving] = useState(false);
@@ -82,62 +92,62 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    if (!kresId) {
+    if (!kresId || !sinifId) {
       setPublishedCount(0);
       return undefined;
     }
     const unsub = onValue(
       ref(database, NODE_PATH),
-      (snap) => setPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: KAYNAK })),
+      (snap) => setPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) })),
       () => setPublishedCount(0)
     );
     return () => unsub();
-  }, [kresId, monthKey]);
+  }, [kresId, sinifId, monthKey]);
 
   function changeMonth(direction) {
     const next = shiftMonth(monthDate, direction);
     setMonthDate(next);
-    setValues(createInitialValues(getDaysOfMonth(next), emptyMealValue));
+    setValues(createInitialValues(getDaysOfMonth(next), emptyScheduleValue));
     setSelectedDateKey('');
   }
 
   function updateField(dateKey, field, text) {
     setValues((prev) => ({
       ...prev,
-      [dateKey]: { ...(prev[dateKey] || emptyMealValue()), [field]: text },
+      [dateKey]: { ...(prev[dateKey] || emptyScheduleValue()), [field]: text },
     }));
   }
 
   function clearDay(dateKey) {
-    setValues((prev) => ({ ...prev, [dateKey]: emptyMealValue() }));
+    setValues((prev) => ({ ...prev, [dateKey]: emptyScheduleValue() }));
   }
 
   const daysWithContent = useMemo(
-    () => days.map((day) => ({ ...day, hasContent: hasMealContent(values[day.dateKey]) })),
+    () => days.map((day) => ({ ...day, hasContent: hasScheduleContent(values[day.dateKey]) })),
     [days, values]
   );
 
-  const hasAnyMeal = useMemo(() => Object.values(values).some(hasMealContent), [values]);
+  const hasAnyEntry = useMemo(() => Object.values(values).some(hasScheduleContent), [values]);
 
   async function handleCopyPreviousMonth() {
-    if (!kresId) return;
+    if (!kresId || !sinifId) return;
     setCopying(true);
     try {
-      const { values: copiedValues, prevMonthKey, found } = await copyFromPreviousMonth({
+      const { values: copiedValues, found } = await copyFromPreviousMonth({
         nodePath: NODE_PATH,
         kresId,
         kaynak: KAYNAK,
         currentMonthDate: monthDate,
         days,
+        matchExtra: forClass(sinifId),
         valueMapper: (prevItem) => ({
-          kahvalti: prevItem?.ogunler?.kahvalti || '',
-          ogle: prevItem?.ogunler?.ogle || '',
-          araOgun: prevItem?.ogunler?.araOgun || '',
+          etkinlik: prevItem?.etkinlik || '',
+          aciklama: prevItem?.aciklama || '',
         }),
       });
 
       if (!found) {
-        Alert.alert('Bulunamadı', `${prevMonthKey} için yayınlanmış bir yemek listesi yok.`);
+        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir ders programı bulunamadı.');
         return;
       }
 
@@ -149,7 +159,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         return next;
       });
 
-      Alert.alert('Kopyalandı', `${found} günlük yemek bilgisi geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+      Alert.alert('Kopyalandı', `${found} günlük etkinlik geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
@@ -159,17 +169,17 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   }
 
   function confirmPublish() {
-    if (!kresId) {
-      Alert.alert('Hata', 'Kreş bilgisi bulunamadı.');
+    if (!kresId || !sinifId) {
+      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
       return;
     }
-    if (!hasAnyMeal) {
-      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne yemek bilgisi gir.');
+    if (!hasAnyEntry) {
+      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne etkinlik gir.');
       return;
     }
     Alert.alert(
       'Ayı Paylaş',
-      `${monthLabel} yemek listesi yayınlansın mı? Aynı ay için eski yayın pasife alınır ve veliler yeni listeyi görür.`,
+      `${sinifAd} sınıfının ${monthLabel} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Yayınla', onPress: doPublish },
@@ -188,35 +198,37 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         kaynak: KAYNAK,
         days,
         values,
-        hasContent: hasMealContent,
-        buildRecord: buildMealRecord,
+        hasContent: hasScheduleContent,
+        buildRecord: (args) => buildScheduleRecord({ ...args, sinifId }),
+        matchExtra: forClass(sinifId),
       });
 
       await createNotification({
         kresId,
         hedefRoller: ['veli'],
-        baslik: '🍽️ Yemek listesi güncellendi',
-        mesaj: `${monthLabel} yemek listesi yayınlandı.`,
-        tip: 'yemek',
-        routeName: 'ParentMeals',
+        hedefSinifIds: [sinifId],
+        baslik: '📅 Ders programı güncellendi',
+        mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`,
+        tip: 'ders_programi',
+        routeName: 'ParentSummary',
         createdBy: adminId || '',
       });
 
-      setSuccessMessage(`${monthLabel} yemek listesi yayınlandı`);
+      setSuccessMessage(`${monthLabel} ders programı yayınlandı`);
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Aylık yemek listesi yayınlanamadı.');
+      Alert.alert('Hata', 'Aylık ders programı yayınlanamadı.');
     } finally {
       setSaving(false);
     }
   }
 
   function confirmUnpublish() {
-    if (!kresId || publishedCount === 0) return;
+    if (!kresId || !sinifId || publishedCount === 0) return;
     Alert.alert(
       'Yayından Kaldır',
-      `${monthLabel} için yayınlanmış yemek listesi kaldırılsın mı? Veliler artık bu ayın listesini göremeyecek.`,
+      `${monthLabel} için yayınlanmış ders programı kaldırılsın mı?`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
@@ -227,7 +239,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   async function doUnpublish() {
     setUnpublishing(true);
     try {
-      await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK });
+      await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) });
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Yayından kaldırılamadı.');
@@ -237,12 +249,12 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   }
 
   const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
-  const selectedValue = values[selectedDateKey] || emptyMealValue();
+  const selectedValue = values[selectedDateKey] || emptyScheduleValue();
 
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} yemek listesi yayınlandı`} onHide={() => setSuccessToast(false)} />
+        <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} ders programı yayınlandı`} onHide={() => setSuccessToast(false)} />
 
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -250,8 +262,8 @@ export default function AdminMonthlyMealScreen({ navigation }) {
               <Text style={styles.backText}>‹ Geri</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Aylık Yemek Listesi</Text>
-              <Text style={styles.subtitle}>Kurum geneli ay bazlı yemek planı</Text>
+              <Text style={styles.title}>Aylık Ders Programı</Text>
+              <Text style={styles.subtitle}>{sinifAd} — ay bazlı, gün gün etkinlik planı</Text>
             </View>
           </View>
 
@@ -272,7 +284,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                <Text style={styles.publishedText}>Veliler şu an bu ayın listesini görüyor.</Text>
+                <Text style={styles.publishedText}>Veliler şu an bu ayın programını görüyor.</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
                 <Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
@@ -292,13 +304,13 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             onSelectDay={setSelectedDateKey}
             theme={theme}
             renderDayPreview={(day) => {
-              const preview = mealPreview(values[day.dateKey]);
+              const preview = schedulePreview(values[day.dateKey]);
               return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
             }}
           />
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Listesini Yayınla`}</Text>
+            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Programını Yayınla`}</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -313,31 +325,23 @@ export default function AdminMonthlyMealScreen({ navigation }) {
               </View>
 
               <TextInput
-                value={selectedValue.kahvalti}
-                onChangeText={(text) => updateField(selectedDateKey, 'kahvalti', text)}
-                placeholder="Kahvaltı"
+                value={selectedValue.etkinlik}
+                onChangeText={(text) => updateField(selectedDateKey, 'etkinlik', text)}
+                placeholder="Etkinlik (örn: Parmak Boyası)"
                 placeholderTextColor={theme.muted}
                 style={styles.modalInput}
                 multiline
               />
               <TextInput
-                value={selectedValue.ogle}
-                onChangeText={(text) => updateField(selectedDateKey, 'ogle', text)}
-                placeholder="Öğle yemeği"
-                placeholderTextColor={theme.muted}
-                style={styles.modalInput}
-                multiline
-              />
-              <TextInput
-                value={selectedValue.araOgun}
-                onChangeText={(text) => updateField(selectedDateKey, 'araOgun', text)}
-                placeholder="Ara öğün"
+                value={selectedValue.aciklama}
+                onChangeText={(text) => updateField(selectedDateKey, 'aciklama', text)}
+                placeholder="Açıklama (opsiyonel)"
                 placeholderTextColor={theme.muted}
                 style={styles.modalInput}
                 multiline
               />
 
-              {hasMealContent(selectedValue) ? (
+              {hasScheduleContent(selectedValue) ? (
                 <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>
                   <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
                 </TouchableOpacity>
