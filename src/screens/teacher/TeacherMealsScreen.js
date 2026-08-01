@@ -268,6 +268,40 @@ export default function TeacherMealsScreen() {
     }
   };
 
+  // Henüz kaydedilmemiş, sadece önizlemede duran fotoğrafı kaldırır — hiçbir şey paylaşılmaz.
+  const removePickedPhoto = () => {
+    setMealPhoto(null);
+  };
+
+  // Daha önce kaydedilip veliye açık olan fotoğrafı kaldırır (metin kalır).
+  const removePublishedPhoto = () => {
+    if (!todayMeal?.dailySourceId) return;
+
+    Alert.alert(
+      'Fotoğrafı Kaldır',
+      `${selectedMeal.title} fotoğrafı veli ekranından kaldırılsın mı?`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Kaldır',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await update(ref(database, `yemekListeleri/${todayMeal.dailySourceId}/ogunler/${selectedMealKey}`), {
+                fotoUrl: '',
+                fotoPath: '',
+                updatedAt: Date.now(),
+              });
+            } catch (err) {
+              console.error(err);
+              Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const saveTodayMeals = async () => {
     if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı. Öğretmenin bir sınıfa bağlı olması gerekiyor.');
 
@@ -404,7 +438,18 @@ export default function TeacherMealsScreen() {
                 </View>
 
                 {previewPhoto ? (
-                  <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
+                  <View style={styles.photoPreviewWrap}>
+                    <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
+                    {mealPhoto ? (
+                      <TouchableOpacity style={styles.photoRemoveBtn} onPress={removePickedPhoto} activeOpacity={0.85}>
+                        <Text style={styles.photoRemoveBtnText}>Sil</Text>
+                      </TouchableOpacity>
+                    ) : existingPhoto ? (
+                      <TouchableOpacity style={styles.photoRemoveBtn} onPress={removePublishedPhoto} activeOpacity={0.85}>
+                        <Text style={styles.photoRemoveBtnText}>Yayından Kaldır</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 ) : null}
 
                 <View style={styles.photoButtonRow}>
@@ -500,6 +545,9 @@ const styles = StyleSheet.create({
   photoInfoTitle: { color: THEME.primary, fontWeight: '900', fontSize: 13 },
   photoInfoText: { color: THEME.muted, fontWeight: '700', fontSize: 11, marginTop: 3 },
   photoPreview: { width: '100%', height: 160, borderRadius: 16, backgroundColor: THEME.bg, marginBottom: 10 },
+  photoPreviewWrap: { position: 'relative', marginBottom: 10 },
+  photoRemoveBtn: { position: 'absolute', right: 8, bottom: 18, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  photoRemoveBtnText: { color: '#fff', fontWeight: '900', fontSize: 11 },
   photoButtonRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   photoButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   photoButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 12 },
