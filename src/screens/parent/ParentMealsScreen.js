@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
 import MealTodayCard, { getMealText, getMealPhoto } from '../../components/MealTodayCard';
+import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -181,6 +182,15 @@ export default function ParentMealsScreen({ navigation }) {
                   <Text style={localStyles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
                   <Text style={localStyles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
                 </View>
+                <MonthlyDocumentPdfBar
+                  kresId={kresId}
+                  nodePath="yemekListeleri"
+                  kaynak="admin_aylik"
+                  docType="yemek"
+                  monthKey={currentMonthKey}
+                  monthLabel={formatMonthLabel(currentMonthKey)}
+                  theme={THEME}
+                />
                 {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
               </>
             )
