@@ -12,6 +12,8 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
+import ActivityLibraryPicker from '../../components/ActivityLibraryPicker';
+import { ETKINLIK_KATEGORILERI } from '../../constants';
 import { createNotification } from '../../services/notificationCenter';
 import {
   getDaysOfMonth,
@@ -29,7 +31,7 @@ const NODE_PATH = 'dersProgramlari';
 const KAYNAK = 'admin_aylik';
 
 function emptyScheduleValue() {
-  return { etkinlik: '', aciklama: '' };
+  return { etkinlik: '', aciklama: '', kategori: '', tema: '' };
 }
 
 function hasScheduleContent(value) {
@@ -48,6 +50,8 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
     baslik: `${monthLabel} Ders Programı`,
     etkinlik: String(value.etkinlik || '').trim(),
     aciklama: String(value.aciklama || '').trim(),
+    kategori: value.kategori || null,
+    tema: value.tema || null,
     aktif: true,
     createdAt: now,
     updatedAt: now,
@@ -144,6 +148,8 @@ export default function TeacherScheduleScreen() {
         valueMapper: (prevItem) => ({
           etkinlik: prevItem?.etkinlik || '',
           aciklama: prevItem?.aciklama || '',
+          kategori: prevItem?.kategori || '',
+          tema: prevItem?.tema || '',
         }),
       });
 
@@ -362,6 +368,15 @@ export default function TeacherScheduleScreen() {
               </TouchableOpacity>
             </View>
 
+            <View style={styles.libraryRow}>
+              <ActivityLibraryPicker
+                yasGrubu={currentClass?.yasGrubu}
+                initialKategori={selectedValue.kategori || ETKINLIK_KATEGORILERI[0].key}
+                onSelect={(ad) => updateField(selectedDateKey, 'etkinlik', ad)}
+                theme={THEME}
+              />
+            </View>
+
             <TextInput
               value={selectedValue.etkinlik}
               onChangeText={(text) => updateField(selectedDateKey, 'etkinlik', text)}
@@ -370,6 +385,24 @@ export default function TeacherScheduleScreen() {
               style={styles.modalInput}
               multiline
             />
+
+            <Text style={styles.modalLabel}>Kategori</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+              {ETKINLIK_KATEGORILERI.map((item) => {
+                const active = selectedValue.kategori === item.key;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[styles.kategoriChip, active && styles.kategoriChipActive]}
+                    onPress={() => updateField(selectedDateKey, 'kategori', active ? '' : item.key)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{item.emoji} {item.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
             <TextInput
               value={selectedValue.aciklama}
               onChangeText={(text) => updateField(selectedDateKey, 'aciklama', text)}
@@ -425,6 +458,12 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
   modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
+  libraryRow: { alignItems: 'flex-start', marginBottom: 10 },
+  modalLabel: { fontSize: 12, fontWeight: '900', color: THEME.muted, marginBottom: 8, textTransform: 'uppercase' },
+  kategoriChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: THEME.border, backgroundColor: THEME.bg },
+  kategoriChipActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  kategoriChipText: { fontWeight: '800', fontSize: 12, color: THEME.text },
+  kategoriChipTextActive: { color: '#FFF' },
   modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
   modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
 });
