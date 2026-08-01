@@ -655,6 +655,7 @@ exports.updateActivityPoolOnScheduleWrite = functions
     const now = Date.now();
     const poolRef = admin.database().ref(`etkinlikHavuzu/${slug}`);
     const metaRef = admin.database().ref(`_etkinlikHavuzuMeta/${slug}`);
+    const adNormalized = normalizeActivityName(activityName);
 
     // Toplam kullanım sayısını atomik artırıyoruz (transaction — eşzamanlı
     // yazmalarda kayıp sayım olmaması için).
@@ -662,6 +663,7 @@ exports.updateActivityPoolOnScheduleWrite = functions
       if (!current) {
         return {
           ad: activityName,
+          adNormalized,
           yasGrubu,
           kategori: afterKategori,
           tema,
@@ -675,6 +677,7 @@ exports.updateActivityPoolOnScheduleWrite = functions
       return {
         ...current,
         ad: activityName,
+        adNormalized,
         yasGrubu,
         kategori: afterKategori,
         tema,
