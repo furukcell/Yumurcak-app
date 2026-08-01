@@ -119,10 +119,12 @@ gerekli değil, opsiyonel iyileştirme.
    maddede istenen "iki farklı PDF üretim kodu olmasın" şartı sağlandı). Veli
    tarafına (yayınlanan belgeyi görüp indirme) HENÜZ bağlanmadı — bkz. aşağıdaki not.
 
-**Yapılmayan/ertelenen:** Veli tarafında (`ParentMealsScreen.js`, ders programı
-görünümü) aynı `MonthlyDocumentPdfBar` henüz eklenmedi — component hazır,
-sadece ilgili ekranlara import edip kresId/monthKey/sinifId geçmek yeterli
-olacak, küçük bir iş.
+**Yapılmayan/ertelenen:** ~~Veli tarafında aynı `MonthlyDocumentPdfBar` henüz eklenmedi~~
+✅ Sonradan eklendi — `ParentMealsScreen.js`'in "Aylık" sekmesine (yemek listesi
+PDF'i) ve `ParentSummaryScreen.js`'in "Bugünkü program" kartına (o ay için
+yayınlanmış ders programı varsa, `hasMonthlySchedule` kontrolüyle koşullu olarak
+gösteriliyor) bağlandı. Artık gerçekten "iki farklı PDF üretim kodu yok" şartı
+uçtan uca (admin + öğretmen + veli) sağlanmış durumda.
 
 **⚠️ Bu faz sırasında bulunan ve düzeltilen kritik hata:** `monthlyDocuments.js`
 içindeki `fetchNodeSnapshotOnce()` fonksiyonu (Faz 0-2'de yazılmıştı) node'u
@@ -238,15 +240,13 @@ risk taşıyan, ayrı bir işlem — istenirse ayrıca yapılabilir). `LegalDocu
 
 ## Sıradaki Somut Adım (önerilir)
 
-Faz 0-6 tamamlandı. Kalan işler:
-1. **Kullanıcı testi** — özellikle temizlik sonrası: öğretmen/veli dashboard'larında
-   kırık buton kalmadığını, silinen ekranlara giden hiçbir yolun kalmadığını
-   doğrulamak; ayrıca daha önceki test listeleri (Arşiv, PDF, Yayından Kaldır vb.).
-2. **Faz 3'ün eksik kalan küçük parçası** — veli tarafına (`ParentMealsScreen.js`,
-   ders programı görünümü) `MonthlyDocumentPdfBar` bağlamak (component zaten hazır).
+Faz 0-6 tamamlandı, Faz 3'ün veli-tarafı eksiği de kapandı. Bilinen açık iş
+kalmadı — sıradaki adım tamamen **kullanıcı testi**: özellikle `expo-print`
+gibi yeni native bağımlılık eklendiği için Codemagic'te temiz bir build alınıp
+gerçek cihazda denenmesi önemli (yazdır/paylaş/arşiv/yayından kaldır akışları).
 
-Faz 7 ve sonrası (Etkinlik Kütüphanesi ve ötesi) henüz başlamadı, kullanıcı
-onayı olmadan başlanmayacak.
+Test onaylanınca Faz 7 (Etkinlik Kütüphanesi) ve sonrası için kullanıcı
+onayıyla başlanabilir.
 
 ---
 
