@@ -60,6 +60,35 @@ export const OGUN_LISTESI = [
 ];
 
 // ============================================================
+// ETKİNLİK KATEGORİLERİ (FAZ 7 — Etkinlik Kütüphanesi)
+// ============================================================
+export const ETKINLIK_KATEGORILERI = [
+  { key: 'sanat',      label: 'Sanat',      emoji: '🎨' },
+  { key: 'muzik',      label: 'Müzik',      emoji: '🎵' },
+  { key: 'hareket',    label: 'Hareket',    emoji: '🏃' },
+  { key: 'fen',        label: 'Fen',        emoji: '🧪' },
+  { key: 'dil',        label: 'Dil',        emoji: '📖' },
+  { key: 'drama',      label: 'Drama',      emoji: '🎭' },
+  { key: 'matematik',  label: 'Matematik',  emoji: '🔢' },
+  { key: 'diger',      label: 'Diğer',      emoji: '✨' },
+];
+
+// ============================================================
+// ETKİNLİK TEMALARI (opsiyonel, FAZ 7)
+// ============================================================
+export const ETKINLIK_TEMALARI = [
+  { key: 'sonbahar',        label: 'Sonbahar' },
+  { key: 'kis',              label: 'Kış' },
+  { key: 'ilkbahar',        label: 'İlkbahar' },
+  { key: 'yaz',              label: 'Yaz' },
+  { key: '23nisan',          label: '23 Nisan' },
+  { key: '29ekim',           label: '29 Ekim' },
+  { key: 'annelergunu',      label: 'Anneler Günü' },
+  { key: 'babalargunu',      label: 'Babalar Günü' },
+  { key: 'yerlimalihaftasi', label: 'Yerli Malı Haftası' },
+];
+
+// ============================================================
 // YARDIMCI: Zaman formatlama
 // ============================================================
 export function zamanOncesi(tarih) {
