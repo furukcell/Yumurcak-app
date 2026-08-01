@@ -7,9 +7,10 @@ import {
   View, Text, FlatList, StyleSheet,
   TouchableOpacity, ActivityIndicator, SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -24,11 +25,19 @@ const THEME = {
 
 export default function LessonScheduleListScreen() {
   const navigation = useNavigation();
+  const { kres, kullanici } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
   const [siniflar, setSiniflar] = useState([]);
   const [programlar, setProgramlar] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!kresId) {
+      setSiniflar([]);
+      setLoading(false);
+      return undefined;
+    }
+
     let sinifData = {};
     let programData = {};
     let sinifLoaded = false;
@@ -47,23 +56,39 @@ export default function LessonScheduleListScreen() {
       setLoading(false);
     }
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      sinifData = snap.val() || {};
-      sinifLoaded = true;
-      build();
-    });
+    const sinifUnsub = onValue(
+      query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId)),
+      (snap) => {
+        sinifData = snap.val() || {};
+        sinifLoaded = true;
+        build();
+      },
+      (error) => {
+        console.warn('Sınıflar okunamadı:', error);
+        sinifLoaded = true;
+        build();
+      }
+    );
 
-    const programUnsub = onValue(ref(database, 'dersProgramlari'), (snap) => {
-      programData = snap.val() || {};
-      programLoaded = true;
-      build();
-    });
+    const programUnsub = onValue(
+      query(ref(database, 'dersProgramlari'), orderByChild('kresId'), equalTo(kresId)),
+      (snap) => {
+        programData = snap.val() || {};
+        programLoaded = true;
+        build();
+      },
+      (error) => {
+        console.warn('Ders programları okunamadı:', error);
+        programLoaded = true;
+        build();
+      }
+    );
 
     return () => {
       sinifUnsub();
       programUnsub();
     };
-  }, []);
+  }, [kresId]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity

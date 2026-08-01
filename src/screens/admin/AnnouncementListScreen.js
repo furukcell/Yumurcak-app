@@ -4,31 +4,48 @@
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AnnouncementListScreen() {
   const navigation = useNavigation();
+  const { kres, kullanici } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const announcementsRef = ref(database, 'duyurular');
-    const unsubscribe = onValue(announcementsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.entries(data).map(([id, val]) => ({ id, ...val }));
-        list.sort((a, b) => b.createdAt - a.createdAt);
-        setAnnouncements(list);
-      } else {
-        setAnnouncements([]);
-      }
+    if (!kresId) {
+      setAnnouncements([]);
       setLoading(false);
-    });
+      return undefined;
+    }
+
+    const announcementsRef = query(ref(database, 'duyurular'), orderByChild('kresId'), equalTo(kresId));
+    const unsubscribe = onValue(
+      announcementsRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const list = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+          list.sort((a, b) => b.createdAt - a.createdAt);
+          setAnnouncements(list);
+        } else {
+          setAnnouncements([]);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.warn('Duyurular okunamadı:', error);
+        setAnnouncements([]);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
-  }, []);
+  }, [kresId]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity

@@ -7,9 +7,10 @@ import {
   View, Text, FlatList, StyleSheet,
   TouchableOpacity, ActivityIndicator, SafeAreaView,
 } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -25,10 +26,18 @@ const THEME = {
 
 export default function EventListScreen() {
   const navigation = useNavigation();
+  const { kres, kullanici } = useAuth();
+  const kresId = kres?.id || kullanici?.kresId;
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!kresId) {
+      setEtkinlikler([]);
+      setLoading(false);
+      return undefined;
+    }
+
     let etkinlikData = {};
     let sinifData = {};
     let etkinlikLoaded = false;
@@ -63,23 +72,39 @@ export default function EventListScreen() {
       setLoading(false);
     }
 
-    const etkinlikUnsub = onValue(ref(database, 'etkinlikler'), (snap) => {
-      etkinlikData = snap.val() || {};
-      etkinlikLoaded = true;
-      build();
-    });
+    const etkinlikUnsub = onValue(
+      query(ref(database, 'etkinlikler'), orderByChild('kresId'), equalTo(kresId)),
+      (snap) => {
+        etkinlikData = snap.val() || {};
+        etkinlikLoaded = true;
+        build();
+      },
+      (error) => {
+        console.warn('Etkinlikler okunamadı:', error);
+        etkinlikLoaded = true;
+        build();
+      }
+    );
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      sinifData = snap.val() || {};
-      sinifLoaded = true;
-      build();
-    });
+    const sinifUnsub = onValue(
+      query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId)),
+      (snap) => {
+        sinifData = snap.val() || {};
+        sinifLoaded = true;
+        build();
+      },
+      (error) => {
+        console.warn('Sınıflar okunamadı:', error);
+        sinifLoaded = true;
+        build();
+      }
+    );
 
     return () => {
       etkinlikUnsub();
       sinifUnsub();
     };
-  }, []);
+  }, [kresId]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
