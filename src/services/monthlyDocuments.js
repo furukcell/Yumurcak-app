@@ -14,7 +14,7 @@
 //   - Aynı kayıtlar hem PDF/önizleme üretimi hem de "bugünün özeti"
 //     kartları için tek kaynak olarak kullanılır
 // ============================================================
-import { ref, onValue, update, push } from 'firebase/database';
+import { ref, onValue, update, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../config/firebase';
 
 export const MONTH_NAMES = [
@@ -36,6 +36,14 @@ export function getMonthLabel(date) {
 
 export function shiftMonth(date, direction) {
   return new Date(date.getFullYear(), date.getMonth() + direction, 1);
+}
+
+// "2026-08" -> o ayın 1. günü olan Date. getMonthKey'in tersi — arşivden
+// bir aya "atlarken" (shiftMonth gibi +/-1 değil, doğrudan hedef aya) kullanılır.
+export function parseMonthKey(monthKey) {
+  const [year, month] = String(monthKey || '').split('-').map(Number);
+  if (!year || !month) return new Date();
+  return new Date(year, month - 1, 1);
 }
 
 export function todayDateKey() {
@@ -66,17 +74,30 @@ export function createInitialValues(days, emptyValueFactory) {
   }, {});
 }
 
-// Bir node'un (yemekListeleri, dersProgramlari, ...) tamamını tek seferlik okur.
-export function fetchNodeSnapshotOnce(nodePath) {
+// Bir node'un (yemekListeleri, dersProgramlari, ...) bu kreşe ait kısmını
+// tek seferlik okur. DİKKAT: Firebase kuralları bu node'larda filtresiz
+// ("tüm node'u ver") okumaya izin vermiyor — sadece kresId'ye göre
+// filtrelenmiş sorguya izin veriyor. kresId olmadan çağrılırsa (ya da
+// izin reddedilirse) sessizce boş obje döner; çağıran kod bunu "veri yok"
+// sanıp yanlışlıkla "zaten temiz/boş" davranabilir — bu yüzden kresId
+// HER ZAMAN geçilmeli.
+export function fetchNodeSnapshotOnce(nodePath, kresId) {
   return new Promise((resolve) => {
+    if (!kresId) {
+      resolve({});
+      return;
+    }
+
     let unsub = null;
+    const q = query(ref(database, nodePath), orderByChild('kresId'), equalTo(kresId));
     unsub = onValue(
-      ref(database, nodePath),
+      q,
       (snap) => {
         if (unsub) unsub();
         resolve(snap.val() || {});
       },
-      () => {
+      (error) => {
+        console.warn(`${nodePath} okunamadı:`, error?.code || error?.message || error);
         if (unsub) unsub();
         resolve({});
       }
@@ -106,6 +127,28 @@ export function forClass(sinifId) {
   return (item) => item?.sinifId === sinifId;
 }
 
+// Faz 5 — Arşiv: bu kreşte (ve varsa bu sınıfta) hangi aylarda yayınlanmış
+// (aktif) kayıt var, kaç günlük — kullanıcı ay ay elle gezmek zorunda kalmasın
+// diye bir "veri olan aylar" listesi döner. En yeni ay en üstte.
+export async function listPublishedMonths({ nodePath, kresId, kaynak, matchExtra }) {
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
+  const counts = {};
+
+  Object.values(snapshotValue || {}).forEach((item) => {
+    if (!item) return;
+    if (item.kresId !== kresId) return;
+    if (item.kaynak !== kaynak) return;
+    if (item.aktif === false) return;
+    if (typeof matchExtra === 'function' && !matchExtra(item)) return;
+    if (!item.ayKey) return;
+    counts[item.ayKey] = (counts[item.ayKey] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([monthKey, count]) => ({ monthKey, count, monthLabel: getMonthLabel(parseMonthKey(monthKey)) }))
+    .sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+}
+
 // Bir ayı yayınlar: aynı ay/kaynak için eski kayıtları pasife alır,
 // içi dolu her gün için yeni bir kayıt yazar. Tek transaction gibi
 // tek update() çağrısıyla yapılır.
@@ -113,7 +156,7 @@ export function forClass(sinifId) {
 // hasContent(value) -> boolean : o günün taslağı boş mu dolu mu
 // buildRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now }) -> DB'ye yazılacak obje
 export async function publishMonth({ nodePath, kresId, monthKey, monthLabel, kaynak, days, values, hasContent, buildRecord, matchExtra }) {
-  const snapshotValue = await fetchNodeSnapshotOnce(nodePath);
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
   const updates = {};
   const now = Date.now();
 
@@ -139,7 +182,7 @@ export async function publishMonth({ nodePath, kresId, monthKey, monthLabel, kay
 }
 
 export async function unpublishMonth({ nodePath, kresId, monthKey, kaynak, matchExtra }) {
-  const snapshotValue = await fetchNodeSnapshotOnce(nodePath);
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
   const updates = {};
   const now = Date.now();
 
@@ -161,7 +204,7 @@ export async function unpublishMonth({ nodePath, kresId, monthKey, kaynak, match
 export async function copyFromPreviousMonth({ nodePath, kresId, kaynak, currentMonthDate, days, valueMapper, matchExtra }) {
   const prevDate = shiftMonth(currentMonthDate, -1);
   const prevMonthKey = getMonthKey(prevDate);
-  const snapshotValue = await fetchNodeSnapshotOnce(nodePath);
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
   const prevItemsByDay = {};
 
   Object.values(snapshotValue).forEach((item) => {
