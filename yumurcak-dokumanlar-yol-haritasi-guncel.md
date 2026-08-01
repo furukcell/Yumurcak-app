@@ -204,34 +204,49 @@ YOK. `ParentDashboard.js`'de ders programı/schedule ile ilgili hiçbir kod YOK
 
 ---
 
-## Faz 6 — Eski `dokumanlar` (A4 Foto) Sistemini Kapatma ⛔ YAPILMADI
+## Faz 6 — Eski `dokumanlar` (A4 Foto) Sistemini Kapatma ✅ TAMAMLANDI
 
-`src/screens/teacher/TeacherDocumentsScreen.js` (A4 foto yükleme, `dokumanlar`
-node'u) hâlâ duruyor ve dokunulmadı. Yeni akış (Faz 3-4) stabil olduktan sonra:
-- Ya tamamen kaldır (ekran + navigasyon + `dokumanlar` node'u artık kullanılmıyor),
-- Ya da "okulun kendi hazır PDF'ini yüklemek istemesi" gibi nadir durumlar için
-  opsiyonel yedek olarak bırak.
+**Karar:** Tamamen kaldırıldı (kullanıcı onayladı — kreş henüz canlı değil,
+yeni yapılandırılmış sistem her iki belge türünü de kapsıyor, iki paralel
+sistemi bir arada tutmanın faydası yoktu).
 
-Ayrıca temizlik: `src/screens/admin/LessonScheduleFormScreen.js` artık hiçbir
-yerden çağrılmıyor (Faz 1'de `AdminMonthlySchedule` onun yerini aldı) — doğrulanıp
-silinebilir. `src/screens/teacher/TeacherScheduleScreen.js` Faz 4a'da ele
-alınınca bu dosya da ya güncellenecek ya da kaldırılacak.
+**Silinen dosyalar:**
+- `src/screens/teacher/TeacherDocumentsScreen.js` (A4 foto yükleme — sadece
+  `yemekListesi`/`dersProgrami` için kullanılıyordu, doğrulandı)
+- `src/screens/parent/ParentDocumentsScreen.js` (aynı `dokumanlar` node'unun
+  veli tarafındaki görüntüleyicisi — aynı şekilde sadece bu iki tür için)
+- `src/screens/admin/LessonScheduleFormScreen.js` (doğrulanmış ölü kod —
+  hiçbir yerden çağrılmıyordu)
+- `src/screens/admin/AdminStack.js` (roadmap'te bahsedilen kullanılmayan
+  ikinci/kopya dosya — gerçek kullanılan `src/navigation/AdminStack.js`'ten
+  farklı, `RootNavigator.js`'in import ettiği hiçbir yerde değildi)
 
-**Bilgi notu:** Repo'da `src/screens/admin/AdminStack.js` diye kullanılmayan
-(dead code) ikinci bir dosya var — gerçek kullanılan `src/navigation/AdminStack.js`.
-Kafa karıştırmasın diye bu da bir noktada temizlenmeli, ama acil değil.
+**Güncellenen dosyalar (import + route + menü kaydı temizliği):**
+- `src/navigation/TeacherStack.js`, `src/navigation/ParentStack.js`,
+  `src/navigation/AdminStack.js` — silinen ekranların import + `Stack.Screen`
+  kayıtları kaldırıldı
+- `src/screens/teacher/TeacherDashboardScreen.js` — "📁 Dokümanlar" menü
+  kartı kaldırıldı
+- `src/screens/parent/ParentDashboard.js` — "📁 Belgeler" menü kartı kaldırıldı
+
+**Dokunulmayan:** `database.rules.json`'daki `dokumanlar` node kuralı
+kasıtlı olarak silinmedi (artık kullanılmayacak ama kuralı kaldırmak ekstra
+risk taşıyan, ayrı bir işlem — istenirse ayrıca yapılabilir). `LegalDocumentsScreen.js`
+(KVKK/sözleşme belgeleri — tamamen farklı, ilgisiz bir özellik) hiç dokunulmadı.
 
 ---
 
 ## Sıradaki Somut Adım (önerilir)
 
-Faz 0-5 tamamlandı. Kalan iki iş:
-1. **Kullanıcı testi** — hem daha önce yazılan test listesi hem yeni eklenen
-   Arşiv özelliği (bir aya dokununca doğru aya atlıyor mu, gün sayısı doğru mu).
+Faz 0-6 tamamlandı. Kalan işler:
+1. **Kullanıcı testi** — özellikle temizlik sonrası: öğretmen/veli dashboard'larında
+   kırık buton kalmadığını, silinen ekranlara giden hiçbir yolun kalmadığını
+   doğrulamak; ayrıca daha önceki test listeleri (Arşiv, PDF, Yayından Kaldır vb.).
 2. **Faz 3'ün eksik kalan küçük parçası** — veli tarafına (`ParentMealsScreen.js`,
    ders programı görünümü) `MonthlyDocumentPdfBar` bağlamak (component zaten hazır).
-3. **Faz 6** — artık kullanılmayan `LessonScheduleFormScreen.js`'i (doğrulandı: hiçbir
-   yerden çağrılmıyor) ve eski `TeacherDocumentsScreen.js` A4-foto akışını temizlemek.
+
+Faz 7 ve sonrası (Etkinlik Kütüphanesi ve ötesi) henüz başlamadı, kullanıcı
+onayı olmadan başlanmayacak.
 
 ---
 
