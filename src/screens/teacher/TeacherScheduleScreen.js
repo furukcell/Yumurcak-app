@@ -1,112 +1,357 @@
 // ============================================================
 // YUMURCAK — TeacherScheduleScreen.js
-// Öğretmen ders programı görüntüleme / basit giriş
+// Öğretmenin kendi sınıfının AYLIK ders programı — admin tarafındaki
+// AdminMonthlyScheduleScreen ile AYNI veri modelini (dersProgramlari,
+// gün-bazlı kayıt, yayınla/kaldır) kullanır. Üstte "Bugün" kartı var.
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { ref, set } from 'firebase/database';
-import { database } from '../../config/firebase';
+import { Alert, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState } from './teacherShared';
+import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import MonthlyCalendarView from '../../components/MonthlyCalendarView';
+import { createNotification } from '../../services/notificationCenter';
+import {
+  getDaysOfMonth,
+  getMonthKey,
+  getMonthLabel,
+  shiftMonth,
+  createInitialValues,
+  publishMonth,
+  unpublishMonth,
+  copyFromPreviousMonth,
+  forClass,
+} from '../../services/monthlyDocuments';
 
-const DAYS = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma'];
-const LABELS = { pazartesi: 'Pazartesi', sali: 'Salı', carsamba: 'Çarşamba', persembe: 'Perşembe', cuma: 'Cuma' };
+const NODE_PATH = 'dersProgramlari';
+const KAYNAK = 'admin_aylik';
+
+function emptyScheduleValue() {
+  return { etkinlik: '', aciklama: '' };
+}
+
+function hasScheduleContent(value) {
+  if (!value) return false;
+  return !!(String(value.etkinlik || '').trim() || String(value.aciklama || '').trim());
+}
+
+function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now, sinifId }) {
+  return {
+    kresId,
+    sinifId: sinifId || null,
+    tip: 'aylik',
+    kaynak,
+    ayKey: monthKey,
+    tarih: day.dateKey,
+    baslik: `${monthLabel} Ders Programı`,
+    etkinlik: String(value.etkinlik || '').trim(),
+    aciklama: String(value.aciklama || '').trim(),
+    aktif: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function schedulePreview(value) {
+  if (!hasScheduleContent(value)) return '';
+  return [value?.etkinlik, value?.aciklama].filter(Boolean).join(' · ');
+}
 
 export default function TeacherScheduleScreen() {
   const navigation = useNavigation();
-  const { loading, kresId, currentClass, schedules } = useTeacherData();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [successToast, setSuccessToast] = useState(false);
+  const { loading, kresId, teacherId, currentClass, schedules } = useTeacherData();
 
-  const program = useMemo(() => {
-    if (!currentClass?.id) return null;
-    return schedules.find((item) => item.sinifId === currentClass.id || item.id === currentClass.id) || null;
-  }, [schedules, currentClass?.id]);
+  const sinifId = currentClass?.id || null;
+  const sinifAd = currentClass?.ad || 'Sınıfım';
+
+  const [monthDate, setMonthDate] = useState(new Date());
+  const days = useMemo(() => getDaysOfMonth(monthDate), [monthDate]);
+  const monthKey = useMemo(() => getMonthKey(monthDate), [monthDate]);
+  const monthLabel = useMemo(() => getMonthLabel(monthDate), [monthDate]);
+
+  const [values, setValues] = useState(() => createInitialValues(days, emptyScheduleValue));
+  const [view, setView] = useState('list');
+  const [selectedDateKey, setSelectedDateKey] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [unpublishing, setUnpublishing] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // publishedCount ve bugünün etkinliği: hook zaten kresId'ye göre
+  // filtrelenmiş 'dersProgramlari' listesini veriyor, ayrıca query açmaya gerek yok.
+  const classSchedules = useMemo(
+    () => schedules.filter((item) => item?.aktif !== false && item?.kaynak === KAYNAK && item?.sinifId === sinifId),
+    [schedules, sinifId]
+  );
+
+  const publishedCount = useMemo(
+    () => classSchedules.filter((item) => item?.ayKey === monthKey).length,
+    [classSchedules, monthKey]
+  );
+
+  const todaySchedule = useMemo(() => {
+    const today = todayString();
+    return classSchedules.find((item) => item.tarih === today) || null;
+  }, [classSchedules]);
 
   if (loading) return <LoadingState text="Ders programı hazırlanıyor..." />;
 
-  const source = editing ? draft : (program?.gunler || {});
+  function changeMonth(direction) {
+    const next = shiftMonth(monthDate, direction);
+    setMonthDate(next);
+    setValues(createInitialValues(getDaysOfMonth(next), emptyScheduleValue));
+    setSelectedDateKey('');
+  }
 
-  const startEdit = () => {
-    setDraft(program?.gunler || {});
-    setEditing(true);
-  };
+  function updateField(dateKey, field, text) {
+    setValues((prev) => ({
+      ...prev,
+      [dateKey]: { ...(prev[dateKey] || emptyScheduleValue()), [field]: text },
+    }));
+  }
 
-  const save = async () => {
-    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
+  function clearDay(dateKey) {
+    setValues((prev) => ({ ...prev, [dateKey]: emptyScheduleValue() }));
+  }
+
+  const daysWithContent = useMemo(
+    () => days.map((day) => ({ ...day, hasContent: hasScheduleContent(values[day.dateKey]) })),
+    [days, values]
+  );
+
+  const hasAnyEntry = useMemo(() => Object.values(values).some(hasScheduleContent), [values]);
+
+  async function handleCopyPreviousMonth() {
+    if (!kresId || !sinifId) return;
+    setCopying(true);
+    try {
+      const { values: copiedValues, found } = await copyFromPreviousMonth({
+        nodePath: NODE_PATH,
+        kresId,
+        kaynak: KAYNAK,
+        currentMonthDate: monthDate,
+        days,
+        matchExtra: forClass(sinifId),
+        valueMapper: (prevItem) => ({
+          etkinlik: prevItem?.etkinlik || '',
+          aciklama: prevItem?.aciklama || '',
+        }),
+      });
+
+      if (!found) {
+        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir ders programı bulunamadı.');
+        return;
+      }
+
+      setValues((prev) => {
+        const next = { ...prev };
+        Object.entries(copiedValues).forEach(([dateKey, value]) => {
+          if (value) next[dateKey] = value;
+        });
+        return next;
+      });
+
+      Alert.alert('Kopyalandı', `${found} günlük etkinlik geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  function confirmPublish() {
+    if (!kresId || !sinifId) {
+      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
+      return;
+    }
+    if (!hasAnyEntry) {
+      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne etkinlik gir.');
+      return;
+    }
+    Alert.alert(
+      'Ayı Paylaş',
+      `${sinifAd} sınıfının ${monthLabel} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Paylaş', onPress: doPublish },
+      ]
+    );
+  }
+
+  async function doPublish() {
     setSaving(true);
     try {
-      await set(ref(database, `dersProgramlari/${currentClass.id}`), {
-        kresId: kresId || currentClass.kresId || '',
-        sinifId: currentClass.id,
-        gunler: draft,
-        updatedAt: Date.now(),
+      await publishMonth({
+        nodePath: NODE_PATH,
+        kresId,
+        monthKey,
+        monthLabel,
+        kaynak: KAYNAK,
+        days,
+        values,
+        hasContent: hasScheduleContent,
+        buildRecord: (args) => buildScheduleRecord({ ...args, sinifId }),
+        matchExtra: forClass(sinifId),
       });
-      setEditing(false);
+
+      await createNotification({
+        kresId,
+        hedefRoller: ['veli'],
+        hedefSinifIds: [sinifId],
+        baslik: '📅 Ders programı güncellendi',
+        mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`,
+        tip: 'ders_programi',
+        routeName: 'ParentSummary',
+        createdBy: teacherId || '',
+      });
+
+      setSuccessMessage(`${monthLabel} ders programı yayınlandı`);
       setSuccessToast(true);
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Hata', 'Ders programı kaydedilemedi.');
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Hata', 'Aylık ders programı yayınlanamadı.');
     } finally {
       setSaving(false);
     }
-  };
+  }
 
-  const updateDay = (day, value) => setDraft((prev) => ({ ...prev, [day]: value }));
+  function confirmUnpublish() {
+    if (!kresId || !sinifId || publishedCount === 0) return;
+    Alert.alert(
+      'Yayından Kaldır',
+      `${monthLabel} için yayınlanmış ders programı kaldırılsın mı?`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
+      ]
+    );
+  }
+
+  async function doUnpublish() {
+    setUnpublishing(true);
+    try {
+      await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) });
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+    } finally {
+      setUnpublishing(false);
+    }
+  }
+
+  const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
+  const selectedValue = values[selectedDateKey] || emptyScheduleValue();
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast
-        visible={successToast}
-        message="Ders programı kaydedildi"
-        onHide={() => setSuccessToast(false)}
-      />
+      <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} ders programı yayınlandı`} onHide={() => setSuccessToast(false)} />
+      <ScreenHeader navigation={navigation} title="Ders Programı" subtitle={sinifAd} />
 
-      <ScreenHeader
-        navigation={navigation}
-        title="Ders Programı"
-        subtitle={currentClass?.ad || 'Sınıfım'}
-        rightText={editing ? 'Kaydet' : 'Düzenle'}
-        onRightPress={editing ? save : startEdit}
-      />
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-        >
+      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {!currentClass ? (
             <EmptyState icon="📚" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlanınca program görüntülenir." />
           ) : (
-            DAYS.map((day) => (
-              <View key={day} style={styles.dayCard}>
-                <Text style={styles.dayTitle}>{LABELS[day]}</Text>
-                {editing ? (
-                  <TextInput
-                    style={styles.input}
-                    value={String(source[day] || '')}
-                    onChangeText={(text) => updateDay(day, text)}
-                    placeholder="Örn: 09:00 Serbest oyun, 10:00 Müzik"
-                    multiline
-                    placeholderTextColor="#999"
-                  />
+            <>
+              <View style={styles.todayCard}>
+                <Text style={styles.todayLabel}>Bugün</Text>
+                {todaySchedule ? (
+                  <>
+                    <Text style={styles.todayTitle}>{todaySchedule.etkinlik || 'Etkinlik girilmemiş'}</Text>
+                    {todaySchedule.aciklama ? <Text style={styles.todayDesc}>{todaySchedule.aciklama}</Text> : null}
+                  </>
                 ) : (
-                  <Text style={styles.programText}>{source[day] || 'Program girilmemiş.'}</Text>
+                  <Text style={styles.todayEmpty}>Bugün için yayınlanmış bir etkinlik yok.</Text>
                 )}
               </View>
-            ))
+
+              <View style={styles.monthCard}>
+                <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(-1)} activeOpacity={0.8}>
+                  <Text style={styles.monthButtonText}>‹</Text>
+                </TouchableOpacity>
+                <View style={styles.monthCenter}>
+                  <Text style={styles.monthLabel}>{monthLabel}</Text>
+                  <Text style={styles.monthHint}>{days.length} günlük plan</Text>
+                </View>
+                <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
+                  <Text style={styles.monthButtonText}>›</Text>
+                </TouchableOpacity>
+              </View>
+
+              {publishedCount > 0 ? (
+                <View style={styles.publishedCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
+                    <Text style={styles.publishedText}>Veliler şu an bu ayın programını görüyor.</Text>
+                  </View>
+                  <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
+                    <Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <TouchableOpacity disabled={copying} style={[styles.copyButton, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
+                <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+              </TouchableOpacity>
+
+              <MonthlyCalendarView
+                days={daysWithContent}
+                view={view}
+                onChangeView={setView}
+                selectedDateKey={selectedDateKey}
+                onSelectDay={setSelectedDateKey}
+                theme={THEME}
+                renderDayPreview={(day) => {
+                  const preview = schedulePreview(values[day.dateKey]);
+                  return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+                }}
+              />
+
+              <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
+                <Text style={styles.saveButtonText}>{saving ? 'Paylaşılıyor...' : `${monthLabel} Programını Paylaş`}</Text>
+              </TouchableOpacity>
+            </>
           )}
-          {saving ? <ActivityIndicator color={THEME.primary} style={{ marginTop: 12 }} /> : null}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
+              <TouchableOpacity onPress={() => setSelectedDateKey('')} activeOpacity={0.8}>
+                <Text style={styles.modalClose}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              value={selectedValue.etkinlik}
+              onChangeText={(text) => updateField(selectedDateKey, 'etkinlik', text)}
+              placeholder="Etkinlik (örn: Parmak Boyası)"
+              placeholderTextColor={THEME.muted}
+              style={styles.modalInput}
+              multiline
+            />
+            <TextInput
+              value={selectedValue.aciklama}
+              onChangeText={(text) => updateField(selectedDateKey, 'aciklama', text)}
+              placeholder="Açıklama (opsiyonel)"
+              placeholderTextColor={THEME.muted}
+              style={styles.modalInput}
+              multiline
+            />
+
+            {hasScheduleContent(selectedValue) ? (
+              <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>
+                <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -114,9 +359,35 @@ export default function TeacherScheduleScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   keyboardView: { flex: 1 },
-  content: { padding: 16, paddingBottom: 180 },
-  dayCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
-  dayTitle: { color: THEME.primary, fontSize: 16, fontWeight: '900', marginBottom: 8 },
-  programText: { color: THEME.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  input: { backgroundColor: THEME.bg, borderRadius: 14, minHeight: 82, padding: 12, color: THEME.text, borderWidth: 1, borderColor: THEME.border, textAlignVertical: 'top' },
+  content: { padding: 16, paddingBottom: 60 },
+  todayCard: { backgroundColor: THEME.primary, borderRadius: 20, padding: 16, marginBottom: 14 },
+  todayLabel: { color: 'rgba(255,255,255,0.8)', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', marginBottom: 6 },
+  todayTitle: { color: '#fff', fontWeight: '900', fontSize: 18 },
+  todayDesc: { color: 'rgba(255,255,255,0.9)', fontWeight: '700', marginTop: 4 },
+  todayEmpty: { color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
+  monthCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: THEME.card, borderRadius: 22, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
+  monthButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  monthButtonText: { color: THEME.primary, fontSize: 26, fontWeight: '900', marginTop: -2 },
+  monthCenter: { alignItems: 'center' },
+  monthLabel: { color: THEME.text, fontSize: 18, fontWeight: '900' },
+  monthHint: { color: THEME.muted, fontWeight: '700', marginTop: 3, fontSize: 12 },
+  publishedCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: THEME.card, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  publishedTitle: { color: THEME.text, fontSize: 14, fontWeight: '900' },
+  publishedText: { color: THEME.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
+  unpublishButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: THEME.red },
+  unpublishButtonText: { color: '#fff', fontWeight: '900', fontSize: 12 },
+  copyButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 13, alignItems: 'center', marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
+  copyButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 14 },
+  previewText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 3 },
+  previewEmpty: { color: '#C7C9D6', fontWeight: '700', fontSize: 12, marginTop: 3 },
+  saveButton: { backgroundColor: THEME.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: THEME.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, paddingBottom: 30 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
+  modalClose: { color: THEME.primary, fontWeight: '900' },
+  modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
+  modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
+  modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
 });
