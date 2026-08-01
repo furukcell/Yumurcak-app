@@ -250,7 +250,60 @@ onayıyla başlanabilir.
 
 ---
 
-## Faz 7 — Etkinlik Kütüphanesi ve Etkinlik Öneri Sistemi ⛔ PLANLANDI
+## Faz 7 — Etkinlik Kütüphanesi ve Etkinlik Öneri Sistemi ✅ TAMAMLANDI (MVP)
+
+**Ne yapıldı:**
+
+1. **Veri modeli genişletildi:** `dersProgramlari` kaydına (`etkinlik` alanının
+   yanına) `kategori` (sanat/muzik/hareket/fen/dil/drama/matematik/diger) ve
+   opsiyonel `tema` alanları eklendi. Kategori/tema listesi `src/constants.js`
+   içinde `ETKINLIK_KATEGORILERI` / `ETKINLIK_TEMALARI` olarak tanımlı.
+2. **`etkinlikHavuzu` node'u (yeni, merkezi, TÜM kreşler arasında paylaşılan):**
+   `ad, yasGrubu, kategori, tema, toplamKullanim, kresSayisi, sonKullanim`
+   alanlarını tutuyor. Okul adı/öğretmen adı/çocuk/sınıf bilgisi İÇERMİYOR.
+   `database.rules.json`: `.read: auth != null`, `.write: false` — client
+   asla yazamıyor, sadece okuyor.
+3. **`_etkinlikHavuzuMeta` node'u (yeni, tamamen gizli):** farklı kreş sayısını
+   hesaplamak için gereken `kresId` listesini tutuyor. `.read: false`,
+   `.write: false` — sadece Cloud Function (Admin SDK, kuralları by-pass
+   eder) erişebiliyor. Anonimlik garantisi bu şekilde güvenlik kuralı
+   seviyesinde sağlanmış oldu, client kodunun "göstermemesi"ne güvenmiyoruz.
+4. **`functions/index.js` → `updateActivityPoolOnScheduleWrite`:** `dersProgramlari`
+   kaydı yazıldığında (etkinlik metni veya kategorisi gerçekten değiştiyse —
+   sadece açıklama düzenlemesi tekrar saymıyor) ilgili havuz kaydını
+   `transaction()` ile atomik güncelliyor. Yaş grubunu `siniflar/{sinifId}/yasGrubu`'ndan
+   otomatik çekiyor.
+5. **`src/services/activityLibrary.js` (yeni, sadece okuma):** `searchActivityLibrary({ kategori, yasGrubu, tema, searchText })`
+   — kategoriye göre havuzdan çekip, yaş grubu/tema eşleşenleri öne alıp,
+   toplam kullanıma göre sıralıyor.
+6. **`src/components/ActivityLibraryPicker.js` (yeni, "💡 Etkinlik Öner"):**
+   `MonthlyArchivePicker` ile aynı desende bir modal — kategori chip'leri,
+   arama kutusu, sonuç listesi (`toplamKullanim` + `kresSayisi` gösterimiyle).
+   Bir sonuca dokununca `onSelect(ad)` ile parent'taki `etkinlik` alanına
+   tek dokunuşla yazıyor.
+7. **Bağlandığı ekranlar:** `TeacherScheduleScreen.js` ve
+   `AdminMonthlyScheduleScreen.js`'in gün-düzenleme modalına: Etkinlik Öner
+   butonu + Kategori chip seçici + (var olan) Açıklama alanı eklendi.
+   `copyFromPreviousMonth` artık kategori/tema'yı da kopyalıyor.
+
+**Bilinçli olarak ERTELENEN (MVP kapsamı dışı, ileride eklenebilir):**
+- Arama-yazarken-öner (autocomplete) — Faz 8'de zaten planlı, ayrıca ele alınacak.
+- Silinen/pasife alınan kayıtların havuzdan düşürülmesi — şu an sadece artıyor,
+  eksi yönde düzeltme yok (kullanım istatistiği olduğu için kabul edilebilir).
+- `yasGrubu` şu an sınıf tarafında serbest metin (örn. "2-3 yaş") — kreşler
+  arası tutarsız yazım havuzda tam eşleşmeyi bozabilir; bu yüzden sert filtre
+  değil, "öne alma" (soft sort) olarak uygulandı. Faz 8/9'da yaş grubunun
+  standart bir seçim listesine (enum) taşınması önerilir.
+
+**Test edilmesi gereken:** Codemagic'te temiz build + fonksiyonların deploy
+edilmesi (`firebase deploy --only functions,database`), sonra öğretmen
+tarafında bir gün için etkinlik girip yayınlama → havuzda kaydın oluştuğunu
+(Firebase Console'dan `etkinlikHavuzu` node'una bakarak) doğrulama → "Etkinlik
+Öner"den aynı kaydı görüp seçebilme.
+
+---
+
+## Faz 7 (orijinal plan, referans için saklanıyor)
 
 ### Amaç
 
