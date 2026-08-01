@@ -13,7 +13,7 @@
 // için gereken kreşId listesi client'ın hiç okuyamadığı ayrı bir node'da
 // (_etkinlikHavuzuMeta) tutuluyor.
 // ============================================================
-import { ref, query, orderByChild, equalTo, get } from 'firebase/database';
+import { ref, query, orderByChild, equalTo, startAt, endAt, limitToFirst, get } from 'firebase/database';
 import { database } from '../config/firebase';
 
 const NODE_PATH = 'etkinlikHavuzu';
@@ -85,4 +85,34 @@ export async function searchActivityLibrary({ kategori, yasGrubu, tema, searchTe
   const list = await fetchActivitiesByCategory(kategori);
   const sorted = sortActivities(list, { yasGrubu, tema, searchText });
   return sorted.slice(0, limit);
+}
+
+// Yazarken-öner (autocomplete) için: kategori seçilmeden ÖNCE de çalışsın
+// diye TÜM havuzda `adNormalized` alanına göre prefix (baştan eşleşme)
+// araması yapar. RTDB'nin startAt/endAt aralık sorgusuyla yapılıyor —
+// tam metin arama değil ama "Par..." yazınca "Parmak..." ile başlayanları
+// bulmaya yetiyor. En az 2 karakter gerektirir (daha kısayı çağıran taraf
+// zaten engelleniyor, burada da bir güvenlik payı olarak kontrol var).
+export async function searchActivitiesByPrefix(searchText, { limit = 8 } = {}) {
+  const prefix = normalizeActivityName(searchText);
+  if (prefix.length < 2) return [];
+
+  try {
+    const q = query(
+      ref(database, NODE_PATH),
+      orderByChild('adNormalized'),
+      startAt(prefix),
+      endAt(`${prefix}\uf8ff`),
+      limitToFirst(20)
+    );
+    const snap = await get(q);
+    const data = snap.val() || {};
+    const list = Object.entries(data).map(([id, value]) => ({ id, ...value }));
+    return list
+      .sort((a, b) => (b.toplamKullanim || 0) - (a.toplamKullanim || 0))
+      .slice(0, limit);
+  } catch (err) {
+    console.error('searchActivitiesByPrefix error', err);
+    return [];
+  }
 }
