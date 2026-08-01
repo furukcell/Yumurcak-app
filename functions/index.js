@@ -573,3 +573,125 @@ exports.createNotificationOnAdaptationWrite = functions
 
     return null;
   });
+
+// ============================================================
+// FAZ 7 — Etkinlik Kütüphanesi: merkezi, anonim etkinlik havuzu
+//
+// `dersProgramlari` (Aylık Ders Programı / Etkinlik Kartı) her gün için
+// bir `etkinlik` metni tutuyor. Bu metin değiştiğinde (yeni girildiğinde
+// veya düzenlendiğinde) `etkinlikHavuzu` node'undaki ilgili anonim kaydı
+// güncelliyoruz: toplam kullanım sayısı, farklı kreş sayısı, son kullanım.
+//
+// Anonimlik: `etkinlikHavuzu`'na okul adı/öğretmen adı/çocuk/sınıf bilgisi
+// YAZILMIYOR. Hangi kreşlerin bu etkinliği kullandığını saymak için gereken
+// kreşId listesi ayrı bir node'da (`_etkinlikHavuzuMeta`) tutuluyor; bu node
+// database.rules.json'da hem client read hem write için kapalı — sadece bu
+// fonksiyon (Admin SDK, kuralları by-pass eder) erişebiliyor.
+//
+// `etkinlikHavuzu`'na client YAZAMAZ (rules: ".write": false) — havuzdaki
+// tüm güncellemeler sadece bu fonksiyon üzerinden, sunucu tarafında olur.
+// ============================================================
+
+function normalizeActivityName(name) {
+  return String(name || '')
+    .trim()
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function slugifyActivityName(name) {
+  const normalized = normalizeActivityName(name);
+  if (!normalized) return '';
+  return normalized.replace(/\s+/g, '-').slice(0, 120);
+}
+
+exports.updateActivityPoolOnScheduleWrite = functions
+  .region('europe-west1')
+  .database
+  .ref('/dersProgramlari/{recordId}')
+  .onWrite(async (change, context) => {
+    const before = change.before.exists() ? change.before.val() : null;
+    const after = change.after.exists() ? change.after.val() : null;
+
+    if (!after) return null; // silme — havuzdan düşürmüyoruz, MVP kapsamı dışı
+    if (after.aktif === false) return null;
+
+    const activityName = String(after.etkinlik || '').trim();
+    if (!activityName) return null;
+
+    // Aynı metin + kategori zaten kayıtlıysa (örn. sadece açıklama düzenlendiyse)
+    // tekrar saymıyoruz — çift sayım riskini önlüyor.
+    const beforeName = before ? String(before.etkinlik || '').trim() : '';
+    const beforeKategori = before ? (before.kategori || 'diger') : null;
+    const afterKategori = after.kategori || 'diger';
+    if (before && beforeName === activityName && beforeKategori === afterKategori) {
+      return null;
+    }
+
+    const slug = slugifyActivityName(activityName);
+    if (!slug) return null;
+
+    const kresId = after.kresId || '';
+    const tema = after.tema || null;
+
+    let yasGrubu = 'Genel';
+    if (after.sinifId) {
+      try {
+        const sinifSnap = await admin.database().ref(`siniflar/${after.sinifId}/yasGrubu`).once('value');
+        yasGrubu = sinifSnap.val() || 'Genel';
+      } catch (err) {
+        console.error('yasGrubu okunamadı', err);
+      }
+    }
+
+    const now = Date.now();
+    const poolRef = admin.database().ref(`etkinlikHavuzu/${slug}`);
+    const metaRef = admin.database().ref(`_etkinlikHavuzuMeta/${slug}`);
+
+    // Toplam kullanım sayısını atomik artırıyoruz (transaction — eşzamanlı
+    // yazmalarda kayıp sayım olmaması için).
+    await poolRef.transaction((current) => {
+      if (!current) {
+        return {
+          ad: activityName,
+          yasGrubu,
+          kategori: afterKategori,
+          tema,
+          toplamKullanim: 1,
+          kresSayisi: 0, // aşağıda metaRef'ten hesaplanıp güncellenecek
+          sonKullanim: now,
+          createdAt: now,
+          updatedAt: now,
+        };
+      }
+      return {
+        ...current,
+        ad: activityName,
+        yasGrubu,
+        kategori: afterKategori,
+        tema,
+        toplamKullanim: (current.toplamKullanim || 0) + 1,
+        sonKullanim: now,
+        updatedAt: now,
+      };
+    });
+
+    // Farklı kreş sayısı: kresId'yi gizli meta node'una işleyip, oradaki
+    // anahtar sayısını herkese açık havuz kaydına yazıyoruz.
+    if (kresId) {
+      await metaRef.child('kresIdler').child(kresId).set(true);
+      const metaSnap = await metaRef.child('kresIdler').once('value');
+      const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
+      await poolRef.child('kresSayisi').set(kresSayisi);
+    }
+
+    return null;
+  });
