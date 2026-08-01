@@ -10,6 +10,8 @@ import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
+import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
+import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
 import { createNotification } from '../../services/notificationCenter';
 import {
   getDaysOfMonth,
@@ -101,6 +103,12 @@ export default function TeacherScheduleScreen() {
     const next = shiftMonth(monthDate, direction);
     setMonthDate(next);
     setValues(createInitialValues(getDaysOfMonth(next), emptyScheduleValue));
+    setSelectedDateKey('');
+  }
+
+  function jumpToMonth(date) {
+    setMonthDate(date);
+    setValues(createInitialValues(getDaysOfMonth(date), emptyScheduleValue));
     setSelectedDateKey('');
   }
 
@@ -292,9 +300,20 @@ export default function TeacherScheduleScreen() {
                 </View>
               ) : null}
 
-              <TouchableOpacity disabled={copying} style={[styles.copyButton, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
-                <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
-              </TouchableOpacity>
+              <View style={styles.utilityRow}>
+                <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
+                  <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+                </TouchableOpacity>
+                <MonthlyArchivePicker
+                  kresId={kresId}
+                  nodePath={NODE_PATH}
+                  kaynak={KAYNAK}
+                  matchExtra={forClass(sinifId)}
+                  currentMonthKey={monthKey}
+                  onSelectMonth={jumpToMonth}
+                  theme={THEME}
+                />
+              </View>
 
               <MonthlyCalendarView
                 days={daysWithContent}
@@ -312,6 +331,22 @@ export default function TeacherScheduleScreen() {
               <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
                 <Text style={styles.saveButtonText}>{saving ? 'Paylaşılıyor...' : `${monthLabel} Programını Paylaş`}</Text>
               </TouchableOpacity>
+
+              {publishedCount > 0 ? (
+                <View style={{ marginTop: 14 }}>
+                  <MonthlyDocumentPdfBar
+                    kresId={kresId}
+                    nodePath={NODE_PATH}
+                    kaynak={KAYNAK}
+                    docType="ders"
+                    monthKey={monthKey}
+                    monthLabel={monthLabel}
+                    sinifId={sinifId}
+                    sinifAd={sinifAd}
+                    theme={THEME}
+                  />
+                </View>
+              ) : null}
             </>
           )}
         </ScrollView>
@@ -376,7 +411,9 @@ const styles = StyleSheet.create({
   publishedText: { color: THEME.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
   unpublishButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: THEME.red },
   unpublishButtonText: { color: '#fff', fontWeight: '900', fontSize: 12 },
-  copyButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 13, alignItems: 'center', marginBottom: 14, borderWidth: 1, borderColor: THEME.border },
+  copyButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  utilityRow: { flexDirection: 'row', gap: 10, marginBottom: 14, alignItems: 'stretch' },
+  utilityFlex: { flex: 1 },
   copyButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 14 },
   previewText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 3 },
   previewEmpty: { color: '#C7C9D6', fontWeight: '700', fontSize: 12, marginTop: 3 },
