@@ -28,6 +28,7 @@ import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import AdminGalleryScreen from '../screens/admin/AdminGalleryScreen';
 import AdminMonthlyMealScreen from '../screens/admin/AdminMonthlyMealScreen';
+import AdminMonthlyScheduleScreen from '../screens/admin/AdminMonthlyScheduleScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
@@ -68,7 +69,11 @@ export default function AdminStack() {
     stackScreen('PollManagement', PollManagementScreen, { title: 'Anket Yönetimi' }),
     stackScreen('AdminBell', AdminBellScreen, { title: 'Kurum Zili' }),
     stackScreen('LessonScheduleList', LessonScheduleListScreen, { title: 'Ders Programı' }),
+    // LessonScheduleForm artık haftalık serbest-metin akışı — yeni aylık/gün-bazlı
+    // modele geçtiğimiz için AdminMonthlySchedule bunun yerini alıyor. Form ekranı
+    // hiçbir yerden çağrılmadığı doğrulandıktan sonra kaldırılabilir (temizlik fazı).
     stackScreen('LessonScheduleForm', LessonScheduleFormScreen, { title: 'Programı Düzenle' }),
+    stackScreen('AdminMonthlySchedule', AdminMonthlyScheduleScreen, { title: 'Aylık Ders Programı' }),
     stackScreen('EventList', EventListScreen, { title: 'Etkinlikler' }),
     stackScreen('EventForm', EventFormScreen, { title: 'Etkinlik Ekle/Düzenle' }),
     stackScreen('LegalDocuments', LegalDocumentsScreen, { headerShown: false }),
