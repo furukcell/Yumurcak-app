@@ -12,6 +12,7 @@ import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { createNotification } from '../../services/notificationCenter';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -78,6 +79,20 @@ export default function LessonScheduleFormScreen() {
         gunler: gunVerileri,
         updatedAt: Date.now(),
       });
+
+      if (kullanici?.kresId) {
+        await createNotification({
+          kresId: kullanici.kresId,
+          hedefRoller: ['veli'],
+          hedefSinifIds: [sinifId],
+          baslik: '📅 Ders programı güncellendi',
+          mesaj: `${sinifAd} sınıfının haftalık ders programı güncellendi.`,
+          tip: 'ders_programi',
+          routeName: 'ParentSummary',
+          createdBy: kullanici?.uid || kullanici?.id || '',
+        });
+      }
+
       setSuccessToast(true);
       setTimeout(() => {
         navigation.goBack();
