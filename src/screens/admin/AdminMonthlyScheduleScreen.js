@@ -17,6 +17,7 @@ import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
 import ActivityLibraryPicker from '../../components/ActivityLibraryPicker';
+import ActivityAutocompleteInput from '../../components/ActivityAutocompleteInput';
 import { ETKINLIK_KATEGORILERI } from '../../constants';
 import { useRoute } from '@react-navigation/native';
 import { createNotification } from '../../services/notificationCenter';
@@ -144,6 +145,22 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       ...prev,
       [dateKey]: { ...(prev[dateKey] || emptyScheduleValue()), [field]: text },
     }));
+  }
+
+  // Autocomplete'ten bir öneri seçilince kategori/tema'yı (öğretmen henüz
+  // kendi seçmediyse) havuzdan gelen değerle otomatik dolduruyoruz.
+  function handleActivitySuggestion(dateKey, item) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      return {
+        ...prev,
+        [dateKey]: {
+          ...current,
+          kategori: current.kategori || item.kategori || '',
+          tema: current.tema || item.tema || '',
+        },
+      };
+    });
   }
 
   function clearDay(dateKey) {
@@ -390,13 +407,13 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                 />
               </View>
 
-              <TextInput
+              <ActivityAutocompleteInput
                 value={selectedValue.etkinlik}
                 onChangeText={(text) => updateField(selectedDateKey, 'etkinlik', text)}
+                onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, item)}
                 placeholder="Etkinlik (örn: Parmak Boyası)"
-                placeholderTextColor={theme.muted}
                 style={styles.modalInput}
-                multiline
+                theme={theme}
               />
 
               <Text style={styles.modalLabel}>Kategori</Text>
