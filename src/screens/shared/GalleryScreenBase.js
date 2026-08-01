@@ -326,6 +326,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [uploadStatus, setUploadStatus] = useState('');
   const [savingMediaId, setSavingMediaId] = useState('');
   const [caption, setCaption] = useState('');
+  const [selectedAssets, setSelectedAssets] = useState([]);
   const [targetType, setTargetType] = useState('all');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedChildId, setSelectedChildId] = useState('');
@@ -642,7 +643,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     return { hedef: 'kurum', targetType: 'school', classId: null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: 'Tüm kurum' };
   }, [availableClasses, currentClass, mode, myChildren, selectedChildId, selectedClassId, targetType]);
 
-  async function pickAndUpload() {
+  async function pickMedia() {
     if (!canUpload) return;
     if (!kresId) return Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
     if (targetType === 'class' && !selectedClassId) return Alert.alert('Sınıf Seç', 'Sınıfa özel paylaşım için bir sınıf seçmelisin.');
@@ -667,16 +668,41 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       if (countVideoAssets(assets) > MAX_VIDEO_PER_POST) return Alert.alert('Çok Fazla Video', `Tek paylaşımda en fazla ${MAX_VIDEO_PER_POST} video seçebilirsin.`);
       if (assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS)) return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
 
+      // Seçilen medya burada sadece önizlemeye alınır — Firebase'e henüz yüklenmez.
+      // Kullanıcı "Yükle" butonuna basana kadar hiçbir şey paylaşılmaz.
+      setSelectedAssets(assets.map((asset, index) => ({
+        localId: `${Date.now()}-${index}`,
+        asset,
+      })));
+    } catch (error) {
+      console.error('Medya seçilemedi:', error?.code || error?.message || error);
+      Alert.alert('Hata', 'Medya seçilirken bir sorun oluştu.');
+    }
+  }
+
+  function removeSelectedAsset(localId) {
+    setSelectedAssets((prev) => prev.filter((item) => item.localId !== localId));
+  }
+
+  function cancelSelection() {
+    setSelectedAssets([]);
+  }
+
+  async function confirmUpload() {
+    if (selectedAssets.length === 0) return;
+    if (!kresId) return Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
+
+    try {
       setUploading(true);
       const itemRef = push(dbRef(database, 'galeri'));
       const galleryId = itemRef.key;
       const createdAt = Date.now();
       const mediaItems = [];
 
-      for (let index = 0; index < assets.length; index += 1) {
-        const rawAsset = assets[index];
+      for (let index = 0; index < selectedAssets.length; index += 1) {
+        const rawAsset = selectedAssets[index].asset;
         const rawInfo = getFileInfo(rawAsset);
-        setUploadStatus(rawInfo.isVideo ? `Video optimize ediliyor... (${index + 1}/${assets.length})` : `Fotoğraf hazırlanıyor... (${index + 1}/${assets.length})`);
+        setUploadStatus(rawInfo.isVideo ? `Video optimize ediliyor... (${index + 1}/${selectedAssets.length})` : `Fotoğraf hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
 
         const asset = await optimizeGalleryAsset(rawAsset, (progress) => {
           if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
@@ -686,7 +712,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const mediaId = `${galleryId}-${index}`;
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
-        setUploadStatus(`Medya yükleniyor... (${index + 1}/${assets.length})`);
+        setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
         const blob = await readAssetAsBlob(asset.uri);
         const fileRef = storageRef(storage, storagePath);
         await uploadBytes(fileRef, blob, { contentType });
@@ -736,6 +762,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       ]);
 
       setCaption('');
+      setSelectedAssets([]);
       setSelectedClassId('');
       setSelectedChildId('');
       setTargetType('all');
@@ -892,9 +919,37 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             {targetType === 'child' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>{myChildren.map((child) => <TouchableOpacity key={child.id} style={[styles.childChip, selectedChildId === child.id && styles.childChipActive]} onPress={() => setSelectedChildId(child.id)}><Text style={[styles.childChipText, selectedChildId === child.id && styles.childChipTextActive]}>{getChildName(child)}</Text></TouchableOpacity>)}</ScrollView> : null}
             <View style={styles.targetPreview}><Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text></View>
             <TextInput value={caption} onChangeText={setCaption} placeholder="Başlık / açıklama ekle (opsiyonel)" placeholderTextColor={THEME.muted} style={styles.input} multiline />
-            <TouchableOpacity style={[styles.primaryButton, uploading && styles.disabledButton]} onPress={pickAndUpload} disabled={uploading}>
-              {uploading ? <View style={styles.uploadingButtonContent}><ActivityIndicator color="#fff" /><Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text></View> : <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç ve Yükle</Text>}
-            </TouchableOpacity>
+
+            {selectedAssets.length > 0 ? (
+              <>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewRow}>
+                  {selectedAssets.map((item) => (
+                    <View key={item.localId} style={styles.previewThumbWrap}>
+                      {getFileInfo(item.asset).isVideo ? (
+                        <View style={[styles.previewThumb, styles.previewThumbVideo]}><Text style={styles.previewThumbVideoIcon}>▶</Text></View>
+                      ) : (
+                        <Image source={{ uri: item.asset.uri }} style={styles.previewThumb} />
+                      )}
+                      <TouchableOpacity style={styles.previewRemoveBtn} onPress={() => removeSelectedAsset(item.localId)} disabled={uploading}>
+                        <Text style={styles.previewRemoveBtnText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View style={styles.previewActionsRow}>
+                  <TouchableOpacity style={[styles.secondaryButton, uploading && styles.disabledButton]} onPress={cancelSelection} disabled={uploading}>
+                    <Text style={styles.secondaryButtonText}>Vazgeç</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.primaryButton, styles.primaryButtonFlex, uploading && styles.disabledButton]} onPress={confirmUpload} disabled={uploading}>
+                    {uploading ? <View style={styles.uploadingButtonContent}><ActivityIndicator color="#fff" /><Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text></View> : <Text style={styles.primaryButtonText}>{`Yükle (${selectedAssets.length})`}</Text>}
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <TouchableOpacity style={styles.primaryButton} onPress={pickMedia}>
+                <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : null}
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
@@ -951,9 +1006,20 @@ const styles = StyleSheet.create({
   targetPreviewText: { color: THEME.orange, fontWeight: '900' },
   input: { minHeight: 48, borderRadius: 16, borderWidth: 1, borderColor: THEME.border, padding: 12, color: THEME.text, fontWeight: '700', marginTop: 12, backgroundColor: '#fff' },
   primaryButton: { backgroundColor: THEME.primary, borderRadius: 16, padding: 14, alignItems: 'center', marginTop: 12 },
+  primaryButtonFlex: { flex: 1, marginTop: 0 },
   disabledButton: { opacity: 0.7 },
   uploadingButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   primaryButtonText: { color: '#fff', fontWeight: '900', textAlign: 'center' },
+  previewRow: { marginTop: 12 },
+  previewThumbWrap: { marginRight: 10, position: 'relative' },
+  previewThumb: { width: 72, height: 72, borderRadius: 12, backgroundColor: '#eee' },
+  previewThumbVideo: { alignItems: 'center', justifyContent: 'center' },
+  previewThumbVideoIcon: { color: THEME.primary, fontSize: 22 },
+  previewRemoveBtn: { position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: THEME.red, alignItems: 'center', justifyContent: 'center' },
+  previewRemoveBtnText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  previewActionsRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  secondaryButton: { borderRadius: 16, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: THEME.border, backgroundColor: '#fff', paddingHorizontal: 18 },
+  secondaryButtonText: { color: THEME.muted, fontWeight: '900' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: THEME.text, marginBottom: 12 },
   emptyCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   emptyIcon: { fontSize: 42, marginBottom: 8 },
