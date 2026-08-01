@@ -88,84 +88,119 @@ gerekli değil, opsiyonel iyileştirme.
 
 ---
 
-## Faz 3 — Şablon / PDF Render Servisi ⛔ YAPILMADI
+## Faz 3 — Şablon / PDF Render Servisi ✅ TAMAMLANDI
 
-**Yapılacaklar:**
-1. `expo-print` paketini ekle (`package.json`'da yok, kurulması lazım: `npx expo install expo-print expo-sharing`).
-2. Yapılandırılmış veriden (bir ayın `days` + `values`) A4 HTML template üreten
-   bir fonksiyon yaz: `src/services/documentPdf.js` gibi. İçerik: okul logosu,
-   okul adı, ay/yıl, tablo (gün/etkinlik veya gün/öğünler), imza alanı.
-3. Okul bilgileri (logo, ad, telefon, adres, müdür) `AdminInstitutionSettingsScreen`'in
-   yazdığı node'dan otomatik çekilmeli — PDF'de tekrar girilmeyecek. Bu node'un
-   tam yolunu bulmak için `src/screens/admin/AdminInstitutionSettingsScreen.js`
-   dosyasına bakılmalı (bu chat'te henüz incelenmedi).
-4. Önizleme ekranı: HTML'i bir `WebView` veya `expo-print`'in `printAsync` /
-   `printToFileAsync` fonksiyonlarıyla önizle, sonra İndir / Paylaş / Yazdır butonları.
-5. Hem admin/öğretmen tarafında (kendi belgesini görmek için) hem veli tarafında
-   (yayınlanan belgeyi PDF gibi görüp indirmek için) AYNI renderer çağrılmalı —
-   iki farklı PDF üretim kodu OLMAMALI.
+**Ne yapıldı:**
+1. `package.json`'a `expo-print` (~14.1.4) ve `expo-sharing` (~13.1.5) eklendi
+   (SDK 54 ile uyumlu son stabil sürümler). Codemagic'te "clean/reset cache"
+   ile yeniden build alınması gerekiyor.
+2. `src/services/documentPdf.js` (yeni): `buildMonthlyDocumentHtml()` — kayıt
+   listesinden (yemek veya ders) A4 HTML üretiyor: kurum adı/adres/telefon/
+   yönetici imzası, gün/öğün ya da gün/etkinlik tablosu, `logoUrl` varsa
+   header'da gösteriyor (henüz kurum ayarlarında logo yükleme alanı yok, ileride
+   eklenirse otomatik devreye girer). `printMonthlyDocument()` (native yazdırma
+   diyaloğu) ve `shareMonthlyDocumentPdf()` (dosya üretip paylaşım sayfası açar
+   — İndir ihtiyacı da bu paylaşım sayfası üzerinden karşılanıyor, ör. "Dosyalar"a
+   kaydet) fonksiyonları var.
+3. Kurum bilgisi `kresler/{kresId}`'den (`AdminInstitutionSettingsScreen.js`'in
+   yazdığı node) `fetchInstitutionInfo()` ile otomatik çekiliyor.
+4. **WebView tabanlı ayrı bir önizleme ekranı YAPILMADI** — bunun yerine
+   `expo-print`'in native `printAsync` diyaloğu (kendi içinde önizleme +
+   "PDF olarak kaydet" seçeneği barındırıyor) önizleme olarak kullanıldı. Sebep:
+   `react-native-webview` gibi yeni bir native bağımlılık eklemekten kaçınmak
+   (kullanıcının local dev ortamı yok, tüm build'ler Codemagic üzerinden — yeni
+   native paket riski minimize edildi). İstenirse ileride ayrı bir WebView
+   önizleme ekranı eklenebilir.
+5. `src/components/MonthlyDocumentPdfBar.js` (yeni): "🖨️ Yazdır" + "📤 Paylaş/İndir"
+   buton çifti. Kendi içinde DB'den güncel yayınlanmış (aktif) kayıtları çekiyor
+   — ekranın local taslak state'ine değil, DB'nin gerçek haline bakıyor. Bu bar
+   AYNI şekilde `AdminMonthlyMealScreen.js`, `AdminMonthlyScheduleScreen.js`,
+   `TeacherScheduleScreen.js`'e bağlandı (tek renderer, tek buton mantığı — 2.
+   maddede istenen "iki farklı PDF üretim kodu olmasın" şartı sağlandı). Veli
+   tarafına (yayınlanan belgeyi görüp indirme) HENÜZ bağlanmadı — bkz. aşağıdaki not.
+
+**Yapılmayan/ertelenen:** Veli tarafında (`ParentMealsScreen.js`, ders programı
+görünümü) aynı `MonthlyDocumentPdfBar` henüz eklenmedi — component hazır,
+sadece ilgili ekranlara import edip kresId/monthKey/sinifId geçmek yeterli
+olacak, küçük bir iş.
+
+**⚠️ Bu faz sırasında bulunan ve düzeltilen kritik hata:** `monthlyDocuments.js`
+içindeki `fetchNodeSnapshotOnce()` fonksiyonu (Faz 0-2'de yazılmıştı) node'u
+**filtresiz** (`ref(database, nodePath)` + düz `onValue`) okuyordu. Ama Firebase
+kuralları bu node'larda (`yemekListeleri`, `dersProgramlari`) filtresiz okumaya
+izin vermiyor — sadece `orderByChild('kresId').equalTo(...)` sorgusuna izin
+veriyor. Sonuç: okuma sessizce boş `{}` dönüyordu ve bu, üç fonksiyonu da
+kırıyordu:
+- `unpublishMonth()` → "Yayından Kaldır" hiçbir şey yapmıyordu (silinecek kayıt
+  bulunamıyordu, ama kullanıcıya hata da gösterilmiyordu).
+- `copyFromPreviousMonth()` → "Geçen Ayı Kopyala" her zaman "Bulunamadı" diyordu.
+- `publishMonth()` → yeni kayıt ekleniyordu ama eski ay/kaynak kaydı `aktif:false`
+  yapılamıyordu — veli tarafında eski + yeni kayıt birlikte görünme riski vardı.
+
+Düzeltme: `fetchNodeSnapshotOnce(nodePath, kresId)` artık `kresId` parametresi
+alıyor ve `query(ref(database, nodePath), orderByChild('kresId'), equalTo(kresId))`
+kullanıyor. Üç çağrı yeri (`publishMonth`, `unpublishMonth`,
+`copyFromPreviousMonth`) buna göre güncellendi — hepsi zaten `kresId`'yi
+parametre olarak alıyordu, ekstra bir prop eklemeye gerek kalmadı. **Bu üç
+özellik (Yayından Kaldır, Geçen Ayı Kopyala, doğru pasife alma) daha önce
+"Faz 1-2 tamamlandı" denip test edilmemişti — ilk gerçek testi kullanıcı
+tarafından henüz yapılmadı, bu yüzden bir sonraki testte özellikle bunlara
+bakılmalı.**
 
 ---
 
-## Faz 4 — Otomatik Besleme (asıl hedef) ⛔ YAPILMADI — ÖNCELİKLİ
+## Faz 4 — Otomatik Besleme (asıl hedef) ✅ TAMAMLANDI
 
 Bu, kullanıcının "günlük özete ve ders programı yemek listelerine akması" dediği
-kısım. İki ayrı kırık nokta tespit edildi, ikisi de düzeltilmeli:
+kısım.
 
-### 4a) `TeacherScheduleScreen.js` — BOZUK
-Şu an hâlâ eski modeli okuyor: `schedules.find(item => item.sinifId === currentClass.id).gunler`.
-Yeni modelde `schedules` artık bir sınıfın BİRDEN FAZLA gün-kaydını içeriyor,
-`.gunler` diye bir alan yok. Bu ekran ya:
-- `TeacherMealsScreen.js`'in yaptığı gibi (bkz. `mergeTodayMeal` fonksiyonu,
-  `TeacherMealsScreen.js` içinde) "bugünün kaydını bul + öğretmenin günlük override'ı
-  varsa onu göster" mantığına çevrilmeli, YA DA
-- Tamamen kaldırılıp yerine `AdminMonthlyScheduleScreen`'in öğretmen-görebilir bir
-  versiyonu konmalı (öğretmenin kendi sınıfının aylık programını görüp, izin
-  varsa düzenlemesi).
+### 4a) `TeacherScheduleScreen.js` — DÜZELTİLDİ
+Roadmap'teki 2. seçenek uygulandı: dosya baştan yazıldı, artık
+`AdminMonthlyScheduleScreen.js` ile AYNI mantığı (aylık, gün-bazlı kayıt,
+Liste/Takvim toggle, Yayınla/Yayından Kaldır, Geçen Ayı Kopyala) kullanıyor —
+ama `route.params.sinifId` yerine öğretmenin kendi `currentClass`'ına otomatik
+bağlanıyor (öğretmenin ekstra bir sınıf seçmesine gerek yok). Üstte ayrıca
+**"Bugün" kartı** eklendi — o günün yayınlanmış etkinliğini gösteriyor.
+Firebase kuralları kontrol edildi: `ogretmen` rolü zaten `dersProgramlari`'na
+yazma yetkisine sahipti, ek bir izin değişikliği gerekmedi.
 
-Karar: muhtemelen ikinci seçenek daha temiz (tek ekran, admin ve öğretmen aynı
-component'i farklı yetki seviyesiyle kullanır) — ama bu, önceki konuşmada
-netleşmedi, kullanıcıya sorulmalı.
+### 4b) `ParentSummaryScreen.js` — DÜZELTİLDİ
+`todaySchedules` filtresi roadmap'teki öneriye göre `tarih === today` bazlı
+yapıldı (`todayMeal`'ın zaten doğru çalışan örneği referans alındı). Ek olarak
+küçük bir hata daha bulunup düzeltildi: kayıtların `baslik` alanı her gün için
+aynı genel metni tutuyordu ("Ağustos 2026 Ders Programı"), asıl etkinlik adı
+`etkinlik` alanındaydı — veli ekranında her gün aynı başlık görünüyordu. Artık
+`etkinlik` varsa öncelik ona veriliyor. Eski `getDayKey`/`normalizeDay`
+fonksiyonları artık kullanılmıyor (dead code, silinmedi, zararsız).
 
-### 4b) `ParentSummaryScreen.js` — "Bugünün Programı" widget'ı sessizce boş dönüyor
-`todaySchedules` hesaplaması (satır ~162-171) `item.gun` (haftanın günü, örn.
-"pazartesi") alanına göre filtreliyor + `normalizeDay()` fonksiyonu kullanıyor.
-Bizim yeni kayıtlarımızda `gun` alanı YOK, `tarih` (tam tarih, `"2026-08-05"`) var.
-Bu ikisi hiç eşleşmiyor — düzeltme:
-```js
-const todaySchedules = useMemo(() => {
-  const todayKey = new Date().toISOString().slice(0, 10);
-  return schedules
-    .filter((item) => item.aktif !== false)
-    .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
-    .filter((item) => !item.sinifId || item.sinifId === sinifId)
-    .filter((item) => item.tarih === todayKey)
-    .slice(0, 3);
-}, [schedules, kresId, sinifId]);
-```
-Aynı dosyada yemek listesi için muhtemelen zaten benzer/doğru bir `tarih === today`
-filtresi var (satır ~157 civarı `mealList` için) — o örnek alınabilir.
-
-### 4c) Dashboard kartları
-`TeacherDashboardScreen.js` ve `ParentDashboard.js`'de varsa benzer "bugün ne var"
-kartları da aynı `tarih === today` mantığıyla bu yeni node'lardan beslenmeli.
-(Bu iki dosya bu chat'te henüz detaylı incelenmedi — kontrol edilmeli.)
+### 4c) Dashboard kartları — KONTROL EDİLDİ, EK İŞ ÇIKMADI
+`TeacherDashboardScreen.js`'de eski modele (`.gunler`) bağlı bozuk bir referans
+YOK. `ParentDashboard.js`'de ders programı/schedule ile ilgili hiçbir kod YOK
+(o yüzden bozacak bir şey de yoktu). Bu iki dosyada ekstra düzeltme gerekmedi.
 
 ---
 
-## Faz 5 — Kopyalama + Arşiv ⛔ KISMEN YAPILDI
+## Faz 5 — Kopyalama + Arşiv ✅ TAMAMLANDI
 
-**Yapılan:** `monthlyDocuments.js` içinde `copyFromPreviousMonth()` fonksiyonu
-zaten yazıldı ve hem `AdminMonthlyMealScreen.js` hem `AdminMonthlyScheduleScreen.js`
-içinde "📋 Geçen Ayı Kopyala" butonu olarak bağlandı. Önceki ayın yayınlanmış
-(aktif) kayıtlarını gün numarasına göre eşleyip mevcut ayın taslağına kopyalıyor.
+**Kopyalama (önceden yapılmıştı):** `monthlyDocuments.js` içinde
+`copyFromPreviousMonth()` fonksiyonu zaten yazılmıştı ve hem
+`AdminMonthlyMealScreen.js` hem `AdminMonthlyScheduleScreen.js` içinde
+"📋 Geçen Ayı Kopyala" butonu olarak bağlıydı.
 
-**Yapılmayan:** Arşiv görüntüleme — yani "Temmuz", "Haziran" gibi eski ayları
-geriye dönük AÇIP GÖRÜNTÜLEME ekranı yok. Şu an sadece mevcut ay ileri/geri
-gezilebiliyor (`changeMonth` fonksiyonu zaten `-1`/`+1` ay kaydırıyor, o yüzden
-teknik olarak geçmiş aya gidip verisini görmek MÜMKÜN ama "hangi aylarda veri
-var" listesi/gösterge yok — kullanıcı ay ay elle gezmek zorunda). İstenirse:
-küçük bir "veri olan aylar" işaretleyicisi eklenebilir.
+**Arşiv (bu chat'te eklendi):**
+- `monthlyDocuments.js`'e `parseMonthKey()` (getMonthKey'in tersi — `"2026-08"`
+  → o ayın 1. günü olan `Date`) ve `listPublishedMonths({ nodePath, kresId,
+  kaynak, matchExtra })` eklendi. İkincisi kresId'ye göre filtrelenmiş bir
+  sorguyla tüm node'u okuyup, yayınlanmış (aktif) kayıtları `ayKey`'e göre
+  gruplayıp gün sayısıyla birlikte (en yeni ay en üstte) döndürüyor.
+- `src/components/MonthlyArchivePicker.js` (yeni): "🗂 Arşiv" butonu + modal.
+  Açılınca `listPublishedMonths` çağrılıp veri olan aylar listeleniyor, bir aya
+  dokununca ekran doğrudan o aya atlıyor (mevcut `changeMonth` gibi +/-1 değil,
+  hedef aya direkt — bunun için üç ekrana da `jumpToMonth(date)` fonksiyonu
+  eklendi).
+- `AdminMonthlyMealScreen.js`, `AdminMonthlyScheduleScreen.js`,
+  `TeacherScheduleScreen.js`'de "Geçen Ayı Kopyala" butonunun yanına eklendi
+  (aynı satırda, yan yana).
 
 ---
 
@@ -190,12 +225,13 @@ Kafa karıştırmasın diye bu da bir noktada temizlenmeli, ama acil değil.
 
 ## Sıradaki Somut Adım (önerilir)
 
-Faz 4a + 4b birlikte: `TeacherScheduleScreen.js`'i yeniden yaz (öğretmenin kendi
-sınıfının aylık programını görmesi + varsa bugünün etkinliğini üstte kart olarak
-göstermesi) ve `ParentSummaryScreen.js`'deki `todaySchedules` filtresini `tarih`
-bazlı yap. Bu ikisi bitince "tek veri girişi → otomatik günlük özet" zinciri
-uçtan uca çalışır hale gelir (Faz 3'teki PDF olmadan bile).
-
+Faz 0-5 tamamlandı. Kalan iki iş:
+1. **Kullanıcı testi** — hem daha önce yazılan test listesi hem yeni eklenen
+   Arşiv özelliği (bir aya dokununca doğru aya atlıyor mu, gün sayısı doğru mu).
+2. **Faz 3'ün eksik kalan küçük parçası** — veli tarafına (`ParentMealsScreen.js`,
+   ders programı görünümü) `MonthlyDocumentPdfBar` bağlamak (component zaten hazır).
+3. **Faz 6** — artık kullanılmayan `LessonScheduleFormScreen.js`'i (doğrulandı: hiçbir
+   yerden çağrılmıyor) ve eski `TeacherDocumentsScreen.js` A4-foto akışını temizlemek.
 
 ---
 
