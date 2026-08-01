@@ -50,7 +50,6 @@ const unreadMessages = useUnreadMessagesCount(parentId);
     ['🩺', 'Medikal', 'ParentMedical', '#DDF8F4', '#67D6C9'],
     ['🚌', 'Servis', 'ParentService', '#FFF1D5', '#EDBA5E'],
     ['📣', 'Duyurular', 'ParentAnnouncements', '#FFE6F5', '#EE99D0'],
-    ['📁', 'Belgeler', 'ParentDocuments', '#F2EAFE', '#BA9BEA'],
     ...(showUyumCard ? [['🌱', 'Uyum Skoru', 'ParentUyum', '#E8FBEA', '#7DDC8C']] : []),
     ['🏅', 'Rozetlerim', 'ParentBadges', '#FFF7E8', '#F0C36A'],
   ];
