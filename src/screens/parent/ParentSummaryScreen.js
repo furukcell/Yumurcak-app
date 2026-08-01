@@ -19,6 +19,8 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { getWeekKey } from '../../utils/weeklyBadges';
+import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
+import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
 
 const MEAL_LABELS = {
   kahvalti: 'Kahvaltı',
@@ -169,6 +171,19 @@ export default function ParentSummaryScreen({ navigation }) {
       .sort((a, b) => String(a.saat || a.baslangicSaati || '').localeCompare(String(b.saat || b.baslangicSaati || '')))
       .slice(0, 3);
   }, [schedules, kresId, sinifId, today]);
+
+  const currentMonthKey = useMemo(() => getMonthKey(new Date()), []);
+  const currentMonthLabel = useMemo(() => getMonthLabel(new Date()), []);
+
+  const hasMonthlySchedule = useMemo(() => {
+    return schedules.some((item) =>
+      item.aktif !== false &&
+      item.kaynak === 'admin_aylik' &&
+      item.ayKey === currentMonthKey &&
+      (!kresId || item.kresId === kresId) &&
+      item.sinifId === sinifId
+    );
+  }, [schedules, kresId, sinifId, currentMonthKey]);
 
   const latestAnnouncement = useMemo(() => {
     return announcements
@@ -370,6 +385,20 @@ export default function ParentSummaryScreen({ navigation }) {
               <Text style={styles.emptyInline}>Bugün için program veya etkinlik girilmedi.</Text>
             ) : null}
           </View>
+          {hasMonthlySchedule ? (
+            <View style={{ marginTop: 12 }}>
+              <MonthlyDocumentPdfBar
+                kresId={kresId}
+                nodePath="dersProgramlari"
+                kaynak="admin_aylik"
+                docType="ders"
+                monthKey={currentMonthKey}
+                monthLabel={currentMonthLabel}
+                sinifId={sinifId}
+                theme={theme}
+              />
+            </View>
+          ) : null}
         </View>
 
         <SectionHead styles={styles} title="Diğer Özetler" action="Tümünü gör" onPress={() => navigation.navigate('ParentReports')} />
