@@ -160,15 +160,15 @@ export default function ParentSummaryScreen({ navigation }) {
   }, [events, kresId, sinifId, today]);
 
   const todaySchedules = useMemo(() => {
-    const dayKey = getDayKey(new Date());
     return schedules
       .filter((item) => item.aktif !== false)
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
       .filter((item) => !item.sinifId || item.sinifId === sinifId)
-      .filter((item) => !item.gun || normalizeDay(item.gun) === dayKey)
+      .filter((item) => item.tarih === today)
+      .map((item) => ({ ...item, baslik: item.etkinlik || item.baslik }))
       .sort((a, b) => String(a.saat || a.baslangicSaati || '').localeCompare(String(b.saat || b.baslangicSaati || '')))
       .slice(0, 3);
-  }, [schedules, kresId, sinifId]);
+  }, [schedules, kresId, sinifId, today]);
 
   const latestAnnouncement = useMemo(() => {
     return announcements
