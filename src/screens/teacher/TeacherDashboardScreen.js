@@ -22,7 +22,6 @@ const MENU = [
   { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements', bg: '#FFF6CF', border: '#E8C94F' },
   { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
   { icon: '🌱', title: 'Uyum Modülü', desc: 'Yeni başlayan çocukların 30 günlük uyumu', route: 'TeacherAdaptationTracking', bg: '#EAF2FF', border: '#8DB2FF' },
-  { icon: '📁', title: 'Dokümanlar', desc: 'A4 belge fotoğrafı yükle', route: 'TeacherDocuments', bg: '#F2EAFE', border: '#BA9BEA' },
   { icon: '🌟', title: 'Haftanın Yıldızı', desc: 'Cuma rozeti ver', route: 'TeacherWeeklyStar', bg: '#FFF7E8', border: '#FFE0A3' },
   { icon: '🩺', title: 'Medikal', desc: 'Alerji ve ilaç bilgileri', route: 'TeacherMedical', bg: '#E4FAF7', border: '#6DD3C8' },
   { icon: '🎂', title: 'Doğum Günleri', desc: 'Yaklaşan doğum günleri', route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
