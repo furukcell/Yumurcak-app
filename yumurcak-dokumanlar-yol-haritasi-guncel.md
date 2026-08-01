@@ -285,9 +285,18 @@ onayıyla başlanabilir.
    `AdminMonthlyScheduleScreen.js`'in gün-düzenleme modalına: Etkinlik Öner
    butonu + Kategori chip seçici + (var olan) Açıklama alanı eklendi.
    `copyFromPreviousMonth` artık kategori/tema'yı da kopyalıyor.
+8. **Yazarken-öner (autocomplete) — sonradan eklendi:** `etkinlikHavuzu`
+   kayıtlarına `adNormalized` alanı eklendi (Cloud Function yazıyor,
+   `.indexOn`'a eklendi). `src/services/activityLibrary.js` →
+   `searchActivitiesByPrefix()` — `startAt/endAt` ile TÜM kategoriler
+   genelinde prefix (baştan eşleşme) araması yapıyor. Yeni component:
+   `src/components/ActivityAutocompleteInput.js` — etkinlik TextInput'ının
+   yerine geçti, 2+ karakter yazılınca 300ms debounce ile öneri listesi
+   açılıyor; bir öneriye dokununca hem metni hem (öğretmen henüz kendi
+   seçmediyse) kategori/tema'yı otomatik dolduruyor. Her iki ekrana da
+   bağlandı.
 
 **Bilinçli olarak ERTELENEN (MVP kapsamı dışı, ileride eklenebilir):**
-- Arama-yazarken-öner (autocomplete) — Faz 8'de zaten planlı, ayrıca ele alınacak.
 - Silinen/pasife alınan kayıtların havuzdan düşürülmesi — şu an sadece artıyor,
   eksi yönde düzeltme yok (kullanım istatistiği olduğu için kabul edilebilir).
 - `yasGrubu` şu an sınıf tarafında serbest metin (örn. "2-3 yaş") — kreşler
