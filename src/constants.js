@@ -169,6 +169,31 @@ export const DUYURU_SABLONLARI = [
 ];
 
 // ============================================================
+// KAZANIM ÖNERİLERİ (FAZ 10 — Hazır Kazanımlar)
+// Sabit, hazır kazanım etiketleri — öğretmen bunlardan seçer veya
+// kendi metnini elle ekler. Kazanımlar dersProgramlari kaydına
+// 'kazanimlar' (string dizisi) olarak yazılır.
+// ============================================================
+export const KAZANIM_ONERILERI = [
+  'İnce Motor',
+  'Kaba Motor',
+  'El-Göz Koordinasyonu',
+  'Renk Algısı',
+  'Şekil Algısı',
+  'Yaratıcılık',
+  'Dil Gelişimi',
+  'Kelime Dağarcığı',
+  'Sosyal Beceri',
+  'Duygusal Gelişim',
+  'Dikkat / Odaklanma',
+  'Problem Çözme',
+  'Sayı Kavramı',
+  'Grup İçinde Uyum',
+  'Öz Bakım Becerisi',
+  'Denge ve Koordinasyon',
+];
+
+// ============================================================
 // YARDIMCI: Zaman formatlama
 // ============================================================
 export function zamanOncesi(tarih) {
