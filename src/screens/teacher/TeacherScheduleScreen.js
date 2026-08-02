@@ -65,6 +65,11 @@ function schedulePreview(value) {
   return [value?.etkinlik, value?.aciklama].filter(Boolean).join(' · ');
 }
 
+function formatDateKey(dateKey) {
+  if (!dateKey) return '-';
+  return dateKey.split('-').reverse().join('.');
+}
+
 export default function TeacherScheduleScreen() {
   const navigation = useNavigation();
   const { loading, kresId, teacherId, currentClass, schedules } = useTeacherData();
@@ -277,6 +282,28 @@ export default function TeacherScheduleScreen() {
   const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
   const selectedValue = values[selectedDateKey] || emptyScheduleValue();
 
+  // FAZ 10 — Akıllı Tekrar Uyarısı: girilen etkinlik adı, seçili günden
+  // geriye doğru son 10 gün içinde bu sınıfta zaten uygulanmışsa bilgi
+  // verir. Sadece bilgilendirme amaçlı, seçimi ENGELLEMEZ.
+  const recentRepeat = useMemo(() => {
+    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
+    if (!etkinlikAdi || !selectedDateKey) return null;
+
+    const selectedTime = new Date(selectedDateKey).getTime();
+
+    const eslesenler = classSchedules.filter((item) => {
+      if (item.tarih === selectedDateKey) return false;
+      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
+      const farkGun = (selectedTime - new Date(item.tarih).getTime()) / 86400000;
+      return farkGun > 0 && farkGun <= 10;
+    });
+
+    if (eslesenler.length === 0) return null;
+
+    const enSonTarih = eslesenler.map((item) => item.tarih).sort().slice(-1)[0];
+    return { sayi: eslesenler.length, enSonTarih };
+  }, [selectedValue.etkinlik, selectedDateKey, classSchedules]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} ders programı yayınlandı`} onHide={() => setSuccessToast(false)} />
@@ -412,6 +439,14 @@ export default function TeacherScheduleScreen() {
               theme={THEME}
             />
 
+            {recentRepeat ? (
+              <View style={styles.repeatWarning}>
+                <Text style={styles.repeatWarningText}>
+                  🔁 Bu etkinlik son 10 gün içinde {recentRepeat.sayi} kez uygulanmış (en son: {formatDateKey(recentRepeat.enSonTarih)}).
+                </Text>
+              </View>
+            ) : null}
+
             <Text style={styles.modalLabel}>Kategori</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
               {ETKINLIK_KATEGORILERI.map((item) => {
@@ -484,6 +519,8 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
   modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
+  repeatWarning: { backgroundColor: '#FFF3D9', borderRadius: 12, padding: 10, marginBottom: 10 },
+  repeatWarningText: { color: '#8A6100', fontWeight: '800', fontSize: 12, lineHeight: 17 },
   libraryRow: { alignItems: 'flex-start', marginBottom: 10 },
   modalLabel: { fontSize: 12, fontWeight: '900', color: THEME.muted, marginBottom: 8, textTransform: 'uppercase' },
   kategoriChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: THEME.border, backgroundColor: THEME.bg },
