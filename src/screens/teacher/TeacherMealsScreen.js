@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
+import MealAutocompleteInput from '../../components/MealAutocompleteInput';
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -420,14 +421,14 @@ export default function TeacherMealsScreen() {
                       <Text style={styles.mealInputTitle}>{meal.icon} {meal.title}</Text>
                       <Text style={styles.mealInputHint}>{selectedMealKey === meal.key ? 'Fotoğraf buraya eklenir' : 'Fotoğraf için seç'}</Text>
                     </TouchableOpacity>
-                    <TextInput
+                    <MealAutocompleteInput
+                      ogun={meal.key}
                       style={styles.input}
                       value={mealTexts[meal.key]}
                       onFocus={() => setSelectedMealKey(meal.key)}
                       onChangeText={(value) => updateMealText(meal.key, value)}
                       placeholder={`${meal.title} yaz`}
-                      placeholderTextColor="#999"
-                      multiline
+                      theme={THEME}
                     />
                   </View>
                 ))}
