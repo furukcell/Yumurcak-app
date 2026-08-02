@@ -14,6 +14,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { createRoleNotification, createUserNotification } from '../../services/notificationCenter';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import AnnouncementTemplatePicker from '../../components/AnnouncementTemplatePicker';
 
 const TARGET_OPTIONS = [
   { key: 'all', label: 'Tüm Kurum', icon: '🏫' },
@@ -236,6 +237,15 @@ export default function AnnouncementFormScreen() {
 
       <ScrollView style={styles.container}>
         <View style={styles.form}>
+          <View style={styles.templateRow}>
+            <AnnouncementTemplatePicker
+              onApply={(sablonBaslik, sablonMesaj) => {
+                setTitle(sablonBaslik);
+                setMessage(sablonMesaj);
+              }}
+            />
+          </View>
+
           <View style={styles.field}>
             <Text style={styles.label}>Başlık *</Text>
             <TextInput
@@ -351,6 +361,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   form: { padding: 20 },
+  templateRow: { alignItems: 'flex-start', marginBottom: 20 },
   field: { marginBottom: 20 },
   label: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 8 },
   input: {
