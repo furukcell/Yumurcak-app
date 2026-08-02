@@ -14,6 +14,7 @@ import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
 import ActivityLibraryPicker from '../../components/ActivityLibraryPicker';
 import ActivityAutocompleteInput from '../../components/ActivityAutocompleteInput';
+import ActivityBalanceCard from '../../components/ActivityBalanceCard';
 import { ETKINLIK_KATEGORILERI } from '../../constants';
 import { createNotification } from '../../services/notificationCenter';
 import {
@@ -338,6 +339,13 @@ export default function TeacherScheduleScreen() {
                   theme={THEME}
                 />
               </View>
+
+              <ActivityBalanceCard
+                schedules={classSchedules}
+                monthKey={monthKey}
+                monthLabel={monthLabel}
+                theme={THEME}
+              />
 
               <MonthlyCalendarView
                 days={daysWithContent}
