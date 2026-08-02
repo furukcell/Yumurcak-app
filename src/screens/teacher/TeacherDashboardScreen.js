@@ -9,6 +9,7 @@ import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
+import DailyChecklistCard from '../../components/DailyChecklistCard';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
 const MENU = [
@@ -34,7 +35,7 @@ const MENU = [
 
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
-  const { loading, kullanici, kresAdi, currentClass, classChildren, reports, attendance } = useTeacherData();
+  const { loading, kullanici, kresAdi, kresId, currentClass, classChildren, reports, attendance, meals, schedules } = useTeacherData();
   const teacherId = kullanici?.uid || kullanici?.id;
   const unreadMessages = useUnreadMessagesCount(teacherId);
   const { theme } = useAppTheme();
@@ -77,6 +78,19 @@ export default function TeacherDashboardScreen() {
           ) : (
             <EmptyState icon="🏫" title="Sınıf ataması bulunamadı" desc="Yönetici öğretmeni bir sınıfa bağladığında panel aktifleşir." />
           )}
+
+          {currentClass ? (
+            <DailyChecklistCard
+              kresId={kresId}
+              currentClass={currentClass}
+              classChildren={classChildren}
+              reports={reports}
+              attendance={attendance}
+              meals={meals}
+              schedules={schedules}
+              theme={theme}
+            />
+          ) : null}
 
           <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
           <View style={styles.grid}>
