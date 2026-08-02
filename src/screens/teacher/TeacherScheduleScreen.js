@@ -304,6 +304,30 @@ export default function TeacherScheduleScreen() {
     return { sayi: eslesenler.length, enSonTarih };
   }, [selectedValue.etkinlik, selectedDateKey, classSchedules]);
 
+  // FAZ 10 — Aynı Gün Geçen Yıl: seçili günün bir önceki yılki aynı
+  // tarihinde (MM-DD aynı, YYYY-1) bu sınıfta girilmiş bir etkinlik
+  // varsa gösterir. Dokununca alanları dolduruyor, zorunlu değil.
+  const lastYearSchedule = useMemo(() => {
+    if (!selectedDateKey) return null;
+    const [y, m, d] = selectedDateKey.split('-');
+    const lastYearKey = `${Number(y) - 1}-${m}-${d}`;
+    const item = classSchedules.find((entry) => entry.tarih === lastYearKey);
+    return item && hasScheduleContent(item) ? item : null;
+  }, [selectedDateKey, classSchedules]);
+
+  function useLastYearSchedule() {
+    if (!lastYearSchedule || !selectedDateKey) return;
+    setValues((prev) => ({
+      ...prev,
+      [selectedDateKey]: {
+        etkinlik: lastYearSchedule.etkinlik || '',
+        aciklama: lastYearSchedule.aciklama || '',
+        kategori: lastYearSchedule.kategori || '',
+        tema: lastYearSchedule.tema || '',
+      },
+    }));
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} ders programı yayınlandı`} onHide={() => setSuccessToast(false)} />
@@ -421,6 +445,15 @@ export default function TeacherScheduleScreen() {
               </TouchableOpacity>
             </View>
 
+            {lastYearSchedule ? (
+              <TouchableOpacity style={styles.lastYearCard} onPress={useLastYearSchedule} activeOpacity={0.85}>
+                <Text style={styles.lastYearLabel}>📅 Geçen yıl bugün ({formatDateKey(lastYearSchedule.tarih)})</Text>
+                <Text style={styles.lastYearTitle}>{lastYearSchedule.etkinlik}</Text>
+                {lastYearSchedule.aciklama ? <Text style={styles.lastYearDesc} numberOfLines={2}>{lastYearSchedule.aciklama}</Text> : null}
+                <Text style={styles.lastYearHint}>Dokun, bu ayki güne kopyala</Text>
+              </TouchableOpacity>
+            ) : null}
+
             <View style={styles.libraryRow}>
               <ActivityLibraryPicker
                 yasGrubu={currentClass?.yasGrubu}
@@ -521,6 +554,11 @@ const styles = StyleSheet.create({
   modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
   repeatWarning: { backgroundColor: '#FFF3D9', borderRadius: 12, padding: 10, marginBottom: 10 },
   repeatWarningText: { color: '#8A6100', fontWeight: '800', fontSize: 12, lineHeight: 17 },
+  lastYearCard: { backgroundColor: THEME.primarySoft, borderRadius: 14, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
+  lastYearLabel: { color: THEME.primary, fontWeight: '900', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 },
+  lastYearTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  lastYearDesc: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 2 },
+  lastYearHint: { color: THEME.primary, fontWeight: '800', fontSize: 11, marginTop: 6 },
   libraryRow: { alignItems: 'flex-start', marginBottom: 10 },
   modalLabel: { fontSize: 12, fontWeight: '900', color: THEME.muted, marginBottom: 8, textTransform: 'uppercase' },
   kategoriChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: THEME.border, backgroundColor: THEME.bg },
