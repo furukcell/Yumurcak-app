@@ -60,6 +60,21 @@ export const OGUN_LISTESI = [
 ];
 
 // ============================================================
+// YAŞ GRUPLARI (sınıf yaş grubu — standart liste, FAZ 7 kapsamında
+// serbest metinden buraya taşındı: etkinlik havuzunda kreşler arası
+// tutarsız yazım yüzünden yaş grubu eşleşmesi çalışmıyordu)
+// ============================================================
+export const YAS_GRUPLARI = [
+  { key: '0-1',  label: '0-1 Yaş' },
+  { key: '1-2',  label: '1-2 Yaş' },
+  { key: '2-3',  label: '2-3 Yaş' },
+  { key: '3-4',  label: '3-4 Yaş' },
+  { key: '4-5',  label: '4-5 Yaş' },
+  { key: '5-6',  label: '5-6 Yaş' },
+  { key: 'karma', label: 'Karma (Farklı Yaşlar)' },
+];
+
+// ============================================================
 // ETKİNLİK KATEGORİLERİ (FAZ 7 — Etkinlik Kütüphanesi)
 // ============================================================
 export const ETKINLIK_KATEGORILERI = [
