@@ -15,7 +15,7 @@ import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
 import ActivityLibraryPicker from '../../components/ActivityLibraryPicker';
 import ActivityAutocompleteInput from '../../components/ActivityAutocompleteInput';
 import ActivityBalanceCard from '../../components/ActivityBalanceCard';
-import { ETKINLIK_KATEGORILERI } from '../../constants';
+import { ETKINLIK_KATEGORILERI, KAZANIM_ONERILERI } from '../../constants';
 import { createNotification } from '../../services/notificationCenter';
 import {
   getDaysOfMonth,
@@ -33,7 +33,7 @@ const NODE_PATH = 'dersProgramlari';
 const KAYNAK = 'admin_aylik';
 
 function emptyScheduleValue() {
-  return { etkinlik: '', aciklama: '', kategori: '', tema: '' };
+  return { etkinlik: '', aciklama: '', kategori: '', tema: '', kazanimlar: [] };
 }
 
 function hasScheduleContent(value) {
@@ -54,6 +54,7 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
     aciklama: String(value.aciklama || '').trim(),
     kategori: value.kategori || null,
     tema: value.tema || null,
+    kazanimlar: Array.isArray(value.kazanimlar) ? value.kazanimlar : [],
     aktif: true,
     createdAt: now,
     updatedAt: now,
@@ -90,6 +91,7 @@ export default function TeacherScheduleScreen() {
   const [unpublishing, setUnpublishing] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [customKazanimText, setCustomKazanimText] = useState('');
 
   // publishedCount ve bugünün etkinliği: hook zaten kresId'ye göre
   // filtrelenmiş 'dersProgramlari' listesini veriyor, ayrıca query açmaya gerek yok.
@@ -128,6 +130,25 @@ export default function TeacherScheduleScreen() {
       ...prev,
       [dateKey]: { ...(prev[dateKey] || emptyScheduleValue()), [field]: text },
     }));
+  }
+
+  // FAZ 10 — Hazır Kazanımlar: sabit etiketlerden aç/kapa veya elle
+  // özel bir kazanım ekle. Tekrar eden etiketler otomatik engellenir.
+  function toggleKazanim(dateKey, etiket) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const mevcut = Array.isArray(current.kazanimlar) ? current.kazanimlar : [];
+      const varMi = mevcut.includes(etiket);
+      const yeni = varMi ? mevcut.filter((k) => k !== etiket) : [...mevcut, etiket];
+      return { ...prev, [dateKey]: { ...current, kazanimlar: yeni } };
+    });
+  }
+
+  function setKazanimlar(dateKey, kazanimlar) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      return { ...prev, [dateKey]: { ...current, kazanimlar } };
+    });
   }
 
   // Autocomplete'ten bir öneri seçilince: etkinlik adı zaten onChangeText ile
@@ -174,6 +195,7 @@ export default function TeacherScheduleScreen() {
           aciklama: prevItem?.aciklama || '',
           kategori: prevItem?.kategori || '',
           tema: prevItem?.tema || '',
+          kazanimlar: Array.isArray(prevItem?.kazanimlar) ? prevItem.kazanimlar : [],
         }),
       });
 
@@ -279,7 +301,18 @@ export default function TeacherScheduleScreen() {
     }
   }
 
+  function selectDay(dateKey) {
+    setCustomKazanimText('');
+    setSelectedDateKey(dateKey);
+  }
+
+  function closeModal() {
+    setCustomKazanimText('');
+    setSelectedDateKey('');
+  }
+
   const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
+
   const selectedValue = values[selectedDateKey] || emptyScheduleValue();
 
   // FAZ 10 — Akıllı Tekrar Uyarısı: girilen etkinlik adı, seçili günden
@@ -324,9 +357,33 @@ export default function TeacherScheduleScreen() {
         aciklama: lastYearSchedule.aciklama || '',
         kategori: lastYearSchedule.kategori || '',
         tema: lastYearSchedule.tema || '',
+        kazanimlar: Array.isArray(lastYearSchedule.kazanimlar) ? lastYearSchedule.kazanimlar : [],
       },
     }));
   }
+
+  // FAZ 10 — Hazır Kazanımlar: aynı etkinlik adı bu kreşte (herhangi bir
+  // sınıfta) daha önce kazanımlarla girilmişse, en son kullanılanı önerir.
+  const kazanimOnerisi = useMemo(() => {
+    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
+    if (!etkinlikAdi || !selectedDateKey) return null;
+
+    const eslesenler = schedules.filter((item) => {
+      if (item?.aktif === false || item?.kaynak !== KAYNAK) return false;
+      if (item.tarih === selectedDateKey) return false;
+      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
+      return Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0;
+    });
+
+    if (eslesenler.length === 0) return null;
+
+    const enSon = [...eslesenler].sort((a, b) => (a.tarih < b.tarih ? 1 : -1))[0];
+    const mevcut = Array.isArray(selectedValue.kazanimlar) ? selectedValue.kazanimlar : [];
+    const ayni = mevcut.length === enSon.kazanimlar.length && mevcut.every((k) => enSon.kazanimlar.includes(k));
+    if (ayni) return null;
+
+    return enSon.kazanimlar;
+  }, [selectedValue.etkinlik, selectedValue.kazanimlar, selectedDateKey, schedules]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -403,7 +460,7 @@ export default function TeacherScheduleScreen() {
                 view={view}
                 onChangeView={setView}
                 selectedDateKey={selectedDateKey}
-                onSelectDay={setSelectedDateKey}
+                onSelectDay={selectDay}
                 theme={THEME}
                 renderDayPreview={(day) => {
                   const preview = schedulePreview(values[day.dateKey]);
@@ -435,12 +492,12 @@ export default function TeacherScheduleScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
+      <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={closeModal}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
-              <TouchableOpacity onPress={() => setSelectedDateKey('')} activeOpacity={0.8}>
+              <TouchableOpacity onPress={closeModal} activeOpacity={0.8}>
                 <Text style={styles.modalClose}>Kapat</Text>
               </TouchableOpacity>
             </View>
@@ -496,6 +553,51 @@ export default function TeacherScheduleScreen() {
                 );
               })}
             </ScrollView>
+
+            {kazanimOnerisi ? (
+              <TouchableOpacity
+                style={styles.kazanimOneriCard}
+                onPress={() => setKazanimlar(selectedDateKey, kazanimOnerisi)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.kazanimOneriLabel}>💡 Bu etkinlik için önceden kullanılan kazanımlar</Text>
+                <Text style={styles.kazanimOneriText}>{kazanimOnerisi.join(', ')}</Text>
+                <Text style={styles.kazanimOneriHint}>Dokun, kullan</Text>
+              </TouchableOpacity>
+            ) : null}
+
+            <Text style={styles.modalLabel}>Kazanımlar</Text>
+            <View style={styles.kazanimGrid}>
+              {KAZANIM_ONERILERI.map((etiket) => {
+                const active = (selectedValue.kazanimlar || []).includes(etiket);
+                return (
+                  <TouchableOpacity
+                    key={etiket}
+                    style={[styles.kazanimChip, active && styles.kazanimChipActive]}
+                    onPress={() => toggleKazanim(selectedDateKey, etiket)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.kazanimChipText, active && styles.kazanimChipTextActive]}>{etiket}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TextInput
+              value={customKazanimText}
+              onChangeText={setCustomKazanimText}
+              placeholder="+ Özel kazanım ekle (yazıp Enter'a bas)"
+              placeholderTextColor={THEME.muted}
+              style={styles.modalInput}
+              onSubmitEditing={() => {
+                const metin = customKazanimText.trim();
+                if (!metin) return;
+                const mevcut = selectedValue.kazanimlar || [];
+                if (!mevcut.includes(metin)) setKazanimlar(selectedDateKey, [...mevcut, metin]);
+                setCustomKazanimText('');
+              }}
+              returnKeyType="done"
+            />
 
             <TextInput
               value={selectedValue.aciklama}
@@ -559,6 +661,15 @@ const styles = StyleSheet.create({
   lastYearTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
   lastYearDesc: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 2 },
   lastYearHint: { color: THEME.primary, fontWeight: '800', fontSize: 11, marginTop: 6 },
+  kazanimOneriCard: { backgroundColor: '#FFF3D9', borderRadius: 14, padding: 12, marginTop: 12, marginBottom: 4 },
+  kazanimOneriLabel: { color: '#8A6100', fontWeight: '900', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 },
+  kazanimOneriText: { color: '#5C4200', fontWeight: '700', fontSize: 13, lineHeight: 18 },
+  kazanimOneriHint: { color: '#8A6100', fontWeight: '800', fontSize: 11, marginTop: 6 },
+  kazanimGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  kazanimChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: THEME.border, backgroundColor: THEME.bg },
+  kazanimChipActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  kazanimChipText: { fontWeight: '800', fontSize: 12, color: THEME.text },
+  kazanimChipTextActive: { color: '#FFF' },
   libraryRow: { alignItems: 'flex-start', marginBottom: 10 },
   modalLabel: { fontSize: 12, fontWeight: '900', color: THEME.muted, marginBottom: 8, textTransform: 'uppercase' },
   kategoriChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: THEME.border, backgroundColor: THEME.bg },
