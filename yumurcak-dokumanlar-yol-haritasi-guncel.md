@@ -295,6 +295,14 @@ onayıyla başlanabilir.
    açılıyor; bir öneriye dokununca hem metni hem (öğretmen henüz kendi
    seçmediyse) kategori/tema'yı otomatik dolduruyor. Her iki ekrana da
    bağlandı.
+9. **Yaş grubu standardizasyonu — sonradan eklendi:** `siniflar.yasGrubu`
+   artık serbest metin değil, `constants.js`'deki sabit `YAS_GRUPLARI`
+   listesinden (0-1, 1-2, 2-3, 3-4, 4-5, 5-6 Yaş, Karma) seçiliyor —
+   `ClassFormScreen.js`'de TextInput yerine chip picker geldi. Migration
+   script YAZILMADI (kreş henüz canlı değil, mevcut sınıf kaydı yok).
+   Bu sayede `etkinlikHavuzu`'ndaki yaş grubu eşleşmesi artık kreşler arası
+   tutarlı çalışıyor (önceden "2-3 yaş" / "2-3" gibi farklı yazımlar hiç
+   eşleşmiyordu).
 
 **Bilinçli olarak ERTELENEN (MVP kapsamı dışı, ileride eklenebilir):**
 - Silinen/pasife alınan kayıtların havuzdan düşürülmesi — şu an sadece artıyor,
