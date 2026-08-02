@@ -379,7 +379,49 @@ Yumurcak zamanla kendi bilgi havuzunu oluşturacak ve öğretmenler her gün uyg
 
 ---
 
-## Faz 8 — Kullanıcı Deneyimi ve Verimlilik ⛔ PLANLANDI
+## Faz 8 — Kullanıcı Deneyimi ve Verimlilik 🔶 DEVAM EDİYOR
+
+**Durum özeti:** Bu fazın plandaki maddelerinin çoğu aslında önceki fazlarda
+zaten karşılanmış durumda:
+- ✅ Kurumsal PDF (logo/okul adı/telefon/adres/müdür) → Faz 3, `fetchInstitutionInfo()`
+- ✅ PDF sonrası Yazdır/Paylaş/İndir tek ekrandan → Faz 3, `MonthlyDocumentPdfBar`
+- ✅ Arşiv (ay bazlı filtreleme) → Faz 5, `MonthlyArchivePicker`
+- ✅ Hazır Etkinlik Önerileri (autocomplete) → Faz 7'de yapıldı (`ActivityAutocompleteInput`)
+
+**Bu chat'te eklenen — Hazır Yemek Önerileri ✅ TAMAMLANDI:**
+Etkinlik havuzuyla BİREBİR AYNI mimari, yemek metinleri için:
+
+1. **`yemekHavuzu` node'u (yeni):** `metin, metinNormalized, ogun, searchKey,
+   toplamKullanim, kresSayisi, sonKullanim` alanları. `.write: false` — client
+   yazamıyor. Aynı metin farklı öğün türlerinde (kahvaltı/öğle/ara öğün) AYRI
+   kayıt olsun diye node anahtarı `{ogun}__{slug}` şeklinde namespace'lendi.
+2. **`_yemekHavuzuMeta` node'u (yeni, tamamen gizli):** kreş sayımı için —
+   etkinlik havuzundaki `_etkinlikHavuzuMeta` ile aynı mantık.
+3. **`functions/index.js` → `updateMealPoolOnMealWrite`:** `yemekListeleri`
+   yazıldığında `ogunler.{kahvalti|ogle|araOgun|ikindi}` alanlarını tek tek
+   kontrol edip havuzu güncelliyor. **Önemli detay:** bu alan admin'in aylık
+   ekranında düz metin, öğretmenin günlük ekranında ise `{ text, fotoUrl,
+   fotoPath, updatedAt }` objesi olarak tutuluyor (fotoğraf desteği yüzünden)
+   — `extractMealText()` helper'ı ikisini de destekliyor.
+4. **`src/services/mealLibrary.js` (yeni, sadece okuma):**
+   `searchMealsByPrefix(ogun, searchText)` — `searchKey = "{ogun}|{metinNormalized}"`
+   birleşik alanı üzerinden tek sorguda hem öğün türüne hem metne göre
+   prefix araması yapıyor (RTDB tek seferde tek alana orderByChild
+   yapabildiği için bu birleşik anahtar hilesi gerekti).
+5. **`src/components/MealAutocompleteInput.js` (yeni):**
+   `ActivityAutocompleteInput` ile aynı UX — 2+ karakter yazılınca 300ms
+   debounce ile o öğün türü için daha önce kullanılan metinler öneriliyor.
+6. **Bağlandığı ekranlar:** `AdminMonthlyMealScreen.js` (aylık, 3 öğün
+   alanı) ve `TeacherMealsScreen.js` (günlük "Bugün" sekmesi, fotoğraf
+   yükleme akışı korunarak — `onFocus` pass-through eklendi).
+
+**Sırada (henüz yapılmadı):**
+- Yeni Şablonlar (Aylık Bülten, Nöbet Çizelgesi, Gezi Formu, İlaç Takip
+  Formu, Personel Görev Listesi, Servis Listesi, Doğum Günü Takvimi) —
+  kapsamlı, ayrı ele alınacak.
+- Hazır Duyuru Şablonları (bu aslında Faz 9'da tanımlı) — henüz yapılmadı.
+
+
 
 Temel sistem tamamlandıktan sonra öğretmenlerin veri giriş süresini azaltacak geliştirmeler yapılacaktır.
 
