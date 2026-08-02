@@ -7,7 +7,7 @@
 // ============================================================
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ETKINLIK_KATEGORILERI } from '../constants';
+import { ETKINLIK_KATEGORILERI, ETKINLIK_TEMALARI } from '../constants';
 import { searchActivityLibrary } from '../services/activityLibrary';
 
 export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSelect, theme }) {
@@ -15,6 +15,7 @@ export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSel
 
   const [open, setOpen] = useState(false);
   const [kategori, setKategori] = useState(initialKategori || ETKINLIK_KATEGORILERI[0].key);
+  const [tema, setTema] = useState('');
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
@@ -26,8 +27,12 @@ export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSel
     async function load() {
       setLoading(true);
       try {
-        const list = await searchActivityLibrary({ kategori, yasGrubu, searchText });
-        if (!cancelled) setResults(list);
+        const list = await searchActivityLibrary({ kategori, yasGrubu, tema, searchText });
+        // FAZ 12 — Tema Filtreleri: searchActivityLibrary tema'yı sadece
+        // sıralamada öne almak için kullanıyor (soft-sort), burada roadmap'in
+        // istediği GERÇEK filtreyi (eşleşmeyenleri gizle) uyguluyoruz.
+        const filtered = tema ? list.filter((item) => item.tema === tema) : list;
+        if (!cancelled) setResults(filtered);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -35,10 +40,11 @@ export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSel
 
     load();
     return () => { cancelled = true; };
-  }, [open, kategori, searchText, yasGrubu]);
+  }, [open, kategori, tema, searchText, yasGrubu]);
 
   function openPicker() {
     setKategori(initialKategori || ETKINLIK_KATEGORILERI[0].key);
+    setTema('');
     setSearchText('');
     setOpen(true);
   }
@@ -79,6 +85,37 @@ export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSel
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.chipText, { color: active ? '#FFF' : palette.text }]}>{item.emoji} {item.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow} contentContainerStyle={{ gap: 8 }}>
+              <TouchableOpacity
+                style={[
+                  styles.chip,
+                  { borderColor: palette.border },
+                  !tema && { backgroundColor: palette.primary, borderColor: palette.primary },
+                ]}
+                onPress={() => setTema('')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.chipText, { color: !tema ? '#FFF' : palette.text }]}>Tüm Temalar</Text>
+              </TouchableOpacity>
+              {ETKINLIK_TEMALARI.map((item) => {
+                const active = item.key === tema;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.chip,
+                      { borderColor: palette.border },
+                      active && { backgroundColor: palette.primary, borderColor: palette.primary },
+                    ]}
+                    onPress={() => setTema(active ? '' : item.key)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.chipText, { color: active ? '#FFF' : palette.text }]}>{item.label}</Text>
                   </TouchableOpacity>
                 );
               })}
