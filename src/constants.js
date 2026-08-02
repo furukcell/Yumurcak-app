@@ -104,6 +104,71 @@ export const ETKINLIK_TEMALARI = [
 ];
 
 // ============================================================
+// DUYURU ŞABLONLARI (FAZ 9 — Öğretmen Verimlilik Araçları)
+// Her şablon: sabit metin + {degisken} yer tutucuları içeren
+// başlık/mesaj kalıbı ve doldurulması gereken alan listesi.
+// AnnouncementTemplatePicker bu alanları forma çevirip kullanıcı
+// doldurunca {degisken}'leri gerçek değerle değiştirir.
+// ============================================================
+export const DUYURU_SABLONLARI = [
+  {
+    key: 'aidat',
+    label: 'Aidat',
+    icon: '💳',
+    alanlar: [
+      { key: 'donem', label: 'Dönem (Ay/Yıl)', placeholder: 'Örn: Ağustos 2026' },
+      { key: 'tutar', label: 'Tutar (TL)', placeholder: 'Örn: 3.500' },
+      { key: 'sonOdeme', label: 'Son Ödeme Tarihi', placeholder: 'GG.AA.YYYY' },
+    ],
+    baslikSablonu: '{donem} Ayı Aidat Bilgilendirmesi',
+    mesajSablonu:
+      'Değerli velimiz, {donem} ayına ait aidat tutarı {tutar} TL\'dir. ' +
+      'Son ödeme tarihi {sonOdeme} olup, ödemenizi bu tarihe kadar yapmanızı rica ederiz.',
+  },
+  {
+    key: 'toplanti',
+    label: 'Toplantı',
+    icon: '🗓️',
+    alanlar: [
+      { key: 'konu', label: 'Toplantı Konusu', placeholder: 'Örn: Dönem Sonu Değerlendirme' },
+      { key: 'tarih', label: 'Tarih', placeholder: 'GG.AA.YYYY' },
+      { key: 'saat', label: 'Saat', placeholder: 'Örn: 17:30' },
+      { key: 'yer', label: 'Yer', placeholder: 'Örn: Kreş Bahçesi / Zoom' },
+    ],
+    baslikSablonu: '{konu} - Veli Toplantısı',
+    mesajSablonu:
+      'Sayın velimiz, {tarih} tarihinde saat {saat}\'de {yer} adresinde ' +
+      '"{konu}" konulu toplantımız gerçekleştirilecektir. Katılımınızı rica ederiz.',
+  },
+  {
+    key: 'tatil',
+    label: 'Tatil',
+    icon: '🏖️',
+    alanlar: [
+      { key: 'sebep', label: 'Tatil Sebebi', placeholder: 'Örn: Kurban Bayramı' },
+      { key: 'baslangic', label: 'Başlangıç Tarihi', placeholder: 'GG.AA.YYYY' },
+      { key: 'bitis', label: 'Bitiş Tarihi', placeholder: 'GG.AA.YYYY' },
+    ],
+    baslikSablonu: '{sebep} Tatili Bilgilendirmesi',
+    mesajSablonu:
+      'Değerli velimiz, kurumumuz {sebep} nedeniyle {baslangic} - {bitis} ' +
+      'tarihleri arasında kapalı olacaktır. İyi tatiller dileriz.',
+  },
+  {
+    key: 'bilgilendirme',
+    label: 'Veli Bilgilendirmesi',
+    icon: '📌',
+    alanlar: [
+      { key: 'konu', label: 'Konu Başlığı', placeholder: 'Örn: Kıyafet Hatırlatması' },
+      { key: 'aciklama', label: 'Açıklama', placeholder: 'Velilere iletilecek bilgi', textArea: true },
+      { key: 'tarih', label: 'Tarih (opsiyonel)', placeholder: 'GG.AA.YYYY', optional: true },
+    ],
+    baslikSablonu: '{konu}',
+    mesajSablonu: 'Değerli velimiz, {aciklama}',
+  },
+];
+
+// ============================================================
 // YARDIMCI: Zaman formatlama
 // ============================================================
 export function zamanOncesi(tarih) {
