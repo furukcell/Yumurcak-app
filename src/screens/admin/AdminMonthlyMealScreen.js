@@ -10,6 +10,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
+import MealAutocompleteInput from '../../components/MealAutocompleteInput';
 import { createNotification } from '../../services/notificationCenter';
 import {
   getDaysOfMonth,
@@ -345,29 +346,29 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
 
-              <TextInput
+              <MealAutocompleteInput
+                ogun="kahvalti"
                 value={selectedValue.kahvalti}
                 onChangeText={(text) => updateField(selectedDateKey, 'kahvalti', text)}
                 placeholder="Kahvaltı"
-                placeholderTextColor={theme.muted}
                 style={styles.modalInput}
-                multiline
+                theme={theme}
               />
-              <TextInput
+              <MealAutocompleteInput
+                ogun="ogle"
                 value={selectedValue.ogle}
                 onChangeText={(text) => updateField(selectedDateKey, 'ogle', text)}
                 placeholder="Öğle yemeği"
-                placeholderTextColor={theme.muted}
                 style={styles.modalInput}
-                multiline
+                theme={theme}
               />
-              <TextInput
+              <MealAutocompleteInput
+                ogun="araOgun"
                 value={selectedValue.araOgun}
                 onChangeText={(text) => updateField(selectedDateKey, 'araOgun', text)}
                 placeholder="Ara öğün"
-                placeholderTextColor={theme.muted}
                 style={styles.modalInput}
-                multiline
+                theme={theme}
               />
 
               {hasMealContent(selectedValue) ? (
