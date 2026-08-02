@@ -141,6 +141,17 @@
       ".write": false
     },
 
+    "yemekHavuzu": {
+      ".read": "auth != null",
+      ".write": false,
+      ".indexOn": ["searchKey"]
+    },
+
+    "_yemekHavuzuMeta": {
+      ".read": false,
+      ".write": false
+    },
+
     "duyurular": {
       ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || (query.orderByChild == 'kresId' && query.equalTo == root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val()))",
       ".indexOn": ["kresId"],
