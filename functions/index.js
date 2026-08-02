@@ -613,6 +613,15 @@ function slugifyActivityName(name) {
   return normalized.replace(/\s+/g, '-').slice(0, 120);
 }
 
+// `ogunler.{key}` ya düz metin (admin aylık) ya da `{ text, fotoUrl, ... }`
+// objesi (öğretmen günlük) olabiliyor — bkz. src/components/MealTodayCard.js
+// içindeki `getMealText`. Aynı mantık burada da lazım.
+function extractMealText(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value.trim();
+  return String(value.text || value.aciklama || '').trim();
+}
+
 exports.updateActivityPoolOnScheduleWrite = functions
   .region('europe-west1')
   .database
@@ -694,6 +703,97 @@ exports.updateActivityPoolOnScheduleWrite = functions
       const metaSnap = await metaRef.child('kresIdler').once('value');
       const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
       await poolRef.child('kresSayisi').set(kresSayisi);
+    }
+
+    return null;
+  });
+
+// ============================================================
+// FAZ 8 — Hazır Yemek Önerileri: merkezi, anonim yemek havuzu
+//
+// `yemekListeleri` kaydındaki `ogunler.{kahvalti|ogle|araOgun}` metinleri
+// değiştiğinde ilgili öğün türü için `yemekHavuzu`'ndaki anonim kaydı
+// güncelliyoruz. Aynı anonimlik/güvenlik deseni etkinlik havuzuyla BİREBİR
+// AYNI: `yemekHavuzu`'na client yazamaz, kreş sayımı için gereken kresId
+// listesi ayrı, tamamen gizli bir node'da (`_yemekHavuzuMeta`) tutuluyor.
+//
+// Aynı metin farklı öğün türlerinde ayrı kayıt olsun diye (örn. "Mercimek
+// Çorbası" kahvaltıda değil öğlede önerilsin) node anahtarı `{ogun}__{slug}`
+// şeklinde öğün türüyle namespace'leniyor. Arama da (bkz. mealLibrary.js)
+// `searchKey = "{ogun}|{metinNormalized}"` alanı üzerinden tek bir index'le
+// hem öğün türüne hem metne göre filtreleyebiliyor (RTDB tek seferde sadece
+// bir alana orderByChild yapabildiği için bu birleşik anahtar hilesi gerekti).
+// ============================================================
+
+exports.updateMealPoolOnMealWrite = functions
+  .region('europe-west1')
+  .database
+  .ref('/yemekListeleri/{recordId}')
+  .onWrite(async (change, context) => {
+    const before = change.before.exists() ? change.before.val() : null;
+    const after = change.after.exists() ? change.after.val() : null;
+
+    if (!after) return null;
+    if (after.aktif === false) return null;
+
+    const ogunlerAfter = after.ogunler || {};
+    const ogunlerBefore = before ? (before.ogunler || {}) : {};
+    const kresId = after.kresId || '';
+    const now = Date.now();
+
+    const oguns = ['kahvalti', 'ogle', 'araOgun', 'ikindi'];
+
+    for (const ogun of oguns) {
+      // Admin'in aylık ekranı düz metin yazıyor (`ogunler.kahvalti = "..."`),
+      // öğretmenin günlük ekranı ise `{ text, fotoUrl, fotoPath, updatedAt }`
+      // objesi yazıyor — ikisini de destekliyoruz (bkz. MealTodayCard.getMealText).
+      const metin = extractMealText(ogunlerAfter[ogun]);
+      if (!metin) continue;
+
+      const beforeMetin = extractMealText(ogunlerBefore[ogun]);
+      if (before && beforeMetin === metin) continue; // değişmemiş, tekrar sayma
+
+      const metinNormalized = normalizeActivityName(metin);
+      const slug = slugifyActivityName(metin);
+      if (!slug) continue;
+
+      const poolKey = `${ogun}__${slug}`;
+      const searchKey = `${ogun}|${metinNormalized}`;
+      const poolRef = admin.database().ref(`yemekHavuzu/${poolKey}`);
+      const metaRef = admin.database().ref(`_yemekHavuzuMeta/${poolKey}`);
+
+      await poolRef.transaction((current) => {
+        if (!current) {
+          return {
+            metin,
+            metinNormalized,
+            ogun,
+            searchKey,
+            toplamKullanim: 1,
+            kresSayisi: 0,
+            sonKullanim: now,
+            createdAt: now,
+            updatedAt: now,
+          };
+        }
+        return {
+          ...current,
+          metin,
+          metinNormalized,
+          ogun,
+          searchKey,
+          toplamKullanim: (current.toplamKullanim || 0) + 1,
+          sonKullanim: now,
+          updatedAt: now,
+        };
+      });
+
+      if (kresId) {
+        await metaRef.child('kresIdler').child(kresId).set(true);
+        const metaSnap = await metaRef.child('kresIdler').once('value');
+        const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
+        await poolRef.child('kresSayisi').set(kresSayisi);
+      }
     }
 
     return null;
