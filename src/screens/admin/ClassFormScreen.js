@@ -13,6 +13,7 @@ import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { YAS_GRUPLARI } from '../../constants';
 
 function asArray(value) {
   if (Array.isArray(value)) return value;
@@ -139,13 +140,21 @@ export default function ClassFormScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>Yaş Grubu *</Text>
-            <TextInput
-              style={styles.input}
-              value={yasGrubu}
-              onChangeText={setYasGrubu}
-              placeholder="Örn: 2-3 yaş"
-              placeholderTextColor="#999"
-            />
+            <View style={styles.chipWrap}>
+              {YAS_GRUPLARI.map((item) => {
+                const active = yasGrubu === item.label;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[styles.yasChip, active && styles.yasChipActive]}
+                    onPress={() => setYasGrubu(item.label)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.yasChipText, active && styles.yasChipTextActive]}>{item.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           <TouchableOpacity
@@ -182,6 +191,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  yasChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1, borderColor: '#ddd', backgroundColor: '#fff' },
+  yasChipActive: { backgroundColor: '#3C3489', borderColor: '#3C3489' },
+  yasChipText: { fontWeight: '700', fontSize: 13, color: '#333' },
+  yasChipTextActive: { color: '#fff' },
   saveButton: {
     backgroundColor: '#3C3489',
     borderRadius: 8,
