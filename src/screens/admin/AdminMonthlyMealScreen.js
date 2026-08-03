@@ -110,9 +110,9 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       monthKey,
       kaynak: KAYNAK,
       valueMapper: (record) => ({
-        kahvalti: record.kahvalti || '',
-        ogle: record.ogle || '',
-        araOgun: record.araOgun || '',
+        kahvalti: record.ogunler?.kahvalti || '',
+        ogle: record.ogunler?.ogle || '',
+        araOgun: record.ogunler?.araOgun || '',
       }),
     }).then((loadedValues) => {
       if (cancelled) return;
