@@ -3,8 +3,8 @@
 // Öğretmen günlük yemek girişi + yemek fotoğrafı + aylık kurum listesi
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { ref, push, remove, update } from 'firebase/database';
+import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { ref, push, remove, update, onValue } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { database, storage } from '../../config/firebase';
@@ -13,6 +13,62 @@ import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDa
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
 import MealAutocompleteInput from '../../components/MealAutocompleteInput';
+import MonthlyCalendarView from '../../components/MonthlyCalendarView';
+import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
+import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
+import { createNotification } from '../../services/notificationCenter';
+import {
+  getDaysOfMonth,
+  getMonthKey,
+  getMonthLabel,
+  shiftMonth,
+  createInitialValues,
+  countPublished,
+  publishMonth,
+  unpublishMonth,
+  copyFromPreviousMonth,
+  fetchActiveMonthValues,
+} from '../../services/monthlyDocuments';
+
+// FAZ 3 — Öğretmen artık admin ile AYNI "aylık yemek listesi" belgesini
+// (kurum geneli, yemekListeleri/admin_aylik) yazabiliyor. Önceden "Aylık"
+// sekmesi sadece yöneticinin yayınladığını GÖRÜNTÜLÜYORDU, yazma yoktu.
+const MONTHLY_NODE_PATH = 'yemekListeleri';
+const MONTHLY_KAYNAK = 'admin_aylik';
+
+function emptyMonthlyMealValue() {
+  return { kahvalti: '', ogle: '', araOgun: '' };
+}
+
+function hasMonthlyMealContent(value) {
+  if (!value) return false;
+  return !!(String(value.kahvalti || '').trim() || String(value.ogle || '').trim() || String(value.araOgun || '').trim());
+}
+
+function buildMonthlyMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now }) {
+  return {
+    kresId,
+    sinifId: null,
+    tip: 'aylik',
+    kaynak,
+    ayKey: monthKey,
+    tarih: day.dateKey,
+    baslik: `${monthLabel} Yemek Listesi`,
+    ogunler: {
+      kahvalti: String(value.kahvalti || '').trim(),
+      ogle: String(value.ogle || '').trim(),
+      araOgun: String(value.araOgun || '').trim(),
+    },
+    aktif: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function monthlyMealPreview(value) {
+  if (!hasMonthlyMealContent(value)) return '';
+  return [value?.kahvalti, value?.ogle, value?.araOgun].filter(Boolean).join(' · ');
+}
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -177,6 +233,210 @@ export default function TeacherMealsScreen() {
   const [mealPhoto, setMealPhoto] = useState(null);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
+
+  // FAZ 3 — Aylık yemek listesi editörü (öğretmen artık burada yazabiliyor,
+  // sadece görüntülemiyor). Admin tarafındaki AdminMonthlyMealScreen ile
+  // AYNI kayıt (kurum geneli, aynı NODE_PATH/kaynak) üzerinde çalışır.
+  const [monthDate, setMonthDate] = useState(new Date());
+  const days = useMemo(() => getDaysOfMonth(monthDate), [monthDate]);
+  const monthKey = useMemo(() => getMonthKey(monthDate), [monthDate]);
+  const monthLabel = useMemo(() => getMonthLabel(monthDate), [monthDate]);
+
+  const [monthlyValues, setMonthlyValues] = useState(() => createInitialValues(days, emptyMonthlyMealValue));
+  const [monthlyView, setMonthlyView] = useState('list');
+  const [monthlySelectedDateKey, setMonthlySelectedDateKey] = useState('');
+  const [monthlySaving, setMonthlySaving] = useState(false);
+  const [monthlyCopying, setMonthlyCopying] = useState(false);
+  const [monthlyUnpublishing, setMonthlyUnpublishing] = useState(false);
+  const [monthlyPublishedCount, setMonthlyPublishedCount] = useState(0);
+  const [monthlySuccessToast, setMonthlySuccessToast] = useState(false);
+
+  useEffect(() => {
+    if (!kresId) {
+      setMonthlyPublishedCount(0);
+      return undefined;
+    }
+    const unsub = onValue(
+      ref(database, MONTHLY_NODE_PATH),
+      (snap) => setMonthlyPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: MONTHLY_KAYNAK })),
+      () => setMonthlyPublishedCount(0)
+    );
+    return () => unsub();
+  }, [kresId, monthKey]);
+
+  // Bu ay zaten yayınlanmışsa (admin veya başka bir öğretmen tarafından),
+  // taslağı boş bırakmak yerine mevcut veriyi geri okuyup forma dolduruyoruz.
+  useEffect(() => {
+    let cancelled = false;
+    if (!kresId) return undefined;
+
+    fetchActiveMonthValues({
+      nodePath: MONTHLY_NODE_PATH,
+      kresId,
+      monthKey,
+      kaynak: MONTHLY_KAYNAK,
+      valueMapper: (record) => ({
+        kahvalti: record.ogunler?.kahvalti || '',
+        ogle: record.ogunler?.ogle || '',
+        araOgun: record.ogunler?.araOgun || '',
+      }),
+    }).then((loadedValues) => {
+      if (cancelled) return;
+      setMonthlyValues((prev) => ({ ...prev, ...loadedValues }));
+    });
+
+    return () => { cancelled = true; };
+  }, [kresId, monthKey]);
+
+  function changeMonth(direction) {
+    const next = shiftMonth(monthDate, direction);
+    setMonthDate(next);
+    setMonthlyValues(createInitialValues(getDaysOfMonth(next), emptyMonthlyMealValue));
+    setMonthlySelectedDateKey('');
+  }
+
+  function jumpToMonth(date) {
+    setMonthDate(date);
+    setMonthlyValues(createInitialValues(getDaysOfMonth(date), emptyMonthlyMealValue));
+    setMonthlySelectedDateKey('');
+  }
+
+  function updateMonthlyField(dateKey, field, text) {
+    setMonthlyValues((prev) => ({
+      ...prev,
+      [dateKey]: { ...(prev[dateKey] || emptyMonthlyMealValue()), [field]: text },
+    }));
+  }
+
+  function clearMonthlyDay(dateKey) {
+    setMonthlyValues((prev) => ({ ...prev, [dateKey]: emptyMonthlyMealValue() }));
+  }
+
+  const monthlyDaysWithContent = useMemo(
+    () => days.map((day) => ({ ...day, hasContent: hasMonthlyMealContent(monthlyValues[day.dateKey]) })),
+    [days, monthlyValues]
+  );
+
+  const hasAnyMonthlyMeal = useMemo(() => Object.values(monthlyValues).some(hasMonthlyMealContent), [monthlyValues]);
+
+  async function handleCopyPreviousMonthlyMonth() {
+    if (!kresId) return;
+    setMonthlyCopying(true);
+    try {
+      const { values: copiedValues, found } = await copyFromPreviousMonth({
+        nodePath: MONTHLY_NODE_PATH,
+        kresId,
+        kaynak: MONTHLY_KAYNAK,
+        currentMonthDate: monthDate,
+        days,
+        valueMapper: (prevItem) => ({
+          kahvalti: prevItem?.ogunler?.kahvalti || '',
+          ogle: prevItem?.ogunler?.ogle || '',
+          araOgun: prevItem?.ogunler?.araOgun || '',
+        }),
+      });
+
+      if (!found) {
+        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir yemek listesi bulunamadı.');
+        return;
+      }
+
+      setMonthlyValues((prev) => {
+        const next = { ...prev };
+        Object.entries(copiedValues).forEach(([dateKey, value]) => {
+          if (value) next[dateKey] = value;
+        });
+        return next;
+      });
+
+      Alert.alert('Kopyalandı', `${found} günlük yemek bilgisi geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+    } finally {
+      setMonthlyCopying(false);
+    }
+  }
+
+  function confirmPublishMonthly() {
+    if (!kresId) {
+      Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+      return;
+    }
+    if (!hasAnyMonthlyMeal) {
+      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne yemek bilgisi gir.');
+      return;
+    }
+    Alert.alert(
+      'Ayı Paylaş',
+      `${monthLabel} yemek listesi yayınlansın mı? Aynı ay için eski yayın pasife alınır ve veliler yeni listeyi görür.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Yayınla', onPress: doPublishMonthly },
+      ]
+    );
+  }
+
+  async function doPublishMonthly() {
+    setMonthlySaving(true);
+    try {
+      await publishMonth({
+        nodePath: MONTHLY_NODE_PATH,
+        kresId,
+        monthKey,
+        monthLabel,
+        kaynak: MONTHLY_KAYNAK,
+        days,
+        values: monthlyValues,
+        hasContent: hasMonthlyMealContent,
+        buildRecord: buildMonthlyMealRecord,
+      });
+
+      await createNotification({
+        kresId,
+        hedefRoller: ['veli'],
+        baslik: '🍽️ Yemek listesi güncellendi',
+        mesaj: `${monthLabel} yemek listesi yayınlandı.`,
+        tip: 'yemek',
+        routeName: 'ParentMeals',
+        createdBy: teacherId || '',
+      });
+
+      setMonthlySuccessToast(true);
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Hata', 'Aylık yemek listesi yayınlanamadı.');
+    } finally {
+      setMonthlySaving(false);
+    }
+  }
+
+  function confirmUnpublishMonthly() {
+    if (!kresId || monthlyPublishedCount === 0) return;
+    Alert.alert(
+      'Yayından Kaldır',
+      `${monthLabel} için yayınlanmış yemek listesi kaldırılsın mı? Veliler artık bu ayın listesini göremeyecek.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Kaldır', style: 'destructive', onPress: doUnpublishMonthly },
+      ]
+    );
+  }
+
+  async function doUnpublishMonthly() {
+    setMonthlyUnpublishing(true);
+    try {
+      await unpublishMonth({ nodePath: MONTHLY_NODE_PATH, kresId, monthKey, kaynak: MONTHLY_KAYNAK });
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+    } finally {
+      setMonthlyUnpublishing(false);
+    }
+  }
+
+  const monthlySelectedDay = days.find((day) => day.dateKey === monthlySelectedDateKey) || null;
+  const monthlySelectedValue = monthlyValues[monthlySelectedDateKey] || emptyMonthlyMealValue();
 
   const visibleMeals = useMemo(() => {
     return meals
@@ -382,6 +642,7 @@ export default function TeacherMealsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message="Yemek listesi kaydedildi" onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={monthlySuccessToast} message={`${monthLabel} yemek listesi yayınlandı`} onHide={() => setMonthlySuccessToast(false)} />
       <ScreenHeader navigation={navigation} title="Yemek Listesi" subtitle={currentClass?.ad || 'Sınıfım'} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -468,17 +729,75 @@ export default function TeacherMealsScreen() {
               </View>
             </>
           ) : tab === 'monthly' ? (
-            monthlyMeals.length === 0 ? (
-              <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
-            ) : (
-              <>
-                <View style={styles.monthInfoCard}>
-                  <Text style={styles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
-                  <Text style={styles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
+            <>
+              <View style={styles.monthCard}>
+                <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(-1)} activeOpacity={0.8}>
+                  <Text style={styles.monthButtonText}>‹</Text>
+                </TouchableOpacity>
+                <View style={styles.monthCenter}>
+                  <Text style={styles.monthLabel}>{monthLabel}</Text>
+                  <Text style={styles.monthHint}>{days.length} günlük plan</Text>
                 </View>
-                {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
-              </>
-            )
+                <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
+                  <Text style={styles.monthButtonText}>›</Text>
+                </TouchableOpacity>
+              </View>
+
+              {monthlyPublishedCount > 0 ? (
+                <View style={styles.publishedCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
+                    <Text style={styles.publishedText}>Veliler şu an bu ayın listesini görüyor.</Text>
+                  </View>
+                  <TouchableOpacity disabled={monthlyUnpublishing} style={[styles.unpublishButton, monthlyUnpublishing && { opacity: 0.6 }]} onPress={confirmUnpublishMonthly} activeOpacity={0.85}>
+                    <Text style={styles.unpublishButtonText}>{monthlyUnpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <View style={styles.utilityRow}>
+                <TouchableOpacity disabled={monthlyCopying} style={[styles.copyButton, styles.utilityFlex, monthlyCopying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonthlyMonth} activeOpacity={0.85}>
+                  <Text style={styles.copyButtonText}>{monthlyCopying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+                </TouchableOpacity>
+                <MonthlyArchivePicker
+                  kresId={kresId}
+                  nodePath={MONTHLY_NODE_PATH}
+                  kaynak={MONTHLY_KAYNAK}
+                  currentMonthKey={monthKey}
+                  onSelectMonth={jumpToMonth}
+                  theme={THEME}
+                />
+              </View>
+
+              <MonthlyCalendarView
+                days={monthlyDaysWithContent}
+                view={monthlyView}
+                onChangeView={setMonthlyView}
+                selectedDateKey={monthlySelectedDateKey}
+                onSelectDay={setMonthlySelectedDateKey}
+                theme={THEME}
+                renderDayPreview={(day) => {
+                  const preview = monthlyMealPreview(monthlyValues[day.dateKey]);
+                  return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+                }}
+              />
+
+              <TouchableOpacity disabled={monthlySaving} style={[styles.saveButton, { opacity: monthlySaving ? 0.6 : 1 }]} onPress={confirmPublishMonthly} activeOpacity={0.85}>
+                {monthlySaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{monthLabel} Listesini Yayınla</Text>}
+              </TouchableOpacity>
+
+              <View style={{ marginTop: 14 }}>
+                <MonthlyDocumentPdfBar
+                  kresId={kresId}
+                  nodePath={MONTHLY_NODE_PATH}
+                  kaynak={MONTHLY_KAYNAK}
+                  docType="yemek"
+                  monthKey={monthKey}
+                  monthLabel={monthLabel}
+                  theme={THEME}
+                />
+              </View>
+            </>
           ) : dailyMeals.length === 0 ? (
             <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
           ) : (
@@ -486,6 +805,50 @@ export default function TeacherMealsScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={!!monthlySelectedDay} transparent animationType="slide" onRequestClose={() => setMonthlySelectedDateKey('')}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{monthlySelectedDay?.label || ''}</Text>
+              <TouchableOpacity onPress={() => setMonthlySelectedDateKey('')} activeOpacity={0.8}>
+                <Text style={styles.modalClose}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+
+            <MealAutocompleteInput
+              ogun="kahvalti"
+              value={monthlySelectedValue.kahvalti}
+              onChangeText={(text) => updateMonthlyField(monthlySelectedDateKey, 'kahvalti', text)}
+              placeholder="Kahvaltı"
+              style={styles.modalInput}
+              theme={THEME}
+            />
+            <MealAutocompleteInput
+              ogun="ogle"
+              value={monthlySelectedValue.ogle}
+              onChangeText={(text) => updateMonthlyField(monthlySelectedDateKey, 'ogle', text)}
+              placeholder="Öğle yemeği"
+              style={styles.modalInput}
+              theme={THEME}
+            />
+            <MealAutocompleteInput
+              ogun="araOgun"
+              value={monthlySelectedValue.araOgun}
+              onChangeText={(text) => updateMonthlyField(monthlySelectedDateKey, 'araOgun', text)}
+              placeholder="Ara öğün"
+              style={styles.modalInput}
+              theme={THEME}
+            />
+
+            {hasMonthlyMealContent(monthlySelectedValue) ? (
+              <TouchableOpacity style={styles.modalClearButton} onPress={() => clearMonthlyDay(monthlySelectedDateKey)} activeOpacity={0.85}>
+                <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -557,6 +920,31 @@ const styles = StyleSheet.create({
   monthInfoCard: { backgroundColor: THEME.primarySoft, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
   monthInfoTitle: { color: THEME.primary, fontWeight: '900', fontSize: 15 },
   monthInfoText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 4 },
+  monthCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: THEME.primary, borderRadius: 22, padding: 14, marginBottom: 12 },
+  monthButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' },
+  monthButtonText: { color: '#fff', fontSize: 30, fontWeight: '900', marginTop: -2 },
+  monthCenter: { alignItems: 'center' },
+  monthLabel: { color: '#fff', fontSize: 20, fontWeight: '900' },
+  monthHint: { color: 'rgba(255,255,255,0.82)', fontWeight: '700', marginTop: 3 },
+  publishedCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  publishedTitle: { color: THEME.text, fontSize: 14, fontWeight: '900' },
+  publishedText: { color: THEME.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
+  unpublishButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: THEME.red },
+  unpublishButtonText: { color: '#fff', fontWeight: '900', fontSize: 12 },
+  copyButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  utilityRow: { flexDirection: 'row', gap: 10, marginBottom: 14, alignItems: 'stretch' },
+  utilityFlex: { flex: 1 },
+  copyButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 14 },
+  previewText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 3 },
+  previewEmpty: { color: '#C7C9D6', fontWeight: '700', fontSize: 12, marginTop: 3 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: THEME.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, paddingBottom: 30 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
+  modalClose: { color: THEME.primary, fontWeight: '900' },
+  modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
+  modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
+  modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
   card: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
   type: { color: THEME.primary, fontWeight: '900', marginBottom: 7 },
   title: { fontSize: 17, fontWeight: '900', color: THEME.text },
