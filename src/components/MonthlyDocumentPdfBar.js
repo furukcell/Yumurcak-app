@@ -52,6 +52,14 @@ function fetchPublishedRecords({ nodePath, kresId, monthKey, kaynak, sinifId }) 
   });
 }
 
+function docTypeLabel(docType) {
+  if (docType === 'yemek') return 'Yemek Listesi';
+  if (docType === 'bulten') return 'Aylık Bülten';
+  if (docType === 'nobet') return 'Nöbet Çizelgesi';
+  if (docType === 'gorev') return 'Personel Görev Listesi';
+  return 'Ders Programı';
+}
+
 export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docType, monthKey, monthLabel, sinifId, sinifAd, theme }) {
   const [busy, setBusy] = useState('');
   const palette = theme || { primary: '#6C3DEB', primarySoft: '#EFE8FF', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8' };
@@ -87,7 +95,7 @@ export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docTyp
     setBusy('share');
     try {
       const html = await prepareHtml();
-      if (html) await shareMonthlyDocumentPdf(html, `${docType === 'yemek' ? 'Yemek Listesi' : 'Ders Programı'} - ${monthLabel}`);
+      if (html) await shareMonthlyDocumentPdf(html, `${docTypeLabel(docType)} - ${monthLabel}`);
     } catch (error) {
       console.warn('PDF paylaşılamadı:', error?.message || error);
       Alert.alert('Hata', 'Belge paylaşılamadı veya bu cihazda paylaşım desteklenmiyor.');
