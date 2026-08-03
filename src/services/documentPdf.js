@@ -49,9 +49,11 @@ function weekdayLabel(dateKey) {
   return WEEKDAY_LABELS_TR[date.getDay()] || '';
 }
 
-// records: 'yemekListeleri' ya da 'dersProgramlari'ndan gelen, o ay + sınıf
-// için zaten AKTİF (yayınlanmış) kayıtların düz listesi. Filtreleme
-// (kresId/ayKey/kaynak/sinifId) çağıran ekranın sorumluluğunda —
+// records: 'yemekListeleri' / 'dersProgramlari' için o ay + sınıf için zaten
+// AKTİF (yayınlanmış) kayıtların düz listesi (çoğul, gün-bazlı). 'aylikBultenler'
+// için ise tek bir ay için TEK kayıt olur (`records` yine dizi olarak gelir,
+// ama 0 ya da 1 elemanlı — çağıran ekranın filtrelemesi aynı kalsın diye).
+// Filtreleme (kresId/ayKey/kaynak/sinifId) çağıran ekranın sorumluluğunda —
 // bu fonksiyon sadece elindeki kayıtları render eder.
 export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, records }) {
   const kurumAd = escapeHtml(kres?.ad || 'Kreş');
@@ -60,8 +62,14 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
   const yonetici = escapeHtml(kres?.yoneticiAd || '');
   const logoUrl = kres?.logoUrl || '';
 
+  if (docType === 'bulten' || docType === 'gorev') {
+    return buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLabel, record: (records || [])[0] });
+  }
+
+  const TITLES = { yemek: 'Aylık Yemek Listesi', ders: 'Aylık Ders Programı', nobet: 'Aylık Nöbet Çizelgesi' };
   const isMeal = docType === 'yemek';
-  const title = isMeal ? 'Aylık Yemek Listesi' : 'Aylık Ders Programı';
+  const isDuty = docType === 'nobet';
+  const title = TITLES[docType] || 'Aylık Belge';
 
   const sorted = [...(records || [])].sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
 
@@ -80,6 +88,15 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
         </tr>`;
     }
 
+    if (isDuty) {
+      return `
+        <tr>
+          <td>${escapeHtml(dateLabel)}<br/><span class="weekday">${escapeHtml(day)}</span></td>
+          <td>${escapeHtml(item.personel || '')}</td>
+          <td>${escapeHtml(item.not || '')}</td>
+        </tr>`;
+    }
+
     return `
       <tr>
         <td>${escapeHtml(dateLabel)}<br/><span class="weekday">${escapeHtml(day)}</span></td>
@@ -90,6 +107,8 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
 
   const headerCols = isMeal
     ? '<th>Tarih</th><th>Kahvaltı</th><th>Öğle Yemeği</th><th>Ara Öğün</th>'
+    : isDuty
+    ? '<th>Tarih</th><th>Nöbetçi Personel</th><th>Not</th>'
     : '<th>Tarih</th><th>Etkinlik</th><th>Açıklama</th>';
 
   const colSpan = isMeal ? 4 : 3;
@@ -137,6 +156,277 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
     </div>
   </body>
   </html>`;
+}
+
+// Aylık Bülten: yemek/ders gibi gün-bazlı tablo değil, başlıklı bölümlerden
+// (bkz. AdminMonthlyBulletinScreen.js) oluşan bir haber bülteni sayfası.
+function buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLabel, record }) {
+  const baslik = escapeHtml(record?.baslik || 'Aylık Belge');
+  const bolumler = Array.isArray(record?.bolumler) ? record.bolumler : [];
+
+  const sectionsHtml = bolumler
+    .filter((section) => String(section?.icerik || '').trim())
+    .map((section) => `
+      <div class="section">
+        ${section?.baslik ? `<h2>${escapeHtml(section.baslik)}</h2>` : ''}
+        <p>${escapeHtml(section.icerik).replace(/\n/g, '<br/>')}</p>
+      </div>`)
+    .join('');
+
+  return `
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #191A23; padding: 24px; }
+      .header { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #6C3DEB; padding-bottom: 14px; margin-bottom: 18px; }
+      .header img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; }
+      .kurum-ad { font-size: 20px; font-weight: 900; color: #6C3DEB; margin: 0; }
+      .kurum-meta { font-size: 11px; color: #707386; margin: 2px 0 0; }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      .subtitle { font-size: 12px; color: #707386; margin: 0 0 20px; }
+      .section { margin-bottom: 18px; }
+      h2 { font-size: 13px; color: #4B22B8; margin: 0 0 6px; }
+      p { font-size: 12px; line-height: 1.6; margin: 0; }
+      .empty { text-align: center; color: #707386; padding: 18px; }
+      .signature { margin-top: 40px; font-size: 11px; text-align: right; }
+      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: space-between; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" />` : ''}
+      <div>
+        <p class="kurum-ad">${kurumAd}</p>
+        <p class="kurum-meta">${[adres, telefon].filter(Boolean).join(' · ')}</p>
+      </div>
+    </div>
+    <h1>${baslik}</h1>
+    <p class="subtitle">${escapeHtml(monthLabel)}</p>
+    ${sectionsHtml || '<p class="empty">Bu ay için yayınlanmış içerik yok.</p>'}
+    ${yonetici ? `<div class="signature">Onaylayan: ${yonetici}</div>` : ''}
+    <div class="footer">
+      <span>Yumurcak</span>
+      <span>${escapeHtml(new Date().toLocaleDateString('tr-TR'))} tarihinde oluşturuldu</span>
+    </div>
+  </body>
+  </html>`;
+}
+
+// ============================================================
+// FAZ 8 — Ay/gün-bazlı OLMAYAN, tekil belgeler için ortak sayfa iskeleti
+// (Gezi Formu, İlaç Takip Formu, Servis Listesi, Doğum Günü Takvimi).
+// Yukarıdaki iki fonksiyon (aylık tablo + bülten) kendi HTML'ini kendi
+// üretiyor durumda kalsın diye DOKUNULMADI (regresyon riski) — bu yeni
+// belge türleri için ayrı, ortak bir sarmalayıcı kullanılıyor.
+// ============================================================
+function wrapDocumentPage({ kurumAd, adres, telefon, yonetici, logoUrl, title, subtitle, bodyHtml, extraStyles = '' }) {
+  return `
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #191A23; padding: 24px; }
+      .header { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #6C3DEB; padding-bottom: 14px; margin-bottom: 18px; }
+      .header img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; }
+      .kurum-ad { font-size: 20px; font-weight: 900; color: #6C3DEB; margin: 0; }
+      .kurum-meta { font-size: 11px; color: #707386; margin: 2px 0 0; }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      .subtitle { font-size: 12px; color: #707386; margin: 0 0 18px; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 14px; }
+      th { background: #EFE8FF; color: #4B22B8; text-align: left; padding: 8px; border: 1px solid #EEEAF8; }
+      td { padding: 8px; border: 1px solid #EEEAF8; vertical-align: top; }
+      .info-table td:first-child { font-weight: 700; color: #4B22B8; width: 32%; background: #FAFAFF; }
+      .empty { text-align: center; color: #707386; padding: 18px; }
+      .signature-row { display: flex; justify-content: space-between; margin-top: 44px; }
+      .signature-box { width: 45%; border-top: 1px solid #191A23; padding-top: 6px; font-size: 11px; text-align: center; }
+      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: space-between; }
+      ${extraStyles}
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" />` : ''}
+      <div>
+        <p class="kurum-ad">${kurumAd}</p>
+        <p class="kurum-meta">${[adres, telefon].filter(Boolean).join(' · ')}</p>
+      </div>
+    </div>
+    <h1>${title}</h1>
+    ${subtitle ? `<p class="subtitle">${escapeHtml(subtitle)}</p>` : ''}
+    ${bodyHtml}
+    ${yonetici ? `<div class="signature-row"><div class="signature-box">Onaylayan: ${yonetici}</div><div class="signature-box">Veli İmza</div></div>` : ''}
+    <div class="footer">
+      <span>Yumurcak</span>
+      <span>${escapeHtml(new Date().toLocaleDateString('tr-TR'))} tarihinde oluşturuldu</span>
+    </div>
+  </body>
+  </html>`;
+}
+
+// Gezi Formu: tek bir kayıt (bkz. AdminGeziFormEditScreen.js). Yayınlama/ay
+// kavramı yok — form oluşturulduğu an itibariyle yazdırılabilir/paylaşılabilir.
+export function buildGeziFormuHtml({ kres, record }) {
+  const kurumAd = escapeHtml(kres?.ad || 'Kreş');
+  const adres = escapeHtml(kres?.adres || '');
+  const telefon = escapeHtml(kres?.telefon || '');
+  const yonetici = escapeHtml(kres?.yoneticiAd || '');
+  const logoUrl = kres?.logoUrl || '';
+
+  const rows = [
+    ['Gezi Adı', record?.baslik],
+    ['Gidilecek Yer', record?.hedefYer],
+    ['Tarih', formatDateTr(record?.tarih)],
+    ['Gidiş Saati', record?.gidisSaati],
+    ['Dönüş Saati', record?.donusSaati],
+    ['Sınıf', record?.sinifAd],
+    ['Sorumlu Personel', record?.sorumluPersonel],
+    ['Veli İzni Gerekli mi', record?.izinGerekliMi ? 'Evet' : 'Hayır'],
+  ]
+    .filter(([, value]) => String(value || '').trim())
+    .map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
+    .join('');
+
+  const aciklama = String(record?.aciklama || '').trim();
+
+  const bodyHtml = `
+    <table class="info-table"><tbody>${rows}</tbody></table>
+    ${aciklama ? `<p><strong>Açıklama:</strong> ${escapeHtml(aciklama).replace(/\n/g, '<br/>')}</p>` : ''}
+    ${record?.izinGerekliMi ? '<p style="margin-top:18px;color:#707386;">Bu formu imzalayarak çocuğumun yukarıda belirtilen geziye katılmasına izin veriyorum.</p>' : ''}
+  `;
+
+  return wrapDocumentPage({
+    kurumAd, adres, telefon, yonetici, logoUrl,
+    title: 'Gezi Formu',
+    subtitle: record?.baslik || '',
+    bodyHtml,
+  });
+}
+
+// İlaç Takip Formu: tek bir ilaç kürü kaydı + günlük uygulama log'u.
+// DİKKAT: bu bir sağlık belgesidir — çıktısı fiziksel olarak veli onayı ve
+// personel imzası için kullanılmak üzere tasarlandı; ekrandaki verinin
+// eksiksiz/doğru girildiğinden emin olunmalı.
+export function buildIlacTakipHtml({ kres, record }) {
+  const kurumAd = escapeHtml(kres?.ad || 'Kreş');
+  const adres = escapeHtml(kres?.adres || '');
+  const telefon = escapeHtml(kres?.telefon || '');
+  const yonetici = escapeHtml(kres?.yoneticiAd || '');
+  const logoUrl = kres?.logoUrl || '';
+
+  const infoRows = [
+    ['Çocuk', record?.cocukAdi],
+    ['İlaç Adı', record?.ilacAdi],
+    ['Doz', record?.doz],
+    ['Uygulama Şekli', record?.uygulamaSekli],
+    ['Başlangıç Tarihi', formatDateTr(record?.baslangicTarihi)],
+    ['Bitiş Tarihi', formatDateTr(record?.bitisTarihi)],
+    ['Veli Onayı', record?.veliOnayi ? 'Alındı' : 'Bekleniyor'],
+  ]
+    .filter(([, value]) => String(value || '').trim())
+    .map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
+    .join('');
+
+  const kayitlar = Object.entries(record?.kayitlar || {})
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([tarih, kayit]) => `
+      <tr>
+        <td>${escapeHtml(formatDateTr(tarih))}</td>
+        <td>${escapeHtml(kayit?.saat || '')}</td>
+        <td>${kayit?.verildi ? '✅ Verildi' : '—'}</td>
+        <td>${escapeHtml(kayit?.verenAdi || '')}</td>
+        <td>${escapeHtml(kayit?.not || '')}</td>
+      </tr>`)
+    .join('');
+
+  const bodyHtml = `
+    <table class="info-table"><tbody>${infoRows}</tbody></table>
+    <h2 style="font-size:13px;color:#4B22B8;margin:0 0 8px;">Günlük Uygulama Kaydı</h2>
+    <table>
+      <thead><tr><th>Tarih</th><th>Saat</th><th>Verildi mi</th><th>Veren</th><th>Not</th></tr></thead>
+      <tbody>${kayitlar || '<tr><td colspan="5" class="empty">Henüz kayıt girilmedi.</td></tr>'}</tbody>
+    </table>
+    <p style="margin-top:18px;color:#707386;">Bu form, ilacın kuruma teslim edildiğini ve velinin uygulanmasına onay verdiğini gösterir.</p>
+  `;
+
+  return wrapDocumentPage({
+    kurumAd, adres, telefon, yonetici, logoUrl,
+    title: 'İlaç Takip Formu',
+    subtitle: record?.cocukAdi ? `${record.cocukAdi} — ${record?.ilacAdi || ''}` : '',
+    bodyHtml,
+  });
+}
+
+// Servis Listesi: kresId'deki TÜM servis kullanan çocukların listesi
+// (bkz. AdminServiceScreen.js) — sürücü/görevli için tek sayfalık çıktı.
+export function buildServiceListHtml({ kres, records }) {
+  const kurumAd = escapeHtml(kres?.ad || 'Kreş');
+  const adres = escapeHtml(kres?.adres || '');
+  const telefon = escapeHtml(kres?.telefon || '');
+  const yonetici = escapeHtml(kres?.yoneticiAd || '');
+  const logoUrl = kres?.logoUrl || '';
+
+  const sorted = [...(records || [])].sort((a, b) => String(a.alisSaati || '').localeCompare(String(b.alisSaati || '')));
+
+  const rows = sorted.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.ad || '')}</td>
+      <td>${escapeHtml(item.sinifAd || '')}</td>
+      <td>${escapeHtml(item.alisSaati || '')}</td>
+      <td>${escapeHtml(item.birakisSaati || '')}</td>
+      <td>${escapeHtml(item.servisNotu || '')}</td>
+    </tr>`).join('');
+
+  const bodyHtml = `
+    <table>
+      <thead><tr><th>Çocuk</th><th>Sınıf</th><th>Alış Saati</th><th>Bırakış Saati</th><th>Not</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="empty">Servis kullanan çocuk kaydı yok.</td></tr>'}</tbody>
+    </table>
+  `;
+
+  return wrapDocumentPage({
+    kurumAd, adres, telefon, yonetici, logoUrl,
+    title: 'Servis Listesi',
+    subtitle: `${(records || []).length} çocuk`,
+    bodyHtml,
+  });
+}
+
+// Doğum Günü Takvimi: bu ay doğum günü olan çocukların listesi — elle
+// girilmiyor, `cocuklar.dogumTarihi`'nden hesaplanıyor (bkz.
+// AdminBirthdayCalendarScreen.js).
+export function buildBirthdayCalendarHtml({ kres, monthLabel, records }) {
+  const kurumAd = escapeHtml(kres?.ad || 'Kreş');
+  const adres = escapeHtml(kres?.adres || '');
+  const telefon = escapeHtml(kres?.telefon || '');
+  const yonetici = escapeHtml(kres?.yoneticiAd || '');
+  const logoUrl = kres?.logoUrl || '';
+
+  const sorted = [...(records || [])].sort((a, b) => (a.gun || 0) - (b.gun || 0));
+
+  const rows = sorted.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.gun)}</td>
+      <td>${escapeHtml(item.ad || '')}</td>
+      <td>${escapeHtml(item.sinifAd || '')}</td>
+      <td>${item.yasOlacak != null ? `${escapeHtml(item.yasOlacak)} yaşında` : ''}</td>
+    </tr>`).join('');
+
+  const bodyHtml = `
+    <table>
+      <thead><tr><th>Gün</th><th>Çocuk</th><th>Sınıf</th><th>Kaç Yaşına Giriyor</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4" class="empty">Bu ay doğum günü olan çocuk yok.</td></tr>'}</tbody>
+    </table>
+  `;
+
+  return wrapDocumentPage({
+    kurumAd, adres, telefon, yonetici, logoUrl,
+    title: 'Doğum Günü Takvimi',
+    subtitle: monthLabel,
+    bodyHtml,
+  });
 }
 
 // Native yazdırma diyaloğunu açar — iOS/Android'de bu diyalog zaten
