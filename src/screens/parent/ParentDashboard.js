@@ -43,6 +43,7 @@ const unreadMessages = useUnreadMessagesCount(parentId);
     ['📋', 'Günlük Rapor', 'ParentReports', '#FFF0DD', '#F3B36C'],
     ['✅', 'Yoklama', 'ParentAttendance', '#E7FAD9', '#8ED36A'],
     ['🍽️', 'Yemek Listesi', 'ParentMeals', '#FFE4EA', '#F5A0B3'],
+    ['📘', 'Ders Programı', 'ParentSchedule', '#E4ECFF', '#8FA6F5'],
     ['💬', 'Mesajlar', 'ParentMessages', '#E9F0FF', '#94AFFF'],
     ['🖼️', 'Galeri', 'ParentGallery', '#E8F8E9', '#86D78B'],
     ['🎉', 'Etkinlikler', 'ParentEvents', '#EFE4FF', '#B99BF6'],
