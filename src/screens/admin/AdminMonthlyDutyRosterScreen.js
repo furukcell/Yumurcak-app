@@ -28,6 +28,7 @@ import {
   publishMonth,
   unpublishMonth,
   copyFromPreviousMonth,
+  fetchActiveMonthValues,
 } from '../../services/monthlyDocuments';
 
 const NODE_PATH = 'nobetCizelgeleri';
@@ -95,6 +96,29 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
       () => setPublishedCount(0)
     );
     return () => unsub();
+  }, [kresId, monthKey]);
+
+  // FAZ FIX — bu ay zaten yayınlanmışsa, taslağı boş bırakmak yerine
+  // yayınlanmış veriyi geri okuyup forma dolduruyoruz.
+  useEffect(() => {
+    let cancelled = false;
+    if (!kresId) return undefined;
+
+    fetchActiveMonthValues({
+      nodePath: NODE_PATH,
+      kresId,
+      monthKey,
+      kaynak: KAYNAK,
+      valueMapper: (record) => ({
+        personel: record.personel || '',
+        not: record.not || '',
+      }),
+    }).then((loadedValues) => {
+      if (cancelled) return;
+      setValues((prev) => ({ ...prev, ...loadedValues }));
+    });
+
+    return () => { cancelled = true; };
   }, [kresId, monthKey]);
 
   function changeMonth(direction) {
