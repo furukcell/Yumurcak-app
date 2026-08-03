@@ -379,7 +379,7 @@ Yumurcak zamanla kendi bilgi havuzunu oluşturacak ve öğretmenler her gün uyg
 
 ---
 
-## Faz 8 — Kullanıcı Deneyimi ve Verimlilik 🔶 DEVAM EDİYOR
+## Faz 8 — Kullanıcı Deneyimi ve Verimlilik ✅ TAMAMLANDI
 
 **Durum özeti:** Bu fazın plandaki maddelerinin çoğu aslında önceki fazlarda
 zaten karşılanmış durumda:
@@ -416,10 +416,103 @@ Etkinlik havuzuyla BİREBİR AYNI mimari, yemek metinleri için:
    yükleme akışı korunarak — `onFocus` pass-through eklendi).
 
 **Sırada (henüz yapılmadı):**
-- Yeni Şablonlar (Aylık Bülten, Nöbet Çizelgesi, Gezi Formu, İlaç Takip
-  Formu, Personel Görev Listesi, Servis Listesi, Doğum Günü Takvimi) —
-  kapsamlı, ayrı ele alınacak.
-- Hazır Duyuru Şablonları (bu aslında Faz 9'da tanımlı) — henüz yapılmadı.
+- Hazır Duyuru Şablonları (Faz 9'da tanımlı) — henüz yapılmadı.
+- Öğretmen/veli tarafına Nöbet Çizelgesi, Personel Görev Listesi, Gezi
+  Formu okuma ekranları eklenmedi (bilinçli — admin Paylaş butonuyla
+  WhatsApp vb. üzerinden dağıtıyor; istenirse eklenebilir).
+
+**Bu chat'te eklenen — Aylık Bülten ✅ TAMAMLANDI (ilk yeni şablon):**
+
+Yemek listesi/ders programından FARKLI olarak gün-bazlı değil, ay başına
+TEK kayıt (başlıklı bölümlerden oluşan bir haber bülteni). Bu yüzden
+altyapı iki şekilde genişletildi:
+
+1. **`monthlyDocuments.js`'e yeni, genel (gün-bazlı olmayan belge türleri
+   için tekrar kullanılabilir) 2 fonksiyon eklendi:**
+   `fetchActiveSingleRecord()` ve `publishSingleRecord()` — aynı
+   aktif/pasif mantığı (`isSameActivePublication`), sadece `days`/`values`
+   dizisi yerine tek kayıt. `unpublishMonth()` zaten day-array'e bağımlı
+   değildi, değişmeden aynen kullanıldı.
+2. **`aylikBultenler` node'u (yeni):** `kresId, kaynak, ayKey, tarih,
+   baslik, bolumler: [{baslik, icerik}], aktif, createdAt, updatedAt`.
+   Yazma yetkisi SADECE `superadmin`/`yonetici` (öğretmen değil — kurum
+   geneli bir iletişim belgesi olduğu için).
+3. **`documentPdf.js`:** `buildMonthlyDocumentHtml()`'e `docType: 'bulten'`
+   dalı eklendi (`buildBulletinHtml()`) — tablo değil, başlıklı
+   paragraf bölümleri render ediyor. `MonthlyDocumentPdfBar.js` da
+   `docTypeLabel()` ile bu türü destekleyecek şekilde genelleştirildi.
+4. **`MonthlyArchivePicker.js`:** opsiyonel `countLabel` prop'u eklendi
+   (varsayılan `'gün'` — geriye dönük uyumlu), bülten için `'yayın'`
+   olarak kullanılıyor (gün-bazlı olmayan belge için "1 gün" yazması
+   anlamsız olurdu).
+5. **`AdminMonthlyBulletinScreen.js` (yeni):** ay geçişi, başlık +
+   dinamik "Bölüm Ekle/Sil" listesi (varsayılan 3 bölüm iskeletiyle:
+   "Bu Ay Öne Çıkanlar", "Yaklaşan Etkinlikler", "Duyurular ve
+   Hatırlatmalar"), Geçen Ayı Kopyala, Arşiv, Yayınla/Yayından Kaldır,
+   PDF bar — hepsi mevcut ortak component'lerle. `DashboardScreen.js` ve
+   `AdminStack.js`'e bağlandı.
+6. **`ParentBulletinScreen.js` (yeni, sadece okuma):** o ay yayınlanmış
+   bülteni ekranda gösteriyor + aynı PDF barı. `ParentDashboard.js` ve
+   `ParentStack.js`'e bağlandı.
+
+**Bilinçli olarak yapılmayan:** Öğretmen tarafı için ayrı bir okuma
+ekranı eklenmedi (bülten kurum-veli iletişimi amaçlı; öğretmenler
+isterse ileride kolayca `ParentBulletinScreen`'in aynısı `Teacher`
+tarafına da eklenebilir — altyapı zaten hazır).
+
+**Bu chat'te eklenen — kalan 6 şablon ✅ TAMAMLANDI (Faz 8 tamamen bitti):**
+
+1. **Nöbet Çizelgesi** (`AdminMonthlyDutyRosterScreen.js`, node:
+   `nobetCizelgeleri`) — yemek/ders programıyla AYNI gün-bazlı altyapı
+   (`publishMonth`/`unpublishMonth`/`copyFromPreviousMonth`/
+   `MonthlyCalendarView`), tek fark: sınıf yok (kurum geneli), alan
+   sadece "Nöbetçi Personel" + "Not". `documentPdf.js`'e `docType: 'nobet'`
+   tablo dalı eklendi. Yazma yetkisi superadmin/yönetici.
+2. **Personel Görev Listesi** (`AdminMonthlyStaffTasksScreen.js`, node:
+   `personelGorevListeleri`) — Aylık Bülten'in BİREBİR aynı mekanizması
+   (`fetchActiveSingleRecord`/`publishSingleRecord`), farklı varsayılan
+   bölüm başlıkları ("Öğretmenler", "Mutfak / Temizlik Personeli", "Genel
+   Hatırlatmalar"). `docType: 'gorev'`, aynı `buildBulletinHtml` render
+   ediyor (bölüm bazlı belgeler için tek renderer).
+3. **Servis Listesi** (`AdminServiceScreen.js`) — `servisBilgileri/{childId}`
+   node'u zaten VARDI ama admin giriş ekranı yoktu (sadece
+   `ParentServiceScreen.js` okuyordu) — bu eksik kapatıldı: her çocuk için
+   servis kullanıyor mu / saatler / not düzenlenebiliyor + servis kullanan
+   tüm çocukların sürücü için tek sayfalık yazdırılabilir listesi
+   (`buildServiceListHtml`, ay kavramı yok, `MonthlyDocumentPdfBar`
+   KULLANILMIYOR — doğrudan print/share çağrılıyor).
+4. **Doğum Günü Takvimi** (`AdminBirthdayCalendarScreen.js`) — elle
+   girilen bir belge DEĞİL, `cocuklar.dogumTarihi`'nden (zaten var olan
+   alan) HESAPLANAN bir rapor. Yeni DB node'u yok. Ay geçişi var
+   (`monthlyDocuments.js`'in `getMonthLabel`/`shiftMonth` fonksiyonları
+   ödünç alındı), `buildBirthdayCalendarHtml` ile yazdırılabiliyor.
+5. **Gezi Formu** (`AdminGeziFormListScreen.js` +
+   `AdminGeziFormEditScreen.js`, node: `geziFormlari`) — ay/gün kavramı
+   OLMAYAN, her gezi kendi bağımsız kaydı olan ilk belge türü (liste +
+   oluştur/düzenle + yazdır/paylaş/sil). Tarih girişi `ChildFormScreen`'deki
+   ile aynı UX'i kullanıyor (`normalizeChildBirthDate` ödünç alındı).
+   Yazma yetkisi superadmin/yönetici/öğretmen.
+6. **İlaç Takip Formu** (öğretmen tarafında üç ekran:
+   `TeacherMedicationFormListScreen.js`, `...FormEditScreen.js`,
+   `...FormDetailScreen.js`, node: `ilacTakipFormlari`) — mevcut
+   `TeacherMedicalScreen`'deki statik "ilaçlar" alanından FARKLI: burada
+   belirli bir ilaç kürü için tarihli, günlük uygulama LOG'u tutuluyor
+   ("Bugün Verildi" tek dokunuşla o günü işaretliyor, kim/ne zaman
+   verdiğini kaydediyor). **⚠️ Bu bir sağlık belgesi** — çıktısı fiziksel
+   veli onayı + personel imzası için tasarlandı; ekrana girilen doz/tarih
+   bilgisinin doğruluğu kurumun sorumluluğunda, uygulama sadece veri
+   girişini/takibi kolaylaştırıyor. Veli onayı işaretlenmeden kaydetmeye
+   çalışılırsa uyarı çıkıyor (engellemiyor, sadece uyarıyor).
+
+**Ortak mimari not:** Bu 6 şablonun 2'si (Nöbet Çizelgesi, Personel Görev
+Listesi) tamamen var olan aylık-belge altyapısını (gün-bazlı veya
+tek-kayıt) kullanıyor — sıfır yeni mimari. Diğer 4'ü (Servis, Doğum Günü,
+Gezi, İlaç) ay kavramına bağlı olmadığı için `documentPdf.js`'e yeni,
+paylaşılan bir `wrapDocumentPage()` sarmalayıcı eklendi ve bu 4 tür için
+ayrı, tekil-kayıt render fonksiyonları yazıldı — var olan aylık tablo/
+bülten renderer'larına DOKUNULMADI (regresyon riski sıfıra indirildi).
+
+
 
 
 
