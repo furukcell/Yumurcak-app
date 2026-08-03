@@ -198,6 +198,61 @@ export async function unpublishMonth({ nodePath, kresId, monthKey, kaynak, match
   return Object.keys(updates).length / 2;
 }
 
+// FAZ FIX — Gün-dizisi belgeleri (yemek listesi, ders programı, nöbet
+// çizelgesi) o ay zaten yayınlanmışsa, ekrana girildiğinde/ay değiştiğinde
+// bu yayınlanmış kaydı geri okuyup taslak state'ine ("values") doldurmak
+// için kullanılır. Bu olmadan ekran her zaman boş şablonla açılıyor ve
+// kullanıcı "girdiğim veri gitti / düzenleyemiyorum" sanıyordu.
+//
+// valueMapper(record) -> o günün taslak value şekli (ekrana özel alanlar)
+export async function fetchActiveMonthValues({ nodePath, kresId, monthKey, kaynak, matchExtra, valueMapper }) {
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
+  const values = {};
+
+  Object.values(snapshotValue || {}).forEach((item) => {
+    if (!isSameActivePublication(item, { kresId, monthKey, kaynak, matchExtra })) return;
+    const dateKey = item.tarih;
+    if (!dateKey) return;
+    values[dateKey] = valueMapper(item);
+  });
+
+  return values;
+}
+
+// FAZ FIX — Bülten / Personel Görev Listesi gibi "ay başına TEK kayıt"
+// olan belge türleri için: o ayın aktif (yayınlanmış) kaydını döner,
+// yoksa null. Ekranlar bunu useEffect içinde çağırıp formu doldurur.
+export async function fetchActiveSingleRecord({ nodePath, kresId, monthKey, kaynak, matchExtra }) {
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
+  const match = Object.values(snapshotValue || {}).find((item) =>
+    isSameActivePublication(item, { kresId, monthKey, kaynak, matchExtra })
+  );
+  return match || null;
+}
+
+// FAZ FIX — "Ay başına TEK kayıt" belgelerin publishMonth karşılığı:
+// aynı ay/kaynak için eski aktif kaydı pasife alır, tek yeni kayıt yazar.
+//
+// buildRecord({ kresId, monthKey, kaynak, now }) -> DB'ye yazılacak obje
+export async function publishSingleRecord({ nodePath, kresId, monthKey, kaynak, buildRecord, matchExtra }) {
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
+  const updates = {};
+  const now = Date.now();
+
+  Object.entries(snapshotValue).forEach(([id, item]) => {
+    if (isSameActivePublication(item, { kresId, monthKey, kaynak, matchExtra })) {
+      updates[`${nodePath}/${id}/aktif`] = false;
+      updates[`${nodePath}/${id}/updatedAt`] = now;
+    }
+  });
+
+  const key = push(ref(database, nodePath)).key;
+  updates[`${nodePath}/${key}`] = buildRecord({ kresId, monthKey, kaynak, now });
+
+  await update(ref(database), updates);
+  return key;
+}
+
 // "Geçen Ayı Kopyala": önceki ayın yayınlanmış (aktif) kayıtlarını
 // gün numarasına göre eşleyip mevcut ayın taslak değerlerine dönüştürür.
 // valueMapper(prevRecord) -> bu ayın taslak value şekli
