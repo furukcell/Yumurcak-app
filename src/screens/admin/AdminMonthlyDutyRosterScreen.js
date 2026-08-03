@@ -332,19 +332,17 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
             <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Çizelgesini Yayınla`}</Text>
           </TouchableOpacity>
 
-          {publishedCount > 0 ? (
-            <View style={{ marginTop: 14 }}>
-              <MonthlyDocumentPdfBar
-                kresId={kresId}
-                nodePath={NODE_PATH}
-                kaynak={KAYNAK}
-                docType="nobet"
-                monthKey={monthKey}
-                monthLabel={monthLabel}
-                theme={theme}
-              />
-            </View>
-          ) : null}
+          <View style={{ marginTop: 14 }}>
+            <MonthlyDocumentPdfBar
+              kresId={kresId}
+              nodePath={NODE_PATH}
+              kaynak={KAYNAK}
+              docType="nobet"
+              monthKey={monthKey}
+              monthLabel={monthLabel}
+              theme={theme}
+            />
+          </View>
         </ScrollView>
 
         <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
