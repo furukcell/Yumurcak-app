@@ -27,6 +27,13 @@ import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
 import AdminStatisticsScreen from '../screens/admin/AdminStatisticsScreen';
 import AdminGalleryScreen from '../screens/admin/AdminGalleryScreen';
 import AdminMonthlyMealScreen from '../screens/admin/AdminMonthlyMealScreen';
+import AdminMonthlyBulletinScreen from '../screens/admin/AdminMonthlyBulletinScreen';
+import AdminMonthlyStaffTasksScreen from '../screens/admin/AdminMonthlyStaffTasksScreen';
+import AdminMonthlyDutyRosterScreen from '../screens/admin/AdminMonthlyDutyRosterScreen';
+import AdminServiceScreen from '../screens/admin/AdminServiceScreen';
+import AdminBirthdayCalendarScreen from '../screens/admin/AdminBirthdayCalendarScreen';
+import AdminGeziFormListScreen from '../screens/admin/AdminGeziFormListScreen';
+import AdminGeziFormEditScreen from '../screens/admin/AdminGeziFormEditScreen';
 import AdminMonthlyScheduleScreen from '../screens/admin/AdminMonthlyScheduleScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
@@ -47,6 +54,13 @@ export default function AdminStack() {
     stackScreen('AdminStatistics', AdminStatisticsScreen, { title: 'Kurum İstatistikleri' }),
     stackScreen('AdminGallery', AdminGalleryScreen, { headerShown: false }),
     stackScreen('AdminMonthlyMeal', AdminMonthlyMealScreen, { title: 'Aylık Yemek Listesi' }),
+    stackScreen('AdminMonthlyBulletin', AdminMonthlyBulletinScreen, { title: 'Aylık Bülten' }),
+    stackScreen('AdminMonthlyStaffTasks', AdminMonthlyStaffTasksScreen, { title: 'Personel Görev Listesi' }),
+    stackScreen('AdminMonthlyDutyRoster', AdminMonthlyDutyRosterScreen, { title: 'Nöbet Çizelgesi' }),
+    stackScreen('AdminService', AdminServiceScreen, { title: 'Servis Listesi' }),
+    stackScreen('AdminBirthdayCalendar', AdminBirthdayCalendarScreen, { title: 'Doğum Günü Takvimi' }),
+    stackScreen('AdminGeziFormList', AdminGeziFormListScreen, { title: 'Gezi Formları' }),
+    stackScreen('AdminGeziFormEdit', AdminGeziFormEditScreen, { title: 'Gezi Formu' }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
