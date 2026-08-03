@@ -4,7 +4,7 @@
 // AdminMonthlyScheduleScreen ile AYNI veri modelini (dersProgramlari,
 // gün-bazlı kayıt, yayınla/kaldır) kullanır. Üstte "Bugün" kartı var.
 // ============================================================
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
@@ -26,6 +26,7 @@ import {
   publishMonth,
   unpublishMonth,
   copyFromPreviousMonth,
+  fetchActiveMonthValues,
   forClass,
 } from '../../services/monthlyDocuments';
 
@@ -110,6 +111,48 @@ export default function TeacherScheduleScreen() {
     return classSchedules.find((item) => item.tarih === today) || null;
   }, [classSchedules]);
 
+  // FAZ FIX — bu ay zaten yayınlanmışsa, taslağı boş bırakmak yerine
+  // yayınlanmış veriyi geri okuyup forma dolduruyoruz. Bu olmadan ekrana
+  // her girişte boş şablon görünüyor ve girilen veri "kayboldu/düzenlenemiyor"
+  // sanılıyordu.
+  useEffect(() => {
+    let cancelled = false;
+    if (!kresId || !sinifId) return undefined;
+
+    fetchActiveMonthValues({
+      nodePath: NODE_PATH,
+      kresId,
+      monthKey,
+      kaynak: KAYNAK,
+      matchExtra: forClass(sinifId),
+      valueMapper: (record) => ({
+        etkinlik: record.etkinlik || '',
+        aciklama: record.aciklama || '',
+        kategori: record.kategori || '',
+        tema: record.tema || '',
+        kazanimlar: Array.isArray(record.kazanimlar) ? record.kazanimlar : [],
+      }),
+    }).then((loadedValues) => {
+      if (cancelled) return;
+      setValues((prev) => ({ ...prev, ...loadedValues }));
+    });
+
+    return () => { cancelled = true; };
+  }, [kresId, sinifId, monthKey]);
+
+  // FAZ FIX — bu iki useMemo aşağıda, "if (loading) return" satırından SONRA
+  // tanımlıydı. React hook kurallarına aykırı: "loading" true iken bu hook'lar
+  // hiç çağrılmıyor, "loading" false olunca çağrılıyor — hook sayısı render'lar
+  // arası değişince React "Rendered more hooks than during the previous
+  // render" hatasıyla çöküyordu. Bu ekranın "atıyor uygulama" şikayetinin
+  // asıl sebebi buydu. Çözüm: tüm hook'lar erken return'den ÖNCE olmalı.
+  const daysWithContent = useMemo(
+    () => days.map((day) => ({ ...day, hasContent: hasScheduleContent(values[day.dateKey]) })),
+    [days, values]
+  );
+
+  const hasAnyEntry = useMemo(() => Object.values(values).some(hasScheduleContent), [values]);
+
   if (loading) return <LoadingState text="Ders programı hazırlanıyor..." />;
 
   function changeMonth(direction) {
@@ -171,13 +214,6 @@ export default function TeacherScheduleScreen() {
   function clearDay(dateKey) {
     setValues((prev) => ({ ...prev, [dateKey]: emptyScheduleValue() }));
   }
-
-  const daysWithContent = useMemo(
-    () => days.map((day) => ({ ...day, hasContent: hasScheduleContent(values[day.dateKey]) })),
-    [days, values]
-  );
-
-  const hasAnyEntry = useMemo(() => Object.values(values).some(hasScheduleContent), [values]);
 
   async function handleCopyPreviousMonth() {
     if (!kresId || !sinifId) return;
