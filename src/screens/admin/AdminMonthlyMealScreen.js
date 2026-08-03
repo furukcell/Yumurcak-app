@@ -22,6 +22,7 @@ import {
   publishMonth,
   unpublishMonth,
   copyFromPreviousMonth,
+  fetchActiveMonthValues,
 } from '../../services/monthlyDocuments';
 
 const NODE_PATH = 'yemekListeleri';
@@ -95,6 +96,30 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       () => setPublishedCount(0)
     );
     return () => unsub();
+  }, [kresId, monthKey]);
+
+  // FAZ FIX — bu ay zaten yayınlanmışsa, taslağı boş bırakmak yerine
+  // yayınlanmış veriyi geri okuyup forma dolduruyoruz.
+  useEffect(() => {
+    let cancelled = false;
+    if (!kresId) return undefined;
+
+    fetchActiveMonthValues({
+      nodePath: NODE_PATH,
+      kresId,
+      monthKey,
+      kaynak: KAYNAK,
+      valueMapper: (record) => ({
+        kahvalti: record.kahvalti || '',
+        ogle: record.ogle || '',
+        araOgun: record.araOgun || '',
+      }),
+    }).then((loadedValues) => {
+      if (cancelled) return;
+      setValues((prev) => ({ ...prev, ...loadedValues }));
+    });
+
+    return () => { cancelled = true; };
   }, [kresId, monthKey]);
 
   function changeMonth(direction) {
