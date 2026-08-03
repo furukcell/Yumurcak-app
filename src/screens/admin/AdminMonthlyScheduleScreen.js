@@ -31,6 +31,7 @@ import {
   publishMonth,
   unpublishMonth,
   copyFromPreviousMonth,
+  fetchActiveMonthValues,
   forClass,
 } from '../../services/monthlyDocuments';
 
@@ -125,6 +126,34 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       () => setPublishedCount(0)
     );
     return () => unsub();
+  }, [kresId, sinifId, monthKey]);
+
+  // FAZ FIX — bu ay zaten yayınlanmışsa, taslağı boş bırakmak yerine
+  // yayınlanmış veriyi geri okuyup forma dolduruyoruz. Bu olmadan ekrana
+  // her girişte boş şablon görünüyor ve girilen veri "kayboldu/düzenlenemiyor"
+  // sanılıyordu.
+  useEffect(() => {
+    let cancelled = false;
+    if (!kresId || !sinifId) return undefined;
+
+    fetchActiveMonthValues({
+      nodePath: NODE_PATH,
+      kresId,
+      monthKey,
+      kaynak: KAYNAK,
+      matchExtra: forClass(sinifId),
+      valueMapper: (record) => ({
+        etkinlik: record.etkinlik || '',
+        aciklama: record.aciklama || '',
+        kategori: record.kategori || '',
+        tema: record.tema || '',
+      }),
+    }).then((loadedValues) => {
+      if (cancelled) return;
+      setValues((prev) => ({ ...prev, ...loadedValues }));
+    });
+
+    return () => { cancelled = true; };
   }, [kresId, sinifId, monthKey]);
 
   function changeMonth(direction) {
