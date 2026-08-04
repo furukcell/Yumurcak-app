@@ -3,7 +3,7 @@
 // Veli ekleme/düzenleme formu
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, get, update } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
@@ -139,6 +139,7 @@ export default function VeliFormScreen() {
   return (
     <View style={s.screen}>
       <AppSuccessToast visible={successToast} message={veliId ? 'Veli güncellendi' : 'Veli kaydedildi'} onHide={() => setSuccessToast(false)} />
+       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView style={s.container}>
         <View style={s.form}>
           <View style={s.field}><Text style={s.label}>Kullanıcı Adı *</Text><TextInput style={s.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder="Örn: veli1" placeholderTextColor="#999" autoCapitalize="none" /></View>
@@ -157,6 +158,7 @@ export default function VeliFormScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+     </KeyboardAvoidingView>
     </View>
   );
 }
