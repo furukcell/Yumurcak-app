@@ -295,7 +295,7 @@ export default function MessageDetailScreen() {
     <View style={[styles.safeArea, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
         <View style={styles.header}>
