@@ -22,6 +22,7 @@ import { getWeekKey } from '../../utils/weeklyBadges';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import { getMealPhoto } from '../../components/MealTodayCard';
 import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
+import { MOOD_LISTESI } from '../../constants';
 
 const MEAL_LABELS = {
   kahvalti: 'Kahvaltı',
@@ -160,6 +161,15 @@ export default function ParentSummaryScreen({ navigation }) {
       .sort((a, b) => String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || '')))[0] || null;
   }, [reports, selectedChild?.id, today]);
 
+  const yesterdayReport = useMemo(() => {
+    if (!selectedChild?.id) return null;
+    const yesterdayKey = toDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    return reports
+      .filter((item) => item.cocukId === selectedChild.id)
+      .filter((item) => item.tarih === yesterdayKey)
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))[0] || null;
+  }, [reports, selectedChild?.id, today]);
+
   const todayAttendance = useMemo(() => {
     if (!selectedChild?.id) return null;
     return attendance
@@ -272,12 +282,23 @@ export default function ParentSummaryScreen({ navigation }) {
   }
 
   const mealsSummary = buildMealSummary(todayReport, todayMeal);
+  const yesterdayMealsSummary = buildMealSummary(yesterdayReport, null);
   const mood = todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || 'Bekleniyor';
   const sleep = todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || todayReport?.uyku || 'Bekleniyor');
   const entryTime = todayAttendance?.girisSaati || todayAttendance?.saat || todayAttendance?.createdTime || 'Bekleniyor';
   const attendanceLabel = todayAttendance ? (todayAttendance.durum || todayAttendance.status || 'Kreşte') : 'Bekleniyor';
   const note = todayReport?.not || todayReport?.ogretmenNotu || todayReport?.aciklama || 'Bugün için öğretmen notu henüz girilmedi.';
-  const dailyComment = buildDailyComment(mood, mealsSummary, todayEvents, note);
+  const childFirstName = (selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim || '').trim().split(' ')[0];
+  const dailyComment = buildDailyComment({
+    childFirstName,
+    mood,
+    mealsSummary,
+    yesterdayMealsSummary,
+    sleep,
+    schedules: todaySchedules,
+    events: todayEvents,
+    note,
+  });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -658,11 +679,122 @@ function getMealStatusStyle(styles, status) {
   return styles.mealWaiting;
 }
 
-function buildDailyComment(mood, mealsSummary, events, note) {
-  const mealText = getMainMealStatus(mealsSummary).toLowerCase();
-  const eventText = events.length > 0 ? `${events.length} etkinlik/program kaydı var` : 'program bilgisi henüz girilmemiş';
-  const noteText = note && note !== 'Bugün için öğretmen notu henüz girilmedi.' ? ` Öğretmen notu: ${note}` : '';
-  return `Bugün genel durum ${mood}. Yemek durumu ${mealText}. Bugün için ${eventText}.${noteText}`;
+const MEAL_LOCATIVE = {
+  kahvalti: 'kahvaltıda',
+  ogle: 'öğle yemeğinde',
+  araOgun: 'ara öğünde',
+};
+
+const MEAL_VERB_PHRASES = {
+  bitirdi: 'iyi yedi',
+  az_yedi: 'az yedi',
+  yemedi: 'pek iştahlı değildi',
+};
+
+const MEAL_EMOJI = {
+  bitirdi: '🙂',
+  az_yedi: '😐',
+  yemedi: '😕',
+};
+
+const MEAL_ORDER = { bitirdi: 0, az_yedi: 1, yemedi: 2 };
+
+function joinTurkish(list) {
+  if (list.length === 0) return '';
+  if (list.length === 1) return list[0];
+  return `${list.slice(0, -1).join(', ')} ve ${list[list.length - 1]}`;
+}
+
+function capitalizeFirst(text) {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function getMoodEmoji(mood) {
+  const found = MOOD_LISTESI.find((m) => m.label.toLowerCase() === String(mood || '').toLowerCase());
+  return found?.emoji || '';
+}
+
+// Bugünün öğün durumlarını dünkü ile kıyaslar; belirgin bir fark yoksa
+// (gürültü olmasın diye) hiçbir şey söylemez.
+function buildMealTrend(todaySummary, yesterdaySummary) {
+  const scoreOf = (summary) => {
+    const scored = summary
+      .filter((item) => MEAL_ORDER[item.status] !== undefined)
+      .map((item) => 2 - MEAL_ORDER[item.status]); // bitirdi:2, az_yedi:1, yemedi:0
+    if (scored.length === 0) return null;
+    return scored.reduce((sum, val) => sum + val, 0) / scored.length;
+  };
+  const todayScore = scoreOf(todaySummary);
+  const yesterdayScore = scoreOf(yesterdaySummary);
+  if (todayScore === null || yesterdayScore === null) return '';
+  const diff = todayScore - yesterdayScore;
+  if (diff >= 0.5) return 'Dünküne göre bugün iştahı daha iyiydi.';
+  if (diff <= -0.5) return 'Dünküne göre bugün iştahı biraz daha azdı.';
+  return '';
+}
+
+function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsSummary, sleep, schedules, events, note }) {
+  const sentences = [];
+  const namePrefix = childFirstName ? `${childFirstName} bugün` : 'Bugün';
+  let openerUsed = false;
+
+  // 1) Ruh hali — çocuğun adıyla açılış cümlesi
+  if (mood && mood !== 'Bekleniyor') {
+    const emoji = getMoodEmoji(mood);
+    sentences.push(`${namePrefix} ${emoji ? emoji + ' ' : ''}${mood.toLowerCase()} görünüyordu.`);
+    openerUsed = true;
+  }
+
+  // 2) Öğünler — önce iyi geçenler, sonra iştahsız olanlar; her biri kendi
+  // emojisi ve yumuşak bir ifadeyle, tek tek anlatılır.
+  const mealFragments = mealsSummary
+    .filter((item) => MEAL_VERB_PHRASES[item.status])
+    .sort((a, b) => MEAL_ORDER[a.status] - MEAL_ORDER[b.status])
+    .map((item) => {
+      const place = MEAL_LOCATIVE[item.key] || item.label;
+      const menuPart = item.menu ? ` (${item.menu})` : '';
+      return `${MEAL_EMOJI[item.status]} ${place}${menuPart} ${MEAL_VERB_PHRASES[item.status]}`;
+    });
+
+  if (mealFragments.length > 0) {
+    const mealSentence = `${joinTurkish(mealFragments)}.`;
+    sentences.push(openerUsed ? capitalizeFirst(mealSentence) : `${namePrefix} ${mealSentence}`);
+    openerUsed = true;
+
+    const trend = buildMealTrend(mealsSummary, yesterdayMealsSummary);
+    if (trend) sentences.push(trend);
+  }
+
+  // 3) Uyku bilgisi
+  if (sleep && sleep !== 'Bekleniyor') {
+    const sleepText = /saat/i.test(sleep) ? `😴 ${sleep} uyudu.` : `😴 Uyku durumu: ${sleep}.`;
+    sentences.push(openerUsed ? sleepText : `${namePrefix} ${sleepText}`);
+    openerUsed = true;
+  }
+
+  // 4) Bugünkü ders programı ve etkinlikler, başlıklarıyla birlikte
+  const programTitles = [...schedules, ...events]
+    .map((item) => item.baslik || item.dersAdi || item.etkinlikAdi || item.ad || '')
+    .filter(Boolean);
+  if (programTitles.length > 0) {
+    const programText = programTitles.length === 1
+      ? `programda "${programTitles[0]}" vardı.`
+      : `programda ${programTitles.map((t) => `"${t}"`).join(', ')} yer aldı.`;
+    sentences.push(openerUsed ? `Bugün ${programText}` : `${namePrefix} ${programText}`);
+    openerUsed = true;
+  }
+
+  const hasRealNote = note && note !== 'Bugün için öğretmen notu henüz girilmedi.';
+  if (hasRealNote) {
+    sentences.push(`Öğretmen notu: ${note}`);
+  }
+
+  if (sentences.length === 0) {
+    return childFirstName ? `${childFirstName} için bugün henüz bilgi girilmedi.` : 'Bugün için henüz bilgi girilmedi.';
+  }
+
+  return sentences.join(' ');
 }
 
 function getProgramTitle(item) {
