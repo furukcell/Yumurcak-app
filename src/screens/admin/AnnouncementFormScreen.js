@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator, Switch
+  ScrollView, Alert, ActivityIndicator, Switch, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { ref, set, push, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -234,7 +234,11 @@ export default function AnnouncementFormScreen() {
         message={announcementId ? 'Duyuru güncellendi' : 'Duyuru gönderildi'}
         onHide={() => setSuccessToast(false)}
       />
-
+     <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView style={styles.container}>
         <View style={styles.form}>
           <View style={styles.templateRow}>
@@ -352,6 +356,7 @@ export default function AnnouncementFormScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+     </KeyboardAvoidingView>
     </View>
   );
 }
