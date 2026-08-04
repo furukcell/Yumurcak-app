@@ -12,6 +12,8 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ref, update } from 'firebase/database';
@@ -111,6 +113,7 @@ export default function TeacherMedicalScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={successMessage} onHide={() => setSuccessToast(false)} />
       <ScreenHeader navigation={navigation} title="Medikal Bilgiler" subtitle="Alerji, ilaç ve öğretmen gözlem notları" />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {classChildren.length === 0 ? (
           <EmptyState icon="🩺" title="Çocuk yok" desc="Sınıfa çocuk bağlanınca medikal bilgiler görünür." />
@@ -259,6 +262,7 @@ export default function TeacherMedicalScreen() {
           })
         )}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
