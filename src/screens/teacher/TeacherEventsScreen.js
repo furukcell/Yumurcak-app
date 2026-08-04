@@ -3,7 +3,7 @@
 // FAZ 3: Öğretmen sadece kendi sınıfına etkinlik oluşturur
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, push } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -90,6 +90,7 @@ export default function TeacherEventsScreen() {
         rightText={showForm ? 'Kapat' : '+ Ekle'}
         onRightPress={() => setShowForm((v) => !v)}
       />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {showForm ? (
           <View style={styles.formCard}>
@@ -117,6 +118,7 @@ export default function TeacherEventsScreen() {
           ))
         )}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
