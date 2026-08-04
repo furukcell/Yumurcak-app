@@ -6,6 +6,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -425,6 +427,11 @@ export default function AdminSubscriptionScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+    <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>💎</Text>
@@ -523,6 +530,7 @@ export default function AdminSubscriptionScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
