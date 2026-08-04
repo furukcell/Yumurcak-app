@@ -7,7 +7,7 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, ActivityIndicator, Alert, SafeAreaView,
 } from 'react-native';
-import { ref, onValue, set, push } from 'firebase/database';
+import { ref, onValue, set, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -99,14 +99,14 @@ export default function PaymentFormScreen() {
       if (alive && cocuklarLoaded && odemeLoaded) setLoading(false);
     }
 
+    const cocuklarTarget = kresId
+      ? query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(kresId))
+      : ref(database, 'cocuklar');
+
     const cocuklarUnsub = onValue(
-      ref(database, 'cocuklar'),
+      cocuklarTarget,
       (snap) => {
         const liste = toList(snap.val())
-          .filter((c) => {
-            if (!kresId) return true;
-            return !c.kresId || c.kresId === kresId || c.kurumId === kresId;
-          })
           .map((c) => ({ ...c, adSoyad: childName(c) }))
           .sort((a, b) => String(a.adSoyad || '').localeCompare(String(b.adSoyad || ''), 'tr'));
         setCocuklar(liste);
