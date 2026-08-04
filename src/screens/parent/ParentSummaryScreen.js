@@ -20,6 +20,7 @@ import ThemePatternBackground from '../../components/ThemePatternBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { getWeekKey } from '../../utils/weeklyBadges';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
+import { getMealPhoto } from '../../components/MealTodayCard';
 import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
 
 const MEAL_LABELS = {
@@ -27,6 +28,35 @@ const MEAL_LABELS = {
   ogle: 'Öğle',
   araOgun: 'Ara Öğün',
 };
+
+// Aynı gün için (republish/çift kayıt gibi nedenlerle) birden fazla aktif
+// kayıt varsa: önce içeriği DOLU olanları öne al, aralarında da en son
+// güncelleneni seç. Böylece eski/boş bir kayıt yanlışlıkla gösterilmez.
+function pickFreshestRecord(list, hasContentFn) {
+  if (!list.length) return null;
+  const sorted = [...list].sort((a, b) => {
+    const aHas = hasContentFn(a) ? 1 : 0;
+    const bHas = hasContentFn(b) ? 1 : 0;
+    if (aHas !== bHas) return bHas - aHas;
+    const aTime = Number(a.updatedAt || a.createdAt || 0);
+    const bTime = Number(b.updatedAt || b.createdAt || 0);
+    return bTime - aTime;
+  });
+  return sorted[0];
+}
+
+function mealHasContent(item) {
+  const menu = item?.ogunler || {};
+  return !!(
+    getMealMenuText(menu.kahvalti) ||
+    getMealMenuText(menu.ogle) ||
+    getMealMenuText(menu.araOgun)
+  );
+}
+
+function scheduleHasContent(item) {
+  return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
+}
 
 const MEAL_STATUS_LABELS = {
   yemedi: 'Yemedi',
@@ -144,7 +174,8 @@ export default function ParentSummaryScreen({ navigation }) {
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
       .filter((item) => !item.sinifId || item.sinifId === sinifId)
       .filter((item) => item.tarih === today);
-    return active.find((item) => item.sinifId === sinifId) || active[0] || null;
+    const classMatches = active.filter((item) => item.sinifId === sinifId);
+    return pickFreshestRecord(classMatches, mealHasContent) || pickFreshestRecord(active, mealHasContent);
   }, [meals, kresId, sinifId, today]);
 
   const todayEvents = useMemo(() => {
@@ -162,11 +193,16 @@ export default function ParentSummaryScreen({ navigation }) {
   }, [events, kresId, sinifId, today]);
 
   const todaySchedules = useMemo(() => {
-    return schedules
+    const matches = schedules
       .filter((item) => item.aktif !== false)
       .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
       .filter((item) => !item.sinifId || item.sinifId === sinifId)
-      .filter((item) => item.tarih === today)
+      .filter((item) => item.tarih === today);
+    // Bir güne normalde tek kayıt düşer; republish sonrası eski/boş kopya
+    // kalmışsa içeriği dolu ve en güncel olanı seç.
+    const best = pickFreshestRecord(matches, scheduleHasContent);
+    const list = best ? [best] : [];
+    return list
       .map((item) => ({ ...item, baslik: item.etkinlik || item.baslik }))
       .sort((a, b) => String(a.saat || a.baslangicSaati || '').localeCompare(String(b.saat || b.baslangicSaati || '')))
       .slice(0, 3);
@@ -357,6 +393,9 @@ export default function ParentSummaryScreen({ navigation }) {
           <View style={styles.mealBox}>
             {mealsSummary.map((item) => (
               <View key={item.key} style={styles.mealLine}>
+                {item.photo ? (
+                  <Image source={{ uri: item.photo }} style={styles.mealThumb} resizeMode="cover" />
+                ) : null}
                 <Text style={styles.mealName}>{item.label}</Text>
                 <Text style={styles.mealMenu} numberOfLines={2}>{item.menu || 'Menü girilmedi'}</Text>
                 <Text style={[styles.mealStatus, getMealStatusStyle(styles, item.status)]}>{item.statusLabel}</Text>
@@ -598,6 +637,7 @@ function buildMealSummary(report, mealList) {
       key,
       label: MEAL_LABELS[key],
       menu: getMealMenuText(menu?.[key]),
+      photo: getMealPhoto(menu?.[key]),
       status: rawStatus,
       statusLabel: MEAL_STATUS_LABELS[rawStatus] || rawStatus || 'Bekleniyor',
     };
@@ -728,6 +768,7 @@ const createStyles = (theme) => StyleSheet.create({
   cardDesc: { color: theme.muted, fontSize: 11.8, fontWeight: '700', lineHeight: 16, marginTop: 4 },
   mealBox: { marginTop: 10, gap: 8 },
   mealLine: { backgroundColor: theme.bg, borderRadius: 15, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.border },
+  mealThumb: { width: 34, height: 34, borderRadius: 9, backgroundColor: theme.card },
   mealName: { width: 66, color: theme.primary, fontSize: 11.3, fontWeight: '900' },
   mealMenu: { flex: 1, color: theme.text, fontSize: 11.5, fontWeight: '700', lineHeight: 15 },
   mealStatus: { fontSize: 10.3, fontWeight: '900', paddingHorizontal: 7, paddingVertical: 5, borderRadius: 99, overflow: 'hidden' },
