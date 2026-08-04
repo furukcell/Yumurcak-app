@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, Switch,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { ref, onValue, push, set, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -194,7 +195,11 @@ export default function EventFormScreen() {
         message="Etkinlik kaydedildi"
         onHide={() => setSuccessToast(false)}
       />
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
 
         <Text style={styles.label}>Etkinlik Başlığı</Text>
@@ -290,6 +295,7 @@ export default function EventFormScreen() {
         ) : null}
 
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
