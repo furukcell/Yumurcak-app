@@ -14,6 +14,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ref, push, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -140,7 +142,12 @@ export default function TeacherPhysicalDevelopmentScreen() {
     <SafeAreaView style={localStyles.safeArea}>
       <ScreenHeader navigation={navigation} title="Fiziksel Gelişim" subtitle={currentClass?.ad || 'Sınıfım'} />
 
-      <ScrollView contentContainerStyle={localStyles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView contentContainerStyle={localStyles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
           <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Ölçüm girmek için öğretmen hesabı bir sınıfa bağlı olmalı." />
         ) : classChildren.length === 0 ? (
@@ -226,6 +233,7 @@ export default function TeacherPhysicalDevelopmentScreen() {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
