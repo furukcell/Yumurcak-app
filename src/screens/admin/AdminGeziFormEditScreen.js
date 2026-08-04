@@ -6,7 +6,7 @@
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ref, push, update, get, onValue } from 'firebase/database';
+import { ref, push, update, get, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { useRoute } from '@react-navigation/native';
 
 import { database } from '../../config/firebase';
@@ -51,13 +51,16 @@ export default function AdminGeziFormEditScreen({ navigation }) {
 
   useEffect(() => {
     if (!kresId) return undefined;
-    const unsub = onValue(ref(database, 'siniflar'), (snap) => {
-      const data = snap.val() || {};
-      const list = Object.entries(data)
-        .filter(([, value]) => value?.kresId === kresId)
-        .map(([id, value]) => ({ id, ad: value.ad || '' }));
-      setSiniflar(list);
-    });
+    const sinifQuery = query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(
+      sinifQuery,
+      (snap) => {
+        const data = snap.val() || {};
+        const list = Object.entries(data).map(([id, value]) => ({ id, ad: value?.ad || '' }));
+        setSiniflar(list);
+      },
+      () => setSiniflar([])
+    );
     return () => unsub();
   }, [kresId]);
 
