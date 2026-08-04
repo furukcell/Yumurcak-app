@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, ActivityIndicator, Alert, SafeAreaView,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { ref, onValue, set, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -249,7 +250,11 @@ export default function PaymentFormScreen() {
          message={duzenleme ? 'Ödeme güncellendi' : 'Ödeme kaydı oluşturuldu'}
          onHide={() => setSuccessToast(false)}
        />
-
+         <KeyboardAvoidingView
+           style={{ flex: 1 }}
+           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+         >
          <ScrollView
            style={s.screen}
            contentContainerStyle={s.content}
@@ -337,6 +342,7 @@ export default function PaymentFormScreen() {
           {kaydediyor ? <ActivityIndicator color="#fff" /> : <Text style={s.kaydetYazi}>{duzenleme ? '💾 Güncelle' : '💾 Ödeme Kaydı Oluştur'}</Text>}
         </TouchableOpacity>
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
