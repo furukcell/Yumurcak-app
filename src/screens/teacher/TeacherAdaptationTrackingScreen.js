@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Platform, StatusBar, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Platform, KeyboardAvoidingView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { ref, set, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useTeacherData, LoadingState, EmptyState, getChildName } from './teacherShared';
@@ -134,6 +134,7 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
@@ -206,6 +207,7 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
