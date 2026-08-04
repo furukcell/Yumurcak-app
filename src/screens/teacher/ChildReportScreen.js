@@ -15,6 +15,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ref, push, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -167,11 +169,16 @@ export default function ChildReportScreen() {
 
       <ScreenHeader navigation={navigation} title="Günlük Rapor" subtitle={getChildName(child)} />
 
-      <ScrollView
+      <KeyboardAvoidingView
         style={styles.screen}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
         {!checkingExisting && alreadyReportedToday ? (
           <View style={styles.warningBanner}>
             <Text style={styles.warningText}>
@@ -262,6 +269,7 @@ export default function ChildReportScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
