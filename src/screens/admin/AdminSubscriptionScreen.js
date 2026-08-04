@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { get, onValue, ref, set, update } from 'firebase/database';
+import { get, onValue, ref, set, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -135,14 +135,18 @@ export default function AdminSubscriptionScreen() {
       setLoading(false);
     });
 
-    const childUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
-      const data = snap.val() || {};
-      const list = Object.entries(data)
-        .map(([id, item]) => ({ id, ...(item || {}) }))
-        .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
-        .filter((item) => item.aktif !== false && item.deleted !== true);
-      setChildren(list);
-    });
+    const childQuery = query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(kresId));
+    const childUnsub = onValue(
+      childQuery,
+      (snap) => {
+        const data = snap.val() || {};
+        const list = Object.entries(data)
+          .map(([id, item]) => ({ id, ...(item || {}) }))
+          .filter((item) => item.aktif !== false && item.deleted !== true);
+        setChildren(list);
+      },
+      () => setChildren([])
+    );
 
     return () => {
       kresUnsub();
