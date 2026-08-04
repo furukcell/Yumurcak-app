@@ -13,7 +13,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -179,8 +179,12 @@ export default function PaymentListScreen() {
       }
     );
 
+    const cocuklarTarget = kresId
+      ? query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(kresId))
+      : ref(database, 'cocuklar');
+
     const cocuklarUnsub = onValue(
-      ref(database, 'cocuklar'),
+      cocuklarTarget,
       (snap) => {
         cocuklarData = safeObject(snap.val());
         cocuklarLoaded = true;
