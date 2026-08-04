@@ -390,8 +390,8 @@ export default function TeacherMessagesScreen() {
               )}
             </ScrollView>
           </View>
+         </KeyboardAvoidingView>
         </View>
-       </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
