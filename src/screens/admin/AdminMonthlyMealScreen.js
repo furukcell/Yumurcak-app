@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { onValue, ref } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -346,23 +346,25 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Listesini Yayınla`}</Text>
           </TouchableOpacity>
 
-          {publishedCount > 0 ? (
-            <View style={{ marginTop: 14 }}>
-              <MonthlyDocumentPdfBar
-                kresId={kresId}
-                nodePath={NODE_PATH}
-                kaynak={KAYNAK}
-                docType="yemek"
-                monthKey={monthKey}
-                monthLabel={monthLabel}
-                theme={theme}
-              />
-            </View>
-          ) : null}
+          <View style={{ marginTop: 14 }}>
+            <MonthlyDocumentPdfBar
+              kresId={kresId}
+              nodePath={NODE_PATH}
+              kaynak={KAYNAK}
+              docType="yemek"
+              monthKey={monthKey}
+              monthLabel={monthLabel}
+              theme={theme}
+            />
+          </View>
         </ScrollView>
 
         <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
-          <View style={styles.modalBackdrop}>
+          <KeyboardAvoidingView
+            style={styles.modalBackdrop}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+          >
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
@@ -402,7 +404,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </SafeAreaView>
     </ThemedBackground>
