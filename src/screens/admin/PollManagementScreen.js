@@ -13,6 +13,8 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ref, onValue, push, update, remove } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -274,7 +276,11 @@ export default function PollManagementScreen() {
         message="Anket velilere açıldı"
         onHide={() => setSuccessToast(false)}
       />
-
+     <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
 
@@ -416,6 +422,7 @@ export default function PollManagementScreen() {
           })
         )}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
