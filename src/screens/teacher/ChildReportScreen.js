@@ -70,15 +70,16 @@ export default function ChildReportScreen() {
 
       try {
         const today = todayString();
+        const kresId = child?.kresId || kullanici?.kresId;
         const reportsRef = query(
           ref(database, 'gunlukRaporlar'),
-          orderByChild('cocukId'),
-          equalTo(child.id)
+          orderByChild('kresId'),
+          equalTo(kresId)
         );
         const snap = await get(reportsRef);
         const data = snap.val() || {};
 
-        const hasToday = Object.values(data).some((item) => item.tarih === today);
+        const hasToday = Object.values(data).some((item) => item.cocukId === child.id && item.tarih === today);
 
         if (!cancelled) {
           setAlreadyReportedToday(hasToday);
