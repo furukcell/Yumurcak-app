@@ -6,7 +6,7 @@
 // oluşturuluyor.
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, push, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, EmptyState, getChildName } from './teacherShared';
@@ -91,6 +91,7 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message="İlaç takip formu oluşturuldu" onHide={() => setSuccessToast(false)} />
       <ScreenHeader navigation={navigation} title="Yeni İlaç Takip Formu" subtitle={currentClass?.ad || 'Sınıfım'} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
           <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Bu özellik için yönetici tarafından bir sınıfa atanman gerekir." />
@@ -130,6 +131,7 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
           </>
         )}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
