@@ -5,7 +5,7 @@
 // bu öğretmeni ilgilendiren (deterministik id'li) konuşmalar tek tek dinleniyor.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -236,6 +236,7 @@ export default function TeacherMessagesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader navigation={navigation} title="Mesajlar" subtitle={currentClass?.ad || 'Sınıfım'} rightText="✎ Yeni" onRightPress={() => setNewMessageOpen(true)} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>⌕</Text>
@@ -319,10 +320,12 @@ export default function TeacherMessagesScreen() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal visible={newMessageOpen} transparent animationType="slide" onRequestClose={() => setNewMessageOpen(false)}>
         <View style={styles.drawerOverlay}>
           <TouchableOpacity style={styles.drawerBackdrop} activeOpacity={1} onPress={() => setNewMessageOpen(false)} />
+          <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.drawerSheet}>
             <View style={styles.drawerHandle} />
             <View style={styles.drawerHeader}>
@@ -388,6 +391,7 @@ export default function TeacherMessagesScreen() {
             </ScrollView>
           </View>
         </View>
+       </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
