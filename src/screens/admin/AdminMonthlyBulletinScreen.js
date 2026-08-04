@@ -12,7 +12,7 @@
 // (unpublishMonth zaten day-array'e bağımlı değildi, değişmeden kullanıldı).
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { onValue, ref } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -241,7 +241,11 @@ export default function AdminMonthlyBulletinScreen({ navigation }) {
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
         <AppSuccessToast visible={successToast} message={`${monthLabel} bülteni yayınlandı`} onHide={() => setSuccessToast(false)} />
-
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
@@ -350,6 +354,7 @@ export default function AdminMonthlyBulletinScreen({ navigation }) {
             </View>
           ) : null}
         </ScrollView>
+       </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedBackground>
   );
