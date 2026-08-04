@@ -11,7 +11,7 @@
 // doğrudan printMonthlyDocument/shareMonthlyDocumentPdf çağrılıyor.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ref, onValue, get, update, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -171,7 +171,11 @@ export default function AdminServiceScreen({ navigation }) {
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
         <AppSuccessToast visible={successToast} message="Servis bilgisi güncellendi" onHide={() => setSuccessToast(false)} />
-
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+         >
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
@@ -254,6 +258,7 @@ export default function AdminServiceScreen({ navigation }) {
             })
           )}
         </ScrollView>
+       </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedBackground>
   );
