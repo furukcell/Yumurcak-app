@@ -7,7 +7,7 @@
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ref, onValue, get } from 'firebase/database';
+import { ref, onValue, get, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -59,14 +59,19 @@ export default function AdminBirthdayCalendarScreen({ navigation }) {
       }
     }, () => setLoading(false));
 
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      const data = snap.val() || {};
-      const map = {};
-      Object.entries(data).forEach(([id, value]) => {
-        if (value?.kresId === kresId) map[id] = value.ad || '';
-      });
-      setSinifMap(map);
-    });
+    const sinifQuery = query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId));
+    const sinifUnsub = onValue(
+      sinifQuery,
+      (snap) => {
+        const data = snap.val() || {};
+        const map = {};
+        Object.entries(data).forEach(([id, value]) => {
+          map[id] = value?.ad || '';
+        });
+        setSinifMap(map);
+      },
+      () => setSinifMap({})
+    );
 
     return () => { unsub(); sinifUnsub(); };
   }, [kresId]);
