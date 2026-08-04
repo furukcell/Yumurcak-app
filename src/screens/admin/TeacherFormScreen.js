@@ -3,7 +3,7 @@
 // Öğretmen ekleme/düzenleme formu
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { ref, get, update, query, orderByChild, equalTo } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
@@ -175,6 +175,11 @@ export default function TeacherFormScreen() {
   return (
     <View style={styles.screen}>
       <AppSuccessToast visible={successToast} message={teacherId ? 'Öğretmen güncellendi' : 'Öğretmen kaydedildi'} onHide={() => setSuccessToast(false)} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView style={styles.container}>
         <View style={styles.form}>
           <View style={styles.field}>
@@ -206,6 +211,7 @@ export default function TeacherFormScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+     </KeyboardAvoidingView>
     </View>
   );
 }
