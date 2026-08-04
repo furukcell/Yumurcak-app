@@ -7,7 +7,7 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, Switch,
 } from 'react-native';
-import { ref, onValue, push, set, update, remove } from 'firebase/database';
+import { ref, onValue, push, set, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -46,21 +46,41 @@ export default function EventFormScreen() {
   const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
-    const sinifUnsub = onValue(ref(database, 'siniflar'), (snap) => {
-      const data = snap.val() || {};
-      const liste = Object.entries(data).map(([id, s]) => ({
-        id,
-        ad: s?.ad || 'İsimsiz Sınıf',
-      }));
-      setSiniflar(liste);
+    const kresId = kullanici?.kresId;
+    if (!kresId) {
+      setSiniflar([]);
+      if (!duzenlemeModu) setLoading(false);
+      return undefined;
+    }
 
-      if (!duzenlemeModu) {
-        setLoading(false);
+    // FAZ 5 FIX — 'siniflar' düğümünün Firebase kuralı sadece
+    // orderByChild('kresId').equalTo(...) SORGUSUNA izin veriyor.
+    // Filtresiz `ref(database, 'siniflar')` okuması reddediliyordu ve
+    // onValue'nun success callback'i hiç tetiklenmediği için loading
+    // sonsuza kadar true kalıyordu (beyaz ekran / sonsuz döngü).
+    const sinifQuery = query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId));
+    const sinifUnsub = onValue(
+      sinifQuery,
+      (snap) => {
+        const data = snap.val() || {};
+        const liste = Object.entries(data).map(([id, s]) => ({
+          id,
+          ad: s?.ad || 'İsimsiz Sınıf',
+        }));
+        setSiniflar(liste);
+
+        if (!duzenlemeModu) {
+          setLoading(false);
+        }
+      },
+      () => {
+        setSiniflar([]);
+        if (!duzenlemeModu) setLoading(false);
       }
-    });
+    );
 
     return () => sinifUnsub();
-  }, []);
+  }, [kullanici?.kresId]);
 
   useEffect(() => {
     if (!duzenlemeModu) return;
