@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Platform,
+  KeyboardAvoidingView,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -218,7 +219,7 @@ export default function SuperAdminSupportScreen({ navigation }) {
         message={successToast.message}
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
-
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <FlatList
         data={filteredMessages}
         keyExtractor={(item) => item.id}
@@ -261,6 +262,7 @@ export default function SuperAdminSupportScreen({ navigation }) {
         }
         renderItem={renderItem}
       />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
