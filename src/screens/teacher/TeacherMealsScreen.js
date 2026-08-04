@@ -807,7 +807,11 @@ export default function TeacherMealsScreen() {
       </KeyboardAvoidingView>
 
       <Modal visible={!!monthlySelectedDay} transparent animationType="slide" onRequestClose={() => setMonthlySelectedDateKey('')}>
-        <View style={styles.modalBackdrop}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+        >
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{monthlySelectedDay?.label || ''}</Text>
@@ -847,7 +851,7 @@ export default function TeacherMealsScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
