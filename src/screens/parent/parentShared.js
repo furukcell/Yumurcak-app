@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  KeyboardAvoidingView,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -431,6 +432,11 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
         </View>
         <Text style={themedStyles.headerEmoji}>{emoji || ''}</Text>
       </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView
         style={themedStyles.screen}
         contentContainerStyle={[themedStyles.scrollContent, { paddingBottom: bottomSafePadding }]}
@@ -439,6 +445,7 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
       >
         {children}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
