@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -42,6 +42,14 @@ const NODE_KEYS = [
   'yemekListeleri',
 ];
 
+// FAZ 5 FIX — Bu düğümlerin Firebase kuralı, filtresiz tam okumayı reddedip
+// sadece orderByChild('kresId').equalTo(...) SORGUSUNA izin veriyor.
+// Eskiden hepsi düz `ref(database, node)` ile okunuyordu; reddedilenler için
+// hata callback'i (aşağıda) sessizce boş dizi basıyordu — "kullanicilar" gibi
+// kuralı gevşek (auth != null) olan node'lar görünürken, bunlar hep boş
+// kalıyordu (ör. "çocuklar" istatistik sekmesi hep boş çıkıyordu).
+const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri']);
+
 export default function AdminStatisticsScreen() {
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
@@ -53,28 +61,34 @@ export default function AdminStatisticsScreen() {
     let mounted = true;
     const loaded = {};
 
-    const unsubscribers = NODE_KEYS.map((node) => onValue(
-      ref(database, node),
-      (snap) => {
-        if (!mounted) return;
-        loaded[node] = true;
-        setRaw((prev) => ({ ...prev, [node]: toList(snap.val()) }));
-        if (NODE_KEYS.every((key) => loaded[key])) setLoading(false);
-      },
-      () => {
-        loaded[node] = true;
-        if (mounted) {
-          setRaw((prev) => ({ ...prev, [node]: [] }));
+    const unsubscribers = NODE_KEYS.map((node) => {
+      const target = KRES_FILTERED_NODES.has(node)
+        ? query(ref(database, node), orderByChild('kresId'), equalTo(kresId))
+        : ref(database, node);
+
+      return onValue(
+        target,
+        (snap) => {
+          if (!mounted) return;
+          loaded[node] = true;
+          setRaw((prev) => ({ ...prev, [node]: toList(snap.val()) }));
           if (NODE_KEYS.every((key) => loaded[key])) setLoading(false);
+        },
+        () => {
+          loaded[node] = true;
+          if (mounted) {
+            setRaw((prev) => ({ ...prev, [node]: [] }));
+            if (NODE_KEYS.every((key) => loaded[key])) setLoading(false);
+          }
         }
-      }
-    ));
+      );
+    });
 
     return () => {
       mounted = false;
       unsubscribers.forEach((unsubscribe) => unsubscribe && unsubscribe());
     };
-  }, []);
+  }, [kresId]);
 
   const stats = useMemo(() => buildStatistics(raw, kresId), [raw, kresId]);
 
