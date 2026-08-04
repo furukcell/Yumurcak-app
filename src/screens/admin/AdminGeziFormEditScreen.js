@@ -5,7 +5,7 @@
 // bu yüzden documentPdf.js'teki buildGeziFormuHtml doğrudan çağrılıyor.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ref, push, update, get, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { useRoute } from '@react-navigation/native';
 
@@ -192,7 +192,12 @@ export default function AdminGeziFormEditScreen({ navigation }) {
       <SafeAreaView style={styles.safeArea}>
         <AppSuccessToast visible={successToast} message="Gezi formu kaydedildi" onHide={() => setSuccessToast(false)} />
 
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView
+          style={styles.screen}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
               <Text style={styles.backText}>‹ Geri</Text>
@@ -257,6 +262,7 @@ export default function AdminGeziFormEditScreen({ navigation }) {
             </>
           ) : null}
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedBackground>
   );
