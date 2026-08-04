@@ -9,6 +9,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
@@ -153,6 +155,7 @@ export default function TeacherWeeklyStarScreen() {
   return (
     <SafeAreaView style={local.safeArea}>
       <ScreenHeader navigation={navigation} title="Haftanın Yıldızı" subtitle={weekRange.label} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={local.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
           <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Rozet vermek için öğretmen hesabı bir sınıfa bağlı olmalı." />
@@ -252,6 +255,7 @@ export default function TeacherWeeklyStarScreen() {
           </>
         )}
       </ScrollView>
+     </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
