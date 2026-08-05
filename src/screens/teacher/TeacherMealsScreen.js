@@ -456,8 +456,22 @@ export default function TeacherMealsScreen() {
   }, [visibleMeals, currentMonthKey]);
 
   const today = todayString();
-  const todayDailyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || null;
-  const todayMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'admin_aylik') || null;
+  // Aynı gün için (kaydet'e birden fazla basma, senkron gecikmesi vb.
+  // nedenlerle) birden fazla aktif kayıt kalmışsa, içeriği (metin/foto)
+  // olan ve en son güncellenen kaydı seç — eski/boş kopya "kaydedildi"
+  // dedikten sonra fotoğrafın görünmemesine sebep oluyordu.
+  const pickFreshestMeal = (list) => {
+    if (list.length === 0) return null;
+    const sorted = [...list].sort((a, b) => {
+      const aHas = MEALS.some((meal) => hasMealValue(a?.ogunler?.[meal.key])) ? 1 : 0;
+      const bHas = MEALS.some((meal) => hasMealValue(b?.ogunler?.[meal.key])) ? 1 : 0;
+      if (aHas !== bHas) return bHas - aHas;
+      return Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0);
+    });
+    return sorted[0];
+  };
+  const todayDailyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak !== 'admin_aylik'));
+  const todayMonthlyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak === 'admin_aylik'));
   const todayMeal = useMemo(() => mergeTodayMeal({ kresId, classItem: currentClass, monthlyMeal: todayMonthlyMeal, dailyMeal: todayDailyMeal }), [currentClass, kresId, todayDailyMeal, todayMonthlyMeal]);
 
   useEffect(() => {
