@@ -34,6 +34,27 @@ export default function TeacherProfileScreen() {
         <View style={styles.legalCard}>
           <View style={styles.legalHeader}>
             <View style={styles.legalIconBox}>
+              <Text style={styles.legalIcon}>💬</Text>
+            </View>
+            <View style={styles.legalHeaderText}>
+              <Text style={styles.cardTitle}>Yumurcak Destek</Text>
+              <Text style={styles.legalDesc}>
+                İstek, şikayet veya görüşlerini Süper Admin'e buradan iletebilirsin.
+              </Text>
+            </View>
+          </View>
+
+          <LegalLink
+            icon="✉️"
+            title="Bize Yazın"
+            desc="Süper Admin'e istek / şikayet gönder"
+            onPress={() => navigation.navigate('TeacherSupport')}
+          />
+        </View>
+
+        <View style={styles.legalCard}>
+          <View style={styles.legalHeader}>
+            <View style={styles.legalIconBox}>
               <Text style={styles.legalIcon}>⚖️</Text>
             </View>
             <View style={styles.legalHeaderText}>
