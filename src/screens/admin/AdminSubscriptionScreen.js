@@ -516,7 +516,6 @@ export default function AdminSubscriptionScreen() {
 
         <View style={styles.promoCard}>
           <Text style={styles.sectionTitle}>Promosyon Kodu</Text>
-          <Text style={styles.promoHint}>Yerleşik demo kodu: PILOT1AY. Demo süresi standart olarak 1 aydır.</Text>
           <TextInput
             style={styles.input}
             value={promoCode}
