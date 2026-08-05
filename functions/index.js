@@ -457,6 +457,17 @@ exports.createNotificationOnMealListCreate = functions
     const meal = snapshot.val() || {};
     if (meal.aktif === false) return null;
 
+    // FAZ FIX — Aylık toplu yayın (admin veya öğretmen "Yayınla" dediğinde)
+    // tek update() çağrısıyla o ayın dolu olan HER günü için ayrı bir kayıt
+    // oluşturuyor. Bu da bu onCreate tetikleyicisinin gün sayısı kadar
+    // (örn. 10 gün doluysa 10 kez) çalışıp aynı sayıda bildirim atmasına
+    // sebep oluyordu. "admin_aylik" kaynaklı kayıtlar için bildirimi burada
+    // atlıyoruz; o durumda tek bildirim zaten yayınlayan ekranın kendisi
+    // (AdminMonthlyMealScreen / TeacherMealsScreen) tarafından bir kez
+    // gönderiliyor. Tekil (örn. öğretmenin günlük girdiği) kayıtlar için
+    // bu tetikleyici olduğu gibi çalışmaya devam eder.
+    if (meal.kaynak === 'admin_aylik') return null;
+
     const title = meal.baslik || (meal.ayKey ? `${meal.ayKey} yemek listesi` : 'Yemek listesi');
     await createNotificationRecord({
       kresId: meal.kresId || '',
