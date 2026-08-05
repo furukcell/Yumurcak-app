@@ -371,6 +371,72 @@ exports.createNotificationOnPollCreate = functions
     return null;
   });
 
+exports.sendPollAnswerReminders = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every 60 minutes')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const REMINDER_DELAY_MS = 24 * 60 * 60 * 1000;
+
+    const [pollsSnap, usersSnap] = await Promise.all([
+      admin.database().ref('anketler').once('value'),
+      admin.database().ref('kullanicilar').once('value'),
+    ]);
+
+    const polls = pollsSnap.val() || {};
+    const users = usersSnap.val() || {};
+    const now = Date.now();
+
+    const tasks = Object.entries(polls).map(async ([pollId, poll = {}]) => {
+      if (poll.aktif === false) return;
+      if (poll.hatirlatmaGonderildi) return;
+
+      const createdAt = Number(poll.createdAt || 0);
+      if (!createdAt || now - createdAt < REMINDER_DELAY_MS) return;
+
+      const pollKresId = String(poll.kresId || poll.kurumId || '');
+
+      const unansweredIds = [];
+      Object.entries(users).forEach(([userId, user = {}]) => {
+        if (normalizeRole(user.rol) !== 'veli') return;
+        const userKresId = String(user.kresId || '');
+        if (pollKresId && userKresId && userKresId !== pollKresId) return;
+
+        const authUid = String(user.authUid || '');
+        const answered = !!(poll.cevaplar && (poll.cevaplar[userId] || (authUid && poll.cevaplar[authUid])));
+        if (answered) return;
+
+        unansweredIds.push(authUid || userId);
+      });
+
+      const targetIds = unique(unansweredIds);
+
+      if (targetIds.length) {
+        await createNotificationRecord({
+          kresId: pollKresId,
+          hedefUserIds: targetIds,
+          baslik: '\ud83d\uddf3\ufe0f Anket hat\u0131rlatmas\u0131',
+          mesaj: `"${poll.baslik || poll.title || 'Anket'}" anketine hen\u00fcz cevap vermediniz.`,
+          tip: 'anket_hatirlatma',
+          routeName: 'ParentPolls',
+          routeParams: { pollId },
+          source: 'anketler_hatirlatma',
+          sourceId: pollId,
+          createdBy: 'cloud-function',
+        });
+      }
+
+      await admin.database().ref(`anketler/${pollId}`).update({
+        hatirlatmaGonderildi: true,
+        hatirlatmaGonderildiAt: admin.database.ServerValue.TIMESTAMP,
+      });
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
+
 exports.createNotificationOnWeeklyBadgeWrite = functions
   .region('europe-west1')
   .database
