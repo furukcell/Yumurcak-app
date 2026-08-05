@@ -2,11 +2,12 @@
 // YUMURCAK — VeliListScreen.js
 // FAZ 19: Sadece kendi kreşinin velileri index üzerinden çekilir
 // ============================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   FlatList,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -46,6 +47,46 @@ export default function VeliListScreen() {
 
   const [veliler, setVeliler] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [siniflar, setSiniflar] = useState([]);
+  const [seciliSinifId, setSeciliSinifId] = useState(null);
+
+  useEffect(() => {
+    if (!kresId) {
+      setSiniflar([]);
+      return;
+    }
+
+    const sinifIndexRef = ref(database, `kresSiniflari/${kresId}`);
+
+    const unsubscribe = onValue(sinifIndexRef, (snapshot) => {
+      const idsData = snapshot.val();
+
+      if (!idsData) {
+        setSiniflar([]);
+        return;
+      }
+
+      const sinifIds = Object.keys(idsData);
+
+      Promise.all(
+        sinifIds.map((id) =>
+          get(ref(database, `siniflar/${id}`)).then((s) =>
+            s.exists() ? { id, ...s.val() } : null
+          )
+        )
+      ).then((results) => {
+        const dizisi = results
+          .filter(Boolean)
+          .sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
+        setSiniflar(dizisi);
+      }).catch((error) => {
+        console.warn('Sınıf filtresi çekme hatası:', error);
+        setSiniflar([]);
+      });
+    });
+
+    return () => unsubscribe();
+  }, [kresId]);
 
   useEffect(() => {
     if (!kresId) {
@@ -114,6 +155,7 @@ export default function VeliListScreen() {
                 return {
                   id: cocukId,
                   ad: `${c.ad || ''} ${c.soyad || ''}`.trim() || '-',
+                  sinifId: c.sinifId || null,
                   sinifAd: sinif ? sinif.ad : c.sinifId || null,
                 };
               });
@@ -126,6 +168,7 @@ export default function VeliListScreen() {
               email: v.email || v.eposta || null,
               aktif: v.aktif !== false,
               cocuklar: bagliCocuklar,
+              sinifIdler: [...new Set(bagliCocuklar.map((c) => c.sinifId).filter(Boolean))],
             };
           })
           .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
@@ -162,6 +205,11 @@ export default function VeliListScreen() {
   const aktifVeliSayisi = veliler.filter((v) => v.aktif).length;
   const cocukBagliVeliSayisi = veliler.filter((v) => v.cocuklar.length > 0).length;
 
+  const filtreliVeliler = useMemo(() => {
+    if (!seciliSinifId) return veliler;
+    return veliler.filter((v) => v.sinifIdler.includes(seciliSinifId));
+  }, [veliler, seciliSinifId]);
+
   if (loading) {
     return (
       <SafeAreaView style={s.safeArea}>
@@ -177,52 +225,102 @@ export default function VeliListScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.container}>
         <FlatList
-          data={veliler}
+          data={filtreliVeliler}
           keyExtractor={(item) => item.id}
           contentContainerStyle={s.liste}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View style={s.headerCard}>
-              <View style={s.headerTop}>
-                <View style={s.headerIconBox}>
-                  <Text style={s.headerIcon}>👨‍👩‍👧</Text>
+            <View>
+              <View style={s.headerCard}>
+                <View style={s.headerTop}>
+                  <View style={s.headerIconBox}>
+                    <Text style={s.headerIcon}>👨‍👩‍👧</Text>
+                  </View>
+                  <View style={s.headerTextBlock}>
+                    <Text style={s.headerTitle}>Veliler</Text>
+                    <Text style={s.headerSubtitle}>Veli hesapları ve bağlı çocuklar</Text>
+                  </View>
                 </View>
-                <View style={s.headerTextBlock}>
-                  <Text style={s.headerTitle}>Veliler</Text>
-                  <Text style={s.headerSubtitle}>Veli hesapları ve bağlı çocuklar</Text>
+
+                <View style={s.statsRow}>
+                  <View style={s.statBox}>
+                    <Text style={s.statValue}>{veliler.length}</Text>
+                    <Text style={s.statLabel}>Toplam Veli</Text>
+                  </View>
+                  <View style={s.statDivider} />
+                  <View style={s.statBox}>
+                    <Text style={s.statValue}>{aktifVeliSayisi}</Text>
+                    <Text style={s.statLabel}>Aktif</Text>
+                  </View>
+                  <View style={s.statDivider} />
+                  <View style={s.statBox}>
+                    <Text style={s.statValue}>{cocukBagliVeliSayisi}</Text>
+                    <Text style={s.statLabel}>Çocuk Bağlı</Text>
+                  </View>
                 </View>
               </View>
 
-              <View style={s.statsRow}>
-                <View style={s.statBox}>
-                  <Text style={s.statValue}>{veliler.length}</Text>
-                  <Text style={s.statLabel}>Toplam Veli</Text>
-                </View>
-                <View style={s.statDivider} />
-                <View style={s.statBox}>
-                  <Text style={s.statValue}>{aktifVeliSayisi}</Text>
-                  <Text style={s.statLabel}>Aktif</Text>
-                </View>
-                <View style={s.statDivider} />
-                <View style={s.statBox}>
-                  <Text style={s.statValue}>{cocukBagliVeliSayisi}</Text>
-                  <Text style={s.statLabel}>Çocuk Bağlı</Text>
-                </View>
-              </View>
+              {siniflar.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.sinifFiltreRow}
+                  style={s.sinifFiltreScroll}
+                >
+                  <TouchableOpacity
+                    style={[s.sinifChip, !seciliSinifId && s.sinifChipActive]}
+                    onPress={() => setSeciliSinifId(null)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[s.sinifChipText, !seciliSinifId && s.sinifChipTextActive]}>
+                      Tümü
+                    </Text>
+                  </TouchableOpacity>
+
+                  {siniflar.map((sinif) => {
+                    const active = seciliSinifId === sinif.id;
+                    return (
+                      <TouchableOpacity
+                        key={sinif.id}
+                        style={[s.sinifChip, active && s.sinifChipActive]}
+                        onPress={() => setSeciliSinifId(active ? null : sinif.id)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[s.sinifChipText, active && s.sinifChipTextActive]}>
+                          {sinif.ad}
+                        </Text>
+                        {!!sinif.yasGrubu && (
+                          <Text style={[s.sinifChipYas, active && s.sinifChipYasActive]}>
+                            {sinif.yasGrubu}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
             </View>
           }
           ListEmptyComponent={
             <View style={s.emptyCard}>
               <Text style={s.emptyIcon}>👨‍👩‍👧</Text>
-              <Text style={s.emptyTitle}>Henüz veli eklenmemiş</Text>
-              <Text style={s.emptyDesc}>Velileri ekleyerek çocuklarla ilişkilendirebilirsiniz.</Text>
-              <TouchableOpacity
-                style={s.emptyButton}
-                onPress={() => navigation.navigate('VeliForm')}
-                activeOpacity={0.85}
-              >
-                <Text style={s.emptyButtonText}>+ Veli Ekle</Text>
-              </TouchableOpacity>
+              <Text style={s.emptyTitle}>
+                {seciliSinifId ? 'Bu sınıfta veli bulunamadı' : 'Henüz veli eklenmemiş'}
+              </Text>
+              <Text style={s.emptyDesc}>
+                {seciliSinifId
+                  ? 'Farklı bir sınıf seçebilir veya "Tümü" ile filtreyi kaldırabilirsin.'
+                  : 'Velileri ekleyerek çocuklarla ilişkilendirebilirsiniz.'}
+              </Text>
+              {!seciliSinifId && (
+                <TouchableOpacity
+                  style={s.emptyButton}
+                  onPress={() => navigation.navigate('VeliForm')}
+                  activeOpacity={0.85}
+                >
+                  <Text style={s.emptyButtonText}>+ Veli Ekle</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
           renderItem={({ item }) => (
@@ -363,6 +461,23 @@ const s = StyleSheet.create({
   statValue: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
   statLabel: { color: 'rgba(255,255,255,0.76)', fontSize: 12, fontWeight: '800', marginTop: 2 },
   statDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.2)' },
+
+  sinifFiltreScroll: { marginBottom: 16 },
+  sinifFiltreRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
+  sinifChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: THEME.card,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    alignItems: 'center',
+  },
+  sinifChipActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  sinifChipText: { fontSize: 13, fontWeight: '800', color: THEME.text },
+  sinifChipTextActive: { color: '#FFFFFF' },
+  sinifChipYas: { fontSize: 10, fontWeight: '700', color: THEME.muted, marginTop: 1 },
+  sinifChipYasActive: { color: 'rgba(255,255,255,0.82)' },
 
   kart: {
     backgroundColor: THEME.card,
