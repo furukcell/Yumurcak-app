@@ -50,9 +50,10 @@ function weekdayLabel(dateKey) {
 }
 
 // records: 'yemekListeleri' / 'dersProgramlari' için o ay + sınıf için zaten
-// AKTİF (yayınlanmış) kayıtların düz listesi (çoğul, gün-bazlı). 'aylikBultenler'
-// için ise tek bir ay için TEK kayıt olur (`records` yine dizi olarak gelir,
-// ama 0 ya da 1 elemanlı — çağıran ekranın filtrelemesi aynı kalsın diye).
+// AKTİF (yayınlanmış) kayıtların düz listesi (çoğul, gün-bazlı). 'gorev'
+// (Personel Görev Listesi) için ise tek bir ay için TEK kayıt olur
+// (`records` yine dizi olarak gelir, ama 0 ya da 1 elemanlı — çağıran
+// ekranın filtrelemesi aynı kalsın diye).
 // Filtreleme (kresId/ayKey/kaynak/sinifId) çağıran ekranın sorumluluğunda —
 // bu fonksiyon sadece elindeki kayıtları render eder.
 export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, records }) {
@@ -62,7 +63,7 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
   const yonetici = escapeHtml(kres?.yoneticiAd || '');
   const logoUrl = kres?.logoUrl || '';
 
-  if (docType === 'bulten' || docType === 'gorev') {
+  if (docType === 'gorev') {
     return buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLabel, record: (records || [])[0] });
   }
 
@@ -158,8 +159,8 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
   </html>`;
 }
 
-// Aylık Bülten: yemek/ders gibi gün-bazlı tablo değil, başlıklı bölümlerden
-// (bkz. AdminMonthlyBulletinScreen.js) oluşan bir haber bülteni sayfası.
+// Personel Görev Listesi: yemek/ders gibi gün-bazlı tablo değil, başlıklı
+// bölümlerden (bkz. AdminMonthlyStaffTasksScreen.js) oluşan bir sayfa.
 function buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLabel, record }) {
   const baslik = escapeHtml(record?.baslik || 'Aylık Belge');
   const bolumler = Array.isArray(record?.bolumler) ? record.bolumler : [];
@@ -216,7 +217,7 @@ function buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLa
 
 // ============================================================
 // FAZ 8 — Ay/gün-bazlı OLMAYAN, tekil belgeler için ortak sayfa iskeleti
-// (Gezi Formu, İlaç Takip Formu, Servis Listesi, Doğum Günü Takvimi).
+// (İlaç Takip Formu, Servis Listesi, Doğum Günü Takvimi).
 // Yukarıdaki iki fonksiyon (aylık tablo + bülten) kendi HTML'ini kendi
 // üretiyor durumda kalsın diye DOKUNULMADI (regresyon riski) — bu yeni
 // belge türleri için ayrı, ortak bir sarmalayıcı kullanılıyor.
@@ -264,45 +265,6 @@ function wrapDocumentPage({ kurumAd, adres, telefon, yonetici, logoUrl, title, s
     </div>
   </body>
   </html>`;
-}
-
-// Gezi Formu: tek bir kayıt (bkz. AdminGeziFormEditScreen.js). Yayınlama/ay
-// kavramı yok — form oluşturulduğu an itibariyle yazdırılabilir/paylaşılabilir.
-export function buildGeziFormuHtml({ kres, record }) {
-  const kurumAd = escapeHtml(kres?.ad || 'Kreş');
-  const adres = escapeHtml(kres?.adres || '');
-  const telefon = escapeHtml(kres?.telefon || '');
-  const yonetici = escapeHtml(kres?.yoneticiAd || '');
-  const logoUrl = kres?.logoUrl || '';
-
-  const rows = [
-    ['Gezi Adı', record?.baslik],
-    ['Gidilecek Yer', record?.hedefYer],
-    ['Tarih', formatDateTr(record?.tarih)],
-    ['Gidiş Saati', record?.gidisSaati],
-    ['Dönüş Saati', record?.donusSaati],
-    ['Sınıf', record?.sinifAd],
-    ['Sorumlu Personel', record?.sorumluPersonel],
-    ['Veli İzni Gerekli mi', record?.izinGerekliMi ? 'Evet' : 'Hayır'],
-  ]
-    .filter(([, value]) => String(value || '').trim())
-    .map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
-    .join('');
-
-  const aciklama = String(record?.aciklama || '').trim();
-
-  const bodyHtml = `
-    <table class="info-table"><tbody>${rows}</tbody></table>
-    ${aciklama ? `<p><strong>Açıklama:</strong> ${escapeHtml(aciklama).replace(/\n/g, '<br/>')}</p>` : ''}
-    ${record?.izinGerekliMi ? '<p style="margin-top:18px;color:#707386;">Bu formu imzalayarak çocuğumun yukarıda belirtilen geziye katılmasına izin veriyorum.</p>' : ''}
-  `;
-
-  return wrapDocumentPage({
-    kurumAd, adres, telefon, yonetici, logoUrl,
-    title: 'Gezi Formu',
-    subtitle: record?.baslik || '',
-    bodyHtml,
-  });
 }
 
 // İlaç Takip Formu: tek bir ilaç kürü kaydı + günlük uygulama log'u.
