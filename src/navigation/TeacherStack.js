@@ -20,6 +20,7 @@ import TeacherThemeScreen from '../screens/teacher/TeacherThemeScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
 import TeacherMessagesScreen from '../screens/teacher/TeacherMessagesScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
+import TeacherSupportScreen from '../screens/teacher/TeacherSupportScreen';
 import TeacherGalleryScreen from '../screens/teacher/TeacherGalleryScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
@@ -51,6 +52,7 @@ export default function TeacherStack() {
       <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
       <Stack.Screen name="TeacherGallery" component={TeacherGalleryScreen} />
       <Stack.Screen name="TeacherProfile" component={TeacherProfileScreen} />
+      <Stack.Screen name="TeacherSupport" component={TeacherSupportScreen} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
       <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
     </Stack.Navigator>
