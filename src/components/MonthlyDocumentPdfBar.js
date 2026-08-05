@@ -54,7 +54,6 @@ function fetchPublishedRecords({ nodePath, kresId, monthKey, kaynak, sinifId }) 
 
 function docTypeLabel(docType) {
   if (docType === 'yemek') return 'Yemek Listesi';
-  if (docType === 'bulten') return 'Aylık Bülten';
   if (docType === 'nobet') return 'Nöbet Çizelgesi';
   if (docType === 'gorev') return 'Personel Görev Listesi';
   return 'Ders Programı';
