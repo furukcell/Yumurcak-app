@@ -1,26 +1,144 @@
 // ============================================================
 // YUMURCAK — TeacherProfileScreen.js
 // FAZ 3: Öğretmen profil + profesyonel yasal metin kartı
+// FAZ 10: Galeriden profil fotoğrafı seçme + Firebase Storage upload
+// Kayıt:
+// - Storage: profilFotograflari/ogretmenler/{teacherId}.jpg
+// - RTDB: kullanicilar/{teacherId}/profilFotoUrl
 // ============================================================
-import React from 'react';
-import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { ref as dbRef, update } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { database, storage } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, InfoRow, getUserName } from './teacherShared';
+import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherProfileScreen() {
   const navigation = useNavigation();
-  const { loading, kullanici, cikisYap, currentClass, kurum } = useTeacherData();
+  const { loading, kullanici, teacherId, cikisYap, currentClass, kurum } = useTeacherData();
+  const [photoUrl, setPhotoUrl] = useState(kullanici?.profilFotoUrl || '');
+  const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
+
+  useEffect(() => {
+    setPhotoUrl(kullanici?.profilFotoUrl || '');
+  }, [kullanici?.profilFotoUrl]);
 
   if (loading) return <LoadingState text="Profil hazırlanıyor..." />;
 
+  const showSuccess = (message) => setSuccessToast({ visible: true, message });
+
+  const pickAndUploadPhoto = async () => {
+    if (!teacherId) return Alert.alert('Hata', 'Öğretmen hesabı bulunamadı.');
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('İzin Gerekli', 'Profil fotoğrafı seçmek için galeri izni vermen gerekiyor.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.75,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      const uri = result.assets[0].uri;
+      setUploading(true);
+
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const fileRef = storageRef(storage, `profilFotograflari/ogretmenler/${teacherId}.jpg`);
+      await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
+
+      const downloadUrl = await getDownloadURL(fileRef);
+
+      await update(dbRef(database, `kullanicilar/${teacherId}`), {
+        profilFotoUrl: downloadUrl,
+        profilFotoUpdatedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      setPhotoUrl(downloadUrl);
+      showSuccess('Profil fotoğrafı yüklendi');
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = () => {
+    if (!teacherId) return Alert.alert('Hata', 'Öğretmen hesabı bulunamadı.');
+
+    Alert.alert('Profil Fotoğrafı', 'Fotoğrafı profilden kaldırmak istiyor musun?', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Kaldır',
+        style: 'destructive',
+        onPress: async () => {
+          setRemoving(true);
+          try {
+            await update(dbRef(database, `kullanicilar/${teacherId}`), {
+              profilFotoUrl: '',
+              profilFotoUpdatedAt: Date.now(),
+              updatedAt: Date.now(),
+            });
+            setPhotoUrl('');
+            showSuccess('Profil fotoğrafı kaldırıldı');
+          } catch (err) {
+            console.error(err);
+            Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
+          } finally {
+            setRemoving(false);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AppSuccessToast
+        visible={successToast.visible}
+        message={successToast.message}
+        onHide={() => setSuccessToast({ visible: false, message: '' })}
+      />
       <ScreenHeader navigation={navigation} title="Profil" subtitle="Öğretmen bilgileri" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Text style={styles.avatar}>👩‍🏫</Text>
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatar}>👩‍🏫</Text>
+          )}
           <Text style={styles.name} numberOfLines={1}>{getUserName(kullanici)}</Text>
           <Text style={styles.sub} numberOfLines={1}>{currentClass?.ad || 'Sınıf atanmamış'}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Profil Resmi</Text>
+          <Text style={styles.hintText}>Seçtiğin fotoğraf veli ekranlarında öğretmen bilgisi gösterilen yerlerde otomatik görünür.</Text>
+
+          <TouchableOpacity style={styles.primaryButton} onPress={pickAndUploadPhoto} disabled={uploading || removing} activeOpacity={0.85}>
+            {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Galeriden Fotoğraf Seç</Text>}
+          </TouchableOpacity>
+
+          {photoUrl ? (
+            <TouchableOpacity style={styles.removeButton} onPress={removePhoto} disabled={uploading || removing} activeOpacity={0.85}>
+              <Text style={styles.removeButtonText}>{removing ? 'Kaldırılıyor...' : 'Fotoğrafı Kaldır'}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -111,10 +229,16 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   hero: { backgroundColor: THEME.primary, borderRadius: 24, padding: 22, alignItems: 'center', marginBottom: 14 },
   avatar: { fontSize: 52, marginBottom: 8 },
+  avatarImage: { width: 88, height: 88, borderRadius: 44, marginBottom: 8, backgroundColor: '#FFF' },
   name: { color: '#FFF', fontSize: 21, fontWeight: '900', maxWidth: '100%' },
   sub: { color: 'rgba(255,255,255,0.82)', marginTop: 4, fontWeight: '700', maxWidth: '100%' },
   card: { backgroundColor: THEME.card, borderRadius: 18, paddingHorizontal: 15, paddingVertical: 12, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
   cardTitle: { color: THEME.text, fontSize: 17, fontWeight: '900' },
+  hintText: { color: THEME.muted, fontWeight: '700', marginTop: 6, marginBottom: 12, lineHeight: 18 },
+  primaryButton: { backgroundColor: THEME.primary, borderRadius: 14, padding: 14, alignItems: 'center' },
+  primaryButtonText: { color: '#FFF', fontWeight: '900' },
+  removeButton: { backgroundColor: '#FFE8EC', borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 8 },
+  removeButtonText: { color: '#FF4D6D', fontWeight: '900' },
   legalCard: { backgroundColor: THEME.card, borderRadius: 20, padding: 15, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
   legalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   legalIconBox: { width: 48, height: 48, borderRadius: 16, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
