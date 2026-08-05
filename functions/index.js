@@ -902,3 +902,81 @@ exports.createNotificationOnEventCreate = functions
 
     return null;
   });
+
+// ============================================================
+// FAZ 9 — Doğum günü bildirimi (madde 6)
+// Sistemde doğum günü için hiç bildirim yoktu; TeacherBirthdaysScreen
+// sadece pasif bir liste gösteriyordu, kimseye otomatik haber gitmiyordu.
+// Her gün sabah 08:00'de (Türkiye saati) çalışıp bugün doğum günü olan
+// çocukları bulur; hem velisine hem sınıfının öğretmenine bildirim atar.
+// ============================================================
+
+function parseBirthDateForCheck(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const tr = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (tr) return new Date(Number(tr[3]), Number(tr[2]) - 1, Number(tr[1]));
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+exports.checkBirthdaysDaily = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every day 08:00')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const childrenSnap = await admin.database().ref('cocuklar').once('value');
+    const children = childrenSnap.val() || {};
+
+    const today = new Date();
+    const todayMonth = today.getMonth();
+    const todayDate = today.getDate();
+
+    const tasks = Object.entries(children).map(async ([childId, child = {}]) => {
+      const birthValue = child.dogumTarihi || child.dogumGunu || child.birthDate;
+      const birth = parseBirthDateForCheck(birthValue);
+      if (!birth) return;
+      if (birth.getMonth() !== todayMonth || birth.getDate() !== todayDate) return;
+
+      const childName = getChildName(child);
+      const age = today.getFullYear() - birth.getFullYear();
+
+      // Veliye bildirim
+      const parentIds = getParentIdsFromChild(child);
+      if (parentIds.length) {
+        await createNotificationRecord({
+          kresId: child.kresId || '',
+          hedefUserIds: parentIds,
+          baslik: '🎂 Doğum günü kutlu olsun!',
+          mesaj: `${childName} bugün ${age} yaşına giriyor! 🎉`,
+          tip: 'dogumgunu',
+          routeName: 'ParentSummary',
+          source: 'dogumgunu',
+          sourceId: childId,
+          createdBy: 'cloud-function',
+        });
+      }
+
+      // Sınıf öğretmenine bildirim
+      if (child.sinifId) {
+        await createNotificationRecord({
+          kresId: child.kresId || '',
+          hedefRoller: ['ogretmen'],
+          hedefSinifIds: [child.sinifId],
+          baslik: '🎂 Sınıfınızda doğum günü var',
+          mesaj: `${childName} bugün doğum günü kutluyor (${age} yaşında).`,
+          tip: 'dogumgunu',
+          routeName: 'TeacherBirthdays',
+          source: 'dogumgunu',
+          sourceId: childId,
+          createdBy: 'cloud-function',
+        });
+      }
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
