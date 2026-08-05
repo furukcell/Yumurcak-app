@@ -798,3 +798,107 @@ exports.updateMealPoolOnMealWrite = functions
 
     return null;
   });
+
+// ============================================================
+// FAZ 8 — Duyuru ve Etkinlik bildirimleri
+// `duyurular` ve `etkinlikler` node'larını dinleyen trigger hiç
+// yoktu, bu yüzden öğretmen/admin panelinden oluşturulan duyuru
+// ve etkinlikler veliye bildirim olarak gitmiyordu.
+//
+// ÖNEMLİ: veli kaydında (`kullanicilar/{id}`) sinifId alanı YOK.
+// Sınıf bilgisi sadece `cocuklar/{id}.sinifId` üzerinde tutuluyor,
+// veli oraya `veliIds` üzerinden bağlı. Bu yüzden sınıf bazlı
+// hedeflemede önce sınıftaki çocukları çekip oradan veli id'lerine
+// iniyoruz (aşağıdaki `getParentIdsForSiniflar` bunu yapıyor).
+// ============================================================
+
+async function getParentIdsForSiniflar(sinifIds = [], kresId = '') {
+  const ids = unique(sinifIds);
+  if (!ids.length) return [];
+
+  const childrenSnap = await admin.database().ref('cocuklar').once('value');
+  const children = childrenSnap.val() || {};
+  const parentIds = [];
+
+  Object.values(children).forEach((child = {}) => {
+    if (kresId && child.kresId && String(child.kresId) !== String(kresId)) return;
+    const childSinifId = String(child.sinifId || '');
+    if (!childSinifId || !ids.includes(childSinifId)) return;
+    parentIds.push(...getParentIdsFromChild(child));
+  });
+
+  return unique(parentIds);
+}
+
+exports.createNotificationOnAnnouncementCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/duyurular/{announcementId}')
+  .onCreate(async (snapshot, context) => {
+    const announcementId = context.params.announcementId;
+    const announcement = snapshot.val() || {};
+    if (announcement.aktif === false) return null;
+
+    const title = announcement.baslik || announcement.title || 'Yeni duyuru';
+    const body = announcement.icerik || announcement.message || '';
+    if (!body) return null;
+
+    const sinifIds = unique([...arr(announcement.sinifIds), announcement.sinifId]);
+    let hedefUserIds;
+    if (sinifIds.length) {
+      hedefUserIds = await getParentIdsForSiniflar(sinifIds, announcement.kresId);
+      if (!hedefUserIds.length) return null;
+    }
+
+    await createNotificationRecord({
+      kresId: announcement.kresId || '',
+      hedefUserIds,
+      hedefRol: hedefUserIds ? undefined : 'veli',
+      baslik: `📢 ${title}`,
+      mesaj: body,
+      tip: 'duyuru',
+      routeName: 'ParentAnnouncements',
+      routeParams: { announcementId },
+      source: 'duyurular',
+      sourceId: announcementId,
+      createdBy: announcement.olusturanId || 'cloud-function',
+    });
+
+    return null;
+  });
+
+exports.createNotificationOnEventCreate = functions
+  .region('europe-west1')
+  .database
+  .ref('/etkinlikler/{eventId}')
+  .onCreate(async (snapshot, context) => {
+    const eventId = context.params.eventId;
+    const event = snapshot.val() || {};
+    if (event.aktif === false) return null;
+
+    const title = event.baslik || event.title || 'Yeni etkinlik';
+    const dateLabel = event.tarih ? ` (${event.tarih})` : '';
+
+    const sinifIds = unique([...arr(event.sinifIds), event.sinifId]);
+    let hedefUserIds;
+    if (sinifIds.length) {
+      hedefUserIds = await getParentIdsForSiniflar(sinifIds, event.kresId);
+      if (!hedefUserIds.length) return null;
+    }
+
+    await createNotificationRecord({
+      kresId: event.kresId || '',
+      hedefUserIds,
+      hedefRol: hedefUserIds ? undefined : 'veli',
+      baslik: `🎉 ${title}`,
+      mesaj: `Yeni bir etkinlik eklendi${dateLabel}.`,
+      tip: 'etkinlik',
+      routeName: 'ParentEvents',
+      routeParams: { eventId },
+      source: 'etkinlikler',
+      sourceId: eventId,
+      createdBy: event.olusturanId || 'cloud-function',
+    });
+
+    return null;
+  });
