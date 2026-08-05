@@ -12,6 +12,12 @@ import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, EmptyState, getChildName } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import { normalizeChildBirthDate } from '../../utils/childDates';
+import { createNotification } from '../../services/notificationCenter';
+
+function getChildParentIds(child) {
+  const raw = [...(Array.isArray(child?.veliIds) ? child.veliIds : []), child?.veliId, child?.parentId];
+  return [...new Set(raw.filter(Boolean))];
+}
 
 export default function TeacherMedicationFormEditScreen({ navigation }) {
   const { kullanici, teacherId, currentClass, kresId, classChildren } = useTeacherData();
@@ -79,6 +85,20 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
       });
       setSuccessToast(true);
       setTimeout(() => navigation.goBack(), 700);
+
+      const parentIds = getChildParentIds(child);
+      if (parentIds.length > 0) {
+        createNotification({
+          kresId,
+          hedefUserIds: parentIds,
+          hedefCocukIds: [cocukId],
+          baslik: '💊 İlaç takip formu oluşturuldu',
+          mesaj: `${getChildName(child)} için "${ilacAdi.trim()}" ilaç takip formu oluşturuldu.`,
+          tip: 'ilac_takip',
+          routeName: 'ParentMedical',
+          createdBy: teacherId || kullanici?.uid || '',
+        }).catch((error) => console.log('İlaç bildirimi gönderilemedi:', error));
+      }
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Form kaydedilemedi.');
