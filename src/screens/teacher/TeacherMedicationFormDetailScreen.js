@@ -12,12 +12,18 @@ import { useRoute } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { createNotification } from '../../services/notificationCenter';
 import {
   fetchInstitutionInfo,
   buildIlacTakipHtml,
   printMonthlyDocument,
   shareMonthlyDocumentPdf,
 } from '../../services/documentPdf';
+
+function getChildParentIds(child) {
+  const raw = [...(Array.isArray(child?.veliIds) ? child.veliIds : []), child?.veliId, child?.parentId];
+  return [...new Set(raw.filter(Boolean))];
+}
 
 const NODE_PATH = 'ilacTakipFormlari';
 
@@ -35,7 +41,7 @@ function nowTimeStr() {
 export default function TeacherMedicationFormDetailScreen({ navigation }) {
   const route = useRoute();
   const formId = route.params?.formId;
-  const { kullanici, teacherId, kresId } = useTeacherData();
+  const { kullanici, teacherId, kresId, classChildren } = useTeacherData();
 
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +80,21 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
       await update(ref(database, `${NODE_PATH}/${formId}`), { updatedAt: Date.now() });
       setNote('');
       setSuccessToast(true);
+
+      const child = (classChildren || []).find((c) => c.id === record?.cocukId);
+      const parentIds = getChildParentIds(child);
+      if (parentIds.length > 0) {
+        createNotification({
+          kresId,
+          hedefUserIds: parentIds,
+          hedefCocukIds: record?.cocukId ? [record.cocukId] : null,
+          baslik: '💊 İlaç uygulandı',
+          mesaj: `${record?.cocukAdi || 'Çocuğunuz'} için bugünkü "${record?.ilacAdi || 'ilaç'}" dozu verildi.`,
+          tip: 'ilac_takip',
+          routeName: 'ParentMedical',
+          createdBy: teacherId || kullanici?.uid || '',
+        }).catch((error) => console.log('İlaç bildirimi gönderilemedi:', error));
+      }
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Kayıt eklenemedi.');
