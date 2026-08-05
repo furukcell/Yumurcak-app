@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { ref, onValue, set } from 'firebase/database';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Switch } from 'react-native';
+import { ref, onValue, set, update, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, EmptyState, LoadingScreen, useParentBase, THEME } from './parentShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { createNotification } from '../../services/notificationCenter';
+import { normalizeChildBirthDate } from '../../utils/childDates';
 
 function splitItems(value) {
   return String(value || '')
@@ -17,6 +19,17 @@ function formatUpdatedAt(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Henüz güncellenmedi';
   return date.toLocaleDateString('tr-TR');
+}
+
+function formatDateTr(dateKey) {
+  const parts = String(dateKey || '').split('-');
+  if (parts.length !== 3) return dateKey || '';
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function getChildName(child) {
@@ -48,6 +61,104 @@ export default function ParentMedicalScreen({ navigation }) {
     });
     return () => unsub();
   }, [selectedChild?.id]);
+
+  const [medicationForms, setMedicationForms] = useState([]);
+  const [editingFormId, setEditingFormId] = useState(null); // null | 'new' | formId
+  const [formDraft, setFormDraft] = useState(null);
+  const [formSaving, setFormSaving] = useState(false);
+
+  useEffect(() => {
+    if (!kresId) {
+      setMedicationForms([]);
+      return undefined;
+    }
+    const q = query(ref(database, 'ilacTakipFormlari'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => {
+      const data = snap.val() || {};
+      const list = Object.entries(data)
+        .map(([id, value]) => ({ id, ...value }))
+        .filter((item) => item.aktif !== false && item.cocukId === selectedChild?.id)
+        .sort((a, b) => String(b.baslangicTarihi || '').localeCompare(String(a.baslangicTarihi || '')));
+      setMedicationForms(list);
+    }, () => setMedicationForms([]));
+    return () => unsub();
+  }, [kresId, selectedChild?.id]);
+
+  function startNewForm() {
+    setFormDraft({ ilacAdi: '', doz: '', uygulamaSekli: '', baslangicTarihi: '', bitisTarihi: '', veliOnayi: true });
+    setEditingFormId('new');
+  }
+
+  function startEditForm(form) {
+    setFormDraft({
+      ilacAdi: form.ilacAdi || '',
+      doz: form.doz || '',
+      uygulamaSekli: form.uygulamaSekli || '',
+      baslangicTarihi: form.baslangicTarihi || '',
+      bitisTarihi: form.bitisTarihi || '',
+      veliOnayi: form.veliOnayi !== false,
+    });
+    setEditingFormId(form.id);
+  }
+
+  function cancelFormEdit() {
+    setEditingFormId(null);
+    setFormDraft(null);
+  }
+
+  async function saveMedicationForm() {
+    if (!selectedChild?.id || !formDraft) return;
+    if (!formDraft.ilacAdi.trim() || !formDraft.baslangicTarihi.trim() || !formDraft.bitisTarihi.trim()) {
+      Alert.alert('Eksik Bilgi', 'İlaç adı, başlangıç ve bitiş tarihi zorunludur.');
+      return;
+    }
+    setFormSaving(true);
+    try {
+      const payload = {
+        kresId: kresId || '',
+        sinifId: selectedChild?.sinifId || null,
+        cocukId: selectedChild.id,
+        cocukAdi: getChildName(selectedChild),
+        ilacAdi: formDraft.ilacAdi.trim(),
+        doz: formDraft.doz.trim(),
+        uygulamaSekli: formDraft.uygulamaSekli.trim(),
+        baslangicTarihi: normalizeChildBirthDate(formDraft.baslangicTarihi),
+        bitisTarihi: normalizeChildBirthDate(formDraft.bitisTarihi),
+        veliOnayi: formDraft.veliOnayi,
+        aktif: true,
+        updatedAt: Date.now(),
+        duzenleyenVeliId: parentId || '',
+      };
+
+      let isNew = editingFormId === 'new';
+      if (isNew) {
+        const newRef = push(ref(database, 'ilacTakipFormlari'));
+        await update(newRef, { ...payload, kayitlar: {}, createdAt: Date.now() });
+      } else {
+        await update(ref(database, `ilacTakipFormlari/${editingFormId}`), payload);
+      }
+
+      setSuccessToast(true);
+      cancelFormEdit();
+
+      const sinifId = selectedChild?.sinifId;
+      if (sinifId) {
+        createNotification({
+          kresId,
+          hedefRoller: ['ogretmen'],
+          hedefSinifIds: [sinifId],
+          baslik: isNew ? '💊 Veli yeni ilaç takip formu ekledi' : '💊 Veli ilaç takip formunu güncelledi',
+          mesaj: `${getChildName(selectedChild)} için "${formDraft.ilacAdi.trim()}" ${isNew ? 'formu eklendi' : 'formu güncellendi'}.`,
+          tip: 'ilac_takip',
+          createdBy: parentId || '',
+        }).catch((error) => console.log('Öğretmen bildirimi gönderilemedi:', error));
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'İlaç takip formu kaydedilemedi.');
+    } finally {
+      setFormSaving(false);
+    }
+  }
 
   const allergyTags = useMemo(() => splitItems(draft.alerjiler), [draft.alerjiler]);
   const medicineItems = useMemo(() => splitItems(draft.ilaclar), [draft.ilaclar]);
@@ -104,6 +215,64 @@ export default function ParentMedicalScreen({ navigation }) {
               <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder="Örn: Şurup - Sabah/Akşam" placeholderTextColor="#A2A5B6" multiline />
             </MedicalCard>
 
+            <MedicalCard icon="📋" title="İlaç Takip" badge={medicationForms.length > 0 ? `${medicationForms.length}` : null}>
+              {medicationForms.length === 0 && editingFormId !== 'new' ? (
+                <Text style={local.emptyText}>Henüz bir ilaç takip formu yok.</Text>
+              ) : (
+                <View style={local.medicineList}>
+                  {medicationForms.map((form) => {
+                    if (editingFormId === form.id) {
+                      return (
+                        <MedicationFormEditor
+                          key={form.id}
+                          draft={formDraft}
+                          setDraft={setFormDraft}
+                          saving={formSaving}
+                          onSave={saveMedicationForm}
+                          onCancel={cancelFormEdit}
+                        />
+                      );
+                    }
+                    const verildiBugun = !!form?.kayitlar?.[todayKey()]?.verildi;
+                    return (
+                      <View key={form.id} style={local.trackRow}>
+                        <View style={local.trackHeaderRow}>
+                          <Text style={local.medicineName}>{form.ilacAdi || 'İlaç'}</Text>
+                          <Text style={[local.trackBadge, verildiBugun ? local.trackBadgeOk : local.trackBadgeWait]}>
+                            {verildiBugun ? '✓ Bugün verildi' : 'Bugün henüz verilmedi'}
+                          </Text>
+                        </View>
+                        {form.doz ? <Text style={local.medicineMeta}>Doz: {form.doz}</Text> : null}
+                        {form.uygulamaSekli ? <Text style={local.medicineMeta}>{form.uygulamaSekli}</Text> : null}
+                        <Text style={local.medicineMeta}>
+                          {formatDateTr(form.baslangicTarihi)}{form.bitisTarihi ? ` – ${formatDateTr(form.bitisTarihi)}` : ''}
+                        </Text>
+                        <TouchableOpacity style={local.editFormButton} onPress={() => startEditForm(form)} activeOpacity={0.85}>
+                          <Text style={local.editFormButtonText}>✏️ Düzenle</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+
+                  {editingFormId === 'new' ? (
+                    <MedicationFormEditor
+                      draft={formDraft}
+                      setDraft={setFormDraft}
+                      saving={formSaving}
+                      onSave={saveMedicationForm}
+                      onCancel={cancelFormEdit}
+                    />
+                  ) : null}
+                </View>
+              )}
+
+              {editingFormId === null ? (
+                <TouchableOpacity style={local.addFormButton} onPress={startNewForm} activeOpacity={0.85}>
+                  <Text style={local.addFormButtonText}>➕ Yeni İlaç Takip Formu Ekle</Text>
+                </TouchableOpacity>
+              ) : null}
+            </MedicalCard>
+
             <MedicalCard icon="📎" title="Notlar">
               <View style={local.noteBox}><TextInput style={local.noteInput} value={draft.notlar} onChangeText={(text) => setDraft((p) => ({ ...p, notlar: text }))} placeholder="Öğretmen ve yönetici için özel notlar..." placeholderTextColor="#7D7199" multiline /></View>
             </MedicalCard>
@@ -120,6 +289,34 @@ export default function ParentMedicalScreen({ navigation }) {
 
 function MedicalCard({ icon, title, badge, warning, children }) {
   return <View style={local.medicalCard}><View style={local.cardHeader}><View style={local.cardIconCircle}><Text style={local.cardIcon}>{icon}</Text></View><Text style={local.sectionTitle}>{title}</Text>{badge ? <Text style={[local.cardBadge, warning ? local.cardBadgeWarning : local.cardBadgeOk]}>{badge}</Text> : null}</View>{children}</View>;
+}
+
+function MedicationFormEditor({ draft, setDraft, saving, onSave, onCancel }) {
+  if (!draft) return null;
+  const setField = (field) => (text) => setDraft((prev) => ({ ...prev, [field]: text }));
+  return (
+    <View style={local.editorBox}>
+      <TextInput style={local.formInput} value={draft.ilacAdi} onChangeText={setField('ilacAdi')} placeholder="İlaç adı *" placeholderTextColor="#A2A5B6" />
+      <TextInput style={local.formInput} value={draft.doz} onChangeText={setField('doz')} placeholder="Doz (Örn: 5 ml)" placeholderTextColor="#A2A5B6" />
+      <TextInput style={local.formInput} value={draft.uygulamaSekli} onChangeText={setField('uygulamaSekli')} placeholder="Uygulama şekli (Örn: Sabah/Akşam)" placeholderTextColor="#A2A5B6" />
+      <View style={local.formRow}>
+        <TextInput style={[local.formInput, { flex: 1 }]} value={draft.baslangicTarihi} onChangeText={setField('baslangicTarihi')} placeholder="Başlangıç (GG.AA.YYYY) *" placeholderTextColor="#A2A5B6" />
+        <TextInput style={[local.formInput, { flex: 1 }]} value={draft.bitisTarihi} onChangeText={setField('bitisTarihi')} placeholder="Bitiş (GG.AA.YYYY) *" placeholderTextColor="#A2A5B6" />
+      </View>
+      <View style={local.formRow}>
+        <Text style={local.formSwitchLabel}>Veli onayı</Text>
+        <Switch value={!!draft.veliOnayi} onValueChange={(value) => setDraft((prev) => ({ ...prev, veliOnayi: value }))} />
+      </View>
+      <View style={local.formRow}>
+        <TouchableOpacity style={[local.formButton, local.formButtonCancel]} onPress={onCancel} disabled={saving} activeOpacity={0.85}>
+          <Text style={local.formButtonCancelText}>Vazgeç</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[local.formButton, local.formButtonSave, saving && { opacity: 0.65 }]} onPress={onSave} disabled={saving} activeOpacity={0.85}>
+          <Text style={local.formButtonSaveText}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }
 
 const local = StyleSheet.create({
@@ -152,6 +349,24 @@ const local = StyleSheet.create({
   medicineName: { color: THEME.text, fontWeight: '900', fontSize: 15 },
   medicineMeta: { color: '#31527D', fontWeight: '700', fontSize: 11, marginTop: 4 },
   medicineBadge: { color: '#1976D2', borderWidth: 1, borderColor: '#A9D7FF', backgroundColor: '#F7FCFF', borderRadius: 99, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 6, fontWeight: '900', fontSize: 10, marginLeft: 8 },
+  trackRow: { backgroundColor: '#F5FBFF', borderWidth: 1, borderColor: '#CDEBFF', borderRadius: 16, padding: 10, gap: 4 },
+  trackHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  trackBadge: { fontSize: 10, fontWeight: '900', borderRadius: 99, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1 },
+  trackBadgeOk: { color: '#17843B', backgroundColor: '#EEFBEF', borderColor: '#CDEFD3' },
+  trackBadgeWait: { color: '#B08600', backgroundColor: '#FFF8E6', borderColor: '#F3DFA0' },
+  editFormButton: { alignSelf: 'flex-start', marginTop: 4, backgroundColor: '#EFF1FF', borderWidth: 1, borderColor: '#D6D9FF', borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
+  editFormButtonText: { color: '#5D5FEF', fontWeight: '900', fontSize: 11 },
+  addFormButton: { marginTop: 12, backgroundColor: '#F0F6FF', borderStyle: 'dashed', borderWidth: 1, borderColor: '#A9D7FF', borderRadius: 16, paddingVertical: 12, alignItems: 'center' },
+  addFormButtonText: { color: '#1976D2', fontWeight: '900', fontSize: 13 },
+  editorBox: { backgroundColor: '#FAFAFC', borderWidth: 1, borderColor: THEME.border, borderRadius: 16, padding: 12, gap: 8 },
+  formInput: { backgroundColor: '#FFF', borderWidth: 1, borderColor: THEME.border, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 9, color: THEME.text, fontSize: 13, fontWeight: '700' },
+  formRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  formSwitchLabel: { flex: 1, color: THEME.text, fontWeight: '800', fontSize: 13 },
+  formButton: { flex: 1, borderRadius: 14, paddingVertical: 11, alignItems: 'center' },
+  formButtonCancel: { backgroundColor: '#F2F2F5', borderWidth: 1, borderColor: THEME.border },
+  formButtonCancelText: { color: THEME.muted, fontWeight: '900', fontSize: 13 },
+  formButtonSave: { backgroundColor: '#5D5FEF' },
+  formButtonSaveText: { color: '#FFF', fontWeight: '900', fontSize: 13 },
   noteBox: { backgroundColor: '#FBF7FF', borderWidth: 1, borderColor: '#DCC7FF', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
   noteInput: { minHeight: 86, color: '#4B326D', fontWeight: '700', fontSize: 14, lineHeight: 21, textAlignVertical: 'top' },
   editInput: { marginTop: 10, backgroundColor: '#FAFAFC', borderWidth: 1, borderColor: THEME.border, borderRadius: 14, minHeight: 78, padding: 11, color: THEME.text, textAlignVertical: 'top', fontSize: 13, fontWeight: '700' },
