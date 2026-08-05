@@ -140,12 +140,12 @@ export default function TeacherScheduleScreen() {
     return () => { cancelled = true; };
   }, [kresId, sinifId, monthKey]);
 
-  // FAZ FIX — bu iki useMemo aşağıda, "if (loading) return" satırından SONRA
+  // FAZ FIX — bu hook'lar "if (loading) return" satırından SONRA
   // tanımlıydı. React hook kurallarına aykırı: "loading" true iken bu hook'lar
   // hiç çağrılmıyor, "loading" false olunca çağrılıyor — hook sayısı render'lar
   // arası değişince React "Rendered more hooks than during the previous
-  // render" hatasıyla çöküyordu. Bu ekranın "atıyor uygulama" şikayetinin
-  // asıl sebebi buydu. Çözüm: tüm hook'lar erken return'den ÖNCE olmalı.
+  // render" hatasıyla çöküyordu (ekran açılışında siyah ekran şikayetinin
+  // asıl sebebi). Çözüm: tüm hook'lar erken return'den ÖNCE olmalı.
   const daysWithContent = useMemo(
     () => days.map((day) => ({ ...day, hasContent: hasScheduleContent(values[day.dateKey]) })),
     [days, values]
@@ -153,6 +153,69 @@ export default function TeacherScheduleScreen() {
 
   const hasAnyEntry = useMemo(() => Object.values(values).some(hasScheduleContent), [values]);
 
+  const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
+
+  const selectedValue = values[selectedDateKey] || emptyScheduleValue();
+
+  // FAZ 10 — Akıllı Tekrar Uyarısı: girilen etkinlik adı, seçili günden
+  // geriye doğru son 10 gün içinde bu sınıfta zaten uygulanmışsa bilgi
+  // verir. Sadece bilgilendirme amaçlı, seçimi ENGELLEMEZ.
+  const recentRepeat = useMemo(() => {
+    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
+    if (!etkinlikAdi || !selectedDateKey) return null;
+
+    const selectedTime = new Date(selectedDateKey).getTime();
+
+    const eslesenler = classSchedules.filter((item) => {
+      if (item.tarih === selectedDateKey) return false;
+      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
+      const farkGun = (selectedTime - new Date(item.tarih).getTime()) / 86400000;
+      return farkGun > 0 && farkGun <= 10;
+    });
+
+    if (eslesenler.length === 0) return null;
+
+    const enSonTarih = eslesenler.map((item) => item.tarih).sort().slice(-1)[0];
+    return { sayi: eslesenler.length, enSonTarih };
+  }, [selectedValue.etkinlik, selectedDateKey, classSchedules]);
+
+  // FAZ 10 — Aynı Gün Geçen Yıl: seçili günün bir önceki yılki aynı
+  // tarihinde (MM-DD aynı, YYYY-1) bu sınıfta girilmiş bir etkinlik
+  // varsa gösterir. Dokununca alanları dolduruyor, zorunlu değil.
+  const lastYearSchedule = useMemo(() => {
+    if (!selectedDateKey) return null;
+    const [y, m, d] = selectedDateKey.split('-');
+    const lastYearKey = `${Number(y) - 1}-${m}-${d}`;
+    const item = classSchedules.find((entry) => entry.tarih === lastYearKey);
+    return item && hasScheduleContent(item) ? item : null;
+  }, [selectedDateKey, classSchedules]);
+
+  // FAZ 10 — Hazır Kazanımlar: aynı etkinlik adı bu kreşte (herhangi bir
+  // sınıfta) daha önce kazanımlarla girilmişse, en son kullanılanı önerir.
+  const kazanimOnerisi = useMemo(() => {
+    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
+    if (!etkinlikAdi || !selectedDateKey) return null;
+
+    const eslesenler = schedules.filter((item) => {
+      if (item?.aktif === false || item?.kaynak !== KAYNAK) return false;
+      if (item.tarih === selectedDateKey) return false;
+      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
+      return Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0;
+    });
+
+    if (eslesenler.length === 0) return null;
+
+    const enSon = [...eslesenler].sort((a, b) => (a.tarih < b.tarih ? 1 : -1))[0];
+    const mevcut = Array.isArray(selectedValue.kazanimlar) ? selectedValue.kazanimlar : [];
+    const ayni = mevcut.length === enSon.kazanimlar.length && mevcut.every((k) => enSon.kazanimlar.includes(k));
+    if (ayni) return null;
+
+    return enSon.kazanimlar;
+  }, [selectedValue.etkinlik, selectedValue.kazanimlar, selectedDateKey, schedules]);
+
+  // NOT: yukarıdaki tüm hook'lar (useMemo) kasıtlı olarak "if (loading) return"
+  // satırından ÖNCE duruyor — React hook sırası kuralı gereği. Bunlardan
+  // biri bile return'den sonraya taşınırsa ekran açılışta çöker (siyah ekran).
   if (loading) return <LoadingState text="Ders programı hazırlanıyor..." />;
 
   function changeMonth(direction) {
@@ -347,43 +410,6 @@ export default function TeacherScheduleScreen() {
     setSelectedDateKey('');
   }
 
-  const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
-
-  const selectedValue = values[selectedDateKey] || emptyScheduleValue();
-
-  // FAZ 10 — Akıllı Tekrar Uyarısı: girilen etkinlik adı, seçili günden
-  // geriye doğru son 10 gün içinde bu sınıfta zaten uygulanmışsa bilgi
-  // verir. Sadece bilgilendirme amaçlı, seçimi ENGELLEMEZ.
-  const recentRepeat = useMemo(() => {
-    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
-    if (!etkinlikAdi || !selectedDateKey) return null;
-
-    const selectedTime = new Date(selectedDateKey).getTime();
-
-    const eslesenler = classSchedules.filter((item) => {
-      if (item.tarih === selectedDateKey) return false;
-      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
-      const farkGun = (selectedTime - new Date(item.tarih).getTime()) / 86400000;
-      return farkGun > 0 && farkGun <= 10;
-    });
-
-    if (eslesenler.length === 0) return null;
-
-    const enSonTarih = eslesenler.map((item) => item.tarih).sort().slice(-1)[0];
-    return { sayi: eslesenler.length, enSonTarih };
-  }, [selectedValue.etkinlik, selectedDateKey, classSchedules]);
-
-  // FAZ 10 — Aynı Gün Geçen Yıl: seçili günün bir önceki yılki aynı
-  // tarihinde (MM-DD aynı, YYYY-1) bu sınıfta girilmiş bir etkinlik
-  // varsa gösterir. Dokununca alanları dolduruyor, zorunlu değil.
-  const lastYearSchedule = useMemo(() => {
-    if (!selectedDateKey) return null;
-    const [y, m, d] = selectedDateKey.split('-');
-    const lastYearKey = `${Number(y) - 1}-${m}-${d}`;
-    const item = classSchedules.find((entry) => entry.tarih === lastYearKey);
-    return item && hasScheduleContent(item) ? item : null;
-  }, [selectedDateKey, classSchedules]);
-
   function useLastYearSchedule() {
     if (!lastYearSchedule || !selectedDateKey) return;
     setValues((prev) => ({
@@ -397,29 +423,6 @@ export default function TeacherScheduleScreen() {
       },
     }));
   }
-
-  // FAZ 10 — Hazır Kazanımlar: aynı etkinlik adı bu kreşte (herhangi bir
-  // sınıfta) daha önce kazanımlarla girilmişse, en son kullanılanı önerir.
-  const kazanimOnerisi = useMemo(() => {
-    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
-    if (!etkinlikAdi || !selectedDateKey) return null;
-
-    const eslesenler = schedules.filter((item) => {
-      if (item?.aktif === false || item?.kaynak !== KAYNAK) return false;
-      if (item.tarih === selectedDateKey) return false;
-      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
-      return Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0;
-    });
-
-    if (eslesenler.length === 0) return null;
-
-    const enSon = [...eslesenler].sort((a, b) => (a.tarih < b.tarih ? 1 : -1))[0];
-    const mevcut = Array.isArray(selectedValue.kazanimlar) ? selectedValue.kazanimlar : [];
-    const ayni = mevcut.length === enSon.kazanimlar.length && mevcut.every((k) => enSon.kazanimlar.includes(k));
-    if (ayni) return null;
-
-    return enSon.kazanimlar;
-  }, [selectedValue.etkinlik, selectedValue.kazanimlar, selectedDateKey, schedules]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
