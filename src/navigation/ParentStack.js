@@ -14,7 +14,6 @@ import ParentAboutScreen from '../screens/parent/ParentAboutScreen';
 import ParentSupportScreen from '../screens/parent/ParentSupportScreen';
 import ParentMealsScreen from '../screens/parent/ParentMealsScreen';
 import ParentScheduleScreen from '../screens/parent/ParentScheduleScreen';
-import ParentBulletinScreen from '../screens/parent/ParentBulletinScreen';
 import ParentEventsScreen from '../screens/parent/ParentEventsScreen';
 import ParentAttendanceScreen from '../screens/parent/ParentAttendanceScreen';
 import ParentDevelopmentScreen from '../screens/parent/ParentDevelopmentScreen';
@@ -83,7 +82,6 @@ export default function ParentStack() {
         <Stack.Screen name="ParentSupport" component={ParentSupportScreen} />
         <Stack.Screen name="ParentMeals" component={ParentMealsScreen} />
         <Stack.Screen name="ParentSchedule" component={ParentScheduleScreen} />
-        <Stack.Screen name="ParentBulletin" component={ParentBulletinScreen} />
         <Stack.Screen name="ParentEvents" component={ParentEventsScreen} />
         <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
         <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
