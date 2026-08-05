@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { onValue, ref } from 'firebase/database';
+import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -57,13 +57,13 @@ export default function RootNavigator() {
   useEffect(() => {
     setResolvedSinifId(null);
 
-    if (!kullanici || !userId || userSinifId) {
+    if (!kullanici || !userId || userSinifId || !kresId) {
       return undefined;
     }
 
     if (role === ROLLER.OGRETMEN) {
       const unsubscribe = onValue(
-        ref(database, 'siniflar'),
+        query(ref(database, 'siniflar'), orderByChild('kresId'), equalTo(kresId)),
         (snap) => {
           const data = snap.val() || {};
           let nextSinifId = null;
@@ -93,7 +93,7 @@ export default function RootNavigator() {
 
     if (role === ROLLER.VELI) {
       const unsubscribe = onValue(
-        ref(database, 'cocuklar'),
+        query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(kresId)),
         (snap) => {
           const data = snap.val() || {};
           let nextSinifId = null;
@@ -123,7 +123,7 @@ export default function RootNavigator() {
     }
 
     return undefined;
-  }, [kullanici, role, userId, userSinifId]);
+  }, [kullanici, role, userId, userSinifId, kresId]);
 
   const subscriptionStatus = useMemo(() => getSubscriptionStatus(subscription), [subscription]);
 
