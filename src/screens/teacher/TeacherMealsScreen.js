@@ -9,7 +9,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import * as ImagePicker from 'expo-image-picker';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
-import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
+import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
 import MealAutocompleteInput from '../../components/MealAutocompleteInput';
@@ -119,10 +119,6 @@ function isDateExpired(dateKey) {
   return targetDate < getLast7DaysStart();
 }
 
-function isRecentDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateInLast7Days(getMealDateKey(item));
-}
-
 function isExpiredDailyMeal(item) {
   return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateExpired(getMealDateKey(item));
 }
@@ -230,7 +226,10 @@ export default function TeacherMealsScreen() {
   const [successToast, setSuccessToast] = useState(false);
   const [mealTexts, setMealTexts] = useState(buildEmptyMealTexts);
   const [selectedMealKey, setSelectedMealKey] = useState('kahvalti');
-  const [mealPhoto, setMealPhoto] = useState(null);
+  // FAZ 10 — Önceden tek bir "mealPhoto" state'i vardı ve sadece seçili öğüne
+  // bağlıydı; 3 öğüne foto eklemek için 3 ayrı "Kaydet" gerekiyordu. Artık her
+  // öğün için ayrı foto tutuyoruz, tek "Kaydet" hepsini birlikte yüklüyor.
+  const [mealPhotos, setMealPhotos] = useState({ kahvalti: null, ogle: null, araOgun: null });
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
@@ -446,8 +445,6 @@ export default function TeacherMealsScreen() {
       .sort((a, b) => String(b.tarih || b.baslangicTarihi || b.createdAt || '').localeCompare(String(a.tarih || a.baslangicTarihi || a.createdAt || '')));
   }, [meals, kresId, currentClass?.id]);
 
-  const dailyMeals = useMemo(() => visibleMeals.filter((item) => isRecentDailyMeal(item)), [visibleMeals]);
-
   const monthlyMeals = useMemo(() => {
     return visibleMeals
       .filter((item) => item.kaynak === 'admin_aylik')
@@ -508,7 +505,7 @@ export default function TeacherMealsScreen() {
       ogle: getMealText(ogunler.ogle),
       araOgun: getMealText(ogunler.araOgun),
     });
-    setMealPhoto(null);
+    setMealPhotos({ kahvalti: null, ogle: null, araOgun: null });
   }, [todayMeal?.dailySourceId, todayMeal?.monthlySourceId, todayMeal?.updatedAt, todayMeal?.createdAt]);
 
   if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
@@ -536,7 +533,7 @@ export default function TeacherMealsScreen() {
       });
 
       if (result.canceled || !result.assets?.[0]?.uri) return;
-      setMealPhoto(result.assets[0]);
+      setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: result.assets[0] }));
     } catch (err) {
       console.error(err);
       Alert.alert('Hata', 'Fotoğraf seçilemedi.');
@@ -545,7 +542,7 @@ export default function TeacherMealsScreen() {
 
   // Henüz kaydedilmemiş, sadece önizlemede duran fotoğrafı kaldırır — hiçbir şey paylaşılmaz.
   const removePickedPhoto = () => {
-    setMealPhoto(null);
+    setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: null }));
   };
 
   // Daha önce kaydedilip veliye açık olan fotoğrafı kaldırır (metin kalır).
@@ -581,7 +578,7 @@ export default function TeacherMealsScreen() {
     if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı. Öğretmenin bir sınıfa bağlı olması gerekiyor.');
 
     const hasAnyText = MEALS.some((meal) => String(mealTexts[meal.key] || '').trim());
-    const hasAnyPhoto = mealPhoto || MEALS.some((meal) => getMealPhoto(todayMeal?.ogunler?.[meal.key]));
+    const hasAnyPhoto = MEALS.some((meal) => mealPhotos[meal.key]) || MEALS.some((meal) => getMealPhoto(todayMeal?.ogunler?.[meal.key]));
 
     if (!hasAnyText && !hasAnyPhoto) {
       return Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir öğün bilgisi veya fotoğraf girmelisin.');
@@ -601,8 +598,16 @@ export default function TeacherMealsScreen() {
         };
       }
 
-      if (mealPhoto?.uri) {
-        photoMap[selectedMealKey] = await uploadMealPhoto(mealPhoto, finalKresId, currentClass.id, selectedMealKey);
+      // FAZ 10 — 3 öğünün fotoğrafı da seçilmişse hepsini burada, aynı
+      // kaydetme işleminde, paralel olarak yüklüyoruz.
+      const pendingUploads = MEALS.filter((meal) => mealPhotos[meal.key]?.uri);
+      if (pendingUploads.length > 0) {
+        const uploadedEntries = await Promise.all(
+          pendingUploads.map((meal) => uploadMealPhoto(mealPhotos[meal.key], finalKresId, currentClass.id, meal.key))
+        );
+        pendingUploads.forEach((meal, index) => {
+          photoMap[meal.key] = uploadedEntries[index];
+        });
       }
 
       const ogunler = MEALS.reduce((acc, meal) => {
@@ -639,7 +644,7 @@ export default function TeacherMealsScreen() {
         await update(newRef, { ...payload, createdAt: now });
       }
 
-      setMealPhoto(null);
+      setMealPhotos({ kahvalti: null, ogle: null, araOgun: null });
       setSuccessToast(true);
     } catch (err) {
       console.error('Yemek listesi kaydedilemedi:', err?.code || err?.message || err);
@@ -651,7 +656,8 @@ export default function TeacherMealsScreen() {
 
   const selectedMeal = MEALS.find((meal) => meal.key === selectedMealKey) || MEALS[0];
   const existingPhoto = getMealPhoto(todayMeal?.ogunler?.[selectedMealKey]);
-  const previewPhoto = mealPhoto?.uri || existingPhoto;
+  const selectedMealPhoto = mealPhotos[selectedMealKey];
+  const previewPhoto = selectedMealPhoto?.uri || existingPhoto;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -673,9 +679,6 @@ export default function TeacherMealsScreen() {
             <TouchableOpacity style={[styles.tab, tab === 'today' && styles.tabActive]} onPress={() => setTab('today')} activeOpacity={0.85}>
               <Text style={[styles.tabText, tab === 'today' && styles.tabTextActive]}>Bugün</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.tab, tab === 'daily' && styles.tabActive]} onPress={() => setTab('daily')} activeOpacity={0.85}>
-              <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Liste</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={[styles.tab, tab === 'monthly' && styles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
               <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık</Text>
             </TouchableOpacity>
@@ -688,13 +691,17 @@ export default function TeacherMealsScreen() {
               <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" />
               <View style={styles.editorCard}>
                 <Text style={styles.editorTitle}>🍽️ Bugünün yemek listesini gir</Text>
-                <Text style={styles.editorDesc}>Yazılar ve seçili öğünün fotoğrafı kaydedilince veli ekranında sınıf listesi olarak görünür.</Text>
+                <Text style={styles.editorDesc}>Her öğün için ayrı fotoğraf seçebilirsin, hepsi "Kaydet"e basınca birlikte yüklenir ve veli ekranında sınıf listesi olarak görünür.</Text>
 
-                {MEALS.map((meal) => (
+                {MEALS.map((meal) => {
+                  const mealHasPhoto = !!(mealPhotos[meal.key]?.uri || getMealPhoto(todayMeal?.ogunler?.[meal.key]));
+                  return (
                   <View key={meal.key} style={[styles.mealInputCard, selectedMealKey === meal.key && styles.mealInputCardActive]}>
                     <TouchableOpacity style={styles.mealInputHeader} onPress={() => setSelectedMealKey(meal.key)} activeOpacity={0.85}>
                       <Text style={styles.mealInputTitle}>{meal.icon} {meal.title}</Text>
-                      <Text style={styles.mealInputHint}>{selectedMealKey === meal.key ? 'Fotoğraf buraya eklenir' : 'Fotoğraf için seç'}</Text>
+                      <Text style={styles.mealInputHint}>
+                        {mealHasPhoto ? '📷 Foto eklendi' : selectedMealKey === meal.key ? 'Fotoğraf buraya eklenir' : 'Fotoğraf için seç'}
+                      </Text>
                     </TouchableOpacity>
                     <MealAutocompleteInput
                       ogun={meal.key}
@@ -706,7 +713,8 @@ export default function TeacherMealsScreen() {
                       theme={THEME}
                     />
                   </View>
-                ))}
+                  );
+                })}
 
                 <View style={styles.photoInfoCard}>
                   <Text style={styles.photoInfoTitle}>{selectedMeal.icon} {selectedMeal.title} fotoğrafı</Text>
@@ -716,7 +724,7 @@ export default function TeacherMealsScreen() {
                 {previewPhoto ? (
                   <View style={styles.photoPreviewWrap}>
                     <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
-                    {mealPhoto ? (
+                    {selectedMealPhoto ? (
                       <TouchableOpacity style={styles.photoRemoveBtn} onPress={removePickedPhoto} activeOpacity={0.85}>
                         <Text style={styles.photoRemoveBtnText}>Sil</Text>
                       </TouchableOpacity>
@@ -812,11 +820,7 @@ export default function TeacherMealsScreen() {
                 />
               </View>
             </>
-          ) : dailyMeals.length === 0 ? (
-            <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Yemek listesi eklediğinde burada görünür." />
-          ) : (
-            dailyMeals.map((item) => <MealCard key={item.id} item={item} />)
-          )}
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -868,40 +872,6 @@ export default function TeacherMealsScreen() {
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
-  );
-}
-
-function MealCard({ item }) {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.type}>{item.kaynak === 'admin_aylik' ? '📅 Aylık Liste' : item.sinifId ? '👩‍🏫 Sınıf Listesi' : '🏫 Kurum Listesi'}</Text>
-      <Text style={styles.title}>{item.baslik || 'Yemek Listesi'}</Text>
-      <Text style={styles.date}>{formatDate(item.tarih || item.baslangicTarihi)} {item.bitisTarihi ? `- ${formatDate(item.bitisTarihi)}` : ''}</Text>
-      {renderMeals(item)}
-    </View>
-  );
-}
-
-function renderMeal(label, icon, value) {
-  const text = getMealText(value);
-  const fotoUrl = getMealPhoto(value);
-  if (!text && !fotoUrl) return null;
-  return (
-    <View style={styles.mealItem}>
-      {text ? <Text style={styles.mealText}>{icon} {label}: {text}</Text> : <Text style={styles.mealText}>{icon} {label}</Text>}
-      {fotoUrl ? <Image source={{ uri: fotoUrl }} style={styles.mealPhoto} /> : null}
-    </View>
-  );
-}
-
-function renderMeals(item) {
-  const ogunler = item.ogunler || {};
-  return (
-    <View style={{ marginTop: 10 }}>
-      {renderMeal('Kahvaltı', '🥐', ogunler.kahvalti)}
-      {renderMeal('Öğle', '🍲', ogunler.ogle)}
-      {renderMeal('Ara Öğün', '🍎', ogunler.araOgun)}
-    </View>
   );
 }
 
