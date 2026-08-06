@@ -3,7 +3,7 @@
 // Öğretmen ana ekran
 // ============================================================
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -61,7 +61,11 @@ export default function TeacherDashboardScreen() {
             <View style={styles.headerActions}>
               <AppNotificationButton navigation={navigation} />
               <TouchableOpacity style={styles.avatar} onPress={() => navigation.navigate('TeacherProfile')} activeOpacity={0.85}>
-                <Text style={styles.avatarText}>👩‍🏫</Text>
+                {kullanici?.profilFotoUrl ? (
+                  <Image source={{ uri: kullanici.profilFotoUrl }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>👩‍🏫</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -135,7 +139,8 @@ const createStyles = (theme) => StyleSheet.create({
   title: { fontSize: 23, fontWeight: '900', color: theme.primary },
   panelLabel: { marginTop: 2, fontSize: 12, color: theme.muted, fontWeight: '800' },
   subtitle: { marginTop: 4, fontSize: 14, color: theme.muted, fontWeight: '700' },
-  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border },
+  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border, overflow: 'hidden' },
+  avatarImage: { width: 54, height: 54, borderRadius: 27 },
   avatarText: { fontSize: 27 },
   hero: { backgroundColor: theme.primary, borderRadius: 24, padding: 18, marginBottom: 22 },
   heroTitle: { color: '#FFF', fontSize: 22, fontWeight: '900' },
