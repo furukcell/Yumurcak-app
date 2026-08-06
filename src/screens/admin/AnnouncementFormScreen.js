@@ -89,12 +89,6 @@ export default function AnnouncementFormScreen() {
     }
   }, [announcementId]);
 
-  const getNotificationRoles = () => {
-    if (targetRole === 'veli') return ['veli'];
-    if (targetRole === 'ogretmen') return ['ogretmen'];
-    return ['veli', 'ogretmen'];
-  };
-
   const getTargetText = () => {
     if (targetRole === 'veli') return 'Bu duyuru sadece velilere gönderilecek.';
     if (targetRole === 'ogretmen') return 'Bu duyuru sadece öğretmenlere gönderilecek.';
@@ -102,41 +96,21 @@ export default function AnnouncementFormScreen() {
     return 'Bu duyuru tüm kuruma gönderilecek.';
   };
 
-  const getClassRecipientUserIds = async (sinifId) => {
-    const userIds = [];
-
+  // FAZ 11 — Veli kısmı artık Cloud Function'da (getParentIdsForSiniflar),
+  // burada sadece sınıfın öğretmen id'lerini çekiyoruz; CF öğretmeni hiç
+  // kapsamıyor çünkü sadece veliyi hedefliyor.
+  const getClassTeacherUserIds = async (sinifId) => {
     try {
       const sinifSnap = await get(ref(database, `siniflar/${sinifId}`));
       const sinifData = sinifSnap.val() || {};
       const ogretmenIds = sinifData.ogretmenIds
         ? (Array.isArray(sinifData.ogretmenIds) ? sinifData.ogretmenIds : Object.keys(sinifData.ogretmenIds))
         : [];
-      userIds.push(...ogretmenIds);
+      return [...new Set(ogretmenIds.filter(Boolean))];
     } catch (err) {
       console.warn('Sınıf öğretmenleri okunamadı:', err);
+      return [];
     }
-
-    try {
-      const cocukIndexSnap = await get(ref(database, `sinifCocuklari/${sinifId}`));
-      const cocukIds = cocukIndexSnap.exists() ? Object.keys(cocukIndexSnap.val()) : [];
-
-      const cocukSnaps = await Promise.all(
-        cocukIds.map((cocukId) => get(ref(database, `cocuklar/${cocukId}`)))
-      );
-
-      cocukSnaps.forEach((snap) => {
-        const cocuk = snap.val();
-        if (!cocuk) return;
-        const veliIds = cocuk.veliIds
-          ? (Array.isArray(cocuk.veliIds) ? cocuk.veliIds : Object.keys(cocuk.veliIds))
-          : [];
-        userIds.push(...veliIds, cocuk.veliId, cocuk.parentId);
-      });
-    } catch (err) {
-      console.warn('Sınıf velileri okunamadı:', err);
-    }
-
-    return [...new Set(userIds.filter(Boolean))];
   };
 
   const handleSend = async () => {
@@ -175,32 +149,35 @@ export default function AnnouncementFormScreen() {
 
       if (!announcementId) {
         const baslik = isUrgent ? '🚨 Acil duyuru' : '📢 Yeni duyuru';
-        const routeName = targetRole === 'ogretmen' ? 'TeacherAnnouncements' : 'ParentAnnouncements';
         const createdBy = kullanici?.uid || kullanici?.id || '';
 
+        // FAZ 11 — Veliye giden bildirim artık Cloud Function
+        // (createNotificationOnAnnouncementCreate, duyurular/{id} onCreate)
+        // tarafından otomatik gönderiliyor. Burada client-side'dan TEKRAR
+        // veli bildirimi göndermiyoruz (çift bildirim olurdu). O Cloud
+        // Function öğretmeni hiç kapsamıyor — öğretmene giden bildirimi
+        // hâlâ burada, client-side gönderiyoruz.
         if (targetRole === 'sinif') {
-          const userIds = await getClassRecipientUserIds(selectedClassId);
-          if (userIds.length > 0) {
+          const teacherIds = await getClassTeacherUserIds(selectedClassId);
+          if (teacherIds.length > 0) {
             await createUserNotification({
               kresId: data.kresId,
-              userIds,
+              userIds: teacherIds,
               baslik,
               mesaj: title.trim(),
               tip: 'duyuru',
-              routeName,
+              routeName: 'TeacherAnnouncements',
               createdBy,
             });
           }
-        } else {
-          const roles = getNotificationRoles();
-
+        } else if (targetRole === 'ogretmen' || targetRole === 'all') {
           await createRoleNotification({
             kresId: data.kresId,
-            roles,
+            roles: ['ogretmen'],
             baslik,
             mesaj: title.trim(),
             tip: 'duyuru',
-            routeName,
+            routeName: 'TeacherAnnouncements',
             createdBy,
           });
         }
