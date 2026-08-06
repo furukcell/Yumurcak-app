@@ -1,333 +1,238 @@
-# Yumurcak Kreş Yol Haritası
+# Yumurcak Kreş — Yol Haritası
 
-Bu dosya build öncesi ve sonrası yapılacak işleri fazlara ayırır.
+Bu dosya, önceden ayrı ayrı tutulan üç yol haritasının (ROADMAP.md, YUMURCAK_YOL_HARITASI.md, dökümanlar modülü yol haritası) harmanlanmış, tek ve güncel halidir.
 
-> Son güncelleme: 23 Haziran 2026
+> Son güncelleme: 6 Ağustos 2026
 
 ---
 
 ## 1. Genel Durum
 
-Yumurcak Kreş şu anda çalışan MVP + stabilizasyon seviyesindedir. Admin, öğretmen ve veli tarafındaki ana modüller büyük ölçüde tamamlanmıştır.
+Yumurcak Kreş **Google Play'de yayında**. Admin, öğretmen ve veli tarafındaki ana modüller ile dökümanlar/PDF modülü büyük ölçüde tamamlanmıştır. Yeni özellik geliştirme tarafında canlıyı engelleyen ana bir iş kalmamıştır.
 
-Güncel ana odak:
+Güncel öncelik sırası:
 
 ```txt
-1. Gerçek cihaz uçtan uca test
-2. Firebase Rules production güvenliği
-3. RevenueCat / Google Play gerçek ödeme testi
-4. Push notification fiziksel cihaz testi
-5. Admin aylık yemek listesi
-6. Play Store kapalı test / production hazırlığı
+1. App Store (iOS) sürümünün hazırlanması
+2. Pilot kreşlere demo sunumu
+3. RevenueCat / Google Play gerçek satın alma + restore testi
+4. Firebase Rules son güvenlik kontrolü
+5. İlk kullanıcı geri bildirimlerinin toplanması
+6. Yapay zeka destekli günlük özet metni (bkz. Faz 21 — yeni)
 ```
 
 ---
 
-## 2. Tamamlanan Fazlar
+## 2. Tamamlanan Ana Fazlar (Özet)
 
-### FAZ 1 — Veli Paneli Temel Yapı
+### Temel Uygulama ve Paneller
 
-- Veli alt tab yapısı kuruldu.
-- Özet, anasayfa, raporlar, gelişim ve mesaj alanları bağlandı.
-- Safe-area düzenlemeleri yapıldı.
-- Alt tab bar telefon sistem butonlarıyla çakışmayacak hale getirildi.
+- Expo / React Native temel yapı, Firebase Auth rol bazlı giriş, Realtime Database + Storage altyapısı
+- Yönetici, öğretmen, veli, superadmin panelleri
+- Kurum / sınıf / çocuk / öğretmen / veli yönetimi
+- Veli özet ekranı, veli/öğretmen anasayfa, admin dashboard
+- Tema sistemi + sınıf bazlı tema (`ThemedBackground`, `kresler/{kresId}/sinifTemalari/{sinifId}`)
+- Pastel kart tasarımına geçiş (admin/öğretmen/veli)
+- Başarı toast sistemi (`AppSuccessToast`) — form kaydetme akışlarının tamamında
+- Android navigation bar davranışı, klavye/scroll düzeltmeleri
 
-### FAZ 2 — Veli Günlük Özet ve Gelişim
+### Günlük Takip
 
-- Günlük rapor, yoklama, yemek, etkinlik ve ödeme verileri özet ekranına bağlandı.
-- Aylık gelişim ekranı eklendi.
-- Boy/kilo geçmişi ve mini grafik görünümü eklendi.
-- Profil fotoğrafı anasayfa ve özet alanlarına yansıtıldı.
-- Özet kartındaki emoji avatar alanı profil fotoğrafıyla uyumlu hale getirildi.
+- Öğretmen günlük rapor ekranı: ruh hali, öğün detayları (kahvaltı/öğle/ara öğün → yemedi/az_yedi/bitirdi), uyku süresi, tuvalet sayısı, öğretmen notu
+- Yoklama sistemi
+- Fiziksel gelişim kaydı + veli tarafında Aylık Gelişim / Sınıf Ortalaması (anonim, min. 5 çocuk şartı)
+- 30 günlük Uyum Modülü (yeni başlayan çocuklar), öğretmen Uyum Takibi, veli Uyum Skoru
+- Haftanın Yıldızı / Rozet sistemi (`haftaninRozetleri`, sadece ilgili veliye görünür)
 
-### FAZ 3 — Admin Operasyon Modülleri
+### Galeri
 
-- Ödeme yönetimi güçlendirildi.
-- Anket yönetimi eklendi.
-- Kurum Zili admin ekranı eklendi.
-- Admin panelinde ödeme, anket ve kurum zili akışları çalışır hale getirildi.
-- Admin kurum istatistikleri hazırlandı.
-- Admin abonelik ekranı sadeleştirildi; RevenueCat debug kartları kullanıcı arayüzünden kaldırıldı.
+- Ortak `GalleryScreenBase` altyapısı (admin/öğretmen/veli)
+- Fotoğraf/video yükleme, çoklu medya, otomatik optimizasyon (1920px/%80 kalite foto, ~720p/50MB video)
+- 24 saatlik `expiresAt` görünürlük kuralı
+- Uygulama içi görüntüleme/oynatma, cihaz galerisine kaydetme
+- **Kalan opsiyonel iş:** Storage'dan fiziksel silme için scheduled Cloud Function (şu an sadece uygulama içi gizleme var)
 
-### FAZ 4 — Tema ve Görsel Sistem
+### İletişim ve Operasyon
 
-- 10 tema için özel arka plan dosyaları eklendi.
-- `ThemedBackground` yapısı kullanılabilir hale getirildi.
-- Admin Dashboard tema arka planına alındı.
-- Admin tema ekranı tema arka planına alındı.
-- Veli anasayfa kartları beyaz kutu görünümünden pastel kart sistemine geçirildi.
-- Öğretmen anasayfa kartları beyaz kutu görünümünden pastel kart sistemine geçirildi.
-- Öğretmen için sınıf teması ekranı eklendi.
-- Sınıf tema kayıt yolu hazırlandı: `kresler/{kresId}/sinifTemalari/{sinifId}`.
+- Hedefli duyuru sistemi (kurum / veli / öğretmen / sınıf)
+- Anket / oylama sistemi, mesajlaşma, Kurum Zili
+- Ödeme takibi (admin liste+form, veli görüntüleme)
+- Uygulama içi bildirim merkezi + Cloud Functions push sistemi (bkz. README.md)
+- Medikal bilgi takibi
+- Yasal metinler (Kullanım Şartları, Gizlilik Politikası, KVKK Aydınlatma Metni)
 
-Kontrol gereken nokta:
+### Abonelik
 
-- Öğretmen ve veli kayıtlarında `sinifId` her zaman dolu değilse sınıf teması yayılımı için RootNavigator sınıf tespiti güçlendirilecektir.
+- RevenueCat SDK + Android public key, `default` offering, `YUMURCAK Pro` entitlement
+- Google Play abonelik ürünleri ve package eşleşmeleri
+- Admin abonelik ekranı sadeleştirildi, manuel aktif etme kaldırıldı (canlı risk)
+- **Kalan:** gerçek cihazda satın alma + restore testi, Firebase abonelik kaydı doğrulaması
 
-### FAZ 5 — Build Öncesi Stabilizasyon
+### Dökümanlar / Aylık Belgeler Modülü ✅ TAMAMLANDI (Faz 0-9)
 
-- Veli ekranları crash risklerine karşı güçlendirildi.
-- Admin ekranları crash risklerine karşı güçlendirildi.
-- Route/import kontrolleri yapıldı.
-- Build öncesi test listesi eklendi.
-- Mesaj gönderilip başarılı olduğu halde hata alerti çıkma riski azaltıldı.
-- Mesaj konuşma meta verisindeki `undefined` alanlar temizlenecek hale getirildi.
-- Android navigation bar gizleme altyapısı eklendi.
+> Bu bölüm eski `yumurcak-dokumanlar-yol-haritasi-guncel.md` dosyasından harmanlandı.
 
-### FAZ 6 — Kurum İstatistikleri
+- **Faz 0-2:** Veri modeli birleştirildi — `dersProgramlari` da `yemekListeleri` gibi gün-bazlı kayıt yapısına taşındı. Ortak `monthlyDocuments.js` servisi + Liste/Takvim toggle (`MonthlyCalendarView`) kuruldu. Taslak → `Ayı Yayınla`/`Yayından Kaldır` akışı standart hale getirildi.
+- **Faz 3:** PDF/şablon render servisi (`documentPdf.js`, `expo-print` + `expo-sharing`). Kurum bilgisi (`kresler/{kresId}`) otomatik çekiliyor. `MonthlyDocumentPdfBar` bileşeni admin + öğretmen + veli tarafına bağlandı (tek renderer, tek buton mantığı).
+- **Faz 4:** Otomatik besleme — öğretmen ders programı ekranı kendi sınıfına otomatik bağlandı, "Bugün" kartı eklendi; veli özet ekranındaki günlük etkinlik gösterimi düzeltildi.
+- **Faz 5:** Geçen Ayı Kopyala + aylık/yayın bazlı Arşiv (`MonthlyArchivePicker`, `listPublishedMonths`).
+- **Faz 6:** Eski A4-fotoğraf `dokumanlar` sistemi tamamen kaldırıldı (kreş henüz canlı değildi, iki paralel sistem tutmaya gerek kalmadı).
+- **Faz 7:** Etkinlik Kütüphanesi — kreşler arası anonim `etkinlikHavuzu` (client sadece okur, Cloud Function günceller), autocomplete, yaş grubu standardizasyonu (`YAS_GRUPLARI`).
+- **Faz 8:** Yemek Kütüphanesi (`yemekHavuzu`, aynı anonim mimari) + 7 yeni belge şablonu: Aylık Bülten, Nöbet Çizelgesi, Personel Görev Listesi, Servis Listesi, Doğum Günü Takvimi (hesaplanan), Gezi Formu, İlaç Takip Formu (sağlık belgesi — veli onayı uyarısı var, engellemiyor).
+- **Faz 9:** Öğretmen verimlilik araçları — günlük kontrol paneli, hazır duyuru şablonları, otomatik tamamlama.
 
-- Yönetici ekranına Kurum İstatistikleri modülü eklendi.
-- Genel kurum istatistikleri hazırlandı.
-- Öğretmen bazlı kullanım/performans görünümü hazırlandı.
-- Çocuk bazlı yemek, uyku, etkinlik, ruh hali ve devamsızlık riskleri eklendi.
-- Riskler sekmesi eklendi.
+**Kritik düzeltilen hata (Faz 3 sırasında bulundu):** `fetchNodeSnapshotOnce()` fonksiyonu Firebase kurallarına aykırı filtresiz okuma yapıyordu, bu yüzden `Yayından Kaldır` ve `Geçen Ayı Kopyala` sessizce çalışmıyordu. `kresId` bazlı sorguya çevrilerek düzeltildi — **ilk gerçek cihaz testi henüz yapılmadı, bir sonraki testte özellikle bu üç akışa (Yayından Kaldır, Geçen Ayı Kopyala, doğru pasife alma) bakılmalı.**
 
-### FAZ 7 — Galeri Modülü
+---
 
-- Ortak galeri ekran altyapısı eklendi.
-- Yönetici ve öğretmen fotoğraf/video yükleyebilir hale getirildi.
-- Veli sadece kendi çocuğu veya sınıfıyla ilişkili aktif medyaları görebilir hale getirildi.
-- Galeri medya kayıtlarına 24 saatlik `expiresAt` mantığı eklendi.
-- Süresi dolan galeri kayıtları uygulama içinde gizlenir.
-- Yönetici/öğretmen galeri ekranı açıldığında eski kayıtlar temizlenmeye çalışılır.
+## 3. Build Öncesi / Canlı Öncesi Son Kontrol Listesi
 
-Kalan:
-
-- Storage’dan garantili otomatik silme için Cloud Functions scheduled cleanup.
-
-### FAZ 8 — Yasal Metinler
-
-- Kullanım Şartları eklendi.
-- Gizlilik Politikası eklendi.
-- KVKK Aydınlatma Metni eklendi.
-- Giriş ekranı, veli profili, öğretmen profili ve admin kurum bilgileri alanından erişilecek şekilde planlandı/bağlandı.
-- Galeri fotoğraf/video içerikleri ve 24 saat görünürlük bilgisi yasal metinlerde belirtildi.
-
-### FAZ 9 — RevenueCat / Abonelik Ödeme
-
-Tamamlanan kod altyapısı:
-
-- RevenueCat SDK altyapısı eklendi.
-- Android SDK key bağlandı.
-- `default` offering okuma akışı hazırlandı.
-- `monthly` ve `yearly` package okuma akışı hazırlandı.
-- Satın alma ve restore fonksiyonları eklendi.
-- Admin abonelik ekranı RevenueCat servis katmanına bağlandı.
-- RevenueCat sonucu başarılı olursa Firebase `abonelikler/{kresId}` kaydını güncelleyecek iskelet hazırlandı.
-
-Kalan RevenueCat işleri:
-
-- Google Play ürünlerini oluşturma.
-- RevenueCat service account bağlantısı.
-- Google Play ürünlerini RevenueCat package/entitlement ile eşleme.
-- Gerçek satın alma testi.
-- Restore testi.
-
-### FAZ 10 — Bildirimler
-
-#### FAZ 10.1 — Uygulama içi bildirim merkezi
-
-- Ortak bildirim servisi eklendi.
-- Ortak bildirim ekranı eklendi.
-- Admin / öğretmen / veli ekranlarına bildirim butonu eklendi.
-- Kullanıcı ve rol hedefli bildirim kayıtları okunabilir hale geldi.
-
-#### FAZ 10.2 — Olay bazlı bildirim kayıtları
-
-- Duyuru oluşturulunca seçili hedefe bildirim oluşturulur.
-- Ödeme kaydı oluşturulunca ilgili veliye bildirim oluşturulur.
-- Kurum Zili gönderilince admin / öğretmen tarafına bildirim oluşturulur.
-- Mesaj gönderilince alıcı kullanıcıya bildirim oluşturulur.
-
-#### FAZ 10.3 — Push notification altyapısı
-
-- Expo push token alma akışı eklendi.
-- Kullanıcı kaydına token yazma mantığı hazırlandı.
-- Bildirim kaydı sırasında uygun hedef tokenlara push gönderme altyapısı eklendi.
-
-Kalan:
-
-- Fiziksel cihazda izin / token / push teslim testi.
-
-### FAZ 11 — Başarı Toast Sistemi
-
-Klasik başarılı işlem alertleri yerine kısa süreli başarı toast sistemi eklendi.
-
-Dosya:
+Aşağıdaki akışlar gerçek cihazda test edilmelidir (henüz doğrulanmamış olanlar işaretli):
 
 ```txt
-src/components/AppSuccessToast.js
+1.  Admin / Öğretmen / Veli giriş
+2.  Admin sınıf/çocuk/öğretmen/veli bağlantı kontrolü
+3.  Günlük rapor girişi → veli görür + push alır
+4.  Yoklama girişi → veli görür + push alır
+5.  Fiziksel gelişim kaydı → veli görür + push alır
+6.  Uyum kaydı → veli Uyum Skoru'nu görür + push alır
+7.  Haftanın Yıldızı verilir → veli Rozetlerim'de görür + push alır
+8.  Galeri fotoğraf/video yükleme → veli görür + push alır, cihaza kaydetme
+9.  Duyuru / Anket / Ödeme / Kurum Zili → hedef kullanıcı push alır
+10. Mesaj gönderimi → karşı taraf push alır, yanlış hata alerti çıkmıyor
+11. Bildirimler ekranında kayıtlar görünüyor, pushStatus: sent kontrolü
+12. ⏳ RevenueCat paketleri gerçek cihazda görünüyor
+13. ⏳ Google Play ödeme popup'ı açılıyor, satın alma sonrası entitlement aktif
+14. ⏳ Restore testi
+15. ⏳ Firebase Database Rules son kontrolü
+16. ⏳ Firebase Storage Rules son kontrolü
+17. ⏳ Android release build + Play Console kapalı test
+18. ⏳ Dökümanlar modülü: Yayından Kaldır / Geçen Ayı Kopyala / Arşiv gerçek cihaz testi (yeni native bağımlılık expo-print nedeniyle önemli)
+19. ⏳ İlaç Takip Formu veli onayı uyarı akışı
+20. Sınıf teması aynı sınıftaki veli/öğretmen tarafına doğru yansıyor mu (sinifId boş kullanıcılar için çocuk/sınıf ilişkisinden bulunuyor mu)
 ```
 
-Toast eklenen ekranlar:
+---
 
-- Admin duyuru formu
-- Admin ödeme formu
-- Admin çocuk formu
-- Admin sınıf formu
-- Admin veli formu
-- Veli medikal ekranı
-- Veli profil ekranı
-- Öğretmen günlük rapor ekranı
+## 4. Sıradaki Kritik Fazlar (Canlıya Yönelik)
 
-### FAZ 12 — Hedefli Duyuru Sistemi
+### Faz A — Firebase Güvenlik Kuralları Son Kontrolü
 
-- Admin duyuruda hedef seçebilir: tüm kurum, veliler, öğretmenler, sınıf.
-- Veli sadece kendisine / çocuğunun sınıfına / tüm kuruma uygun duyuruları görür.
-- Öğretmen sadece kendisine / kendi sınıfına / tüm kuruma uygun duyuruları görür.
-- Öğretmen kendi sınıfındaki velilere sınıf duyurusu oluşturabilir.
+- `kresId` bazlı veri izolasyonu, rol kontrolü (yönetici/öğretmen/veli)
+- Galeri Storage erişim kuralları, mesaj/çocuk verisi erişim kısıtları
+- Dökümanlar modülü node'larının (`yemekListeleri`, `dersProgramlari`, vb.) `orderByChild('kresId')` zorunluluğu doğrulanmalı
+- Eski `dokumanlar` node kuralı temizliği (opsiyonel, düşük risk)
 
-### FAZ 13 — Öğretmen Fiziksel Gelişim Girişi
+### Faz B — RevenueCat / Google Play Gerçek Test
 
-- Öğretmen kendi sınıfındaki çocukları seçebilir.
-- Boy, kilo, baş çevresi ve not girilebilir.
-- Kayıtlar `fizikselGelisim` node’una yazılır.
-- Veli gelişim tarafındaki mevcut yapı ile uyumlu veri oluşturur.
+- Google Play subscription ürünleri + RevenueCat service account bağlantısı
+- Gerçek Android cihazda satın alma ve restore testi
+
+### Faz C — Play Store Build / Kapalı Test
+
+- Codemagic Android release build, crash kontrolü
+- Play Console veri güvenliği formu, kapalı test kullanıcıları
+
+### Faz D — App Store (iOS) Sürümü
+
+- iOS build (Codemagic), App Store inceleme süreci
+
+### Faz E — Galeri Otomatik Storage Temizliği (opsiyonel)
+
+- Firebase Cloud Functions scheduled cleanup — 24 saatten eski `galeri` kayıtlarını Storage'dan fiziksel silme + hata loglama
 
 ---
 
-## 3. Build Öncesi Son Kontrol Listesi
+## 5. Gelecek Fazlar — Ürün Geliştirme (henüz başlanmadı)
 
-Build almadan önce şu akışlar gerçek cihazda test edilmelidir:
+> Bu bölüm dökümanlar yol haritasının planlanan-ama-henüz-yapılmamış kısmı.
 
-1. Admin giriş.
-2. Öğretmen giriş.
-3. Veli giriş.
-4. Admin Galeri açılışı.
-5. Öğretmen Galeri açılışı.
-6. Fotoğraf yükleme.
-7. Video yükleme.
-8. Veli galeri görüntüleme.
-9. İstatistikler ekranı: Genel / Öğretmenler / Çocuklar / Riskler.
-10. Veli profilinden yasal metinler.
-11. Öğretmen profilinden yasal metinler.
-12. Admin kurum bilgilerinden yasal metinler.
-13. Login ekranından yasal metinler.
-14. Ödeme / anket / kurum zili temel ekran açılışları.
-15. Uygulama kapat-aç sonrası tekrar giriş.
-16. Admin duyuru oluşturunca toast görünür.
-17. Admin ödeme oluşturunca toast görünür.
-18. Admin çocuk / sınıf / veli formu kaydedince toast görünür.
-19. Veli medikal ekranında kayıt sonrası toast görünür.
-20. Veli profil fotoğrafı yükleme / kaldırma sonrası toast görünür.
-21. Öğretmen günlük rapor kaydedince toast görünür.
-22. Öğretmen fiziksel gelişim kaydı oluşturur.
-23. Parent rapor ekranı sadece rapor görüntüleme ekranı olarak kalır.
-24. Teacher rapor ekranı rapor oluşturma ekranı olarak kalır.
-25. Admin / öğretmen / veli bildirim ekranları açılır.
-26. Öğretmen sınıf teması seçer.
-27. Sınıf teması aynı sınıftaki veli/öğretmen tarafına yansır.
-28. Veli ve öğretmen anasayfa kartları pastel görünür.
-29. Veli özet ekranındaki profil/avatar alanları doğru görünür.
-30. Mesaj gönderilir; mesaj gitmesine rağmen yanlış `Mesaj gönderilemedi` alerti çıkmadığı kontrol edilir.
-31. Fiziksel cihazda push token kaydı kontrol edilir.
-32. Fiziksel cihazda push bildirim testi yapılır.
-33. Android navigation bar gizleme davranışı gerçek cihazda kontrol edilir.
-34. RevenueCat ürün yok / ürün var senaryoları test edilir.
+### Faz 10 — Akıllı Etkinlik Yönetimi
+
+- **Etkinlik Dengesi Analizi:** Ay içindeki etkinlikleri kategori bazında sayıp eksik kategorileri öğretmene öneri olarak gösterme (kural tabanlı, yapay zeka kullanılmayacak)
+- **Aynı Gün Geçen Yıl:** Geçen yıl aynı gün, aynı sınıfta yapılan etkinliği gösterme
+- **Hazır Kazanımlar:** Etkinlik seçilince ilgili gelişim kazanımlarını önerme (örn. Parmak Boyası → İnce Motor, El-Göz Koordinasyonu)
+- **Akıllı Tekrar Uyarısı:** Aynı etkinlik kısa sürede tekrar seçilirse bilgilendirme (engellemez)
+
+### Faz 11 — Öğretmen Kişisel Kütüphanesi
+
+- Favori etkinlikler, son kullanılanlar, kişisel etkinlik arşivi, kişisel arama
+- Favorilerden plan oluşturma
+
+### Faz 12 — Merkezi İçerik Platformu
+
+- Kreşler arası anonim merkezi etkinlik havuzunun genişletilmesi: yaş grubu / kategori / tema filtreleme, en çok kullanılanlar, tek dokunuşla günlük rapora aktarma
 
 ---
 
-## 4. Sıradaki Kritik Fazlar
+## 6. Faz 21 — Yapay Zeka Destekli Günlük Özet Metni (YENİ)
 
-### FAZ 14 — Firebase Güvenlik Kuralları
+> Bu faz, veli özet ekranındaki (`ParentSummaryScreen.js` → `buildDailyComment()`) kural tabanlı, şablon hissi veren günlük özet metnini gerçek bir dil modeliyle üretmeye taşımayı hedefler.
 
-- `kresId` bazlı veri izolasyonu.
-- Yönetici/öğretmen/veli rol kontrolü.
-- Galeri Storage erişim kuralları.
-- Mesaj ve çocuk verisi erişim kısıtları.
-- Bildirim node erişim kısıtları.
-- Tema / sınıf teması yazma yetkileri.
-- Production güvenlik testi.
+### Amaç
 
-### FAZ 15 — Admin Aylık Yemek Listesi
+Öğretmenin `ChildReportScreen.js` üzerinden girdiği günlük veriyi (ruh hali, öğün durumu, uyku süresi, tuvalet sayısı, öğretmen notu) veliye şablon gibi değil, gerçek bir öğretmenin yazdığı gibi doğal, sıcak ve her gün farklı bir metinle sunmak.
 
-Amaç: Yönetici aylık yemek planı girebilsin, sistem bugünün menüsünü veli tarafına otomatik çeksin.
+### Mevcut Durumun Sorunu
 
-Planlanan akış:
+Kural tabanlı cümle birleştirici üç noktada "yapay" hissettiriyor: öğretmen notu ayrı bir cümle olarak ekleniyor (anlatının içine yedirilmiyor), her gün aynı sırayla aynı iskelet kullanılıyor, cümle bağlaçları hep aynı kalıpta.
 
-- Admin ay/yıl seçer.
-- 30/31 günlük tablo açılır.
-- Her gün için kahvaltı / öğle / ara öğün girilir.
-- `Ayı Yayınla` butonu ile her gün için `yemekListeleri` altına günlük kayıt basılır.
-- Mevcut veli yemek listesi ekranı tarih eşleşmesiyle bugünün menüsünü gösterir.
-- Öğretmen isterse günlük listeyi düzenleyebilir.
-
-Firebase önerisi:
+### Teknik Yaklaşım
 
 ```txt
-yemekListeleri/{id}
-  kresId
-  sinifId: null | string
-  tip: gunluk
-  kaynak: aylik_plan
-  tarih: YYYY-MM-DD
-  baslik
-  ogunler
-    kahvalti
-    ogle
-    araOgun
-  aktif
-  createdAt
-  updatedAt
+Model: Google Gemini 2.5 Flash-Lite (Google AI Studio API)
+Tetikleme: Firebase Cloud Function, günlük rapor kaydı oluştuğunda (createNotificationOnDailyReportCreate
+           akışına benzer şekilde) veya günde bir kez zamanlı (scheduled) çalışacak şekilde
+Girdi: gunlukRaporlar kaydından JSON (ruhHali, yemek, uyku, tuvalet, not) — çocuk adı yerine
+       anonim/placeholder ID gönderilip metin döndükten sonra isim client veya function
+       tarafında yerine yazılacak (KVKK / veri gizliliği önlemi)
+Çıktı: Üretilen metin gunlukRaporlar kaydına (veya ayrı bir alan/node'a) yazılır,
+       ParentSummaryScreen sadece bu hazır metni okur — client'ta API çağrısı YAPILMAZ
+Cache: Çocuk başına günde 1 üretim; veli ekranı kaç kere açarsa açsın aynı metin okunur
 ```
 
-A4/PDF planı:
+### Neden Free Tier Yetmez, Ama Maliyet Önemsiz
 
-- İlk sürümde sadece ek belge olarak yüklenebilir.
-- OCR/AI ile otomatik okuma sonraki faza bırakılır.
-- Otomatik okuma yapılırsa mutlaka yönetici onay ekranı olmalıdır.
+Gemini free tier günlük istek kotası (~1.000/gün, Flash-Lite) küçük ölçekte yeterli olsa da, örneğin 100 kreş × 50 çocuk = 5.000 günlük istek senaryosunda kotanın 5 katı üzerinde kalır — production için billing açılması gerekir.
 
-### FAZ 16 — Sınıf Teması Yayılımını Güçlendirme
+Paid tier maliyeti buna karşın önemsiz seviyede: Flash-Lite $0.10/1M input + $0.40/1M output token fiyatıyla, çocuk başına günlük ortalama ~400 token input + ~150 token output varsayımıyla, **5.000 çocuk ölçeğinde aylık maliyet ~15$ (çocuk başına ayda ~0.003$)** — bu, mevcut abonelik paketlerine (Başlangıç/Profesyonel/Kurum) sorunsuz gömülebilecek bir rakam.
 
-Mevcut altyapı:
+### Yapılacaklar
 
-- `ThemeProvider` sınıf teması okuyabilir.
-- `TeacherThemeScreen` sınıf temasını kaydedebilir.
-- `RootNavigator` `kullanici.sinifId` değerini tema sağlayıcıya aktarır.
+```txt
+[ ] Google AI Studio hesabı + API key alınması, billing açılması (kredi kartı gerekiyor
+    ama free tier ile geliştirme/test kredi kartsız başlayabilir)
+[ ] Firebase Cloud Function: buildDailyCommentWithAI (günlük rapor tetikleyicisi veya
+    zamanlı toplu üretim)
+[ ] Prompt tasarımı: sıcak, doğal, öğretmen dili; öğretmen notunun anlatı içine
+    yedirilmesi; her gün farklı cümle yapısı
+[ ] Çocuk ismi anonimleştirme / placeholder mekanizması (KVKK)
+[ ] API hata / rate-limit durumunda eski kural tabanlı buildDailyComment()'e
+    otomatik geri dönüş (fallback) — veli ekranı hiçbir zaman boş kalmamalı
+[ ] Maliyet takibi: aylık token kullanımı için basit bir admin/superadmin
+    izleme ekranı (opsiyonel)
+[ ] Pilot kreşlerde A/B: kural tabanlı vs AI metni karşılaştırması
+```
 
-Kontrol / gerekirse düzeltme:
+### Riskler / Dikkat Edilecekler
 
-- Öğretmen kullanıcı kaydında `sinifId` yoksa, öğretmenin bağlı olduğu sınıf `siniflar/{sinifId}/ogretmenIds` üzerinden bulunmalıdır.
-- Veli kullanıcı kaydında `sinifId` yoksa, velinin çocuğu üzerinden sınıf bulunmalıdır.
-- Aynı sınıftaki diğer öğretmen ve velilerde tema yayılımı gerçek kullanıcı verisiyle test edilmelidir.
-
-### FAZ 17 — Android Sistem Navigasyon Butonları
-
-- `expo-navigation-bar` altyapısı eklendi.
-- Android navigation bar davranışı gerçek cihazda test edilecek.
-- Aşağıdan yukarı kaydırınca butonların görünmesi, işlem yoksa tekrar gizlenmesi hedeflenir.
-
-### FAZ 18 — Galeri Otomatik Storage Temizliği
-
-- Firebase Cloud Functions scheduled cleanup.
-- 24 saatten eski `galeri` kayıtlarını silme.
-- Storage dosyalarını fiziksel silme.
-- Hata loglama.
-
-### FAZ 19 — RevenueCat / Google Play Gerçek Test
-
-- Google Play subscription ürünleri oluşturulacak.
-- RevenueCat service account bağlantısı yapılacak.
-- Ürünler RevenueCat package / entitlement ile eşlenecek.
-- Gerçek Android cihazda satın alma ve restore testi yapılacak.
-
-### FAZ 20 — Play Store Build / Kapalı Test
-
-- Codemagic Android release build.
-- Android release test.
-- Kapalı test kullanıcıları.
-- Crash kontrolü.
-- Play Console veri güvenliği formu.
-- Üretim hazırlığı.
+```txt
+- Free tier data policy: Google, free-tier girdi/çıktıları model eğitiminde kullanabilir —
+  production'da billing (paid tier, Vertex AI değilse dahi "prepay/postpay") şart.
+- Çocuğa dair hassas veri (ruh hali, sağlık/tuvalet bilgisi) API'ye gönderileceği için
+  isim anonimleştirme + KVKK aydınlatma metninin bu kullanımı kapsayacak şekilde
+  güncellenmesi gerekiyor.
+- Rate limit / API kesintisi senaryosunda mevcut kural tabanlı sistem fallback olarak
+  KORUNMALI, silinmemeli.
+```
 
 ---
 
-## 5. Notlar
+## 7. Notlar
 
-- Mevcut galeri 24 saatten eski kayıtları uygulamada göstermeyecek şekilde tasarlanmıştır.
-- Storage’dan garantili silme için Cloud Functions sonraki fazda yapılmalıdır.
-- Yasal metinler uygulama içine eklenmiştir; ticari kullanım öncesinde hukuk danışmanı kontrolü önerilir.
+- Mevcut galeri 24 saatten eski kayıtları uygulamada göstermeyecek şekilde tasarlanmıştır; Storage'dan garantili silme sonraki fazda (Faz E) yapılmalıdır.
+- Yasal metinler uygulama içine eklenmiştir; ticari kullanım öncesinde hukuk danışmanı kontrolü önerilir — özellikle Faz 21 (AI özet) devreye girerse KVKK metninin güncellenmesi gerekir.
 - Build öncesi `npx expo start --clear` ile gerçek cihaz testi yapılmalıdır.
 - Push bildirim kod altyapısı hazır olsa da fiziksel cihaz testi yapılmadan üretim hazır kabul edilmemelidir.
-- Aylık yemek listesi modülü, mevcut `yemekListeleri` yapısına uyumlu şekilde yapılmalıdır.
-- Firebase Rules yazılmadan production kullanımı güvenli kabul edilmemelidir.
+- Firebase Rules yazılmadan/son kontrolü yapılmadan production kullanımı güvenli kabul edilmemelidir.
+- Dökümanlar modülünde `expo-print` gibi yeni native bağımlılıklar eklendiği için Codemagic'te temiz (clean/reset cache) build alınması gerekir.
