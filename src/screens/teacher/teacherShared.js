@@ -299,7 +299,12 @@ export function useTeacherData() {
     };
   }, [currentClass?.id]);
 
-  const kresId = currentClass?.kresId || kullanici?.kresId || classChildren[0]?.kresId || null;
+  // FAZ 10 — Önceden currentClass?.kresId önce geliyordu. Eğer sınıf kaydındaki
+  // kresId, öğretmenin kendi kullanıcı kaydındaki kresId'den farklıysa (veri
+  // tutarsızlığı), admin panelinden kullanici.kresId ile yayınlanan aylık liste
+  // öğretmen ekranında kresId eşleşmediği için hiç görünmüyordu. Admin panelinin
+  // kullandığı önceliğe (kullanici.kresId) hizalandı.
+  const kresId = kullanici?.kresId || currentClass?.kresId || classChildren[0]?.kresId || null;
   const kurum = kresId ? kresler[kresId] : null;
   const kresAdi = kurum?.ad || 'Yumurcak';
 
