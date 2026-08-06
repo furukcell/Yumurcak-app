@@ -420,7 +420,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
           <KeyboardAvoidingView
             style={styles.modalBackdrop}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
           >
             <View style={styles.modalSheet}>
