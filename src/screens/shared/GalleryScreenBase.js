@@ -5,7 +5,6 @@ import {
   Image,
   Modal,
   Platform,
-  KeyboardAvoidingView,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
