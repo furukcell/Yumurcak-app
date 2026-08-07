@@ -9,6 +9,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -64,16 +65,18 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer linking={YUMURCAK_LINKING}>
-          <PushTokenSync />
-          <NotificationDeepLinkHandler />
-          <StatusBar style="dark" backgroundColor="#F8F6FF" />
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <KeyboardProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NavigationContainer linking={YUMURCAK_LINKING}>
+            <PushTokenSync />
+            <NotificationDeepLinkHandler />
+            <StatusBar style="dark" backgroundColor="#F8F6FF" />
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }
 
