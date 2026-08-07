@@ -5,9 +5,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, Switch,
-  KeyboardAvoidingView, Platform,
+  TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, Switch, Platform,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, push, set, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';

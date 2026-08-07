@@ -5,7 +5,8 @@
 // Sınıf bazlı çalışır (her sınıfın kendi aylık programı olur).
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';

@@ -13,9 +13,9 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, push, update, remove } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';

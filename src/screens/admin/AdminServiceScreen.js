@@ -11,7 +11,8 @@
 // doğrudan printMonthlyDocument/shareMonthlyDocumentPdf çağrılıyor.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, get, update, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
