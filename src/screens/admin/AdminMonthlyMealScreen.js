@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { onValue, ref } from 'firebase/database';
+import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -90,8 +90,9 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       setPublishedCount(0);
       return undefined;
     }
+    const q = query(ref(database, NODE_PATH), orderByChild('kresId'), equalTo(kresId));
     const unsub = onValue(
-      ref(database, NODE_PATH),
+      q,
       (snap) => setPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: KAYNAK })),
       () => setPublishedCount(0)
     );
