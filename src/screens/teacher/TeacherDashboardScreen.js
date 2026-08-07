@@ -18,6 +18,7 @@ const MENU = [
   { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
   { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
   { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals', bg: '#FFE8DC', border: '#F4A47E' },
+  { icon: '🗓️', title: 'Nöbet Çizelgesi', desc: 'Yöneticinin yayınladığı plan', route: 'TeacherDutyRoster', bg: '#EAF2FF', border: '#8AC3F5' },
   { icon: '💊', title: 'İlaç Takip Formu', desc: 'Günlük ilaç uygulama kaydı', route: 'TeacherMedicationFormList', bg: '#DDF8F4', border: '#67D6C9' },
   { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages', bg: '#EAF7FF', border: '#77C7EA' },
   { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery', bg: '#E8F5F0', border: '#7CC8AA' },
