@@ -5,7 +5,8 @@
 // bu öğretmeni ilgilendiren (deterministik id'li) konuşmalar tek tek dinleniyor.
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';

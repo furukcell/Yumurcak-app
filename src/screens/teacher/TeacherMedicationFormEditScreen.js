@@ -6,7 +6,8 @@
 // oluşturuluyor.
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, EmptyState, getChildName } from './teacherShared';

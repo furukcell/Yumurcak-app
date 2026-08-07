@@ -3,7 +3,8 @@
 // Öğretmen günlük yemek girişi + yemek fotoğrafı + aylık kurum listesi
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, Platform, Modal } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, remove, update, onValue } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';

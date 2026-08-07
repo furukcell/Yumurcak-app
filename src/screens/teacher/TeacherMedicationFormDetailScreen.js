@@ -6,7 +6,8 @@
 // çıktı üretir (documentPdf.js -> buildIlacTakipHtml).
 // ============================================================
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, update } from 'firebase/database';
 import { useRoute } from '@react-navigation/native';
 import { database } from '../../config/firebase';

@@ -15,9 +15,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';

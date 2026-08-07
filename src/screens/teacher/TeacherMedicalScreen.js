@@ -12,9 +12,9 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useNavigation } from '@react-navigation/native';
 import { ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
