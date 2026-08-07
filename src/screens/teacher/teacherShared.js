@@ -26,7 +26,13 @@ function useTeacherSharedStyles() {
   return useMemo(() => createStyles(theme || THEME), [theme]);
 }
 
-export const todayString = () => new Date().toISOString().split('T')[0];
+export const todayString = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 export const formatDate = (value) => {
   if (!value) return '-';
   const raw = String(value);
