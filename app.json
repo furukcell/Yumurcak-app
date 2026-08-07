@@ -32,7 +32,6 @@
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
       "minSdkVersion": 24,
-      "softwareKeyboardLayoutMode": "resize",
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
@@ -59,7 +58,8 @@
           "color": "#6C3DEB",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "react-native-keyboard-controller"
     ]
   }
 }
