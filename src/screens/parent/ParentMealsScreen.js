@@ -23,31 +23,12 @@ function formatMonthLabel(monthKey) {
   return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
 }
 
-function getMealDateKey(item) {
-  return String(item?.tarih || item?.baslangicTarihi || '').slice(0, 10);
-}
-
-function isDateInLast7Days(dateKey) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return false;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const minDate = new Date(today);
-  minDate.setDate(today.getDate() - 6);
-
-  const targetDate = new Date(`${dateKey}T00:00:00`);
-  targetDate.setHours(0, 0, 0, 0);
-
-  return targetDate >= minDate && targetDate <= today;
-}
-
-function isRecentDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'ogretmen_aylik' && item?.kaynak !== 'aylik_plan' && isDateInLast7Days(getMealDateKey(item));
-}
-
 function getTodayKey() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function buildEmptyTodayMeal(kresId, sinifId, childName) {
@@ -116,10 +97,6 @@ export default function ParentMealsScreen({ navigation }) {
       .sort((a, b) => String(b.tarih || b.baslangicTarihi || b.createdAt || '').localeCompare(String(a.tarih || a.baslangicTarihi || a.createdAt || '')));
   }, [meals, kresId, sinifId]);
 
-  const dailyMeals = useMemo(() => {
-    return visibleMeals.filter((item) => isRecentDailyMeal(item));
-  }, [visibleMeals]);
-
   const monthlyMeals = useMemo(() => {
     // Önce BU SINIFA özel öğretmen yayını, o ay için hiç yoksa admin'in
     // kurum geneli yayınına düş — ikisi artık ayrı kayıtlar (ogretmen_aylik / admin_aylik).
@@ -162,12 +139,6 @@ export default function ParentMealsScreen({ navigation }) {
               <Text style={[localStyles.tabText, tab === 'today' && localStyles.tabTextActive]}>Bugün</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[localStyles.tab, tab === 'list' && localStyles.tabActive]}
-              onPress={() => setTab('list')}
-            >
-              <Text style={[localStyles.tabText, tab === 'list' && localStyles.tabTextActive]}>Liste</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={[localStyles.tab, tab === 'monthly' && localStyles.tabActive]}
               onPress={() => setTab('monthly')}
             >
@@ -205,11 +176,7 @@ export default function ParentMealsScreen({ navigation }) {
                 {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
               </>
             )
-          ) : dailyMeals.length === 0 ? (
-            <EmptyState icon="🍽️" title="Son 7 günlük yemek listesi yok" desc="Öğretmen günlük yemek listesi eklediğinde burada görünür." />
-          ) : (
-            dailyMeals.map((item) => <MealCard key={item.id} item={item} />)
-          )}
+          ) : null}
         </>
       )}
     </ScreenShell>
