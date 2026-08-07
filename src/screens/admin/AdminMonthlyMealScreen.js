@@ -115,6 +115,13 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         ogle: record.ogunler?.ogle || '',
         araOgun: record.ogunler?.araOgun || '',
       }),
+      onError: (error) => {
+        if (cancelled) return;
+        Alert.alert(
+          'Liste okunamadı',
+          `Yayınlanmış aylık yemek listesi Firebase'den okunamadı (${error?.code || error?.message || 'bilinmeyen hata'}). Bu yüzden form boş görünüyor olabilir — veri kaybolmadı, sadece okuma başarısız oldu.`
+        );
+      },
     }).then((loadedValues) => {
       if (cancelled) return;
       setValues((prev) => ({ ...prev, ...loadedValues }));
