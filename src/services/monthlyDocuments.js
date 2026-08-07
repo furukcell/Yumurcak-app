@@ -81,7 +81,7 @@ export function createInitialValues(days, emptyValueFactory) {
 // izin reddedilirse) sessizce boş obje döner; çağıran kod bunu "veri yok"
 // sanıp yanlışlıkla "zaten temiz/boş" davranabilir — bu yüzden kresId
 // HER ZAMAN geçilmeli.
-export function fetchNodeSnapshotOnce(nodePath, kresId) {
+export function fetchNodeSnapshotOnce(nodePath, kresId, onError) {
   return new Promise((resolve) => {
     if (!kresId) {
       resolve({});
@@ -99,6 +99,10 @@ export function fetchNodeSnapshotOnce(nodePath, kresId) {
       (error) => {
         console.warn(`${nodePath} okunamadı:`, error?.code || error?.message || error);
         if (unsub) unsub();
+        // Hata (örn. izin reddi) ile "veri yok" durumu çağıran tarafta
+        // ayırt edilebilsin diye onError varsa bilgilendiriyoruz — ama
+        // Promise yine de {} ile resolve olur, ekran boş taslakla açılmaya devam eder.
+        if (typeof onError === 'function') onError(error);
         resolve({});
       }
     );
@@ -205,8 +209,8 @@ export async function unpublishMonth({ nodePath, kresId, monthKey, kaynak, match
 // kullanıcı "girdiğim veri gitti / düzenleyemiyorum" sanıyordu.
 //
 // valueMapper(record) -> o günün taslak value şekli (ekrana özel alanlar)
-export async function fetchActiveMonthValues({ nodePath, kresId, monthKey, kaynak, matchExtra, valueMapper }) {
-  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId);
+export async function fetchActiveMonthValues({ nodePath, kresId, monthKey, kaynak, matchExtra, valueMapper, onError }) {
+  const snapshotValue = await fetchNodeSnapshotOnce(nodePath, kresId, onError);
   const values = {};
 
   Object.values(snapshotValue || {}).forEach((item) => {
