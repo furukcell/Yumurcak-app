@@ -532,7 +532,7 @@ exports.createNotificationOnMealListCreate = functions
     // (AdminMonthlyMealScreen / TeacherMealsScreen) tarafından bir kez
     // gönderiliyor. Tekil (örn. öğretmenin günlük girdiği) kayıtlar için
     // bu tetikleyici olduğu gibi çalışmaya devam eder.
-    if (meal.kaynak === 'admin_aylik') return null;
+    if (meal.kaynak === 'admin_aylik' || meal.kaynak === 'ogretmen_aylik') return null;
 
     const title = meal.baslik || (meal.ayKey ? `${meal.ayKey} yemek listesi` : 'Yemek listesi');
     await createNotificationRecord({
