@@ -44,7 +44,8 @@ export default function TeacherDashboardScreen() {
 
   if (loading) return <LoadingState text="Öğretmen paneli hazırlanıyor..." />;
 
-  const today = new Date().toISOString().split('T')[0];
+  const _d = new Date();
+  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
   const todayReports = reports.filter((item) => item.tarih === today).length;
   const todayAttendance = attendance.filter((item) => item.tarih === today && item.sinifId === currentClass?.id).length;
 
