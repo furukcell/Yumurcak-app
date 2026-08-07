@@ -30,11 +30,22 @@ import {
   fetchActiveMonthValues,
 } from '../../services/monthlyDocuments';
 
-// FAZ 3 — Öğretmen artık admin ile AYNI "aylık yemek listesi" belgesini
-// (kurum geneli, yemekListeleri/admin_aylik) yazabiliyor. Önceden "Aylık"
-// sekmesi sadece yöneticinin yayınladığını GÖRÜNTÜLÜYORDU, yazma yoktu.
+// FAZ 3 → FAZ 4 DÜZELTME — Öğretmen ÖNCEDEN admin ile AYNI "kurum geneli"
+// belgeyi (yemekListeleri/admin_aylik, sinifId: null) yazıyordu. Bu, bir
+// öğretmenin yayınla'ya basmasının TÜM KURUMUN aylık listesini (admin'in ve
+// diğer sınıfların günlerini) pasife alıp kendi taslağıyla değiştirmesi
+// anlamına geliyordu — veri kaybı riski. Artık öğretmenin aylık listesi
+// KENDİ SINIFINA ÖZEL ayrı bir kayıt (kaynak: 'ogretmen_aylik', sinifId:
+// sınıfın id'si). Admin'in kurum geneli listesine hiç dokunmuyor.
+// "Bugün" sekmesinde önce sınıfa özel liste, o gün için yoksa kurum geneli
+// (admin_aylik) liste kullanılıyor — bkz. mergeTodayMeal / todayMonthlyMeal.
 const MONTHLY_NODE_PATH = 'yemekListeleri';
-const MONTHLY_KAYNAK = 'admin_aylik';
+const MONTHLY_KAYNAK = 'ogretmen_aylik';
+const INSTITUTION_KAYNAK = 'admin_aylik';
+
+function forTeacherClass(sinifId) {
+  return (item) => item?.sinifId === sinifId;
+}
 
 function emptyMonthlyMealValue() {
   return { kahvalti: '', ogle: '', araOgun: '' };
@@ -45,15 +56,15 @@ function hasMonthlyMealContent(value) {
   return !!(String(value.kahvalti || '').trim() || String(value.ogle || '').trim() || String(value.araOgun || '').trim());
 }
 
-function buildMonthlyMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now }) {
+function buildMonthlyMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now, sinifId, sinifAdi }) {
   return {
     kresId,
-    sinifId: null,
+    sinifId: sinifId || null,
     tip: 'aylik',
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: `${monthLabel} Yemek Listesi`,
+    baslik: `${sinifAdi ? sinifAdi + ' - ' : ''}${monthLabel} Yemek Listesi`,
     ogunler: {
       kahvalti: String(value.kahvalti || '').trim(),
       ogle: String(value.ogle || '').trim(),
@@ -120,7 +131,7 @@ function isDateExpired(dateKey) {
 }
 
 function isExpiredDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateExpired(getMealDateKey(item));
+  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'ogretmen_aylik' && item?.kaynak !== 'aylik_plan' && isDateExpired(getMealDateKey(item));
 }
 
 function getMealPhotoPath(value) {
@@ -251,41 +262,50 @@ export default function TeacherMealsScreen() {
   const [monthlySuccessToast, setMonthlySuccessToast] = useState(false);
 
   useEffect(() => {
-    if (!kresId) {
+    if (!kresId || !currentClass?.id) {
       setMonthlyPublishedCount(0);
       return undefined;
     }
     const unsub = onValue(
       ref(database, MONTHLY_NODE_PATH),
-      (snap) => setMonthlyPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: MONTHLY_KAYNAK })),
+      (snap) => setMonthlyPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: MONTHLY_KAYNAK, matchExtra: forTeacherClass(currentClass.id) })),
       () => setMonthlyPublishedCount(0)
     );
     return () => unsub();
-  }, [kresId, monthKey]);
+  }, [kresId, monthKey, currentClass?.id]);
 
-  // Bu ay zaten yayınlanmışsa (admin veya başka bir öğretmen tarafından),
-  // taslağı boş bırakmak yerine mevcut veriyi geri okuyup forma dolduruyoruz.
+  // Bu ay zaten yayınlanmışsa (bu sınıf için, öğretmen tarafından), taslağı
+  // boş bırakmak yerine mevcut veriyi geri okuyup forma dolduruyoruz.
+  // Admin'in kurum geneli listesine burada BAKMIYORUZ — o ayrı bir kayıt.
   useEffect(() => {
     let cancelled = false;
-    if (!kresId) return undefined;
+    if (!kresId || !currentClass?.id) return undefined;
 
     fetchActiveMonthValues({
       nodePath: MONTHLY_NODE_PATH,
       kresId,
       monthKey,
       kaynak: MONTHLY_KAYNAK,
+      matchExtra: forTeacherClass(currentClass.id),
       valueMapper: (record) => ({
         kahvalti: record.ogunler?.kahvalti || '',
         ogle: record.ogunler?.ogle || '',
         araOgun: record.ogunler?.araOgun || '',
       }),
+      onError: (error) => {
+        if (cancelled) return;
+        Alert.alert(
+          'Liste okunamadı',
+          `Yayınlanmış aylık yemek listesi okunamadı (${error?.code || error?.message || 'bilinmeyen hata'}). Form boş görünüyor olabilir, veri kaybolmadı.`
+        );
+      },
     }).then((loadedValues) => {
       if (cancelled) return;
       setMonthlyValues((prev) => ({ ...prev, ...loadedValues }));
     });
 
     return () => { cancelled = true; };
-  }, [kresId, monthKey]);
+  }, [kresId, monthKey, currentClass?.id]);
 
   function changeMonth(direction) {
     const next = shiftMonth(monthDate, direction);
@@ -319,13 +339,14 @@ export default function TeacherMealsScreen() {
   const hasAnyMonthlyMeal = useMemo(() => Object.values(monthlyValues).some(hasMonthlyMealContent), [monthlyValues]);
 
   async function handleCopyPreviousMonthlyMonth() {
-    if (!kresId) return;
+    if (!kresId || !currentClass?.id) return;
     setMonthlyCopying(true);
     try {
       const { values: copiedValues, found } = await copyFromPreviousMonth({
         nodePath: MONTHLY_NODE_PATH,
         kresId,
         kaynak: MONTHLY_KAYNAK,
+        matchExtra: forTeacherClass(currentClass.id),
         currentMonthDate: monthDate,
         days,
         valueMapper: (prevItem) => ({
@@ -336,7 +357,7 @@ export default function TeacherMealsScreen() {
       });
 
       if (!found) {
-        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir yemek listesi bulunamadı.');
+        Alert.alert('Bulunamadı', 'Geçen ay için sınıfına ait yayınlanmış bir yemek listesi bulunamadı.');
         return;
       }
 
@@ -358,8 +379,8 @@ export default function TeacherMealsScreen() {
   }
 
   function confirmPublishMonthly() {
-    if (!kresId) {
-      Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+    if (!kresId || !currentClass?.id) {
+      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
       return;
     }
     if (!hasAnyMonthlyMeal) {
@@ -368,7 +389,7 @@ export default function TeacherMealsScreen() {
     }
     Alert.alert(
       'Ayı Paylaş',
-      `${monthLabel} yemek listesi yayınlansın mı? Aynı ay için eski yayın pasife alınır ve veliler yeni listeyi görür.`,
+      `${monthLabel} yemek listesi ${currentClass.ad || 'sınıfın'} için yayınlansın mı? Sadece kendi sınıfının eski yayını pasife alınır, kurum geneli liste etkilenmez.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Yayınla', onPress: doPublishMonthly },
@@ -385,17 +406,18 @@ export default function TeacherMealsScreen() {
         monthKey,
         monthLabel,
         kaynak: MONTHLY_KAYNAK,
+        matchExtra: forTeacherClass(currentClass.id),
         days,
         values: monthlyValues,
         hasContent: hasMonthlyMealContent,
-        buildRecord: buildMonthlyMealRecord,
+        buildRecord: (args) => buildMonthlyMealRecord({ ...args, sinifId: currentClass.id, sinifAdi: currentClass.ad }),
       });
 
       await createNotification({
         kresId,
         hedefRoller: ['veli'],
         baslik: '🍽️ Yemek listesi güncellendi',
-        mesaj: `${monthLabel} yemek listesi yayınlandı.`,
+        mesaj: `${currentClass.ad || 'Sınıf'} için ${monthLabel} yemek listesi yayınlandı.`,
         tip: 'yemek',
         routeName: 'ParentMeals',
         createdBy: teacherId || '',
@@ -411,10 +433,10 @@ export default function TeacherMealsScreen() {
   }
 
   function confirmUnpublishMonthly() {
-    if (!kresId || monthlyPublishedCount === 0) return;
+    if (!kresId || !currentClass?.id || monthlyPublishedCount === 0) return;
     Alert.alert(
       'Yayından Kaldır',
-      `${monthLabel} için yayınlanmış yemek listesi kaldırılsın mı? Veliler artık bu ayın listesini göremeyecek.`,
+      `${monthLabel} için ${currentClass.ad || 'sınıfının'} yayınlanmış yemek listesi kaldırılsın mı? Veliler artık bu ayın listesini göremeyecek.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Kaldır', style: 'destructive', onPress: doUnpublishMonthly },
@@ -425,7 +447,7 @@ export default function TeacherMealsScreen() {
   async function doUnpublishMonthly() {
     setMonthlyUnpublishing(true);
     try {
-      await unpublishMonth({ nodePath: MONTHLY_NODE_PATH, kresId, monthKey, kaynak: MONTHLY_KAYNAK });
+      await unpublishMonth({ nodePath: MONTHLY_NODE_PATH, kresId, monthKey, kaynak: MONTHLY_KAYNAK, matchExtra: forTeacherClass(currentClass.id) });
     } catch (error) {
       console.log(error);
       Alert.alert('Hata', 'Yayından kaldırılamadı.');
@@ -467,8 +489,11 @@ export default function TeacherMealsScreen() {
     });
     return sorted[0];
   };
-  const todayDailyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak !== 'admin_aylik'));
-  const todayMonthlyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak === 'admin_aylik'));
+  const todayDailyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak !== 'admin_aylik' && item.kaynak !== MONTHLY_KAYNAK));
+  // Önce BU SINIFA özel öğretmen yayını, yoksa admin'in kurum geneli yayını.
+  const todayOwnClassMonthlyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak === MONTHLY_KAYNAK && item.sinifId === currentClass?.id));
+  const todayInstitutionMonthlyMeal = pickFreshestMeal(visibleMeals.filter((item) => item.tarih === today && item.kaynak === INSTITUTION_KAYNAK));
+  const todayMonthlyMeal = todayOwnClassMonthlyMeal || todayInstitutionMonthlyMeal;
   const todayMeal = useMemo(() => mergeTodayMeal({ kresId, classItem: currentClass, monthlyMeal: todayMonthlyMeal, dailyMeal: todayDailyMeal }), [currentClass, kresId, todayDailyMeal, todayMonthlyMeal]);
 
   useEffect(() => {
@@ -785,6 +810,7 @@ export default function TeacherMealsScreen() {
                   kresId={kresId}
                   nodePath={MONTHLY_NODE_PATH}
                   kaynak={MONTHLY_KAYNAK}
+                  matchExtra={currentClass?.id ? forTeacherClass(currentClass.id) : undefined}
                   currentMonthKey={monthKey}
                   onSelectMonth={jumpToMonth}
                   theme={THEME}
@@ -813,6 +839,8 @@ export default function TeacherMealsScreen() {
                   kresId={kresId}
                   nodePath={MONTHLY_NODE_PATH}
                   kaynak={MONTHLY_KAYNAK}
+                  sinifId={currentClass?.id}
+                  sinifAd={currentClass?.ad}
                   docType="yemek"
                   monthKey={monthKey}
                   monthLabel={monthLabel}
