@@ -6,6 +6,7 @@ import TeacherChildrenScreen from '../screens/teacher/TeacherChildrenScreen';
 import ChildReportScreen from '../screens/teacher/ChildReportScreen';
 import TeacherAttendanceScreen from '../screens/teacher/TeacherAttendanceScreen';
 import TeacherScheduleScreen from '../screens/teacher/TeacherScheduleScreen';
+import TeacherDutyRosterScreen from '../screens/teacher/TeacherDutyRosterScreen';
 import TeacherEventsScreen from '../screens/teacher/TeacherEventsScreen';
 import TeacherMealsScreen from '../screens/teacher/TeacherMealsScreen';
 import TeacherMedicationFormListScreen from '../screens/teacher/TeacherMedicationFormListScreen';
@@ -37,6 +38,7 @@ export default function TeacherStack() {
       <Stack.Screen name="ChildReport" component={ChildReportScreen} />
       <Stack.Screen name="TeacherAttendance" component={TeacherAttendanceScreen} />
       <Stack.Screen name="TeacherSchedule" component={TeacherScheduleScreen} />
+      <Stack.Screen name="TeacherDutyRoster" component={TeacherDutyRosterScreen} />
       <Stack.Screen name="TeacherEvents" component={TeacherEventsScreen} />
       <Stack.Screen name="TeacherMeals" component={TeacherMealsScreen} />
       <Stack.Screen name="TeacherMedicationFormList" component={TeacherMedicationFormListScreen} />
