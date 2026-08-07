@@ -7,10 +7,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
-  KeyboardAvoidingView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
