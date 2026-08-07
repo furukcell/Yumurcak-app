@@ -154,7 +154,7 @@ export default function TeacherAnnouncementsScreen() {
           title: baslik.trim(),
           icerik: icerik.trim(),
           message: icerik.trim(),
-          tarih: new Date().toISOString().split('T')[0],
+          tarih: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
           aktif: true,
           createdAt: Date.now(),
           updatedAt: Date.now(),
