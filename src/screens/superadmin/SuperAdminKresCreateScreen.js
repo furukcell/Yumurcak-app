@@ -6,7 +6,6 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -17,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { push, ref, update } from 'firebase/database';
 import { database, firebaseConfig } from '../../config/firebase';
 import { usernameToEmail } from '../../utils/authHelpers';
