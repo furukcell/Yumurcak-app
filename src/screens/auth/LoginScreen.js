@@ -15,10 +15,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Image,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
 import { auth, database } from '../../config/firebase';
