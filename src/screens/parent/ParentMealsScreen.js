@@ -43,7 +43,7 @@ function isDateInLast7Days(dateKey) {
 }
 
 function isRecentDailyMeal(item) {
-  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'aylik_plan' && isDateInLast7Days(getMealDateKey(item));
+  return item?.kaynak !== 'admin_aylik' && item?.kaynak !== 'ogretmen_aylik' && item?.kaynak !== 'aylik_plan' && isDateInLast7Days(getMealDateKey(item));
 }
 
 function getTodayKey() {
@@ -121,15 +121,23 @@ export default function ParentMealsScreen({ navigation }) {
   }, [visibleMeals]);
 
   const monthlyMeals = useMemo(() => {
-    return visibleMeals
-      .filter((item) => item.kaynak === 'admin_aylik')
-      .filter((item) => item.ayKey === currentMonthKey)
-      .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
-  }, [visibleMeals, currentMonthKey]);
+    // Önce BU SINIFA özel öğretmen yayını, o ay için hiç yoksa admin'in
+    // kurum geneli yayınına düş — ikisi artık ayrı kayıtlar (ogretmen_aylik / admin_aylik).
+    const classMonthly = visibleMeals
+      .filter((item) => item.kaynak === 'ogretmen_aylik' && item.sinifId === sinifId)
+      .filter((item) => item.ayKey === currentMonthKey);
+    const source = classMonthly.length > 0
+      ? classMonthly
+      : visibleMeals.filter((item) => item.kaynak === 'admin_aylik').filter((item) => item.ayKey === currentMonthKey);
+    return source.sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
+  }, [visibleMeals, currentMonthKey, sinifId]);
+  const isClassMonthly = monthlyMeals.length > 0 && monthlyMeals[0]?.kaynak === 'ogretmen_aylik';
 
   const today = getTodayKey();
-  const todayDailyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik') || null;
-  const todayMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'admin_aylik') || null;
+  const todayDailyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak !== 'admin_aylik' && item.kaynak !== 'ogretmen_aylik') || null;
+  const todayOwnClassMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'ogretmen_aylik' && item.sinifId === sinifId) || null;
+  const todayInstitutionMonthlyMeal = visibleMeals.find((item) => item.tarih === today && item.kaynak === 'admin_aylik') || null;
+  const todayMonthlyMeal = todayOwnClassMonthlyMeal || todayInstitutionMonthlyMeal;
   const todayMeal = mergeTodayMeal({
     kresId,
     sinifId,
@@ -180,12 +188,15 @@ export default function ParentMealsScreen({ navigation }) {
               <>
                 <View style={localStyles.monthInfoCard}>
                   <Text style={localStyles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
-                  <Text style={localStyles.monthInfoText}>Yönetici tarafından yayınlanan kurum geneli aylık menü.</Text>
+                  <Text style={localStyles.monthInfoText}>
+                    {isClassMonthly ? 'Sınıf öğretmeni tarafından yayınlanan aylık menü.' : 'Yönetici tarafından yayınlanan kurum geneli aylık menü.'}
+                  </Text>
                 </View>
                 <MonthlyDocumentPdfBar
                   kresId={kresId}
                   nodePath="yemekListeleri"
-                  kaynak="admin_aylik"
+                  kaynak={isClassMonthly ? 'ogretmen_aylik' : 'admin_aylik'}
+                  sinifId={isClassMonthly ? sinifId : undefined}
                   docType="yemek"
                   monthKey={currentMonthKey}
                   monthLabel={formatMonthLabel(currentMonthKey)}
@@ -207,7 +218,7 @@ export default function ParentMealsScreen({ navigation }) {
 
 function MealCard({ item }) {
   const ogunler = item.ogunler || {};
-  const isMonthly = item.kaynak === 'admin_aylik';
+  const isMonthly = item.kaynak === 'admin_aylik' || item.kaynak === 'ogretmen_aylik';
 
   return (
     <View style={styles.card}>
