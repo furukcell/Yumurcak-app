@@ -168,6 +168,7 @@ export function useTeacherData() {
   const [schedules, setSchedules] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [medicalMap, setMedicalMap] = useState({});
+  const [dutyRoster, setDutyRoster] = useState([]);
 
   useEffect(() => {
     if (!teacherId) {
@@ -355,6 +356,7 @@ export function useTeacherData() {
       setSchedules([]);
       setAttendance([]);
       setMedicalMap({});
+      setDutyRoster([]);
       return undefined;
     }
 
@@ -370,6 +372,7 @@ export function useTeacherData() {
     listenList('etkinlikler', setEvents);
     listenList('dersProgramlari', setSchedules);
     listenList('yoklamalar', setAttendance);
+    listenList('nobetCizelgeleri', setDutyRoster);
 
     const medicalUnsub = listenByKresId('medikalBilgiler', kresId, (data) => setMedicalMap(data || {}), () => setMedicalMap({}));
     unsubs.push(medicalUnsub);
@@ -382,7 +385,7 @@ export function useTeacherData() {
     return reports.filter((item) => childIds.has(item.cocukId)).sort((a, b) => String(b.tarih || b.createdAt || '').localeCompare(String(a.tarih || a.createdAt || '')));
   }, [reports, classChildren]);
 
-  return { kullanici, cikisYap, teacherId, loading, users, kresId, kurum, kresAdi, currentClass, classChildren, reports: classReports, announcements, meals, events, schedules, attendance, medicalMap };
+  return { kullanici, cikisYap, teacherId, loading, users, kresId, kurum, kresAdi, currentClass, classChildren, reports: classReports, announcements, meals, events, schedules, attendance, medicalMap, dutyRoster };
 }
 
 function createStyles(theme) {
