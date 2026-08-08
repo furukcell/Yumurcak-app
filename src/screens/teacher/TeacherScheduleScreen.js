@@ -601,8 +601,8 @@ export default function TeacherScheduleScreen() {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
-              <TouchableOpacity onPress={closeModal} activeOpacity={0.8}>
-                <Text style={styles.modalClose}>Kapat</Text>
+              <TouchableOpacity onPress={closeModal} activeOpacity={0.8} style={styles.modalCloseButton}>
+                <Text style={styles.modalCloseCheck}>✓</Text>
               </TouchableOpacity>
             </View>
 
@@ -771,6 +771,8 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
+  modalCloseButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: THEME.green, alignItems: 'center', justifyContent: 'center' },
+  modalCloseCheck: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
   modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
   repeatWarning: { backgroundColor: '#FFF3D9', borderRadius: 12, padding: 10, marginBottom: 10 },
   repeatWarningText: { color: '#8A6100', fontWeight: '800', fontSize: 12, lineHeight: 17 },
