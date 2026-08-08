@@ -1290,3 +1290,246 @@ exports.cleanupExpiredMealPhotosDaily = functions
     await Promise.all(tasks);
     return null;
   });
+
+// ============================================================
+// generateDailyAiComments — FAZ 21: AI destekli günlük özet
+//
+// Öğretmen gün içinde parça parça veri girer (rapor, yemek listesi,
+// ders programı, etkinlik, rozet, boy/kilo ölçümü) — bu yüzden "rapor
+// kaydedilince" değil, her gün TEK SEFER, Türkiye saatiyle 17:00'de
+// çalışır. O ana kadar girilmiş TÜM verileri toplayıp Gemini'ye
+// gönderir, veliye gösterilecek doğal bir günlük özet üretir.
+//
+// Sonuç gunlukRaporlar'a değil, ayrı bir node'a yazılır
+// (gunlukYorumlar/{cocukId}/{tarih}) — çünkü rapor hiç girilmemiş
+// olsa bile (sadece yemek listesi/program girilmiş olabilir) yine de
+// bir özet üretilebilmeli.
+//
+// Bir çocuk için o gün HİÇBİR veri girilmemişse Gemini'ye hiç
+// gidilmez (gereksiz çağrı yapılmaz, ücretsiz kotayı boşa harcamaz).
+// Bir çocukta hata olursa diğerlerini etkilemez (try/catch + Promise.all).
+// ============================================================
+
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+
+const GEMINI_SYSTEM_PROMPT = `Sen bir Türk anaokulu/kreş öğretmenisin. Görevin, sana verilen günlük verilere
+dayanarak veliye gönderilecek kısa, sıcak, gerçek bir öğretmenin elle yazdığı gibi hissettiren bir günlük
+özet yazmak.
+
+Kurallar:
+- 2 ila 4 cümle yaz, ne çok kısa ne çok uzun.
+- Sade, günlük konuşma diliyle Türkçe yaz; resmi/robotik ifadelerden kaçın.
+- Cümle yapısını, açılışı ve kelime seçimini HER SEFERİNDE farklılaştır — art arda gelen özetler
+  birbirinin kalıbı gibi durmasın.
+- En fazla 2-3 emoji kullan, abartma.
+- Sana verilen alan adlarını (mood, durum, tarih vb.) veya ham veriyi olduğu gibi tekrar etme; hepsini
+  doğal cümlelere çevir.
+- Geçmiş günlerle ilgili bilgi verilmişse, uygun olduğunda kısa bir kıyas yapabilirsin (ör. bu hafta
+  genel olarak nasıl geçtiği), ama zorunlu değil — veri azsa kıyas yapma.
+- Madde işareti, başlık, markdown kullanma. Sadece düz metin döndür, başka hiçbir açıklama ekleme.`;
+
+function istanbulDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
+// Yemek listesi / ders programı gibi sınıf bazlı, gün başına tek kayıt
+// beklenen belgeler için: kreşi tutan, sınıfa özel olanı sınıf-geneline
+// tercih eden, birden fazlaysa en yeni (createdAt) olanı seçen ortak seçici.
+function pickBestForChild(list, child) {
+  const scoped = list.filter((item) => item.aktif !== false && (!item.kresId || item.kresId === child.kresId));
+  const classMatch = scoped.filter((item) => item.sinifId && item.sinifId === child.sinifId);
+  const pool = classMatch.length ? classMatch : scoped.filter((item) => !item.sinifId);
+  if (!pool.length) return null;
+  return pool.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+}
+
+function pickEventsForChild(list, child) {
+  return list
+    .filter((item) => item.aktif !== false && (!item.kresId || item.kresId === child.kresId))
+    .filter((item) => {
+      if (Array.isArray(item.sinifIds)) return item.sinifIds.includes(child.sinifId);
+      if (item.sinifId) return item.sinifId === child.sinifId;
+      return true;
+    });
+}
+
+const MEAL_DURUM_LABELS = { bitirdi: 'iyi yedi', az_yedi: 'az yedi', yemedi: 'yemedi' };
+
+function formatMealsForPrompt(yemek = {}) {
+  const parts = ['kahvalti', 'ogle', 'araOgun']
+    .map((key) => {
+      const durum = yemek?.[key]?.durum;
+      if (!durum) return null;
+      const label = { kahvalti: 'Kahvaltı', ogle: 'Öğle', araOgun: 'Ara öğün' }[key];
+      return `${label}: ${MEAL_DURUM_LABELS[durum] || durum}`;
+    })
+    .filter(Boolean);
+  return parts.length ? parts.join(', ') : null;
+}
+
+function buildPromptForChild({ child, todayReport, historyReports, todayMeal, todaySchedule, todayEvents, todayBadge, todayGrowth }) {
+  const childName = getChildName(child) || 'Çocuk';
+  const lines = [`Çocuğun adı: ${childName}`];
+
+  if (todayReport) {
+    if (todayReport.ruhHali || todayReport.mood) lines.push(`Bugünkü ruh hali: ${todayReport.ruhHali || todayReport.mood}`);
+    const mealText = formatMealsForPrompt(todayReport.yemek);
+    if (mealText) lines.push(`Öğün durumu: ${mealText}`);
+    if (todayReport.uyku?.sure) lines.push(`Uyku süresi: ${todayReport.uyku.sure} saat`);
+    if (todayReport.tuvalet?.sayi) lines.push(`Tuvalet sayısı: ${todayReport.tuvalet.sayi}`);
+    if (todayReport.not) lines.push(`Öğretmenin serbest notu: "${todayReport.not}"`);
+  } else {
+    lines.push('Bugün için öğretmen henüz günlük rapor girmedi.');
+  }
+
+  if (todayMeal?.ogunler) {
+    const menu = ['kahvalti', 'ogle', 'araOgun']
+      .map((key) => todayMeal.ogunler[key])
+      .filter(Boolean)
+      .join(', ');
+    if (menu) lines.push(`Bugünün kurum yemek menüsü: ${menu}`);
+  }
+
+  const scheduleTitle = todaySchedule?.etkinlik || todaySchedule?.baslik;
+  if (scheduleTitle) lines.push(`Bugünkü ders programı: ${scheduleTitle}`);
+
+  if (todayEvents.length) {
+    lines.push(`Bugünkü etkinlik(ler): ${todayEvents.map((e) => e.baslik).filter(Boolean).join(', ')}`);
+  }
+
+  if (todayBadge) {
+    lines.push(`Bugün "Haftanın Yıldızı" rozeti aldı: ${todayBadge.badgeTitle || todayBadge.rozetAdi || ''}`.trim());
+  }
+
+  if (todayGrowth) {
+    const growthParts = [];
+    if (todayGrowth.boy) growthParts.push(`boy: ${todayGrowth.boy} cm`);
+    if (todayGrowth.kilo) growthParts.push(`kilo: ${todayGrowth.kilo} kg`);
+    if (todayGrowth.basCevresi) growthParts.push(`baş çevresi: ${todayGrowth.basCevresi} cm`);
+    if (growthParts.length) lines.push(`Bugün gelişim ölçümü yapıldı (${growthParts.join(', ')})`);
+  }
+
+  const recentHistory = historyReports.slice(-7);
+  if (recentHistory.length) {
+    const historyLines = recentHistory.map((r) => {
+      const mealText = formatMealsForPrompt(r.yemek);
+      const bits = [r.ruhHali || r.mood, mealText].filter(Boolean).join(' / ');
+      return `${r.tarih}: ${bits || 'veri az'}`;
+    });
+    lines.push(`Son günlerin özeti (kıyaslamak istersen kullanabilirsin):\n${historyLines.join('\n')}`);
+  }
+
+  return lines.join('\n');
+}
+
+async function callGemini(promptText) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY tanımlı değil (Firebase secret eksik).');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: GEMINI_SYSTEM_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text: promptText }] }],
+      generationConfig: { temperature: 0.9, maxOutputTokens: 220 },
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Gemini API hata ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const text = (data?.candidates?.[0]?.content?.parts || [])
+    .map((p) => p.text || '')
+    .join('')
+    .trim();
+
+  if (!text) throw new Error('Gemini boş yanıt döndü.');
+  return text;
+}
+
+exports.generateDailyAiComments = functions
+  .region('europe-west1')
+  .runWith({ secrets: ['GEMINI_API_KEY'], timeoutSeconds: 300 })
+  .pubsub
+  .schedule('every day 17:00')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const todayKey = istanbulDateKey();
+    const historyCutoff = istanbulDateKey(new Date(Date.now() - 8 * 24 * 60 * 60 * 1000));
+
+    const [childrenSnap, reportsSnap, mealsSnap, schedulesSnap, eventsSnap, badgesSnap, growthSnap] = await Promise.all([
+      admin.database().ref('cocuklar').once('value'),
+      admin.database().ref('gunlukRaporlar').orderByChild('tarih').startAt(historyCutoff).endAt(todayKey).once('value'),
+      admin.database().ref('yemekListeleri').orderByChild('tarih').equalTo(todayKey).once('value'),
+      admin.database().ref('dersProgramlari').orderByChild('tarih').equalTo(todayKey).once('value'),
+      admin.database().ref('etkinlikler').orderByChild('tarih').equalTo(todayKey).once('value'),
+      admin.database().ref('haftaninRozetleri').once('value'),
+      admin.database().ref('fizikselGelisim').orderByChild('tarih').equalTo(todayKey).once('value'),
+    ]);
+
+    const children = childrenSnap.val() || {};
+    const allReports = Object.values(reportsSnap.val() || {});
+    const todayMeals = Object.values(mealsSnap.val() || {});
+    const todaySchedules = Object.values(schedulesSnap.val() || {});
+    const todayEventsAll = Object.values(eventsSnap.val() || {});
+    const allBadges = Object.values(badgesSnap.val() || {});
+    const todayGrowths = Object.values(growthSnap.val() || {});
+
+    const tasks = Object.entries(children).map(async ([childId, child = {}]) => {
+      try {
+        const childReports = allReports.filter((r) => (r.cocukId || r.childId) === childId);
+        const todayReport = childReports.find((r) => r.tarih === todayKey) || null;
+        const historyReports = childReports
+          .filter((r) => r.tarih && r.tarih !== todayKey)
+          .sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)));
+
+        const todayMeal = pickBestForChild(todayMeals, child);
+        const todaySchedule = pickBestForChild(todaySchedules, child);
+        const todayEvents = pickEventsForChild(todayEventsAll, child);
+        const todayGrowth = todayGrowths.find((g) => g.cocukId === childId) || null;
+        const todayBadge = allBadges.find((b) => b.cocukId === childId && istanbulDateKey(new Date(b.createdAt || 0)) === todayKey) || null;
+
+        const hasAnyData = !!todayReport || !!todayMeal || !!todaySchedule || todayEvents.length > 0 || !!todayBadge || !!todayGrowth;
+        if (!hasAnyData) return;
+
+        const promptText = buildPromptForChild({
+          child,
+          todayReport,
+          historyReports,
+          todayMeal,
+          todaySchedule,
+          todayEvents,
+          todayBadge,
+          todayGrowth,
+        });
+
+        const yorum = await callGemini(promptText);
+
+        await admin.database().ref(`gunlukYorumlar/${childId}/${todayKey}`).set({
+          yorum,
+          cocukId: childId,
+          kresId: child.kresId || '',
+          tarih: todayKey,
+          model: GEMINI_MODEL,
+          createdAt: admin.database.ServerValue.TIMESTAMP,
+        });
+      } catch (err) {
+        console.error(`generateDailyAiComments — çocuk ${childId} için hata:`, err && err.message ? err.message : err);
+      }
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
