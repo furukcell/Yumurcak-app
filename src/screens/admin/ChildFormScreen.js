@@ -182,7 +182,7 @@ export default function ChildFormScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <AppSuccessToast visible={successToast} message={childId ? 'Çocuk bilgileri güncellendi' : 'Çocuk kaydedildi'} onHide={() => setSuccessToast(false)} />
