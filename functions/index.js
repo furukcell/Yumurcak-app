@@ -690,13 +690,19 @@ function slugifyActivityName(name) {
   return normalized.replace(/\s+/g, '-').slice(0, 120);
 }
 
-// `ogunler.{key}` ya düz metin (admin aylık) ya da `{ text, fotoUrl, ... }`
-// objesi (öğretmen günlük) olabiliyor — bkz. src/components/MealTodayCard.js
-// içindeki `getMealText`. Aynı mantık burada da lazım.
-function extractMealText(value) {
-  if (!value) return '';
-  if (typeof value === 'string') return value.trim();
-  return String(value.text || value.aciklama || '').trim();
+// `ogunler.{key}` üç şekilde gelebilir: aylık liste artık bir DİZİ (çoklu
+// yemek chip'i), öğretmenin günlük ekranı ise `{ text, fotoUrl, ... }`
+// objesi — bkz. src/components/MealTodayCard.js içindeki `getMealText`.
+// Bu fonksiyon hepsini tek bir düz metin dizisine indirger.
+function extractMealList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+  const trimmed = String(value.text || value.aciklama || '').trim();
+  return trimmed ? [trimmed] : [];
 }
 
 exports.updateActivityPoolOnScheduleWrite = functions
@@ -710,23 +716,21 @@ exports.updateActivityPoolOnScheduleWrite = functions
     if (!after) return null; // silme — havuzdan düşürmüyoruz, MVP kapsamı dışı
     if (after.aktif === false) return null;
 
-    const activityName = String(after.etkinlik || '').trim();
-    if (!activityName) return null;
+    // FAZ — Çoklu Etkinlik Girişi: bir gün artık TEK etkinlik değil,
+    // `etkinlikler` dizisi (her biri kendi kategori/tema/kazanımlarıyla).
+    const afterItems = Array.isArray(after.etkinlikler) ? after.etkinlikler : [];
+    if (afterItems.length === 0) return null;
 
-    // Aynı metin + kategori zaten kayıtlıysa (örn. sadece açıklama düzenlendiyse)
+    const beforeItems = before && Array.isArray(before.etkinlikler) ? before.etkinlikler : [];
+    // Aynı (isim+kategori) zaten kayıtlıysa (örn. sadece açıklama düzenlendiyse)
     // tekrar saymıyoruz — çift sayım riskini önlüyor.
-    const beforeName = before ? String(before.etkinlik || '').trim() : '';
-    const beforeKategori = before ? (before.kategori || 'diger') : null;
-    const afterKategori = after.kategori || 'diger';
-    if (before && beforeName === activityName && beforeKategori === afterKategori) {
-      return null;
-    }
-
-    const slug = slugifyActivityName(activityName);
-    if (!slug) return null;
+    const beforeKeySet = new Set(
+      beforeItems
+        .filter((item) => item && String(item.etkinlik || '').trim())
+        .map((item) => `${normalizeActivityName(item.etkinlik)}|${item.kategori || 'diger'}`)
+    );
 
     const kresId = after.kresId || '';
-    const tema = after.tema || null;
 
     let yasGrubu = 'Genel';
     if (after.sinifId) {
@@ -739,47 +743,61 @@ exports.updateActivityPoolOnScheduleWrite = functions
     }
 
     const now = Date.now();
-    const poolRef = admin.database().ref(`etkinlikHavuzu/${slug}`);
-    const metaRef = admin.database().ref(`_etkinlikHavuzuMeta/${slug}`);
-    const adNormalized = normalizeActivityName(activityName);
 
-    // Toplam kullanım sayısını atomik artırıyoruz (transaction — eşzamanlı
-    // yazmalarda kayıp sayım olmaması için).
-    await poolRef.transaction((current) => {
-      if (!current) {
+    for (const item of afterItems) {
+      const activityName = String(item?.etkinlik || '').trim();
+      if (!activityName) continue;
+
+      const afterKategori = item.kategori || 'diger';
+      const key = `${normalizeActivityName(activityName)}|${afterKategori}`;
+      if (before && beforeKeySet.has(key)) continue; // değişmemiş, tekrar sayma
+
+      const slug = slugifyActivityName(activityName);
+      if (!slug) continue;
+
+      const tema = item.tema || null;
+      const adNormalized = normalizeActivityName(activityName);
+      const poolRef = admin.database().ref(`etkinlikHavuzu/${slug}`);
+      const metaRef = admin.database().ref(`_etkinlikHavuzuMeta/${slug}`);
+
+      // Toplam kullanım sayısını atomik artırıyoruz (transaction — eşzamanlı
+      // yazmalarda kayıp sayım olmaması için).
+      await poolRef.transaction((current) => {
+        if (!current) {
+          return {
+            ad: activityName,
+            adNormalized,
+            yasGrubu,
+            kategori: afterKategori,
+            tema,
+            toplamKullanim: 1,
+            kresSayisi: 0, // aşağıda metaRef'ten hesaplanıp güncellenecek
+            sonKullanim: now,
+            createdAt: now,
+            updatedAt: now,
+          };
+        }
         return {
+          ...current,
           ad: activityName,
           adNormalized,
           yasGrubu,
           kategori: afterKategori,
           tema,
-          toplamKullanim: 1,
-          kresSayisi: 0, // aşağıda metaRef'ten hesaplanıp güncellenecek
+          toplamKullanim: (current.toplamKullanim || 0) + 1,
           sonKullanim: now,
-          createdAt: now,
           updatedAt: now,
         };
-      }
-      return {
-        ...current,
-        ad: activityName,
-        adNormalized,
-        yasGrubu,
-        kategori: afterKategori,
-        tema,
-        toplamKullanim: (current.toplamKullanim || 0) + 1,
-        sonKullanim: now,
-        updatedAt: now,
-      };
-    });
+      });
 
-    // Farklı kreş sayısı: kresId'yi gizli meta node'una işleyip, oradaki
-    // anahtar sayısını herkese açık havuz kaydına yazıyoruz.
-    if (kresId) {
-      await metaRef.child('kresIdler').child(kresId).set(true);
-      const metaSnap = await metaRef.child('kresIdler').once('value');
-      const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
-      await poolRef.child('kresSayisi').set(kresSayisi);
+      // Farklı kreş sayısı: kresId'yi gizli meta node'una işleyip, oradaki
+      // anahtar sayısını herkese açık havuz kaydına yazıyoruz.
+      if (kresId) {
+        await metaRef.child('kresIdler').child(kresId).set(true);
+        const metaSnap = await metaRef.child('kresIdler').once('value');
+        const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
+        await poolRef.child('kresSayisi').set(kresSayisi);
+      }
     }
 
     return null;
@@ -821,55 +839,61 @@ exports.updateMealPoolOnMealWrite = functions
     const oguns = ['kahvalti', 'ogle', 'araOgun', 'ikindi'];
 
     for (const ogun of oguns) {
-      // Admin'in aylık ekranı düz metin yazıyor (`ogunler.kahvalti = "..."`),
-      // öğretmenin günlük ekranı ise `{ text, fotoUrl, fotoPath, updatedAt }`
-      // objesi yazıyor — ikisini de destekliyoruz (bkz. MealTodayCard.getMealText).
-      const metin = extractMealText(ogunlerAfter[ogun]);
-      if (!metin) continue;
+      // FAZ — Çoklu Yemek Girişi: aylık liste artık öğün başına DİZİ
+      // (öğretmenin günlük ekranı hâlâ tekil obje yazabiliyor — extractMealList
+      // ikisini de tek bir metin dizisine indirger). Her yemek AYRI sayılır;
+      // sadece bu yazımda YENİ eklenen yemekler havuzda artırılır — listede
+      // zaten duran bir yemek her kayıtta tekrar sayılmasın diye.
+      const afterList = extractMealList(ogunlerAfter[ogun]);
+      if (afterList.length === 0) continue;
 
-      const beforeMetin = extractMealText(ogunlerBefore[ogun]);
-      if (before && beforeMetin === metin) continue; // değişmemiş, tekrar sayma
+      const beforeList = extractMealList(ogunlerBefore[ogun]);
+      const beforeSet = new Set(beforeList.map((item) => normalizeActivityName(item)));
 
-      const metinNormalized = normalizeActivityName(metin);
-      const slug = slugifyActivityName(metin);
-      if (!slug) continue;
+      for (const metin of afterList) {
+        const metinNormalized = normalizeActivityName(metin);
+        if (before && beforeSet.has(metinNormalized)) continue; // zaten listedeydi, tekrar sayma
 
-      const poolKey = `${ogun}__${slug}`;
-      const searchKey = `${ogun}|${metinNormalized}`;
-      const poolRef = admin.database().ref(`yemekHavuzu/${poolKey}`);
-      const metaRef = admin.database().ref(`_yemekHavuzuMeta/${poolKey}`);
+        const slug = slugifyActivityName(metin);
+        if (!slug) continue;
 
-      await poolRef.transaction((current) => {
-        if (!current) {
+        const poolKey = `${ogun}__${slug}`;
+        const searchKey = `${ogun}|${metinNormalized}`;
+        const poolRef = admin.database().ref(`yemekHavuzu/${poolKey}`);
+        const metaRef = admin.database().ref(`_yemekHavuzuMeta/${poolKey}`);
+
+        await poolRef.transaction((current) => {
+          if (!current) {
+            return {
+              metin,
+              metinNormalized,
+              ogun,
+              searchKey,
+              toplamKullanim: 1,
+              kresSayisi: 0,
+              sonKullanim: now,
+              createdAt: now,
+              updatedAt: now,
+            };
+          }
           return {
+            ...current,
             metin,
             metinNormalized,
             ogun,
             searchKey,
-            toplamKullanim: 1,
-            kresSayisi: 0,
+            toplamKullanim: (current.toplamKullanim || 0) + 1,
             sonKullanim: now,
-            createdAt: now,
             updatedAt: now,
           };
-        }
-        return {
-          ...current,
-          metin,
-          metinNormalized,
-          ogun,
-          searchKey,
-          toplamKullanim: (current.toplamKullanim || 0) + 1,
-          sonKullanim: now,
-          updatedAt: now,
-        };
-      });
+        });
 
-      if (kresId) {
-        await metaRef.child('kresIdler').child(kresId).set(true);
-        const metaSnap = await metaRef.child('kresIdler').once('value');
-        const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
-        await poolRef.child('kresSayisi').set(kresSayisi);
+        if (kresId) {
+          await metaRef.child('kresIdler').child(kresId).set(true);
+          const metaSnap = await metaRef.child('kresIdler').once('value');
+          const kresSayisi = metaSnap.exists() ? Object.keys(metaSnap.val()).length : 0;
+          await poolRef.child('kresSayisi').set(kresSayisi);
+        }
       }
     }
 
