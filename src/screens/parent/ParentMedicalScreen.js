@@ -9,6 +9,7 @@ import { normalizeChildBirthDate } from '../../utils/childDates';
 import { normalizeTimeInput } from '../../utils/timeFormat';
 import AllergyBoxEditor from '../../components/AllergyBoxEditor';
 import SegmentedTabs from '../../components/SegmentedTabs';
+import { getMedicineIcon } from '../../utils/medicineIcon';
 
 function splitItems(value) {
   return String(value || '')
@@ -221,7 +222,8 @@ export default function ParentMedicalScreen({ navigation }) {
               onChange={setActiveTab}
               tabs={[
                 { key: 'alerjiler', icon: '⚠️', label: 'Alerjiler' },
-                { key: 'ilacTakip', icon: '💊', label: 'İlaç Takip', badge: medicationForms.length || null },
+                { key: 'surekliIlaclar', icon: '💊', label: 'Sürekli İlaçlar', badge: medicineItems.length || null },
+                { key: 'ilacTakip', icon: '📋', label: 'İlaç Takip', badge: medicationForms.length || null },
               ]}
             />
 
@@ -235,13 +237,28 @@ export default function ParentMedicalScreen({ navigation }) {
                   />
                 </MedicalCard>
 
-                <MedicalCard icon="💊" title="Kullandığı İlaçlar">
-                  {medicineItems.length > 0 ? <View style={local.medicineList}>{medicineItems.map((item, index) => <View key={`${item}-${index}`} style={local.medicineRow}><Text style={local.medicineIcon}>{index % 2 === 0 ? '🧴' : '💊'}</Text><View style={{ flex: 1 }}><Text style={local.medicineName}>{item}</Text><Text style={local.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View><Text style={local.medicineBadge}>Kayıtlı</Text></View>)}</View> : <Text style={local.emptyText}>Kayıtlı bilgi yok.</Text>}
-                  <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder="Örn: Şurup - Sabah/Akşam" placeholderTextColor="#A2A5B6" multiline />
-                </MedicalCard>
-
                 <MedicalCard icon="📎" title="Notlar">
                   <View style={local.noteBox}><TextInput style={local.noteInput} value={draft.notlar} onChangeText={(text) => setDraft((p) => ({ ...p, notlar: text }))} placeholder="Öğretmen ve yönetici için özel notlar..." placeholderTextColor="#7D7199" multiline /></View>
+                </MedicalCard>
+
+                {medical?.ogretmenNotu ? (
+                  <MedicalCard icon="🙂" title="Öğretmen Gözlem Notu">
+                    <View style={local.teacherNoteReadonlyBox}>
+                      <Text style={local.teacherNoteReadonlyText}>{medical.ogretmenNotu}</Text>
+                    </View>
+                    <Text style={local.teacherNoteHint}>Bu not öğretmen tarafından yazılır, sadece görüntüleyebilirsin.</Text>
+                  </MedicalCard>
+                ) : null}
+
+                <TouchableOpacity style={[local.saveButton, saving && { opacity: 0.65 }]} onPress={saveMedical} disabled={saving} activeOpacity={0.85}>
+                  <Text style={local.saveButtonText}>{saving ? 'Kaydediliyor...' : '💾 Kaydet'}</Text>
+                </TouchableOpacity>
+              </>
+            ) : activeTab === 'surekliIlaclar' ? (
+              <>
+                <MedicalCard icon="💊" title="Sürekli İlaçlar">
+                  {medicineItems.length > 0 ? <View style={local.medicineList}>{medicineItems.map((item, index) => <View key={`${item}-${index}`} style={local.medicineRow}><Text style={local.medicineIcon}>{getMedicineIcon(item)}</Text><View style={{ flex: 1 }}><Text style={local.medicineName}>{item}</Text><Text style={local.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View><Text style={local.medicineBadge}>Kayıtlı</Text></View>)}</View> : <Text style={local.emptyText}>Kayıtlı bilgi yok.</Text>}
+                  <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder="Örn: Şurup - Sabah/Akşam" placeholderTextColor="#A2A5B6" multiline />
                 </MedicalCard>
 
                 <TouchableOpacity style={[local.saveButton, saving && { opacity: 0.65 }]} onPress={saveMedical} disabled={saving} activeOpacity={0.85}>
@@ -398,6 +415,9 @@ const local = StyleSheet.create({
   formButtonSaveText: { color: '#FFF', fontWeight: '900', fontSize: 13 },
   noteBox: { backgroundColor: '#FBF7FF', borderWidth: 1, borderColor: '#DCC7FF', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
   noteInput: { minHeight: 86, color: '#4B326D', fontWeight: '700', fontSize: 14, lineHeight: 21, textAlignVertical: 'top' },
+  teacherNoteReadonlyBox: { backgroundColor: '#FFF9EA', borderWidth: 1, borderColor: '#FFE0A3', borderRadius: 15, paddingHorizontal: 12, paddingVertical: 12 },
+  teacherNoteReadonlyText: { color: '#5A4415', fontWeight: '700', fontSize: 14, lineHeight: 21 },
+  teacherNoteHint: { color: '#A2A5B6', fontWeight: '700', fontSize: 11, marginTop: 8 },
   editInput: { marginTop: 10, backgroundColor: '#FAFAFC', borderWidth: 1, borderColor: THEME.border, borderRadius: 14, minHeight: 78, padding: 11, color: THEME.text, textAlignVertical: 'top', fontSize: 13, fontWeight: '700' },
   emptyText: { color: THEME.muted, fontWeight: '800', marginBottom: 10 },
   saveButton: { backgroundColor: '#5D5FEF', borderRadius: 20, paddingVertical: 17, alignItems: 'center', marginTop: 2, marginBottom: 10, shadowColor: '#5D5FEF', shadowOpacity: 0.25, shadowRadius: 12, elevation: 3 },
