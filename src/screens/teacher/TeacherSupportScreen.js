@@ -185,7 +185,7 @@ export default function TeacherSupportScreen() {
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
       <ScreenHeader navigation={navigation} title="Bize Yazın" subtitle="Süper Admin'e istek / şikayet / görüş" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.infoBanner}>
             <View style={styles.bannerIconBox}><Text style={styles.bannerIcon}>💬</Text></View>
