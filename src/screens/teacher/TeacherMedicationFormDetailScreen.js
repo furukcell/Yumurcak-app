@@ -145,7 +145,7 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message="Bugünkü doz kaydedildi" onHide={() => setSuccessToast(false)} />
       <ScreenHeader navigation={navigation} title={record.ilacAdi} subtitle={record.cocukAdi} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.infoCard}>
           <InfoRow label="Doz" value={record.doz} />
