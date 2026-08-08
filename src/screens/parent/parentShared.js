@@ -409,6 +409,29 @@ export function useNodeList(node, kresId) {
   return list;
 }
 
+// Bir çocuğun belirli bir günü için Cloud Function'ın ürettiği AI günlük
+// özetini dinler (gunlukYorumlar/{cocukId}/{dateKey}/yorum). Kayıt henüz
+// yoksa (17:00 olmadı ya da o gün hiç veri girilmedi) '' döner.
+export function useDailyAiComment(childId, dateKey) {
+  const [comment, setComment] = useState('');
+
+  useEffect(() => {
+    if (!childId || !dateKey) {
+      setComment('');
+      return undefined;
+    }
+
+    const unsub = onValue(
+      ref(database, `gunlukYorumlar/${childId}/${dateKey}/yorum`),
+      (snap) => setComment(snap.val() || ''),
+      () => setComment('')
+    );
+    return () => unsub();
+  }, [childId, dateKey]);
+
+  return comment;
+}
+
 export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   const themedStyles = useParentSharedStyles();
   const insets = useSafeAreaInsets();
