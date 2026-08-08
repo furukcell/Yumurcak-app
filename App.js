@@ -2,7 +2,7 @@
 // YUMURCAK — App.js
 // SafeAreaProvider + StatusBar + Push token + Android navigation bar + Notification deep links
 // ============================================================
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -13,6 +13,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToDatabase,
@@ -89,6 +90,8 @@ export default function App() {
     };
   }, []);
 
+  const [navKey, setNavKey] = useState(0);
+
   return (
     <KeyboardProvider>
       <SafeAreaProvider>
@@ -97,7 +100,9 @@ export default function App() {
             <PushTokenSync />
             <NotificationDeepLinkHandler />
             <StatusBar style="dark" backgroundColor="#F8F6FF" />
-            <RootNavigator />
+            <ErrorBoundary onRetry={() => setNavKey((k) => k + 1)}>
+              <RootNavigator key={navKey} />
+            </ErrorBoundary>
           </NavigationContainer>
         </AuthProvider>
       </SafeAreaProvider>
