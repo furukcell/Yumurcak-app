@@ -152,6 +152,7 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
           <InfoRow label="Uygulama Şekli" value={record.uygulamaSekli} />
           <InfoRow label="Başlangıç" value={formatDateTr(record.baslangicTarihi)} />
           <InfoRow label="Bitiş" value={formatDateTr(record.bitisTarihi)} />
+          <InfoRow label="Hatırlatma Saati" value={record.hatirlaticiSaat ? `⏰ ${record.hatirlaticiSaat}` : ''} />
           <InfoRow label="Veli Onayı" value={record.veliOnayi ? '✅ Alındı' : '⏳ Bekleniyor'} />
         </View>
 

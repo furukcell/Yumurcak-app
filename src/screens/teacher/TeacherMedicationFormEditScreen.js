@@ -8,11 +8,13 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useRoute } from '@react-navigation/native';
 import { ref, push, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, EmptyState, getChildName } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import { normalizeChildBirthDate } from '../../utils/childDates';
+import { normalizeTimeInput } from '../../utils/timeFormat';
 import { createNotification } from '../../services/notificationCenter';
 
 function getChildParentIds(child) {
@@ -21,14 +23,16 @@ function getChildParentIds(child) {
 }
 
 export default function TeacherMedicationFormEditScreen({ navigation }) {
+  const route = useRoute();
   const { kullanici, teacherId, currentClass, kresId, classChildren } = useTeacherData();
 
-  const [cocukId, setCocukId] = useState('');
+  const [cocukId, setCocukId] = useState(route.params?.cocukId || '');
   const [ilacAdi, setIlacAdi] = useState('');
   const [doz, setDoz] = useState('');
   const [uygulamaSekli, setUygulamaSekli] = useState('');
   const [baslangicTarihi, setBaslangicTarihi] = useState('');
   const [bitisTarihi, setBitisTarihi] = useState('');
+  const [hatirlaticiSaat, setHatirlaticiSaat] = useState('');
   const [veliOnayi, setVeliOnayi] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
@@ -45,6 +49,10 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
     }
     if (!ilacAdi.trim() || !baslangicTarihi.trim() || !bitisTarihi.trim()) {
       Alert.alert('Eksik Bilgi', 'İlaç adı, başlangıç ve bitiş tarihi zorunludur.');
+      return;
+    }
+    if (hatirlaticiSaat.trim() && !normalizeTimeInput(hatirlaticiSaat)) {
+      Alert.alert('Geçersiz Saat', 'Hatırlatma saatini SS:DD formatında gir (örn: 14:30) ya da boş bırak.');
       return;
     }
     if (!veliOnayi) {
@@ -77,6 +85,7 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
         uygulamaSekli: uygulamaSekli.trim(),
         baslangicTarihi: normalizeChildBirthDate(baslangicTarihi),
         bitisTarihi: normalizeChildBirthDate(bitisTarihi),
+        hatirlaticiSaat: normalizeTimeInput(hatirlaticiSaat) || null,
         veliOnayi,
         kayitlar: {},
         aktif: true,
@@ -141,6 +150,16 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
               <TextInput value={bitisTarihi} onChangeText={setBitisTarihi} placeholder="Bitiş * (20.09.2026)" placeholderTextColor={THEME.muted} style={[styles.input, styles.rowFlex]} />
             </View>
 
+            <TextInput
+              value={hatirlaticiSaat}
+              onChangeText={setHatirlaticiSaat}
+              placeholder="Hatırlatma Saati (opsiyonel, örn: 14:30)"
+              placeholderTextColor={THEME.muted}
+              style={styles.input}
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
+            />
+            <Text style={styles.hintText}>⏰ Girilirse, o saatte hem öğretmene hem veliye hatırlatma bildirimi gönderilir.</Text>
+
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Veli Onayı Alındı</Text>
               <Switch value={veliOnayi} onValueChange={setVeliOnayi} trackColor={{ true: THEME.primary }} />
@@ -166,6 +185,7 @@ const styles = StyleSheet.create({
   chipText: { fontWeight: '800', fontSize: 13, color: THEME.text },
   chipTextActive: { color: '#fff' },
   input: { minHeight: 46, backgroundColor: THEME.card, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 14, color: THEME.text, fontWeight: '700', marginBottom: 12 },
+  hintText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: -6, marginBottom: 14 },
   row: { flexDirection: 'row', gap: 10 },
   rowFlex: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: THEME.card, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16 },
