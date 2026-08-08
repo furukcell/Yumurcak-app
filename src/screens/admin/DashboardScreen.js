@@ -5,12 +5,11 @@
 // FAZ 20: Akordeon kategori kartları + sabit (pinned) Mesajlar/Bildirimler şeridi
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert, LayoutAnimation, UIManager } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert, LayoutAnimation, UIManager } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import AppNotificationButton from '../../components/AppNotificationButton';
 import ThemedBackground from '../../components/ThemedBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { rebuildKresRealtimeIndexes } from '../../utils/realtimeIndexBackfill';
@@ -175,10 +174,12 @@ export default function DashboardScreen() {
 
   const [istatistik, setIstatistik] = useState(EMPTY_STATS);
   const [kresAdi, setKresAdi] = useState('Kurum');
+  const [kresLogoUrl, setKresLogoUrl] = useState('');
   const [abonelik, setAbonelik] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [acikKategori, setAcikKategori] = useState('kurum');
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [kurumZiliUnread, setKurumZiliUnread] = useState(0);
 
   const kresId = kullanici?.kresId || 'kres001';
   const adminId = kullanici?.uid || kullanici?.id;
@@ -191,6 +192,25 @@ export default function DashboardScreen() {
     });
     return () => off();
   }, [kullanici]);
+
+  // Kurum Zili: veli tarafından bırakılan "kapıdayım / geliyorum" bildirimleri.
+  // Okunmamış ve henüz tamamlanmamış kayıtlar rozet sayısını oluşturur.
+  useEffect(() => {
+    if (!kresId) return undefined;
+    const off = onValue(ref(database, 'kurumZili'), (snap) => {
+      const data = snap.val() || {};
+      const count = Object.values(data).filter((item) => {
+        if (!item || typeof item !== 'object') return false;
+        const sameKres = !item.kresId || item.kresId === kresId || item.kurumId === kresId;
+        if (!sameKres) return false;
+        const okundu = !!(item.okundu || item.read);
+        const tamamlandi = !!(item.tamamlandi || item.tamamlandı);
+        return !okundu && !tamamlandi;
+      }).length;
+      setKurumZiliUnread(count);
+    });
+    return () => off();
+  }, [kresId]);
 
   const kategoriAc = (key) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -217,6 +237,7 @@ export default function DashboardScreen() {
     const kresUnsub = onValue(ref(database, `kresler/${kresId}`), (snap) => {
       const data = snap.val();
       if (data?.ad) setKresAdi(data.ad);
+      setKresLogoUrl(data?.logoUrl || '');
     });
 
     const subUnsub = onValue(ref(database, `abonelikler/${kresId}`), (snap) => {
@@ -276,7 +297,13 @@ export default function DashboardScreen() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
             <View style={styles.topBarLeft}>
-              <View style={styles.logoCircle}><Text style={styles.logoEmoji}>🍼</Text></View>
+              <TouchableOpacity style={styles.logoCircle} onPress={() => navigation.navigate('InstitutionSettings')} activeOpacity={0.85}>
+                {kresLogoUrl ? (
+                  <Image source={{ uri: kresLogoUrl }} style={styles.logoImage} />
+                ) : (
+                  <Text style={styles.logoEmoji}>🍼</Text>
+                )}
+              </TouchableOpacity>
               <View style={styles.topTitleBlock}>
                 <Text style={styles.brandLabel} numberOfLines={1} ellipsizeMode="tail">YUMURCAK KREŞ</Text>
                 <View style={styles.brandNamePill}><Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">{kresAdi}</Text></View>
@@ -284,7 +311,12 @@ export default function DashboardScreen() {
               </View>
             </View>
             <View style={styles.topActions}>
-              <AppNotificationButton navigation={navigation} />
+              <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('AdminBell')} activeOpacity={0.82}>
+                <Text style={styles.bellBtnIcon}>🛎️</Text>
+                {kurumZiliUnread > 0 ? (
+                  <View style={styles.bellBtnBadge}><Text style={styles.bellBtnBadgeText}>{kurumZiliUnread > 99 ? '99+' : kurumZiliUnread}</Text></View>
+                ) : null}
+              </TouchableOpacity>
               <TouchableOpacity style={styles.cikisBtn} onPress={cikisYap} activeOpacity={0.8}><Text style={styles.cikisBtnText}>↩</Text></TouchableOpacity>
             </View>
           </View>
@@ -396,7 +428,8 @@ const styles = StyleSheet.create({
   topBarLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   topTitleBlock: { flex: 1, minWidth: 0 },
-  logoCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center', marginRight: 9, flexShrink: 0, borderWidth: 1, borderColor: 'rgba(108,61,235,0.16)', shadowColor: '#6C3DEB', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  logoCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center', marginRight: 9, flexShrink: 0, borderWidth: 1, borderColor: 'rgba(108,61,235,0.16)', shadowColor: '#6C3DEB', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: 'hidden' },
+  logoImage: { width: 44, height: 44, borderRadius: 22 },
   logoEmoji: { fontSize: 22 },
   brandLabel: { color: THEME.muted, fontWeight: '900', fontSize: 9, letterSpacing: 1.1, marginBottom: 2 },
   brandNamePill: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(108,61,235,0.14)' },
@@ -404,6 +437,10 @@ const styles = StyleSheet.create({
   panelLabel: { fontSize: 11, color: THEME.muted, fontWeight: '700', flexShrink: 1, marginTop: 2 },
   cikisBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.95)', borderWidth: 1, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cikisBtnText: { color: THEME.primary, fontWeight: '900', fontSize: 18 },
+  bellBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border, position: 'relative' },
+  bellBtnIcon: { fontSize: 20 },
+  bellBtnBadge: { position: 'absolute', top: -4, right: -5, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 2, borderColor: '#FFFFFF' },
+  bellBtnBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
   welcomeCard: { backgroundColor: 'rgba(108,61,235,0.96)', borderRadius: 20, padding: 16, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   welcomeLeft: { flex: 1, minWidth: 0 },
   welcomeGreeting: { color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 13 },
