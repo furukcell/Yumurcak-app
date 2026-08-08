@@ -14,7 +14,7 @@ import {
   Easing,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNodeList, useParentBase, LoadingScreen, EmptyState, toDateKey } from './parentShared';
+import { useNodeList, useParentBase, LoadingScreen, EmptyState, toDateKey, useDailyAiComment } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
@@ -113,6 +113,7 @@ export default function ParentSummaryScreen({ navigation }) {
 
   const unreadMessages = useUnreadMessagesCount(parentId);
   const today = toDateKey(new Date());
+  const aiComment = useDailyAiComment(selectedChild?.id, today);
   const weekKey = getWeekKey();
   const isBirthday = useMemo(() => isBirthdayToday(selectedChild?.dogumTarihi), [selectedChild?.dogumTarihi, today]);
   const [birthdayPopupVisible, setBirthdayPopupVisible] = useState(false);
@@ -364,6 +365,7 @@ export default function ParentSummaryScreen({ navigation }) {
           schedules={todaySchedules}
           events={todayEvents}
           note={note}
+          aiComment={aiComment}
         />
 
         <View style={styles.miniGrid}>
