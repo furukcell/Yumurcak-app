@@ -5,8 +5,7 @@
 // Sınıf bazlı çalışır (her sınıfın kendi aylık programı olur).
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -420,11 +419,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         </ScrollView>
 
         <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
-          <KeyboardAvoidingView
-            style={styles.modalBackdrop}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
-          >
+          <View style={styles.modalBackdrop}>
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
@@ -483,7 +478,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </KeyboardAvoidingView>
+          </View>
         </Modal>
       </SafeAreaView>
     </ThemedBackground>
