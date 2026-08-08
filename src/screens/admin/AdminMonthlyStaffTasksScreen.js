@@ -245,7 +245,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
         <AppSuccessToast visible={successToast} message={`${monthLabel} görev listesi yayınlandı`} onHide={() => setSuccessToast(false)} />
          <KeyboardAvoidingView
           style={{ flex: 1 }}
-           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
    >
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
