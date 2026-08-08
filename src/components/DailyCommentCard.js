@@ -138,19 +138,42 @@ export default function DailyCommentCard({
   schedules,
   events,
   note,
+  aiComment,
 }) {
-  const dailyComment = buildDailyComment({
-    childFirstName,
-    mood,
-    mealsSummary,
-    yesterdayMealsSummary,
-    sleep,
-    schedules,
-    events,
-    note,
-  });
-
   const styles = createStyles(theme);
+  const currentHour = new Date().getHours();
+  const isAfter5PM = currentHour >= 17;
+  const hasAiComment = typeof aiComment === 'string' && aiComment.trim().length > 0;
+
+  // 17:00'den önce, AI özeti henüz gelmediyse: eski şablon YERİNE bekleme
+  // mesajı gösterilir. Şablon sadece 17:00 sonrası AI bir sebeple gelmezse
+  // (Gemini hatası vb.) güvenlik ağı olarak devreye girer.
+  if (!hasAiComment && !isAfter5PM) {
+    return (
+      <View style={styles.commentCard}>
+        <View style={styles.commentHead}>
+          <Text style={styles.commentTitle}>✨ Günlük kısa yorum</Text>
+          <Text style={[styles.todayTag, styles.pendingTag]}>17:00’de hazır</Text>
+        </View>
+        <Text style={styles.commentText}>
+          {childFirstName ? `${childFirstName} için günlük` : 'Günlük'} özet, öğretmenin bugün girdiği bilgilere göre bugün saat 17:00’de otomatik oluşturulacak.
+        </Text>
+      </View>
+    );
+  }
+
+  const dailyComment = hasAiComment
+    ? aiComment.trim()
+    : buildDailyComment({
+      childFirstName,
+      mood,
+      mealsSummary,
+      yesterdayMealsSummary,
+      sleep,
+      schedules,
+      events,
+      note,
+    });
 
   return (
     <View style={styles.commentCard}>
@@ -168,5 +191,6 @@ const createStyles = (theme) => StyleSheet.create({
   commentHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
   commentTitle: { color: theme.primary, fontSize: 13, fontWeight: '900' },
   todayTag: { color: '#FFF', backgroundColor: theme.primary, fontSize: 10, fontWeight: '900', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99, overflow: 'hidden' },
+  pendingTag: { backgroundColor: theme.muted },
   commentText: { color: theme.text, fontSize: 13.5, lineHeight: 20, fontWeight: '700' },
 });
