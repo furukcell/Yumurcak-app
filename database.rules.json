@@ -103,6 +103,13 @@
       }
     },
 
+    "gunlukYorumlar": {
+      "$childId": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === root.child('cocuklar').child($childId).child('kresId').val())",
+        ".write": false
+      }
+    },
+
     "gunlukRaporlar": {
       ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || (query.orderByChild == 'kresId' && query.equalTo == root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val()))",
       ".indexOn": ["kresId"],
