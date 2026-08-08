@@ -1310,7 +1310,7 @@ exports.cleanupExpiredMealPhotosDaily = functions
 // Bir çocukta hata olursa diğerlerini etkilemez (try/catch + Promise.all).
 // ============================================================
 
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 const GEMINI_SYSTEM_PROMPT = `Sen bir Türk anaokulu/kreş öğretmenisin. Görevin, sana verilen günlük verilere
 dayanarak veliye gönderilecek kısa, sıcak, gerçek bir öğretmenin elle yazdığı gibi hissettiren bir günlük
