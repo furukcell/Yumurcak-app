@@ -39,7 +39,6 @@ export default function TeacherMessagesScreen() {
   const [filter, setFilter] = useState('all');
   const [showInfo, setShowInfo] = useState(true);
   const [newMessageOpen, setNewMessageOpen] = useState(false);
-  const [drawerQuery, setDrawerQuery] = useState('');
 
   const adminId = kurum?.yoneticiId || Object.entries(users || {}).find(([, u]) => u?.rol === 'yonetici' && (!u.kresId || u.kresId === kresId))?.[0] || null;
   const adminConversationId = teacherId && adminId ? `admin_${adminId}_ogretmen_${teacherId}` : null;
@@ -133,16 +132,6 @@ export default function TeacherMessagesScreen() {
       return true;
     });
   }, [parentContacts, query, filter]);
-
-  const drawerContacts = useMemo(() => {
-    const search = normalizeText(drawerQuery);
-    if (!search) return parentContacts;
-
-    return parentContacts.filter((contact) => {
-      const haystack = normalizeText(`${contact.title} ${contact.childName} ${contact.desc}`);
-      return haystack.includes(search);
-    });
-  }, [parentContacts, drawerQuery]);
 
   const unreadTotal = useMemo(() => {
     return adminUnread + parentContacts.reduce((sum, item) => sum + Number(item.unread || 0), 0);
@@ -326,7 +315,6 @@ export default function TeacherMessagesScreen() {
       <Modal visible={newMessageOpen} transparent animationType="slide" onRequestClose={() => setNewMessageOpen(false)}>
         <View style={styles.drawerOverlay}>
           <TouchableOpacity style={styles.drawerBackdrop} activeOpacity={1} onPress={() => setNewMessageOpen(false)} />
-          <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.drawerSheet}>
             <View style={styles.drawerHandle} />
             <View style={styles.drawerHeader}>
@@ -337,22 +325,6 @@ export default function TeacherMessagesScreen() {
               <TouchableOpacity style={styles.drawerCloseButton} onPress={() => setNewMessageOpen(false)} activeOpacity={0.85}>
                 <Text style={styles.drawerCloseText}>×</Text>
               </TouchableOpacity>
-            </View>
-
-            <View style={styles.drawerSearchBox}>
-              <Text style={styles.searchIcon}>⌕</Text>
-              <TextInput
-                style={styles.searchInput}
-                value={drawerQuery}
-                onChangeText={setDrawerQuery}
-                placeholder="Veli veya çocuk ara..."
-                placeholderTextColor="#8A8EA3"
-              />
-              {drawerQuery ? (
-                <TouchableOpacity onPress={() => setDrawerQuery('')} activeOpacity={0.85}>
-                  <Text style={styles.clearSearch}>×</Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
 
             <TouchableOpacity style={styles.drawerAdminCard} onPress={openAdminChat} activeOpacity={0.85}>
@@ -366,18 +338,18 @@ export default function TeacherMessagesScreen() {
 
             <View style={styles.drawerSectionRow}>
               <Text style={styles.drawerSectionTitle}>Sınıf Velileri</Text>
-              <Text style={styles.drawerCount}>{drawerContacts.length} kişi</Text>
+              <Text style={styles.drawerCount}>{parentContacts.length} kişi</Text>
             </View>
 
-            <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {drawerContacts.length === 0 ? (
+            <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false}>
+              {parentContacts.length === 0 ? (
                 <View style={styles.drawerEmpty}>
-                  <Text style={styles.drawerEmptyIcon}>🔎</Text>
+                  <Text style={styles.drawerEmptyIcon}>👨‍👩‍👧</Text>
                   <Text style={styles.drawerEmptyTitle}>Veli bulunamadı</Text>
-                  <Text style={styles.drawerEmptyText}>Arama kelimesini değiştirerek tekrar dene.</Text>
+                  <Text style={styles.drawerEmptyText}>Sınıfına henüz veli bağlanmamış.</Text>
                 </View>
               ) : (
-                drawerContacts.map((contact) => (
+                parentContacts.map((contact) => (
                   <TouchableOpacity key={`${contact.veliId}_${contact.child.id}_drawer`} style={styles.drawerContactRow} onPress={() => openParentChat(contact)} activeOpacity={0.85}>
                     <View style={styles.drawerParentIconBox}><Text style={styles.drawerParentIcon}>👨‍👩‍👧</Text></View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -391,7 +363,6 @@ export default function TeacherMessagesScreen() {
               )}
             </ScrollView>
           </View>
-         </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>
