@@ -21,6 +21,8 @@ const MEALS = [
 function getMealText(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
+  // FAZ — Çoklu Yemek Girişi: aylık liste artık öğün başına dizi (chip listesi).
+  if (Array.isArray(value)) return value.filter(Boolean).join(', ');
   return value.text || value.aciklama || '';
 }
 

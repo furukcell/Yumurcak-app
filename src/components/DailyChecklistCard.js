@@ -85,6 +85,8 @@ export default function DailyChecklistCard({ kresId, currentClass, classChildren
       return Object.values(oguns).some((deger) => {
         if (!deger) return false;
         if (typeof deger === 'string') return deger.trim().length > 0;
+        // FAZ — Çoklu Yemek Girişi: aylık liste artık öğün başına dizi.
+        if (Array.isArray(deger)) return deger.some((parca) => String(parca || '').trim().length > 0);
         return !!(String(deger.text || '').trim() || deger.fotoUrl);
       });
     });
@@ -94,6 +96,10 @@ export default function DailyChecklistCard({ kresId, currentClass, classChildren
     return schedules.some((item) => {
       if (item.tarih !== today || item.aktif === false) return false;
       if (item.sinifId !== currentClass?.id) return false;
+      // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
+      if (Array.isArray(item.etkinlikler)) {
+        return item.etkinlikler.some((it) => String(it?.etkinlik || '').trim() || String(it?.aciklama || '').trim());
+      }
       return !!(String(item.etkinlik || '').trim() || String(item.aciklama || '').trim());
     });
   }, [schedules, today, currentClass?.id]);

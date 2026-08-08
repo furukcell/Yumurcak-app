@@ -15,11 +15,14 @@ export default function ActivityBalanceCard({ schedules, monthKey, monthLabel, t
   const [open, setOpen] = useState(false);
 
   const { dagilim, toplam, eksikKategoriler } = useMemo(() => {
-    const buAyKayitlari = (schedules || []).filter((item) => item?.ayKey === monthKey && item?.aktif !== false);
+    const buAyGunleri = (schedules || []).filter((item) => item?.ayKey === monthKey && item?.aktif !== false);
+    // FAZ — Çoklu Etkinlik Girişi: bir gün artık birden fazla etkinlik
+    // taşıyabildiği için önce tüm günlerin etkinlik listelerini düzleştiriyoruz.
+    const buAyEtkinlikleri = buAyGunleri.flatMap((gun) => (Array.isArray(gun.etkinlikler) ? gun.etkinlikler : []));
 
     const sayilar = ETKINLIK_KATEGORILERI.map((kat) => ({
       ...kat,
-      sayi: buAyKayitlari.filter((item) => (item.kategori || 'diger') === kat.key).length,
+      sayi: buAyEtkinlikleri.filter((item) => (item.kategori || 'diger') === kat.key).length,
     }));
 
     const enYuksek = Math.max(1, ...sayilar.map((k) => k.sayi));
@@ -27,7 +30,7 @@ export default function ActivityBalanceCard({ schedules, monthKey, monthLabel, t
 
     return {
       dagilim: siraliDagilim,
-      toplam: buAyKayitlari.length,
+      toplam: buAyEtkinlikleri.length,
       eksikKategoriler: sayilar.filter((k) => k.sayi === 0).map((k) => `${k.emoji} ${k.label}`),
     };
   }, [schedules, monthKey]);
