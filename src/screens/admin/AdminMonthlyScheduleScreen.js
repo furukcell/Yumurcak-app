@@ -4,7 +4,7 @@
 // haftalık serbest metin yerine, ay + gün bazlı, yayınla/kaldır akışı.
 // Sınıf bazlı çalışır (her sınıfın kendi aylık programı olur).
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
@@ -124,6 +124,10 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
   const [values, setValues] = useState(() => createInitialValues(days, emptyScheduleValue));
   const [view, setView] = useState('list');
   const [selectedDateKey, setSelectedDateKey] = useState('');
+  const selectedDateKeyRef = useRef('');
+  useEffect(() => {
+    selectedDateKeyRef.current = selectedDateKey;
+  }, [selectedDateKey]);
   const [editingIndex, setEditingIndex] = useState(-1);
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
@@ -140,7 +144,50 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
     const q = query(ref(database, NODE_PATH), orderByChild('kresId'), equalTo(kresId));
     const unsub = onValue(
       q,
-      (snap) => setPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) })),
+      (snap) => {
+        const snapshotValue = snap.val();
+        setPublishedCount(countPublished(snapshotValue, { kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) }));
+
+        // FAZ FIX — Senkronizasyon hatası: aşağıdaki fetchActiveMonthValues
+        // TEK SEFERLİK çalışıyordu (ekran ilk açıldığında/ay değiştiğinde).
+        // Öğretmen (veya başka bir cihazdan yönetici) bu ay için bir ders
+        // yayınlar/güncellerse, ekranı zaten açık olan yönetici bunu
+        // GÖRMÜYORDU — çünkü "values" bir daha yenilenmiyordu. Veli tarafı
+        // ise doğrudan canlı veriden okuduğu için değişikliği anında
+        // görüyordu. Burada zaten canlı dinlenen bu query'nin sonucunu da
+        // "values"a senkronize ediyoruz. O an düzenleme modalında açık olan
+        // günü (selectedDateKeyRef) atlıyoruz ki kullanıcının aktif
+        // düzenlemesi elinden alınmasın.
+        const monthRecords = Object.values(snapshotValue || {}).filter(
+          (item) => item?.kresId === kresId && item?.kaynak === KAYNAK && item?.sinifId === sinifId
+            && item?.aktif !== false && item?.ayKey === monthKey
+        );
+        if (monthRecords.length === 0) return;
+
+        setValues((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          monthRecords.forEach((record) => {
+            const dateKey = record?.tarih;
+            if (!dateKey || dateKey === selectedDateKeyRef.current) return;
+            const mapped = {
+              etkinlikler: Array.isArray(record.etkinlikler) && record.etkinlikler.length > 0
+                ? record.etkinlikler.map((item) => ({
+                    etkinlik: item?.etkinlik || '',
+                    aciklama: item?.aciklama || '',
+                    kategori: item?.kategori || '',
+                    tema: item?.tema || '',
+                  }))
+                : [],
+            };
+            if (JSON.stringify(prev[dateKey]) !== JSON.stringify(mapped)) {
+              next[dateKey] = mapped;
+              changed = true;
+            }
+          });
+          return changed ? next : prev;
+        });
+      },
       () => setPublishedCount(0)
     );
     return () => unsub();
@@ -507,7 +554,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                     value={selectedValue.etkinlikler[editingIndex].etkinlik}
                     onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)}
                     onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)}
-                    placeholder="Etkinlik (örn: Parmak Boyası)"
+                    placeholder="Ders (örn: Parmak Boyası)"
                     style={styles.modalInput}
                     theme={theme}
                   />
