@@ -1059,6 +1059,102 @@ exports.checkBirthdaysDaily = functions
   });
 
 // ============================================================
+// FAZ 8.1 — İlaç Takip Formu "Hatırlatma Saati"
+// Formda opsiyonel bir saat girilebiliyor (ör: "14:30"). Bu zamanlanmış
+// fonksiyon her dakika çalışır, o anki İstanbul saatine eşleşen aktif
+// formları bulur, öğretmene + veliye bildirim gönderir. Aynı gün için
+// tekrar tekrar bildirim gitmesin diye kayitlar/{gün}/hatirlaticiGonderildi
+// bayrağı kullanılır.
+// ============================================================
+function getIstanbulNow() {
+  const timeStr = new Date().toLocaleString('en-US', {
+    timeZone: 'Europe/Istanbul',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+  let [hour, minute] = timeStr.split(':').map((n) => parseInt(n, 10));
+  if (hour === 24) hour = 0;
+  return {
+    time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    dateKey: dateStr,
+  };
+}
+
+exports.sendMedicationReminderEveryMinute = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every 1 minutes')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const { time: currentTime, dateKey: today } = getIstanbulNow();
+
+    const formsSnap = await admin.database().ref('ilacTakipFormlari').once('value');
+    const forms = formsSnap.val() || {};
+
+    const tasks = Object.entries(forms).map(async ([formId, form = {}]) => {
+      if (form.aktif === false) return;
+      if (!form.hatirlaticiSaat || form.hatirlaticiSaat !== currentTime) return;
+      if (!form.cocukId) return;
+
+      const baslangic = form.baslangicTarihi || '';
+      const bitis = form.bitisTarihi || '';
+      if (baslangic && today < baslangic) return;
+      if (bitis && today > bitis) return;
+
+      const alreadySent = form.kayitlar?.[today]?.hatirlaticiGonderildi;
+      if (alreadySent) return;
+
+      // Aynı gün için tekrar tetiklenmesin diye önce bayrağı işaretle.
+      await admin.database().ref(`ilacTakipFormlari/${formId}/kayitlar/${today}`).update({
+        hatirlaticiGonderildi: true,
+        hatirlaticiSaatGonderim: currentTime,
+      });
+
+      const child = await getChild(form.cocukId);
+      const childName = form.cocukAdi || getChildName(child);
+      const kresId = form.kresId || child.kresId || '';
+
+      const parentIds = getParentIdsFromChild(child);
+      if (parentIds.length) {
+        await createNotificationRecord({
+          kresId,
+          hedefUserIds: parentIds,
+          hedefCocukIds: [form.cocukId],
+          baslik: '⏰ İlaç saati geldi',
+          mesaj: `${childName} için "${form.ilacAdi || 'ilaç'}" verilme saati (${currentTime}) geldi.`,
+          tip: 'ilac_takip',
+          routeName: 'ParentMedical',
+          source: 'ilacTakipFormlari',
+          sourceId: formId,
+          createdBy: 'cloud-function',
+        });
+      }
+
+      const sinifId = form.sinifId || child.sinifId;
+      if (sinifId) {
+        await createNotificationRecord({
+          kresId,
+          hedefRoller: ['ogretmen'],
+          hedefSinifIds: [sinifId],
+          baslik: '⏰ İlaç saati geldi',
+          mesaj: `${childName} için "${form.ilacAdi || 'ilaç'}" verilme saati (${currentTime}) geldi.`,
+          tip: 'ilac_takip',
+          routeName: 'TeacherMedicationFormDetail',
+          routeParams: { formId },
+          source: 'ilacTakipFormlari',
+          sourceId: formId,
+          createdBy: 'cloud-function',
+        });
+      }
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
+
+// ============================================================
 // FAZ 18 — Galeri ve yemek fotoğrafları otomatik temizlik
 // Galeri/yemek fotoğrafları uygulamada 24 saat sonra zaten gizleniyor
 // (client tarafında filtreleniyor). Ama Storage + Realtime DB'de
