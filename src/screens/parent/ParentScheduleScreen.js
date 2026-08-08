@@ -88,7 +88,7 @@ function ScheduleCard({ item }) {
         etkinlikler.map((it, index) => (
           <View key={index} style={index > 0 ? { marginTop: 12 } : { marginTop: 8 }}>
             <Text style={[styles.badge, { backgroundColor: THEME.primarySoft, color: THEME.primary }]}>
-              {it.kategori || 'Etkinlik'}
+              {it.kategori || 'Ders'}
             </Text>
             <Text style={[styles.cardTitle, { marginTop: 8 }]}>{it.etkinlik || 'Ders Programı'}</Text>
             {it.tema ? <Text style={styles.cardText}>🎨 Tema: {it.tema}</Text> : null}
