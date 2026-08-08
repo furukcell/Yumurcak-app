@@ -1374,9 +1374,18 @@ function formatMealsForPrompt(yemek = {}) {
   return parts.length ? parts.join(', ') : null;
 }
 
-function buildPromptForChild({ child, todayReport, historyReports, todayMeal, todaySchedule, todayEvents, todayBadge, todayGrowth }) {
+function buildPromptForChild({ child, todayReport, historyReports, todayMeal, todaySchedule, todayEvents, todayBadge, todayGrowth, todayAttendance, todayUyum, todayMedication }) {
   const childName = getChildName(child) || 'Çocuk';
   const lines = [`Çocuğun adı: ${childName}`];
+
+  if (todayAttendance) {
+    const durumLabel = { geldi: 'okula geldi', gelmedi: 'okula gelmedi (devamsız)', gec: 'okula geç geldi' }[todayAttendance.durum] || todayAttendance.durum;
+    lines.push(`Bugünkü devam durumu: ${durumLabel}`);
+    if (todayAttendance.durum === 'gelmedi') {
+      lines.push('ÖNEMLİ: Çocuk bugün okula gelmedi. Aşağıdaki diğer bilgileri (varsa) yok say, sadece kısa (1 cümle) "bugün okulda yoktu, yarın görüşmek üzere" tarzı bir not yaz.');
+      return lines.join('\n');
+    }
+  }
 
   if (todayReport) {
     if (todayReport.ruhHali || todayReport.mood) lines.push(`Bugünkü ruh hali: ${todayReport.ruhHali || todayReport.mood}`);
@@ -1414,6 +1423,22 @@ function buildPromptForChild({ child, todayReport, historyReports, todayMeal, to
     if (todayGrowth.kilo) growthParts.push(`kilo: ${todayGrowth.kilo} kg`);
     if (todayGrowth.basCevresi) growthParts.push(`baş çevresi: ${todayGrowth.basCevresi} cm`);
     if (growthParts.length) lines.push(`Bugün gelişim ölçümü yapıldı (${growthParts.join(', ')})`);
+  }
+
+  if (todayUyum) {
+    const uyumParts = [];
+    if (todayUyum.gunNo) uyumParts.push(`uyum sürecinin ${todayUyum.gunNo}. günü`);
+    if (todayUyum.sabahDurumu) uyumParts.push(`sabah durumu: ${todayUyum.sabahDurumu}`);
+    if (todayUyum.aglamaDakika) uyumParts.push(`ağlama: ${todayUyum.aglamaDakika} dk`);
+    if (todayUyum.yemekDurumu) uyumParts.push(`yemek: ${todayUyum.yemekDurumu}`);
+    if (todayUyum.oyunDurumu) uyumParts.push(`oyun: ${todayUyum.oyunDurumu}`);
+    if (todayUyum.cikisDurumu) uyumParts.push(`çıkış: ${todayUyum.cikisDurumu}`);
+    if (uyumParts.length) lines.push(`Uyum takibi (${uyumParts.join(', ')})`);
+    if (todayUyum.ogretmenNotu) lines.push(`Uyum takibi öğretmen notu: "${todayUyum.ogretmenNotu}"`);
+  }
+
+  if (todayMedication) {
+    lines.push(`Bugün ilacı verildi: ${todayMedication.ilacAdi}${todayMedication.saat ? ` (saat ${todayMedication.saat})` : ''}`);
   }
 
   const recentHistory = historyReports.slice(-7);
@@ -1469,7 +1494,7 @@ exports.generateDailyAiComments = functions
     const todayKey = istanbulDateKey();
     const historyCutoff = istanbulDateKey(new Date(Date.now() - 8 * 24 * 60 * 60 * 1000));
 
-    const [childrenSnap, reportsSnap, mealsSnap, schedulesSnap, eventsSnap, badgesSnap, growthSnap] = await Promise.all([
+    const [childrenSnap, reportsSnap, mealsSnap, schedulesSnap, eventsSnap, badgesSnap, growthSnap, attendanceSnap, uyumSnap, medicationSnap] = await Promise.all([
       admin.database().ref('cocuklar').once('value'),
       admin.database().ref('gunlukRaporlar').orderByChild('tarih').startAt(historyCutoff).endAt(todayKey).once('value'),
       admin.database().ref('yemekListeleri').orderByChild('tarih').equalTo(todayKey).once('value'),
@@ -1477,6 +1502,9 @@ exports.generateDailyAiComments = functions
       admin.database().ref('etkinlikler').orderByChild('tarih').equalTo(todayKey).once('value'),
       admin.database().ref('haftaninRozetleri').once('value'),
       admin.database().ref('fizikselGelisim').orderByChild('tarih').equalTo(todayKey).once('value'),
+      admin.database().ref('yoklamalar').orderByChild('tarih').equalTo(todayKey).once('value'),
+      admin.database().ref('uyumKayitlari').orderByChild('tarih').equalTo(todayKey).once('value'),
+      admin.database().ref('ilacTakipFormlari').once('value'),
     ]);
 
     const children = childrenSnap.val() || {};
@@ -1486,6 +1514,9 @@ exports.generateDailyAiComments = functions
     const todayEventsAll = Object.values(eventsSnap.val() || {});
     const allBadges = Object.values(badgesSnap.val() || {});
     const todayGrowths = Object.values(growthSnap.val() || {});
+    const todayAttendanceAll = Object.values(attendanceSnap.val() || {});
+    const todayUyumAll = Object.values(uyumSnap.val() || {});
+    const allMedicationForms = Object.values(medicationSnap.val() || {});
 
     const tasks = Object.entries(children).map(async ([childId, child = {}]) => {
       try {
@@ -1500,8 +1531,15 @@ exports.generateDailyAiComments = functions
         const todayEvents = pickEventsForChild(todayEventsAll, child);
         const todayGrowth = todayGrowths.find((g) => g.cocukId === childId) || null;
         const todayBadge = allBadges.find((b) => b.cocukId === childId && istanbulDateKey(new Date(b.createdAt || 0)) === todayKey) || null;
+        const todayAttendance = todayAttendanceAll.find((a) => a.cocukId === childId) || null;
+        const todayUyum = todayUyumAll.find((u) => u.cocukId === childId) || null;
+        const todayMedForm = allMedicationForms.find((m) => m.cocukId === childId && m.aktif !== false && m.kayitlar?.[todayKey]?.verildi);
+        const todayMedication = todayMedForm
+          ? { ilacAdi: todayMedForm.ilacAdi, saat: todayMedForm.kayitlar[todayKey].saat }
+          : null;
 
-        const hasAnyData = !!todayReport || !!todayMeal || !!todaySchedule || todayEvents.length > 0 || !!todayBadge || !!todayGrowth;
+        const hasAnyData = !!todayReport || !!todayMeal || !!todaySchedule || todayEvents.length > 0 || !!todayBadge
+          || !!todayGrowth || !!todayAttendance || !!todayUyum || !!todayMedication;
         if (!hasAnyData) return;
 
         const promptText = buildPromptForChild({
@@ -1513,6 +1551,9 @@ exports.generateDailyAiComments = functions
           todayEvents,
           todayBadge,
           todayGrowth,
+          todayAttendance,
+          todayUyum,
+          todayMedication,
         });
 
         const yorum = await callGemini(promptText);
