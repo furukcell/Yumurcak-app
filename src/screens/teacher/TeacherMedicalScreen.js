@@ -28,6 +28,7 @@ import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChild
 import AppSuccessToast from '../../components/AppSuccessToast';
 import AllergyBoxEditor from '../../components/AllergyBoxEditor';
 import SegmentedTabs from '../../components/SegmentedTabs';
+import { getMedicineIcon } from '../../utils/medicineIcon';
 
 function splitItems(value) {
   return String(value || '')
@@ -204,7 +205,8 @@ export default function TeacherMedicalScreen() {
                 onChange={setActiveTab}
                 tabs={[
                   { key: 'alerjiler', icon: '⚠️', label: 'Alerjiler' },
-                  { key: 'ilacTakip', icon: '💊', label: 'İlaç Takip', badge: childForms.length || null },
+                  { key: 'surekliIlaclar', icon: '💊', label: 'Sürekli İlaçlar', badge: medicineItems.length || null },
+                  { key: 'ilacTakip', icon: '📋', label: 'İlaç Takip', badge: childForms.length || null },
                 ]}
               />
 
@@ -223,31 +225,6 @@ export default function TeacherMedicalScreen() {
                         value={draft.alerjiler}
                         onChange={(text) => setDraftValue('alerjiler', text)}
                         accentColor="#D92929"
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.sectionCard}>
-                    <View style={styles.sectionHeader}>
-                      <View style={[styles.sectionIconBox, styles.blueIconBox]}><Text style={styles.sectionIcon}>💊</Text></View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.sectionTitle}>İlaç Bilgisi</Text>
-                        <Text style={styles.sectionSubtitle}>Sürekli kullanılan ilaçlar (kür dışı)</Text>
-                      </View>
-                    </View>
-                    <View style={styles.sectionBody}>
-                      {medicineItems.length > 0 ? (
-                        <View style={styles.medicineList}>{medicineItems.map((item, medIndex) => <View key={`${item}-${medIndex}`} style={styles.medicineRow}><Text style={styles.medicineIcon}>{medIndex % 2 === 0 ? '🧴' : '💊'}</Text><View style={{ flex: 1 }}><Text style={styles.medicineName}>{item}</Text><Text style={styles.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View></View>)}</View>
-                      ) : (
-                        <Text style={styles.emptyText}>Kayıtlı ilaç bilgisi yok.</Text>
-                      )}
-                      <TextInput
-                        style={styles.input}
-                        value={draft.ilaclar}
-                        onChangeText={(text) => setDraftValue('ilaclar', text)}
-                        placeholder="Örn: Şurup - Sabah/Akşam 5 ml"
-                        placeholderTextColor={THEME.muted}
-                        multiline
                       />
                     </View>
                   </View>
@@ -300,6 +277,38 @@ export default function TeacherMedicalScreen() {
                     <Text style={styles.saveButtonText}>{saving ? 'Kaydediliyor...' : '▣ Bilgileri Kaydet'}</Text>
                   </TouchableOpacity>
                 </>
+              ) : activeTab === 'surekliIlaclar' ? (
+                <>
+                  <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeader}>
+                      <View style={[styles.sectionIconBox, styles.blueIconBox]}><Text style={styles.sectionIcon}>💊</Text></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.sectionTitle}>Sürekli İlaçlar</Text>
+                        <Text style={styles.sectionSubtitle}>Tarihsiz, düzenli kullanılan ilaçlar (kür dışı)</Text>
+                      </View>
+                    </View>
+                    <View style={styles.sectionBody}>
+                      {medicineItems.length > 0 ? (
+                        <View style={styles.medicineList}>{medicineItems.map((item, medIndex) => <View key={`${item}-${medIndex}`} style={styles.medicineRow}><Text style={styles.medicineIcon}>{getMedicineIcon(item)}</Text><View style={{ flex: 1 }}><Text style={styles.medicineName}>{item}</Text><Text style={styles.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View></View>)}</View>
+                      ) : (
+                        <Text style={styles.emptyText}>Kayıtlı ilaç bilgisi yok.</Text>
+                      )}
+                      <TextInput
+                        style={styles.input}
+                        value={draft.ilaclar}
+                        onChangeText={(text) => setDraftValue('ilaclar', text)}
+                        placeholder="Örn: Şurup - Sabah/Akşam 5 ml"
+                        placeholderTextColor={THEME.muted}
+                        multiline
+                      />
+                    </View>
+                  </View>
+
+                  <Text style={styles.updatedText}>🕒 Son güncelleme: {getUpdatedLabel(info.updatedAt)}</Text>
+                  <TouchableOpacity style={[styles.saveButton, saving && styles.disabledButton]} onPress={saveInfo} disabled={saving} activeOpacity={0.85}>
+                    <Text style={styles.saveButtonText}>{saving ? 'Kaydediliyor...' : '▣ Bilgileri Kaydet'}</Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <>
                   <TouchableOpacity
@@ -323,7 +332,7 @@ export default function TeacherMedicalScreen() {
                         activeOpacity={0.85}
                       >
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.formCardTitle}>💊 {form.ilacAdi}</Text>
+                          <Text style={styles.formCardTitle}>{getMedicineIcon(form.ilacAdi)} {form.ilacAdi}</Text>
                           <Text style={styles.formCardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
                           {form.hatirlaticiSaat ? <Text style={styles.formCardMeta}>⏰ Hatırlatma: {form.hatirlaticiSaat}</Text> : null}
                           <Text style={styles.formCardApproval}>{form.veliOnayi ? '✅ Veli onayı alındı' : '⏳ Veli onayı bekleniyor'}</Text>
