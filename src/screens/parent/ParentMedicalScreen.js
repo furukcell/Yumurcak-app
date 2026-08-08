@@ -6,6 +6,9 @@ import { ScreenShell, EmptyState, LoadingScreen, useParentBase, THEME } from './
 import AppSuccessToast from '../../components/AppSuccessToast';
 import { createNotification } from '../../services/notificationCenter';
 import { normalizeChildBirthDate } from '../../utils/childDates';
+import { normalizeTimeInput } from '../../utils/timeFormat';
+import AllergyBoxEditor from '../../components/AllergyBoxEditor';
+import SegmentedTabs from '../../components/SegmentedTabs';
 
 function splitItems(value) {
   return String(value || '')
@@ -46,6 +49,7 @@ export default function ParentMedicalScreen({ navigation }) {
   const [draft, setDraft] = useState({ alerjiler: '', ilaclar: '', notlar: '' });
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
+  const [activeTab, setActiveTab] = useState('alerjiler');
 
   useEffect(() => {
     if (!selectedChild?.id) return undefined;
@@ -85,7 +89,7 @@ export default function ParentMedicalScreen({ navigation }) {
   }, [kresId, selectedChild?.id]);
 
   function startNewForm() {
-    setFormDraft({ ilacAdi: '', doz: '', uygulamaSekli: '', baslangicTarihi: '', bitisTarihi: '', veliOnayi: true });
+    setFormDraft({ ilacAdi: '', doz: '', uygulamaSekli: '', baslangicTarihi: '', bitisTarihi: '', hatirlaticiSaat: '', veliOnayi: true });
     setEditingFormId('new');
   }
 
@@ -96,6 +100,7 @@ export default function ParentMedicalScreen({ navigation }) {
       uygulamaSekli: form.uygulamaSekli || '',
       baslangicTarihi: form.baslangicTarihi || '',
       bitisTarihi: form.bitisTarihi || '',
+      hatirlaticiSaat: form.hatirlaticiSaat || '',
       veliOnayi: form.veliOnayi !== false,
     });
     setEditingFormId(form.id);
@@ -112,6 +117,10 @@ export default function ParentMedicalScreen({ navigation }) {
       Alert.alert('Eksik Bilgi', 'İlaç adı, başlangıç ve bitiş tarihi zorunludur.');
       return;
     }
+    if (formDraft.hatirlaticiSaat?.trim() && !normalizeTimeInput(formDraft.hatirlaticiSaat)) {
+      Alert.alert('Geçersiz Saat', 'Hatırlatma saatini SS:DD formatında gir (örn: 14:30) ya da boş bırak.');
+      return;
+    }
     setFormSaving(true);
     try {
       const payload = {
@@ -124,6 +133,7 @@ export default function ParentMedicalScreen({ navigation }) {
         uygulamaSekli: formDraft.uygulamaSekli.trim(),
         baslangicTarihi: normalizeChildBirthDate(formDraft.baslangicTarihi),
         bitisTarihi: normalizeChildBirthDate(formDraft.bitisTarihi),
+        hatirlaticiSaat: normalizeTimeInput(formDraft.hatirlaticiSaat) || null,
         veliOnayi: formDraft.veliOnayi,
         aktif: true,
         updatedAt: Date.now(),
@@ -205,81 +215,99 @@ export default function ParentMedicalScreen({ navigation }) {
               <View style={[local.statusPill, hasAllergy ? local.warnPill : local.okPill]}><Text style={[local.statusPillText, hasAllergy ? local.warnText : local.okText]}>{hasAllergy ? 'Dikkat' : 'Güncel'}</Text></View>
             </View>
 
-            <MedicalCard icon="⚠️" title="Alerjiler" badge={hasAllergy ? 'Dikkat' : 'Yok'} warning={hasAllergy}>
-              {hasAllergy ? <View style={local.tagWrap}>{allergyTags.map((item, index) => <Text key={`${item}-${index}`} style={local.allergyTag}>{item}</Text>)}</View> : <Text style={local.emptyText}>Kayıtlı bilgi yok.</Text>}
-              <TextInput style={local.editInput} value={draft.alerjiler} onChangeText={(text) => setDraft((p) => ({ ...p, alerjiler: text }))} placeholder="Örn: Fıstık, polen, laktoz" placeholderTextColor="#A2A5B6" multiline />
-            </MedicalCard>
+            <SegmentedTabs
+              accentColor="#5D5FEF"
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              tabs={[
+                { key: 'alerjiler', icon: '⚠️', label: 'Alerjiler' },
+                { key: 'ilacTakip', icon: '💊', label: 'İlaç Takip', badge: medicationForms.length || null },
+              ]}
+            />
 
-            <MedicalCard icon="💊" title="Kullandığı İlaçlar">
-              {medicineItems.length > 0 ? <View style={local.medicineList}>{medicineItems.map((item, index) => <View key={`${item}-${index}`} style={local.medicineRow}><Text style={local.medicineIcon}>{index % 2 === 0 ? '🧴' : '💊'}</Text><View style={{ flex: 1 }}><Text style={local.medicineName}>{item}</Text><Text style={local.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View><Text style={local.medicineBadge}>Kayıtlı</Text></View>)}</View> : <Text style={local.emptyText}>Kayıtlı bilgi yok.</Text>}
-              <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder="Örn: Şurup - Sabah/Akşam" placeholderTextColor="#A2A5B6" multiline />
-            </MedicalCard>
+            {activeTab === 'alerjiler' ? (
+              <>
+                <MedicalCard icon="⚠️" title="Alerjiler" badge={hasAllergy ? 'Dikkat' : 'Yok'} warning={hasAllergy}>
+                  <AllergyBoxEditor
+                    value={draft.alerjiler}
+                    onChange={(text) => setDraft((p) => ({ ...p, alerjiler: text }))}
+                    accentColor="#EA4D32"
+                  />
+                </MedicalCard>
 
-            <MedicalCard icon="📋" title="İlaç Takip" badge={medicationForms.length > 0 ? `${medicationForms.length}` : null}>
-              {medicationForms.length === 0 && editingFormId !== 'new' ? (
-                <Text style={local.emptyText}>Henüz bir ilaç takip formu yok.</Text>
-              ) : (
-                <View style={local.medicineList}>
-                  {medicationForms.map((form) => {
-                    if (editingFormId === form.id) {
-                      return (
-                        <MedicationFormEditor
-                          key={form.id}
-                          draft={formDraft}
-                          setDraft={setFormDraft}
-                          saving={formSaving}
-                          onSave={saveMedicationForm}
-                          onCancel={cancelFormEdit}
-                        />
-                      );
-                    }
-                    const verildiBugun = !!form?.kayitlar?.[todayKey()]?.verildi;
-                    return (
-                      <View key={form.id} style={local.trackRow}>
-                        <View style={local.trackHeaderRow}>
-                          <Text style={local.medicineName}>{form.ilacAdi || 'İlaç'}</Text>
-                          <Text style={[local.trackBadge, verildiBugun ? local.trackBadgeOk : local.trackBadgeWait]}>
-                            {verildiBugun ? '✓ Bugün verildi' : 'Bugün henüz verilmedi'}
-                          </Text>
-                        </View>
-                        {form.doz ? <Text style={local.medicineMeta}>Doz: {form.doz}</Text> : null}
-                        {form.uygulamaSekli ? <Text style={local.medicineMeta}>{form.uygulamaSekli}</Text> : null}
-                        <Text style={local.medicineMeta}>
-                          {formatDateTr(form.baslangicTarihi)}{form.bitisTarihi ? ` – ${formatDateTr(form.bitisTarihi)}` : ''}
-                        </Text>
-                        <TouchableOpacity style={local.editFormButton} onPress={() => startEditForm(form)} activeOpacity={0.85}>
-                          <Text style={local.editFormButtonText}>✏️ Düzenle</Text>
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
+                <MedicalCard icon="💊" title="Kullandığı İlaçlar">
+                  {medicineItems.length > 0 ? <View style={local.medicineList}>{medicineItems.map((item, index) => <View key={`${item}-${index}`} style={local.medicineRow}><Text style={local.medicineIcon}>{index % 2 === 0 ? '🧴' : '💊'}</Text><View style={{ flex: 1 }}><Text style={local.medicineName}>{item}</Text><Text style={local.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View><Text style={local.medicineBadge}>Kayıtlı</Text></View>)}</View> : <Text style={local.emptyText}>Kayıtlı bilgi yok.</Text>}
+                  <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder="Örn: Şurup - Sabah/Akşam" placeholderTextColor="#A2A5B6" multiline />
+                </MedicalCard>
 
-                  {editingFormId === 'new' ? (
-                    <MedicationFormEditor
-                      draft={formDraft}
-                      setDraft={setFormDraft}
-                      saving={formSaving}
-                      onSave={saveMedicationForm}
-                      onCancel={cancelFormEdit}
-                    />
-                  ) : null}
-                </View>
-              )}
+                <MedicalCard icon="📎" title="Notlar">
+                  <View style={local.noteBox}><TextInput style={local.noteInput} value={draft.notlar} onChangeText={(text) => setDraft((p) => ({ ...p, notlar: text }))} placeholder="Öğretmen ve yönetici için özel notlar..." placeholderTextColor="#7D7199" multiline /></View>
+                </MedicalCard>
 
-              {editingFormId === null ? (
-                <TouchableOpacity style={local.addFormButton} onPress={startNewForm} activeOpacity={0.85}>
-                  <Text style={local.addFormButtonText}>➕ Yeni İlaç Takip Formu Ekle</Text>
+                <TouchableOpacity style={[local.saveButton, saving && { opacity: 0.65 }]} onPress={saveMedical} disabled={saving} activeOpacity={0.85}>
+                  <Text style={local.saveButtonText}>{saving ? 'Kaydediliyor...' : '💾 Kaydet'}</Text>
                 </TouchableOpacity>
-              ) : null}
-            </MedicalCard>
+              </>
+            ) : (
+              <MedicalCard icon="📋" title="İlaç Takip" badge={medicationForms.length > 0 ? `${medicationForms.length}` : null}>
+                {medicationForms.length === 0 && editingFormId !== 'new' ? (
+                  <Text style={local.emptyText}>Henüz bir ilaç takip formu yok.</Text>
+                ) : (
+                  <View style={local.medicineList}>
+                    {medicationForms.map((form) => {
+                      if (editingFormId === form.id) {
+                        return (
+                          <MedicationFormEditor
+                            key={form.id}
+                            draft={formDraft}
+                            setDraft={setFormDraft}
+                            saving={formSaving}
+                            onSave={saveMedicationForm}
+                            onCancel={cancelFormEdit}
+                          />
+                        );
+                      }
+                      const verildiBugun = !!form?.kayitlar?.[todayKey()]?.verildi;
+                      return (
+                        <View key={form.id} style={local.trackRow}>
+                          <View style={local.trackHeaderRow}>
+                            <Text style={local.medicineName}>{form.ilacAdi || 'İlaç'}</Text>
+                            <Text style={[local.trackBadge, verildiBugun ? local.trackBadgeOk : local.trackBadgeWait]}>
+                              {verildiBugun ? '✓ Bugün verildi' : 'Bugün henüz verilmedi'}
+                            </Text>
+                          </View>
+                          {form.doz ? <Text style={local.medicineMeta}>Doz: {form.doz}</Text> : null}
+                          {form.uygulamaSekli ? <Text style={local.medicineMeta}>{form.uygulamaSekli}</Text> : null}
+                          {form.hatirlaticiSaat ? <Text style={local.medicineMeta}>⏰ Hatırlatma: {form.hatirlaticiSaat}</Text> : null}
+                          <Text style={local.medicineMeta}>
+                            {formatDateTr(form.baslangicTarihi)}{form.bitisTarihi ? ` – ${formatDateTr(form.bitisTarihi)}` : ''}
+                          </Text>
+                          <TouchableOpacity style={local.editFormButton} onPress={() => startEditForm(form)} activeOpacity={0.85}>
+                            <Text style={local.editFormButtonText}>✏️ Düzenle</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
 
-            <MedicalCard icon="📎" title="Notlar">
-              <View style={local.noteBox}><TextInput style={local.noteInput} value={draft.notlar} onChangeText={(text) => setDraft((p) => ({ ...p, notlar: text }))} placeholder="Öğretmen ve yönetici için özel notlar..." placeholderTextColor="#7D7199" multiline /></View>
-            </MedicalCard>
+                    {editingFormId === 'new' ? (
+                      <MedicationFormEditor
+                        draft={formDraft}
+                        setDraft={setFormDraft}
+                        saving={formSaving}
+                        onSave={saveMedicationForm}
+                        onCancel={cancelFormEdit}
+                      />
+                    ) : null}
+                  </View>
+                )}
 
-            <TouchableOpacity style={[local.saveButton, saving && { opacity: 0.65 }]} onPress={saveMedical} disabled={saving} activeOpacity={0.85}>
-              <Text style={local.saveButtonText}>{saving ? 'Kaydediliyor...' : '💾 Kaydet'}</Text>
-            </TouchableOpacity>
+                {editingFormId === null ? (
+                  <TouchableOpacity style={local.addFormButton} onPress={startNewForm} activeOpacity={0.85}>
+                    <Text style={local.addFormButtonText}>➕ Yeni İlaç Takip Formu Ekle</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </MedicalCard>
+            )}
           </>
         )}
       </ScreenShell>
@@ -303,6 +331,7 @@ function MedicationFormEditor({ draft, setDraft, saving, onSave, onCancel }) {
         <TextInput style={[local.formInput, { flex: 1 }]} value={draft.baslangicTarihi} onChangeText={setField('baslangicTarihi')} placeholder="Başlangıç (GG.AA.YYYY) *" placeholderTextColor="#A2A5B6" />
         <TextInput style={[local.formInput, { flex: 1 }]} value={draft.bitisTarihi} onChangeText={setField('bitisTarihi')} placeholder="Bitiş (GG.AA.YYYY) *" placeholderTextColor="#A2A5B6" />
       </View>
+      <TextInput style={local.formInput} value={draft.hatirlaticiSaat} onChangeText={setField('hatirlaticiSaat')} placeholder="Hatırlatma saati (opsiyonel, örn: 14:30)" placeholderTextColor="#A2A5B6" />
       <View style={local.formRow}>
         <Text style={local.formSwitchLabel}>Veli onayı</Text>
         <Switch value={!!draft.veliOnayi} onValueChange={(value) => setDraft((prev) => ({ ...prev, veliOnayi: value }))} />
