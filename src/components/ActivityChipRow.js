@@ -23,7 +23,7 @@ export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, o
       <View style={styles.chipRow}>
         {list.map((item, index) => {
           const active = index === activeIndex;
-          const label = String(item?.etkinlik || '').trim() || 'Yeni Etkinlik';
+          const label = String(item?.etkinlik || '').trim() || 'Yeni Ders';
           return (
             <TouchableOpacity
               key={index}
@@ -46,7 +46,7 @@ export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, o
       </View>
 
       <TouchableOpacity style={[styles.addButton, { borderColor: palette.border, backgroundColor: palette.bg }]} onPress={onAdd} activeOpacity={0.85}>
-        <Text style={[styles.addButtonText, { color: palette.primary }]}>+ Yeni Etkinlik Ekle</Text>
+        <Text style={[styles.addButtonText, { color: palette.primary }]}>+ Yeni Ders Ekle</Text>
       </TouchableOpacity>
     </View>
   );
