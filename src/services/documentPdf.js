@@ -285,6 +285,7 @@ export function buildIlacTakipHtml({ kres, record }) {
     ['Uygulama Şekli', record?.uygulamaSekli],
     ['Başlangıç Tarihi', formatDateTr(record?.baslangicTarihi)],
     ['Bitiş Tarihi', formatDateTr(record?.bitisTarihi)],
+    ['Hatırlatma Saati', record?.hatirlaticiSaat],
     ['Veli Onayı', record?.veliOnayi ? 'Alındı' : 'Bekleniyor'],
   ]
     .filter(([, value]) => String(value || '').trim())
