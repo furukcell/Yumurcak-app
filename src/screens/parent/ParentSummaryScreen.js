@@ -23,6 +23,7 @@ import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import { getMealPhoto } from '../../components/MealTodayCard';
 import DailyCommentCard from '../../components/DailyCommentCard';
 import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
+import { MOOD_LISTESI } from '../../constants';
 
 const MEAL_LABELS = {
   kahvalti: 'Kahvaltı',
@@ -285,8 +286,9 @@ export default function ParentSummaryScreen({ navigation }) {
   const mealsSummary = buildMealSummary(todayReport, todayMeal);
   const yesterdayMealsSummary = buildMealSummary(yesterdayReport, null);
   const mood = todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || 'Bekleniyor';
+  const moodEmoji = getMoodEmoji(mood);
   const sleep = todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || todayReport?.uyku || 'Bekleniyor');
-  const entryTime = todayAttendance?.girisSaati || todayAttendance?.saat || todayAttendance?.createdTime || 'Bekleniyor';
+  const attendanceDisplay = getAttendanceDisplay(styles, todayAttendance);
   const attendanceLabel = todayAttendance ? (todayAttendance.durum || todayAttendance.status || 'Kreşte') : 'Bekleniyor';
   const note = todayReport?.not || todayReport?.ogretmenNotu || todayReport?.aciklama || 'Bugün için öğretmen notu henüz girilmedi.';
   const childFirstName = (selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim || '').trim().split(' ')[0];
@@ -325,7 +327,7 @@ export default function ParentSummaryScreen({ navigation }) {
             <Text style={styles.childSub}>{isBirthday ? `Bugün ${childName} için çok özel bir gün! 🎂` : `Merhaba ${parentName}, bugün olanları tek ekranda topladık.`}</Text>
             <View style={styles.pillRow}>
               <Text style={[styles.pill, styles.pillGreen]}>✅ {attendanceLabel}</Text>
-              <Text style={styles.pill}>😊 {mood}</Text>
+              <Text style={styles.pill}>{moodEmoji} {mood}</Text>
               <Text style={[styles.pill, styles.pillOrange]}>🍽️ {getMainMealStatus(mealsSummary)}</Text>
             </View>
           </View>
@@ -369,8 +371,8 @@ export default function ParentSummaryScreen({ navigation }) {
         />
 
         <View style={styles.miniGrid}>
-          <MiniCard styles={styles} icon="😊" value={mood} label="Ruh hali" />
-          <MiniCard styles={styles} icon="✅" value={entryTime} label="Giriş saati" />
+          <MiniCard styles={styles} icon={moodEmoji} value={mood} label="Ruh hali" />
+          <MiniCard styles={styles} icon={attendanceDisplay.icon} value={attendanceDisplay.value} label="Yoklama" valueStyle={attendanceDisplay.color} />
           <MiniCard styles={styles} icon="😴" value={sleep} label="Uyku" />
           <MiniCard styles={styles} icon="🎨" value={`${todayEvents.length}/3`} label="Etkinlik" />
         </View>
@@ -598,11 +600,11 @@ function BirthdayPopup({ visible, childName, onClose, styles }) {
   );
 }
 
-function MiniCard({ styles, icon, value, label }) {
+function MiniCard({ styles, icon, value, label, valueStyle }) {
   return (
     <View style={styles.miniCard}>
       <Text style={styles.miniIcon}>{icon}</Text>
-      <Text style={styles.miniValue} numberOfLines={1}>{value || '-'}</Text>
+      <Text style={[styles.miniValue, valueStyle]} numberOfLines={1}>{value || '-'}</Text>
       <Text style={styles.miniLabel}>{label}</Text>
     </View>
   );
@@ -666,6 +668,28 @@ function getMainMealStatus(items) {
   if (items.some((item) => item.status === 'az_yedi')) return 'Az yedi';
   if (items.some((item) => item.status === 'bitirdi')) return 'Yedi';
   return 'Bekleniyor';
+}
+
+// Seçilen ruh haline (MOOD_LISTESI'ndeki "label") karşılık gelen emojiyi
+// döndürür. Öğretmenin seçtiği ruh haliyle (örn. "Üzgün") gösterilen emoji
+// (örn. 😢) artık her zaman eşleşiyor; eşleşme yoksa nötr bir yüz gösterilir.
+function getMoodEmoji(moodLabel) {
+  const found = MOOD_LISTESI.find((item) => item.label === moodLabel);
+  return found ? found.emoji : '🙂';
+}
+
+// Yoklama durumuna göre ikon + görüntülenecek metin + renk döndürür.
+// 'geldi' / 'gec' → yeşil onay; 'gelmedi' → kırmızı çarpı; kayıt yoksa
+// (henüz yoklama girilmemiş) → bekleniyor.
+function getAttendanceDisplay(styles, attendance) {
+  const durum = attendance?.durum || attendance?.status || '';
+  if (durum === 'geldi' || durum === 'gec') {
+    return { icon: '✅', value: durum === 'gec' ? 'Geç geldi' : 'Geldi', color: styles.attendanceGreen };
+  }
+  if (durum === 'gelmedi') {
+    return { icon: '❌', value: 'Gelmedi', color: styles.attendanceRed };
+  }
+  return { icon: '⏳', value: 'Bekleniyor', color: null };
 }
 
 function getMealStatusStyle(styles, status) {
@@ -751,6 +775,8 @@ const createStyles = (theme) => StyleSheet.create({
   miniIcon: { fontSize: 20, marginBottom: 4 },
   miniValue: { color: theme.text, fontSize: 12, fontWeight: '900', maxWidth: '100%' },
   miniLabel: { color: theme.muted, fontSize: 9.5, fontWeight: '800', marginTop: 3, textAlign: 'center' },
+  attendanceGreen: { color: '#20B45B' },
+  attendanceRed: { color: '#FF4D6D' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 13, marginBottom: 9 },
   sectionTitle: { color: theme.text, fontSize: 16, fontWeight: '900' },
   sectionAction: { color: theme.primary, fontSize: 11.5, fontWeight: '900' },
