@@ -56,7 +56,9 @@ function mealHasContent(item) {
 }
 
 function scheduleHasContent(item) {
-  return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
+  // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
+  const list = Array.isArray(item?.etkinlikler) ? item.etkinlikler : [];
+  return list.some((it) => String(it?.etkinlik || '').trim() || String(it?.aciklama || '').trim());
 }
 
 const MEAL_STATUS_LABELS = {
@@ -213,7 +215,11 @@ export default function ParentSummaryScreen({ navigation }) {
     const best = pickFreshestRecord(matches, scheduleHasContent);
     const list = best ? [best] : [];
     return list
-      .map((item) => ({ ...item, baslik: item.etkinlik || item.baslik }))
+      .map((item) => {
+        const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
+        const baslik = etkinlikler.map((it) => it.etkinlik).filter(Boolean).join(', ') || item.baslik;
+        return { ...item, baslik };
+      })
       .sort((a, b) => String(a.saat || a.baslangicSaati || '').localeCompare(String(b.saat || b.baslangicSaati || '')))
       .slice(0, 3);
   }, [schedules, kresId, sinifId, today]);
@@ -644,6 +650,8 @@ function isBirthdayToday(value) {
 function getMealMenuText(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
+  // FAZ — Çoklu Yemek Girişi: aylık liste artık öğün başına dizi (chip listesi).
+  if (Array.isArray(value)) return value.filter(Boolean).join(', ');
   if (typeof value === 'object') return value.text || value.aciklama || '';
   return String(value);
 }

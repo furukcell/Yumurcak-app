@@ -77,15 +77,25 @@ export default function ParentScheduleScreen({ navigation }) {
 }
 
 function ScheduleCard({ item }) {
+  // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
+  const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
   return (
     <View style={styles.card}>
-      <Text style={[styles.badge, { backgroundColor: THEME.primarySoft, color: THEME.primary }]}>
-        {item.kategori || 'Etkinlik'}
-      </Text>
-      <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.etkinlik || 'Ders Programı'}</Text>
       <Text style={styles.cardText}>📅 {formatDisplayDate(item.tarih)}</Text>
-      {item.tema ? <Text style={styles.cardText}>🎨 Tema: {item.tema}</Text> : null}
-      {item.aciklama ? <Text style={styles.cardText}>{item.aciklama}</Text> : null}
+      {etkinlikler.length === 0 ? (
+        <Text style={[styles.cardTitle, { marginTop: 8 }]}>Ders Programı</Text>
+      ) : (
+        etkinlikler.map((it, index) => (
+          <View key={index} style={index > 0 ? { marginTop: 12 } : { marginTop: 8 }}>
+            <Text style={[styles.badge, { backgroundColor: THEME.primarySoft, color: THEME.primary }]}>
+              {it.kategori || 'Etkinlik'}
+            </Text>
+            <Text style={[styles.cardTitle, { marginTop: 8 }]}>{it.etkinlik || 'Ders Programı'}</Text>
+            {it.tema ? <Text style={styles.cardText}>🎨 Tema: {it.tema}</Text> : null}
+            {it.aciklama ? <Text style={styles.cardText}>{it.aciklama}</Text> : null}
+          </View>
+        ))
+      )}
     </View>
   );
 }
