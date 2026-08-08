@@ -478,8 +478,8 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
-                <TouchableOpacity onPress={() => { setSelectedDateKey(''); setEditingIndex(-1); }} activeOpacity={0.8}>
-                  <Text style={styles.modalClose}>Kapat</Text>
+                <TouchableOpacity onPress={() => { setSelectedDateKey(''); setEditingIndex(-1); }} activeOpacity={0.8} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseCheck}>✓</Text>
                 </TouchableOpacity>
               </View>
 
@@ -588,6 +588,8 @@ function createStyles(theme) {
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     modalTitle: { fontSize: 18, fontWeight: '900', color: theme.text },
     modalClose: { color: theme.primary, fontWeight: '900' },
+    modalCloseButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: theme.green, alignItems: 'center', justifyContent: 'center' },
+    modalCloseCheck: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
     modalInput: { minHeight: 46, backgroundColor: theme.bg, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 10, color: theme.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
     libraryRow: { alignItems: 'flex-start', marginBottom: 10 },
     modalLabel: { fontSize: 12, fontWeight: '900', color: theme.muted, marginBottom: 8, textTransform: 'uppercase' },
