@@ -167,6 +167,37 @@ export default function TeacherScheduleScreen() {
     return () => { cancelled = true; };
   }, [kresId, sinifId, monthKey]);
 
+  // FAZ FIX — Senkronizasyon hatası: yukarıdaki fetch TEK SEFERLİK
+  // (ekran ilk açıldığında/ay değiştiğinde). Yönetici (veya başka bir
+  // cihazdan öğretmenin kendisi) bu ay için bir ders yayınlar/güncellerse,
+  // ekran zaten açık olan öğretmen bunu GÖRMÜYORDU — çünkü "values" bir
+  // daha yenilenmiyordu. Veli tarafı ise doğrudan canlı (realtime) veriden
+  // okuduğu için değişikliği anında görüyordu. Bu yüzden "velide görünen
+  // ders öğretmende görünmüyor" şikayeti oluşuyordu.
+  // classSchedules zaten canlı (useTeacherData realtime listener) olduğu
+  // için, bu ayın güncel kayıtlarını "values"a senkronize ediyoruz. O an
+  // düzenleme modalında açık olan günü (selectedDateKey) atlıyoruz ki
+  // kullanıcının aktif düzenlemesi elinden alınmasın.
+  useEffect(() => {
+    const monthRecords = classSchedules.filter((item) => item?.ayKey === monthKey);
+    if (monthRecords.length === 0) return;
+
+    setValues((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      monthRecords.forEach((record) => {
+        const dateKey = record?.tarih;
+        if (!dateKey || dateKey === selectedDateKey) return;
+        const mapped = mapRecordToValue(record);
+        if (JSON.stringify(prev[dateKey]) !== JSON.stringify(mapped)) {
+          next[dateKey] = mapped;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [classSchedules, monthKey, selectedDateKey]);
+
   // FAZ FIX — bu hook'lar "if (loading) return" satırından SONRA
   // tanımlıydı. React hook kurallarına aykırı: "loading" true iken bu hook'lar
   // hiç çağrılmıyor, "loading" false olunca çağrılıyor — hook sayısı render'lar
@@ -508,7 +539,7 @@ export default function TeacherScheduleScreen() {
                     ) : null}
                   </>
                 ) : (
-                  <Text style={styles.todayEmpty}>Bugün için yayınlanmış bir etkinlik yok.</Text>
+                  <Text style={styles.todayEmpty}>Bugün için yayınlanmış bir ders yok.</Text>
                 )}
               </View>
 
@@ -640,7 +671,7 @@ export default function TeacherScheduleScreen() {
                   value={selectedItem.etkinlik}
                   onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)}
                   onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)}
-                  placeholder="Etkinlik (örn: Parmak Boyası)"
+                  placeholder="Ders (örn: Parmak Boyası)"
                   style={styles.modalInput}
                   theme={THEME}
                 />
