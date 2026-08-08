@@ -2,9 +2,10 @@
 // DashboardScreen.js
 // FAZ 19: Fallback tam-tablo taraması kaldırıldı (veri sızıntısı düzeltmesi)
 // Boş index artık "yüklenmedi" değil "0" olarak sayılıyor
+// FAZ 20: Akordeon kategori kartları + sabit (pinned) Mesajlar/Bildirimler şeridi
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert, LayoutAnimation, UIManager } from 'react-native';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +14,11 @@ import AppNotificationButton from '../../components/AppNotificationButton';
 import ThemedBackground from '../../components/ThemedBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { rebuildKresRealtimeIndexes } from '../../utils/realtimeIndexBackfill';
+import { listenNotifications, isRead } from '../../services/notificationCenter';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const THEME = {
   primary: '#6C3DEB',
@@ -34,28 +40,99 @@ const THEME = {
 
 const backfillRunCache = new Set();
 
-const MENU_ITEMS = [
-  { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', desc: 'Sınıf yönetimi', color: THEME.blue, bgColor: '#EEF4FF' },
-  { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', desc: 'Öğretmen hesapları', color: THEME.primary, bgColor: THEME.primarySoft },
-  { title: 'Çocuklar', icon: '👶', screen: 'ChildList', desc: 'Çocuk kayıtları', color: THEME.orange, bgColor: '#FFF6E8' },
-  { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', desc: 'Veli hesapları', color: THEME.green, bgColor: '#E8F9EF' },
-  { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', desc: 'Veli ve öğretmenlerle yazış', color: THEME.primary, bgColor: THEME.primarySoft },
-  { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', desc: 'Kurum gelişim özeti', color: THEME.blue, bgColor: '#EEF4FF' },
-  { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', desc: 'Fotoğraf / video', color: THEME.teal, bgColor: '#E0F7FA' },
-  { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', desc: 'Ay bazlı kurum menüsü', color: THEME.orange, bgColor: '#FFF6E8' },
-  { title: 'Personel Görev Listesi', icon: '📋', screen: 'AdminMonthlyStaffTasks', desc: 'Ay bazlı görev/sorumluluk listesi', color: THEME.primary, bgColor: '#EAE6FF' },
-  { title: 'Nöbet Çizelgesi', icon: '🗓️', screen: 'AdminMonthlyDutyRoster', desc: 'Ay bazlı nöbetçi personel planı', color: THEME.red, bgColor: '#FFE6EA' },
-  { title: 'Servis Listesi', icon: '🚌', screen: 'AdminService', desc: 'Servis kullanan çocuklar ve saatleri', color: THEME.blue, bgColor: '#E9F0FF' },
-  { title: 'Doğum Günü Takvimi', icon: '🎂', screen: 'AdminBirthdayCalendar', desc: 'Bu ay doğum günü olan çocuklar', color: THEME.orange, bgColor: '#FFF6E8' },
-  { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', desc: 'Duyuru yönetimi', color: THEME.red, bgColor: '#FFE8EC' },
-  { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', desc: 'Veli anketleri', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', desc: 'Haftalık program', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', desc: 'Etkinlik takvimi', color: '#E67E22', bgColor: '#FCEEE0' },
-  { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', desc: 'Ödeme takibi', color: THEME.teal, bgColor: '#E0F7FA' },
-  { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', desc: 'Kapı / geliyorum', color: THEME.red, bgColor: '#FFE8EC' },
-  { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', desc: 'Adres ve iletişim', color: THEME.primaryDark, bgColor: THEME.primarySoft },
-  { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', desc: 'Renk ve arka plan', color: THEME.purple, bgColor: '#F3E8FA' },
-  { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', desc: 'Paket ve promo kod', color: THEME.gold, bgColor: '#FFF5D9' },
+// Yönetim işlemleri artık 7 kategori altında akordeon kart olarak gruplanıyor.
+// Her item: title, icon, screen (route adı) veya comingSoon:true (henüz ekranı yok).
+const MENU_CATEGORIES = [
+  {
+    key: 'kurum',
+    title: 'Kurum & Kişiler',
+    subtitle: 'Sınıflar, öğretmenler, çocuklar, veliler',
+    icon: '🏫',
+    iconBg: '#EFE9FF',
+    items: [
+      { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', color: THEME.blue },
+      { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', color: THEME.primary },
+      { title: 'Çocuklar', icon: '👶', screen: 'ChildList', color: THEME.orange },
+      { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', color: THEME.green },
+      { title: 'Personel Görev Listesi', icon: '📋', screen: 'AdminMonthlyStaffTasks', color: THEME.primary },
+      { title: 'Nöbet Çizelgesi', icon: '🗓️', screen: 'AdminMonthlyDutyRoster', color: THEME.red },
+    ],
+  },
+  {
+    key: 'iletisim',
+    title: 'İletişim',
+    subtitle: 'Mesajlar, duyurular, anketler',
+    icon: '📣',
+    iconBg: '#FFE9F2',
+    items: [
+      { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', color: THEME.primary, badgeKey: 'messages' },
+      { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', color: THEME.red },
+      { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', color: THEME.purple },
+    ],
+  },
+  {
+    key: 'program',
+    title: 'Program & Takvim',
+    subtitle: 'Ders, etkinlik, yemek, servis, doğum günü',
+    icon: '🗓️',
+    iconBg: '#FFF4E0',
+    items: [
+      { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', color: THEME.purple },
+      { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', color: '#E67E22' },
+      { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', color: THEME.orange },
+      { title: 'Servis Listesi', icon: '🚌', screen: 'AdminService', color: THEME.blue },
+      { title: 'Doğum Günü Takvimi', icon: '🎂', screen: 'AdminBirthdayCalendar', color: THEME.orange },
+    ],
+  },
+  {
+    key: 'finans',
+    title: 'Finans',
+    subtitle: 'Ödemeler ve abonelik',
+    icon: '💳',
+    iconBg: '#E3F6FF',
+    items: [
+      { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', color: THEME.teal },
+      { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', color: THEME.gold },
+    ],
+  },
+  {
+    key: 'muhasebe',
+    title: 'Muhasebe',
+    subtitle: 'Bordro, izin hakedişi, personel maliyeti',
+    icon: '🧮',
+    iconBg: '#FFEDE3',
+    // NOT: Bu 5 kalemin henüz ekranı/route'u yok — "Yakında" olarak işaretli.
+    items: [
+      { title: 'Bordro Hesaplama', icon: '🧾', comingSoon: true },
+      { title: 'İzin Yönetimi', icon: '🌴', comingSoon: true },
+      { title: 'Personel Hakediş Takibi', icon: '📈', comingSoon: true },
+      { title: 'Gider Takibi', icon: '📉', comingSoon: true },
+      { title: 'Yıllık Maliyet Özeti', icon: '📋', comingSoon: true },
+    ],
+  },
+  {
+    key: 'medya',
+    title: 'Medya & Raporlar',
+    subtitle: 'Galeri ve istatistikler',
+    icon: '📊',
+    iconBg: '#E7F8EE',
+    items: [
+      { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', color: THEME.teal },
+      { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', color: THEME.blue },
+    ],
+  },
+  {
+    key: 'ayarlar',
+    title: 'Ayarlar',
+    subtitle: 'Kurum bilgileri, tema, zil',
+    icon: '⚙️',
+    iconBg: '#F3E9FF',
+    items: [
+      { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', color: THEME.primaryDark },
+      { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', color: THEME.purple },
+      { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', color: THEME.red },
+    ],
+  },
 ];
 
 const OZET_ITEMS = [
@@ -100,10 +177,33 @@ export default function DashboardScreen() {
   const [kresAdi, setKresAdi] = useState('Kurum');
   const [abonelik, setAbonelik] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [acikKategori, setAcikKategori] = useState('kurum');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const kresId = kullanici?.kresId || 'kres001';
   const adminId = kullanici?.uid || kullanici?.id;
   const unreadMessages = useUnreadMessagesCount(adminId);
+
+  useEffect(() => {
+    if (!kullanici) return undefined;
+    const off = listenNotifications(kullanici, (items) => {
+      setUnreadNotifications(items.filter((x) => !isRead(x, kullanici)).length);
+    });
+    return () => off();
+  }, [kullanici]);
+
+  const kategoriAc = (key) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setAcikKategori((prev) => (prev === key ? null : key));
+  };
+
+  const itemeGit = (item) => {
+    if (item.comingSoon) {
+      Alert.alert('Yakında', `"${item.title}" özelliği yakında eklenecek.`);
+      return;
+    }
+    navigation.navigate(item.screen);
+  };
 
   useEffect(() => {
     if (!kresId || backfillRunCache.has(kresId)) return;
@@ -189,6 +289,31 @@ export default function DashboardScreen() {
             </View>
           </View>
 
+          {/* Sabit (pinned) Mesajlar / Bildirimler şeridi — her zaman en üstte */}
+          <View style={styles.inboxStrip}>
+            <TouchableOpacity style={styles.inboxItem} onPress={() => navigation.navigate('AdminMessages')} activeOpacity={0.8}>
+              <Text style={styles.inboxEmoji}>💬</Text>
+              <View style={styles.inboxTextBlock}>
+                <Text style={styles.inboxTitle}>Mesajlar</Text>
+                <Text style={styles.inboxSub}>{unreadMessages > 0 ? `${unreadMessages} yeni` : 'Güncel'}</Text>
+              </View>
+              {unreadMessages > 0 ? (
+                <View style={styles.inboxCount}><Text style={styles.inboxCountText}>{unreadMessages > 99 ? '99+' : unreadMessages}</Text></View>
+              ) : null}
+            </TouchableOpacity>
+            <View style={styles.inboxDivider} />
+            <TouchableOpacity style={styles.inboxItem} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
+              <Text style={styles.inboxEmoji}>🔔</Text>
+              <View style={styles.inboxTextBlock}>
+                <Text style={styles.inboxTitle}>Bildirimler</Text>
+                <Text style={styles.inboxSub}>{unreadNotifications > 0 ? `${unreadNotifications} yeni` : 'Güncel'}</Text>
+              </View>
+              {unreadNotifications > 0 ? (
+                <View style={styles.inboxCount}><Text style={styles.inboxCountText}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</Text></View>
+              ) : null}
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.welcomeCard}>
             <View style={styles.welcomeLeft}>
               <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
@@ -214,21 +339,40 @@ export default function DashboardScreen() {
           )}
 
           <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
-          {MENU_ITEMS.map((item) => {
-            const isMessages = item.screen === 'AdminMessages';
-            const badgeCount = isMessages ? unreadMessages : 0;
+          {MENU_CATEGORIES.map((kategori) => {
+            const acik = acikKategori === kategori.key;
             return (
-              <TouchableOpacity key={item.title} style={styles.menuKart} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.8}>
-                <View style={[styles.menuIconWrapper, { backgroundColor: item.bgColor }]}> 
-                  <Text style={styles.menuIcon}>{item.icon}</Text>
-                  {badgeCount > 0 ? <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text></View> : null}
-                </View>
-                <View style={styles.menuTextBlock}>
-                  <Text style={[styles.menuTitle, badgeCount > 0 && styles.menuTitleUnread]} numberOfLines={1} ellipsizeMode="tail">{item.title}</Text>
-                  <Text style={styles.menuDesc} numberOfLines={1} ellipsizeMode="tail">{item.desc}</Text>
-                </View>
-                <Text style={[styles.menuArrow, { color: item.color }]}>›</Text>
-              </TouchableOpacity>
+              <View key={kategori.key} style={styles.catCard}>
+                <TouchableOpacity style={styles.catHead} onPress={() => kategoriAc(kategori.key)} activeOpacity={0.8}>
+                  <View style={[styles.catIcon, { backgroundColor: kategori.iconBg }]}>
+                    <Text style={styles.catIconText}>{kategori.icon}</Text>
+                  </View>
+                  <View style={styles.catInfo}>
+                    <Text style={styles.catTitle} numberOfLines={1} ellipsizeMode="tail">{kategori.title}</Text>
+                    <Text style={styles.catSub} numberOfLines={1} ellipsizeMode="tail">{kategori.subtitle}</Text>
+                  </View>
+                  <Text style={[styles.catChevron, acik && styles.catChevronOpen]}>›</Text>
+                </TouchableOpacity>
+                {acik ? (
+                  <View style={styles.catBody}>
+                    {kategori.items.map((item, index) => {
+                      const badgeCount = item.badgeKey === 'messages' ? unreadMessages : 0;
+                      return (
+                        <TouchableOpacity key={item.title} style={[styles.catItem, index === 0 && styles.catItemFirst]} onPress={() => itemeGit(item)} activeOpacity={0.8}>
+                          <Text style={styles.catItemEmoji}>{item.icon}</Text>
+                          <Text style={[styles.catItemName, badgeCount > 0 && styles.catItemNameUnread]} numberOfLines={1} ellipsizeMode="tail">{item.title}</Text>
+                          {item.comingSoon ? (
+                            <View style={styles.soonBadge}><Text style={styles.soonBadgeText}>Yakında</Text></View>
+                          ) : badgeCount > 0 ? (
+                            <View style={styles.catItemBadge}><Text style={styles.catItemBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text></View>
+                          ) : null}
+                          <Text style={[styles.catItemArrow, item.comingSoon && styles.catItemArrowMuted]}>›</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
             );
           })}
         </ScrollView>
@@ -274,14 +418,37 @@ const styles = StyleSheet.create({
   ozetIcon: { fontSize: 23 },
   ozetSayi: { fontSize: 22, fontWeight: '900', marginTop: 3, maxWidth: '100%' },
   ozetLabel: { color: THEME.muted, fontWeight: '800', marginTop: 1, maxWidth: '100%', fontSize: 12 },
-  menuKart: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 16, padding: 12, marginBottom: 9, borderWidth: 1, borderColor: 'rgba(238,234,248,0.94)', flexDirection: 'row', alignItems: 'center' },
-  menuIconWrapper: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0, position: 'relative' },
-  menuIcon: { fontSize: 22 },
-  menuBadge: { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 2, borderColor: '#FFFFFF' },
-  menuBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
-  menuTextBlock: { flex: 1, minWidth: 0 },
-  menuTitle: { fontSize: 15, fontWeight: '900', color: THEME.text, flexShrink: 1 },
-  menuTitleUnread: { color: THEME.primary },
-  menuDesc: { color: THEME.muted, marginTop: 2, fontWeight: '600', fontSize: 12, lineHeight: 16, flexShrink: 1 },
-  menuArrow: { fontSize: 26, fontWeight: '900', marginLeft: 6, flexShrink: 0 },
+  // Sabit (pinned) Mesajlar / Bildirimler şeridi
+  inboxStrip: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 18, padding: 5, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(238,234,248,0.94)' },
+  inboxItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 13, minWidth: 0 },
+  inboxEmoji: { fontSize: 18 },
+  inboxTextBlock: { flex: 1, minWidth: 0 },
+  inboxTitle: { fontSize: 12.5, fontWeight: '900', color: THEME.text },
+  inboxSub: { fontSize: 10.5, fontWeight: '700', color: THEME.muted, marginTop: 1 },
+  inboxCount: { minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, marginLeft: 4, flexShrink: 0 },
+  inboxCountText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
+  inboxDivider: { width: 1, backgroundColor: THEME.border, marginVertical: 6 },
+
+  // Yönetim İşlemleri — akordeon kategori kartları
+  catCard: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 18, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(238,234,248,0.94)', overflow: 'hidden' },
+  catHead: { flexDirection: 'row', alignItems: 'center', padding: 13, gap: 12 },
+  catIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  catIconText: { fontSize: 20 },
+  catInfo: { flex: 1, minWidth: 0 },
+  catTitle: { fontSize: 14.5, fontWeight: '900', color: THEME.text },
+  catSub: { fontSize: 11.5, fontWeight: '600', color: THEME.muted, marginTop: 2 },
+  catChevron: { fontSize: 20, fontWeight: '900', color: THEME.muted, marginLeft: 4 },
+  catChevronOpen: { transform: [{ rotate: '90deg' }], color: THEME.primary },
+  catBody: { paddingBottom: 6 },
+  catItem: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10, paddingHorizontal: 14, marginHorizontal: 8, borderRadius: 12, borderTopWidth: 1, borderTopColor: THEME.border },
+  catItemFirst: { borderTopWidth: 0 },
+  catItemEmoji: { fontSize: 17 },
+  catItemName: { flex: 1, fontSize: 13.5, fontWeight: '800', color: THEME.text, minWidth: 0 },
+  catItemNameUnread: { color: THEME.primary },
+  catItemBadge: { minWidth: 19, height: 19, borderRadius: 10, backgroundColor: '#FF4D6D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, flexShrink: 0 },
+  catItemBadgeText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
+  soonBadge: { backgroundColor: '#FFF0DC', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
+  soonBadgeText: { color: THEME.gold, fontWeight: '900', fontSize: 9.5 },
+  catItemArrow: { fontSize: 18, fontWeight: '900', color: THEME.muted, flexShrink: 0 },
+  catItemArrowMuted: { opacity: 0.35 },
 });
