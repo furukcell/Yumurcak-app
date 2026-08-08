@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
-import MealAutocompleteInput from '../../components/MealAutocompleteInput';
+import MealChipListInput from '../../components/MealChipListInput';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
@@ -48,13 +48,21 @@ function forTeacherClass(sinifId) {
   return (item) => item?.sinifId === sinifId;
 }
 
+// FAZ — Çoklu Yemek Girişi: aylık liste artık öğün başına string yerine
+// bir dizi (chip listesi). AdminMonthlyMealScreen ile AYNI desen.
+function toMealArray(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  const text = String(value || '').trim();
+  return text ? [text] : [];
+}
+
 function emptyMonthlyMealValue() {
-  return { kahvalti: '', ogle: '', araOgun: '' };
+  return { kahvalti: [], ogle: [], araOgun: [] };
 }
 
 function hasMonthlyMealContent(value) {
   if (!value) return false;
-  return !!(String(value.kahvalti || '').trim() || String(value.ogle || '').trim() || String(value.araOgun || '').trim());
+  return toMealArray(value.kahvalti).length > 0 || toMealArray(value.ogle).length > 0 || toMealArray(value.araOgun).length > 0;
 }
 
 function buildMonthlyMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now, sinifId, sinifAdi }) {
@@ -67,9 +75,9 @@ function buildMonthlyMealRecord({ day, value, kresId, monthKey, monthLabel, kayn
     tarih: day.dateKey,
     baslik: `${sinifAdi ? sinifAdi + ' - ' : ''}${monthLabel} Yemek Listesi`,
     ogunler: {
-      kahvalti: String(value.kahvalti || '').trim(),
-      ogle: String(value.ogle || '').trim(),
-      araOgun: String(value.araOgun || '').trim(),
+      kahvalti: toMealArray(value.kahvalti),
+      ogle: toMealArray(value.ogle),
+      araOgun: toMealArray(value.araOgun),
     },
     aktif: true,
     createdAt: now,
@@ -79,7 +87,7 @@ function buildMonthlyMealRecord({ day, value, kresId, monthKey, monthLabel, kayn
 
 function monthlyMealPreview(value) {
   if (!hasMonthlyMealContent(value)) return '';
-  return [value?.kahvalti, value?.ogle, value?.araOgun].filter(Boolean).join(' · ');
+  return [...toMealArray(value?.kahvalti), ...toMealArray(value?.ogle), ...toMealArray(value?.araOgun)].join(' · ');
 }
 
 function getCurrentMonthKey() {
@@ -290,9 +298,9 @@ export default function TeacherMealsScreen() {
       kaynak: MONTHLY_KAYNAK,
       matchExtra: forTeacherClass(currentClass.id),
       valueMapper: (record) => ({
-        kahvalti: record.ogunler?.kahvalti || '',
-        ogle: record.ogunler?.ogle || '',
-        araOgun: record.ogunler?.araOgun || '',
+        kahvalti: toMealArray(record.ogunler?.kahvalti),
+        ogle: toMealArray(record.ogunler?.ogle),
+        araOgun: toMealArray(record.ogunler?.araOgun),
       }),
       onError: (error) => {
         if (cancelled) return;
@@ -322,10 +330,10 @@ export default function TeacherMealsScreen() {
     setMonthlySelectedDateKey('');
   }
 
-  function updateMonthlyField(dateKey, field, text) {
+  function updateMonthlyList(dateKey, field, list) {
     setMonthlyValues((prev) => ({
       ...prev,
-      [dateKey]: { ...(prev[dateKey] || emptyMonthlyMealValue()), [field]: text },
+      [dateKey]: { ...(prev[dateKey] || emptyMonthlyMealValue()), [field]: list },
     }));
   }
 
@@ -352,9 +360,9 @@ export default function TeacherMealsScreen() {
         currentMonthDate: monthDate,
         days,
         valueMapper: (prevItem) => ({
-          kahvalti: prevItem?.ogunler?.kahvalti || '',
-          ogle: prevItem?.ogunler?.ogle || '',
-          araOgun: prevItem?.ogunler?.araOgun || '',
+          kahvalti: toMealArray(prevItem?.ogunler?.kahvalti),
+          ogle: toMealArray(prevItem?.ogunler?.ogle),
+          araOgun: toMealArray(prevItem?.ogunler?.araOgun),
         }),
       });
 
@@ -864,28 +872,30 @@ export default function TeacherMealsScreen() {
               </TouchableOpacity>
             </View>
 
-            <MealAutocompleteInput
+            <Text style={styles.modalLabel}>Kahvaltı</Text>
+            <MealChipListInput
               ogun="kahvalti"
-              value={monthlySelectedValue.kahvalti}
-              onChangeText={(text) => updateMonthlyField(monthlySelectedDateKey, 'kahvalti', text)}
-              placeholder="Kahvaltı"
-              style={styles.modalInput}
+              values={monthlySelectedValue.kahvalti}
+              onChange={(list) => updateMonthlyList(monthlySelectedDateKey, 'kahvalti', list)}
+              placeholder="Kahvaltı yemeği ekle"
               theme={THEME}
             />
-            <MealAutocompleteInput
+
+            <Text style={styles.modalLabel}>Öğle Yemeği</Text>
+            <MealChipListInput
               ogun="ogle"
-              value={monthlySelectedValue.ogle}
-              onChangeText={(text) => updateMonthlyField(monthlySelectedDateKey, 'ogle', text)}
-              placeholder="Öğle yemeği"
-              style={styles.modalInput}
+              values={monthlySelectedValue.ogle}
+              onChange={(list) => updateMonthlyList(monthlySelectedDateKey, 'ogle', list)}
+              placeholder="Öğle yemeği ekle"
               theme={THEME}
             />
-            <MealAutocompleteInput
+
+            <Text style={styles.modalLabel}>Ara Öğün</Text>
+            <MealChipListInput
               ogun="araOgun"
-              value={monthlySelectedValue.araOgun}
-              onChangeText={(text) => updateMonthlyField(monthlySelectedDateKey, 'araOgun', text)}
-              placeholder="Ara öğün"
-              style={styles.modalInput}
+              values={monthlySelectedValue.araOgun}
+              onChange={(list) => updateMonthlyList(monthlySelectedDateKey, 'araOgun', list)}
+              placeholder="Ara öğün ekle"
               theme={THEME}
             />
 
@@ -957,6 +967,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
   modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
+  modalLabel: { fontSize: 12, fontWeight: '900', color: THEME.muted, marginBottom: 8, textTransform: 'uppercase' },
   modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
   modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
   card: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },

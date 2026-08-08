@@ -13,6 +13,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
+import ActivityChipRow from '../../components/ActivityChipRow';
 import ActivityLibraryPicker from '../../components/ActivityLibraryPicker';
 import ActivityAutocompleteInput from '../../components/ActivityAutocompleteInput';
 import ActivityBalanceCard from '../../components/ActivityBalanceCard';
@@ -34,16 +35,28 @@ import {
 const NODE_PATH = 'dersProgramlari';
 const KAYNAK = 'admin_aylik';
 
-function emptyScheduleValue() {
+// FAZ — Çoklu Etkinlik Girişi: bir gün artık TEK etkinlik değil, her biri
+// kendi kategori/tema/açıklama/kazanımlarını taşıyan bir dizi.
+function emptyActivityItem() {
   return { etkinlik: '', aciklama: '', kategori: '', tema: '', kazanimlar: [] };
+}
+
+function hasActivityItemContent(item) {
+  return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
+}
+
+function emptyScheduleValue() {
+  return { etkinlikler: [] };
 }
 
 function hasScheduleContent(value) {
   if (!value) return false;
-  return !!(String(value.etkinlik || '').trim() || String(value.aciklama || '').trim());
+  const list = Array.isArray(value.etkinlikler) ? value.etkinlikler : [];
+  return list.some(hasActivityItemContent);
 }
 
 function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now, sinifId }) {
+  const list = Array.isArray(value.etkinlikler) ? value.etkinlikler : [];
   return {
     kresId,
     sinifId: sinifId || null,
@@ -52,11 +65,13 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
     baslik: `${monthLabel} Ders Programı`,
-    etkinlik: String(value.etkinlik || '').trim(),
-    aciklama: String(value.aciklama || '').trim(),
-    kategori: value.kategori || null,
-    tema: value.tema || null,
-    kazanimlar: Array.isArray(value.kazanimlar) ? value.kazanimlar : [],
+    etkinlikler: list.filter(hasActivityItemContent).map((item) => ({
+      etkinlik: String(item.etkinlik || '').trim(),
+      aciklama: String(item.aciklama || '').trim(),
+      kategori: item.kategori || null,
+      tema: item.tema || null,
+      kazanimlar: Array.isArray(item.kazanimlar) ? item.kazanimlar : [],
+    })),
     aktif: true,
     createdAt: now,
     updatedAt: now,
@@ -65,7 +80,23 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
 
 function schedulePreview(value) {
   if (!hasScheduleContent(value)) return '';
-  return [value?.etkinlik, value?.aciklama].filter(Boolean).join(' · ');
+  const list = Array.isArray(value.etkinlikler) ? value.etkinlikler : [];
+  return list.map((item) => item?.etkinlik).filter(Boolean).join(' · ');
+}
+
+// Firebase kaydından ekran state'ine dönüştürürken kullanılan ortak eşleyici
+// (aktif ay okuma + geçen aydan kopyalama, ikisinde de aynı şekil lazım).
+function mapRecordToValue(record) {
+  const list = Array.isArray(record?.etkinlikler) ? record.etkinlikler : [];
+  return {
+    etkinlikler: list.map((item) => ({
+      etkinlik: item?.etkinlik || '',
+      aciklama: item?.aciklama || '',
+      kategori: item?.kategori || '',
+      tema: item?.tema || '',
+      kazanimlar: Array.isArray(item?.kazanimlar) ? item.kazanimlar : [],
+    })),
+  };
 }
 
 function formatDateKey(dateKey) {
@@ -88,6 +119,7 @@ export default function TeacherScheduleScreen() {
   const [values, setValues] = useState(() => createInitialValues(days, emptyScheduleValue));
   const [view, setView] = useState('list');
   const [selectedDateKey, setSelectedDateKey] = useState('');
+  const [editingIndex, setEditingIndex] = useState(-1);
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
@@ -126,13 +158,7 @@ export default function TeacherScheduleScreen() {
       monthKey,
       kaynak: KAYNAK,
       matchExtra: forClass(sinifId),
-      valueMapper: (record) => ({
-        etkinlik: record.etkinlik || '',
-        aciklama: record.aciklama || '',
-        kategori: record.kategori || '',
-        tema: record.tema || '',
-        kazanimlar: Array.isArray(record.kazanimlar) ? record.kazanimlar : [],
-      }),
+      valueMapper: mapRecordToValue,
     }).then((loadedValues) => {
       if (cancelled) return;
       setValues((prev) => ({ ...prev, ...loadedValues }));
@@ -157,32 +183,37 @@ export default function TeacherScheduleScreen() {
   const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
 
   const selectedValue = values[selectedDateKey] || emptyScheduleValue();
+  const selectedItem = (selectedValue.etkinlikler && selectedValue.etkinlikler[editingIndex]) || null;
 
-  // FAZ 10 — Akıllı Tekrar Uyarısı: girilen etkinlik adı, seçili günden
-  // geriye doğru son 10 gün içinde bu sınıfta zaten uygulanmışsa bilgi
-  // verir. Sadece bilgilendirme amaçlı, seçimi ENGELLEMEZ.
+  // FAZ 10 — Akıllı Tekrar Uyarısı: düzenlenen etkinlik adı, seçili günden
+  // geriye doğru son 10 gün içinde bu sınıfta (başka bir günün etkinlik
+  // listesinde) zaten uygulanmışsa bilgi verir. Sadece bilgilendirme
+  // amaçlı, seçimi ENGELLEMEZ.
   const recentRepeat = useMemo(() => {
-    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
+    const etkinlikAdi = String(selectedItem?.etkinlik || '').trim().toLowerCase();
     if (!etkinlikAdi || !selectedDateKey) return null;
 
     const selectedTime = new Date(selectedDateKey).getTime();
 
-    const eslesenler = classSchedules.filter((item) => {
-      if (item.tarih === selectedDateKey) return false;
-      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
-      const farkGun = (selectedTime - new Date(item.tarih).getTime()) / 86400000;
-      return farkGun > 0 && farkGun <= 10;
+    const eslesenler = [];
+    classSchedules.forEach((day) => {
+      if (day.tarih === selectedDateKey) return;
+      const items = Array.isArray(day.etkinlikler) ? day.etkinlikler : [];
+      const eslesti = items.some((it) => String(it?.etkinlik || '').trim().toLowerCase() === etkinlikAdi);
+      if (!eslesti) return;
+      const farkGun = (selectedTime - new Date(day.tarih).getTime()) / 86400000;
+      if (farkGun > 0 && farkGun <= 10) eslesenler.push(day.tarih);
     });
 
     if (eslesenler.length === 0) return null;
 
-    const enSonTarih = eslesenler.map((item) => item.tarih).sort().slice(-1)[0];
+    const enSonTarih = [...eslesenler].sort().slice(-1)[0];
     return { sayi: eslesenler.length, enSonTarih };
-  }, [selectedValue.etkinlik, selectedDateKey, classSchedules]);
+  }, [selectedItem?.etkinlik, selectedDateKey, classSchedules]);
 
   // FAZ 10 — Aynı Gün Geçen Yıl: seçili günün bir önceki yılki aynı
-  // tarihinde (MM-DD aynı, YYYY-1) bu sınıfta girilmiş bir etkinlik
-  // varsa gösterir. Dokununca alanları dolduruyor, zorunlu değil.
+  // tarihinde (MM-DD aynı, YYYY-1) bu sınıfta girilmiş bir GÜN varsa
+  // gösterir. Dokununca o günün TÜM etkinlik listesini kopyalıyor.
   const lastYearSchedule = useMemo(() => {
     if (!selectedDateKey) return null;
     const [y, m, d] = selectedDateKey.split('-');
@@ -192,27 +223,32 @@ export default function TeacherScheduleScreen() {
   }, [selectedDateKey, classSchedules]);
 
   // FAZ 10 — Hazır Kazanımlar: aynı etkinlik adı bu kreşte (herhangi bir
-  // sınıfta) daha önce kazanımlarla girilmişse, en son kullanılanı önerir.
+  // sınıfta, herhangi bir günün etkinlik listesinde) daha önce kazanımlarla
+  // girilmişse, en son kullanılanı önerir.
   const kazanimOnerisi = useMemo(() => {
-    const etkinlikAdi = String(selectedValue.etkinlik || '').trim().toLowerCase();
+    const etkinlikAdi = String(selectedItem?.etkinlik || '').trim().toLowerCase();
     if (!etkinlikAdi || !selectedDateKey) return null;
 
-    const eslesenler = schedules.filter((item) => {
-      if (item?.aktif === false || item?.kaynak !== KAYNAK) return false;
-      if (item.tarih === selectedDateKey) return false;
-      if (String(item.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return false;
-      return Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0;
+    const adaylar = [];
+    schedules.forEach((day) => {
+      if (day?.aktif === false || day?.kaynak !== KAYNAK) return;
+      if (day.tarih === selectedDateKey) return;
+      const items = Array.isArray(day.etkinlikler) ? day.etkinlikler : [];
+      items.forEach((it) => {
+        if (String(it?.etkinlik || '').trim().toLowerCase() !== etkinlikAdi) return;
+        if (Array.isArray(it.kazanimlar) && it.kazanimlar.length > 0) adaylar.push({ tarih: day.tarih, kazanimlar: it.kazanimlar });
+      });
     });
 
-    if (eslesenler.length === 0) return null;
+    if (adaylar.length === 0) return null;
 
-    const enSon = [...eslesenler].sort((a, b) => (a.tarih < b.tarih ? 1 : -1))[0];
-    const mevcut = Array.isArray(selectedValue.kazanimlar) ? selectedValue.kazanimlar : [];
+    const enSon = [...adaylar].sort((a, b) => (a.tarih < b.tarih ? 1 : -1))[0];
+    const mevcut = Array.isArray(selectedItem?.kazanimlar) ? selectedItem.kazanimlar : [];
     const ayni = mevcut.length === enSon.kazanimlar.length && mevcut.every((k) => enSon.kazanimlar.includes(k));
     if (ayni) return null;
 
     return enSon.kazanimlar;
-  }, [selectedValue.etkinlik, selectedValue.kazanimlar, selectedDateKey, schedules]);
+  }, [selectedItem?.etkinlik, selectedItem?.kazanimlar, selectedDateKey, schedules]);
 
   // NOT: yukarıdaki tüm hook'lar (useMemo) kasıtlı olarak "if (loading) return"
   // satırından ÖNCE duruyor — React hook sırası kuralı gereği. Bunlardan
@@ -232,51 +268,85 @@ export default function TeacherScheduleScreen() {
     setSelectedDateKey('');
   }
 
-  function updateField(dateKey, field, text) {
-    setValues((prev) => ({
-      ...prev,
-      [dateKey]: { ...(prev[dateKey] || emptyScheduleValue()), [field]: text },
-    }));
+  // FAZ — Çoklu Etkinlik Girişi: dateKey + o günün etkinlikler dizisindeki
+  // INDEX üzerinden çalışıyoruz (Admin ekranıyla aynı desen).
+  function updateItemField(dateKey, index, field, text) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const list = [...(current.etkinlikler || [])];
+      if (!list[index]) return prev;
+      list[index] = { ...list[index], [field]: text };
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
+    });
   }
 
   // FAZ 10 — Hazır Kazanımlar: sabit etiketlerden aç/kapa veya elle
   // özel bir kazanım ekle. Tekrar eden etiketler otomatik engellenir.
-  function toggleKazanim(dateKey, etiket) {
+  function toggleKazanim(dateKey, index, etiket) {
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
-      const mevcut = Array.isArray(current.kazanimlar) ? current.kazanimlar : [];
+      const list = [...(current.etkinlikler || [])];
+      if (!list[index]) return prev;
+      const mevcut = Array.isArray(list[index].kazanimlar) ? list[index].kazanimlar : [];
       const varMi = mevcut.includes(etiket);
       const yeni = varMi ? mevcut.filter((k) => k !== etiket) : [...mevcut, etiket];
-      return { ...prev, [dateKey]: { ...current, kazanimlar: yeni } };
+      list[index] = { ...list[index], kazanimlar: yeni };
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
     });
   }
 
-  function setKazanimlar(dateKey, kazanimlar) {
+  function setKazanimlar(dateKey, index, kazanimlar) {
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
-      return { ...prev, [dateKey]: { ...current, kazanimlar } };
+      const list = [...(current.etkinlikler || [])];
+      if (!list[index]) return prev;
+      list[index] = { ...list[index], kazanimlar };
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
     });
   }
 
   // Autocomplete'ten bir öneri seçilince: etkinlik adı zaten onChangeText ile
   // yazılıyor, burada sadece havuzdan gelen kategori/tema'yı (varsa ve
   // öğretmen henüz kendi seçmediyse) otomatik dolduruyoruz.
-  function handleActivitySuggestion(dateKey, item) {
+  function handleActivitySuggestion(dateKey, index, item) {
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
-      return {
-        ...prev,
-        [dateKey]: {
-          ...current,
-          kategori: current.kategori || item.kategori || '',
-          tema: current.tema || item.tema || '',
-        },
+      const list = [...(current.etkinlikler || [])];
+      if (!list[index]) return prev;
+      list[index] = {
+        ...list[index],
+        kategori: list[index].kategori || item.kategori || '',
+        tema: list[index].tema || item.tema || '',
       };
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
     });
+  }
+
+  function addActivityItem(dateKey) {
+    let newIndex = 0;
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const existing = current.etkinlikler || [];
+      newIndex = existing.length;
+      return { ...prev, [dateKey]: { ...current, etkinlikler: [...existing, emptyActivityItem()] } };
+    });
+    setEditingIndex(newIndex);
+    setCustomKazanimText('');
+  }
+
+  function removeActivityItem(dateKey, index) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const list = (current.etkinlikler || []).filter((_, i) => i !== index);
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
+    });
+    setEditingIndex((prev) => (prev === index ? -1 : prev > index ? prev - 1 : prev));
+    setCustomKazanimText('');
   }
 
   function clearDay(dateKey) {
     setValues((prev) => ({ ...prev, [dateKey]: emptyScheduleValue() }));
+    setEditingIndex(-1);
   }
 
   async function handleCopyPreviousMonth() {
@@ -290,13 +360,7 @@ export default function TeacherScheduleScreen() {
         currentMonthDate: monthDate,
         days,
         matchExtra: forClass(sinifId),
-        valueMapper: (prevItem) => ({
-          etkinlik: prevItem?.etkinlik || '',
-          aciklama: prevItem?.aciklama || '',
-          kategori: prevItem?.kategori || '',
-          tema: prevItem?.tema || '',
-          kazanimlar: Array.isArray(prevItem?.kazanimlar) ? prevItem.kazanimlar : [],
-        }),
+        valueMapper: mapRecordToValue,
       });
 
       if (!found) {
@@ -404,25 +468,23 @@ export default function TeacherScheduleScreen() {
   function selectDay(dateKey) {
     setCustomKazanimText('');
     setSelectedDateKey(dateKey);
+    const list = values[dateKey]?.etkinlikler || [];
+    setEditingIndex(list.length > 0 ? 0 : -1);
   }
 
   function closeModal() {
     setCustomKazanimText('');
     setSelectedDateKey('');
+    setEditingIndex(-1);
   }
 
   function useLastYearSchedule() {
     if (!lastYearSchedule || !selectedDateKey) return;
     setValues((prev) => ({
       ...prev,
-      [selectedDateKey]: {
-        etkinlik: lastYearSchedule.etkinlik || '',
-        aciklama: lastYearSchedule.aciklama || '',
-        kategori: lastYearSchedule.kategori || '',
-        tema: lastYearSchedule.tema || '',
-        kazanimlar: Array.isArray(lastYearSchedule.kazanimlar) ? lastYearSchedule.kazanimlar : [],
-      },
+      [selectedDateKey]: mapRecordToValue(lastYearSchedule),
     }));
+    setEditingIndex(0);
   }
 
   return (
@@ -438,10 +500,12 @@ export default function TeacherScheduleScreen() {
             <>
               <View style={styles.todayCard}>
                 <Text style={styles.todayLabel}>Bugün</Text>
-                {todaySchedule ? (
+                {todaySchedule && Array.isArray(todaySchedule.etkinlikler) && todaySchedule.etkinlikler.length > 0 ? (
                   <>
-                    <Text style={styles.todayTitle}>{todaySchedule.etkinlik || 'Etkinlik girilmemiş'}</Text>
-                    {todaySchedule.aciklama ? <Text style={styles.todayDesc}>{todaySchedule.aciklama}</Text> : null}
+                    <Text style={styles.todayTitle}>{todaySchedule.etkinlikler.map((it) => it.etkinlik).filter(Boolean).join(', ')}</Text>
+                    {todaySchedule.etkinlikler.some((it) => it.aciklama) ? (
+                      <Text style={styles.todayDesc}>{todaySchedule.etkinlikler.map((it) => it.aciklama).filter(Boolean).join(' · ')}</Text>
+                    ) : null}
                   </>
                 ) : (
                   <Text style={styles.todayEmpty}>Bugün için yayınlanmış bir etkinlik yok.</Text>
@@ -545,108 +609,122 @@ export default function TeacherScheduleScreen() {
             {lastYearSchedule ? (
               <TouchableOpacity style={styles.lastYearCard} onPress={useLastYearSchedule} activeOpacity={0.85}>
                 <Text style={styles.lastYearLabel}>📅 Geçen yıl bugün ({formatDateKey(lastYearSchedule.tarih)})</Text>
-                <Text style={styles.lastYearTitle}>{lastYearSchedule.etkinlik}</Text>
-                {lastYearSchedule.aciklama ? <Text style={styles.lastYearDesc} numberOfLines={2}>{lastYearSchedule.aciklama}</Text> : null}
-                <Text style={styles.lastYearHint}>Dokun, bu ayki güne kopyala</Text>
+                <Text style={styles.lastYearTitle}>
+                  {(lastYearSchedule.etkinlikler || []).map((it) => it.etkinlik).filter(Boolean).join(', ')}
+                </Text>
+                <Text style={styles.lastYearHint}>Dokun, bu ayki güne kopyala (mevcut liste değişir)</Text>
               </TouchableOpacity>
             ) : null}
 
-            <View style={styles.libraryRow}>
-              <ActivityLibraryPicker
-                yasGrubu={currentClass?.yasGrubu}
-                initialKategori={selectedValue.kategori || ETKINLIK_KATEGORILERI[0].key}
-                onSelect={(ad) => updateField(selectedDateKey, 'etkinlik', ad)}
-                theme={THEME}
-              />
-            </View>
-
-            <ActivityAutocompleteInput
-              value={selectedValue.etkinlik}
-              onChangeText={(text) => updateField(selectedDateKey, 'etkinlik', text)}
-              onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, item)}
-              placeholder="Etkinlik (örn: Parmak Boyası)"
-              style={styles.modalInput}
+            <ActivityChipRow
+              items={selectedValue.etkinlikler}
+              activeIndex={editingIndex}
+              onSelect={(index) => { setCustomKazanimText(''); setEditingIndex(index); }}
+              onAdd={() => addActivityItem(selectedDateKey)}
+              onRemove={(index) => removeActivityItem(selectedDateKey, index)}
               theme={THEME}
             />
 
-            {recentRepeat ? (
-              <View style={styles.repeatWarning}>
-                <Text style={styles.repeatWarningText}>
-                  🔁 Bu etkinlik son 10 gün içinde {recentRepeat.sayi} kez uygulanmış (en son: {formatDateKey(recentRepeat.enSonTarih)}).
-                </Text>
-              </View>
-            ) : null}
+            {editingIndex >= 0 && selectedItem ? (
+              <>
+                <View style={styles.libraryRow}>
+                  <ActivityLibraryPicker
+                    yasGrubu={currentClass?.yasGrubu}
+                    initialKategori={selectedItem.kategori || ETKINLIK_KATEGORILERI[0].key}
+                    onSelect={(ad) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', ad)}
+                    theme={THEME}
+                  />
+                </View>
 
-            <Text style={styles.modalLabel}>Kategori</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-              {ETKINLIK_KATEGORILERI.map((item) => {
-                const active = selectedValue.kategori === item.key;
-                return (
+                <ActivityAutocompleteInput
+                  value={selectedItem.etkinlik}
+                  onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)}
+                  onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)}
+                  placeholder="Etkinlik (örn: Parmak Boyası)"
+                  style={styles.modalInput}
+                  theme={THEME}
+                />
+
+                {recentRepeat ? (
+                  <View style={styles.repeatWarning}>
+                    <Text style={styles.repeatWarningText}>
+                      🔁 Bu etkinlik son 10 gün içinde {recentRepeat.sayi} kez uygulanmış (en son: {formatDateKey(recentRepeat.enSonTarih)}).
+                    </Text>
+                  </View>
+                ) : null}
+
+                <Text style={styles.modalLabel}>Kategori</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                  {ETKINLIK_KATEGORILERI.map((item) => {
+                    const active = selectedItem.kategori === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={[styles.kategoriChip, active && styles.kategoriChipActive]}
+                        onPress={() => updateItemField(selectedDateKey, editingIndex, 'kategori', active ? '' : item.key)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{item.emoji} {item.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {kazanimOnerisi ? (
                   <TouchableOpacity
-                    key={item.key}
-                    style={[styles.kategoriChip, active && styles.kategoriChipActive]}
-                    onPress={() => updateField(selectedDateKey, 'kategori', active ? '' : item.key)}
+                    style={styles.kazanimOneriCard}
+                    onPress={() => setKazanimlar(selectedDateKey, editingIndex, kazanimOnerisi)}
                     activeOpacity={0.85}
                   >
-                    <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{item.emoji} {item.label}</Text>
+                    <Text style={styles.kazanimOneriLabel}>💡 Bu etkinlik için önceden kullanılan kazanımlar</Text>
+                    <Text style={styles.kazanimOneriText}>{kazanimOnerisi.join(', ')}</Text>
+                    <Text style={styles.kazanimOneriHint}>Dokun, kullan</Text>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                ) : null}
 
-            {kazanimOnerisi ? (
-              <TouchableOpacity
-                style={styles.kazanimOneriCard}
-                onPress={() => setKazanimlar(selectedDateKey, kazanimOnerisi)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.kazanimOneriLabel}>💡 Bu etkinlik için önceden kullanılan kazanımlar</Text>
-                <Text style={styles.kazanimOneriText}>{kazanimOnerisi.join(', ')}</Text>
-                <Text style={styles.kazanimOneriHint}>Dokun, kullan</Text>
-              </TouchableOpacity>
+                <Text style={styles.modalLabel}>Kazanımlar</Text>
+                <View style={styles.kazanimGrid}>
+                  {KAZANIM_ONERILERI.map((etiket) => {
+                    const active = (selectedItem.kazanimlar || []).includes(etiket);
+                    return (
+                      <TouchableOpacity
+                        key={etiket}
+                        style={[styles.kazanimChip, active && styles.kazanimChipActive]}
+                        onPress={() => toggleKazanim(selectedDateKey, editingIndex, etiket)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.kazanimChipText, active && styles.kazanimChipTextActive]}>{etiket}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <TextInput
+                  value={customKazanimText}
+                  onChangeText={setCustomKazanimText}
+                  placeholder="+ Özel kazanım ekle (yazıp Enter'a bas)"
+                  placeholderTextColor={THEME.muted}
+                  style={styles.modalInput}
+                  onSubmitEditing={() => {
+                    const metin = customKazanimText.trim();
+                    if (!metin) return;
+                    const mevcut = selectedItem.kazanimlar || [];
+                    if (!mevcut.includes(metin)) setKazanimlar(selectedDateKey, editingIndex, [...mevcut, metin]);
+                    setCustomKazanimText('');
+                  }}
+                  returnKeyType="done"
+                />
+
+                <TextInput
+                  value={selectedItem.aciklama}
+                  onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'aciklama', text)}
+                  placeholder="Açıklama (opsiyonel)"
+                  placeholderTextColor={THEME.muted}
+                  style={styles.modalInput}
+                  multiline
+                />
+              </>
             ) : null}
-
-            <Text style={styles.modalLabel}>Kazanımlar</Text>
-            <View style={styles.kazanimGrid}>
-              {KAZANIM_ONERILERI.map((etiket) => {
-                const active = (selectedValue.kazanimlar || []).includes(etiket);
-                return (
-                  <TouchableOpacity
-                    key={etiket}
-                    style={[styles.kazanimChip, active && styles.kazanimChipActive]}
-                    onPress={() => toggleKazanim(selectedDateKey, etiket)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.kazanimChipText, active && styles.kazanimChipTextActive]}>{etiket}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <TextInput
-              value={customKazanimText}
-              onChangeText={setCustomKazanimText}
-              placeholder="+ Özel kazanım ekle (yazıp Enter'a bas)"
-              placeholderTextColor={THEME.muted}
-              style={styles.modalInput}
-              onSubmitEditing={() => {
-                const metin = customKazanimText.trim();
-                if (!metin) return;
-                const mevcut = selectedValue.kazanimlar || [];
-                if (!mevcut.includes(metin)) setKazanimlar(selectedDateKey, [...mevcut, metin]);
-                setCustomKazanimText('');
-              }}
-              returnKeyType="done"
-            />
-
-            <TextInput
-              value={selectedValue.aciklama}
-              onChangeText={(text) => updateField(selectedDateKey, 'aciklama', text)}
-              placeholder="Açıklama (opsiyonel)"
-              placeholderTextColor={THEME.muted}
-              style={styles.modalInput}
-              multiline
-            />
 
             {hasScheduleContent(selectedValue) ? (
               <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>
