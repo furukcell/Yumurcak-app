@@ -1057,3 +1057,116 @@ exports.checkBirthdaysDaily = functions
     await Promise.all(tasks);
     return null;
   });
+
+// ============================================================
+// FAZ 18 — Galeri ve yemek fotoğrafları otomatik temizlik
+// Galeri/yemek fotoğrafları uygulamada 24 saat sonra zaten gizleniyor
+// (client tarafında filtreleniyor). Ama Storage + Realtime DB'de
+// kalıcı olarak duruyorlardı. Bu iki zamanlanmış fonksiyon, yüklenmeden
+// 48 saat (2 gün) sonra hem Storage dosyalarını hem de ilgili DB
+// kayıtlarını temizler.
+// ============================================================
+
+const CLEANUP_AFTER_MS = 48 * 60 * 60 * 1000; // 2 gün
+
+async function deleteStorageFileSafe(path) {
+  if (!path) return;
+  try {
+    await admin.storage().bucket().file(path).delete();
+  } catch (error) {
+    // Dosya zaten silinmişse (404) sorun değil, sessizce geç.
+    if (error?.code !== 404 && error?.code !== 'storage/object-not-found') {
+      console.warn('Storage dosyası silinemedi:', path, error?.message || error);
+    }
+  }
+}
+
+exports.cleanupExpiredGalleryDaily = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every day 04:00')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const now = Date.now();
+    const snapshot = await admin.database().ref('galeri').once('value');
+    const gallery = snapshot.val() || {};
+
+    const tasks = Object.entries(gallery).map(async ([galleryId, item = {}]) => {
+      const createdAt = Number(item.createdAt || 0);
+      if (!createdAt || now - createdAt < CLEANUP_AFTER_MS) return;
+
+      const mediaItems = Array.isArray(item.mediaItems)
+        ? item.mediaItems
+        : Object.values(item.mediaItems || {});
+
+      // Storage'daki tüm medya dosyalarını sil.
+      await Promise.all([
+        ...mediaItems.map((media) => deleteStorageFileSafe(media?.storagePath)),
+        deleteStorageFileSafe(item.storagePath),
+      ]);
+
+      // Realtime DB kayıtlarını (ana kayıt + index node'ları) sil.
+      const childIds = Array.isArray(item.cocukIds)
+        ? item.cocukIds
+        : arr(item.cocukIds || item.cocukId || item.studentId);
+
+      await Promise.all([
+        admin.database().ref(`galeri/${galleryId}`).remove(),
+        item.kresId
+          ? admin.database().ref(`kresGalerileri/${item.kresId}/${galleryId}`).remove().catch(() => null)
+          : Promise.resolve(),
+        (item.classId || item.sinifId)
+          ? admin.database().ref(`sinifGalerileri/${item.classId || item.sinifId}/${galleryId}`).remove().catch(() => null)
+          : Promise.resolve(),
+        ...childIds.map((childId) =>
+          admin.database().ref(`cocukGalerileri/${childId}/${galleryId}`).remove().catch(() => null)
+        ),
+      ]);
+
+      console.log(`Süresi dolan galeri kaydı silindi: ${galleryId}`);
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
+
+exports.cleanupExpiredMealPhotosDaily = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every day 04:15')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const now = Date.now();
+    const snapshot = await admin.database().ref('yemekListeleri').once('value');
+    const lists = snapshot.val() || {};
+
+    const tasks = [];
+
+    Object.entries(lists).forEach(([listId, item = {}]) => {
+      const ogunler = item.ogunler || {};
+
+      Object.entries(ogunler).forEach(([mealKey, meal = {}]) => {
+        const fotoPath = meal?.fotoPath;
+        if (!fotoPath) return;
+
+        // Fotoğrafın ne zaman yüklendiğini bulmak için önce öğünün
+        // kendi updatedAt'ine, o yoksa listenin createdAt'ine bak.
+        const uploadedAt = Number(meal.updatedAt || item.createdAt || 0);
+        if (!uploadedAt || now - uploadedAt < CLEANUP_AFTER_MS) return;
+
+        tasks.push(
+          deleteStorageFileSafe(fotoPath).then(() =>
+            admin
+              .database()
+              .ref(`yemekListeleri/${listId}/ogunler/${mealKey}`)
+              .update({ fotoUrl: '', fotoPath: '' })
+          )
+        );
+
+        console.log(`Süresi dolan yemek fotoğrafı silindi: ${listId}/${mealKey}`);
+      });
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
