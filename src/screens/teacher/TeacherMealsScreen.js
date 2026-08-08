@@ -867,8 +867,8 @@ export default function TeacherMealsScreen() {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{monthlySelectedDay?.label || ''}</Text>
-              <TouchableOpacity onPress={() => setMonthlySelectedDateKey('')} activeOpacity={0.8}>
-                <Text style={styles.modalClose}>Kapat</Text>
+              <TouchableOpacity onPress={() => setMonthlySelectedDateKey('')} activeOpacity={0.8} style={styles.modalCloseButton}>
+                <Text style={styles.modalCloseCheck}>✓</Text>
               </TouchableOpacity>
             </View>
 
@@ -966,6 +966,8 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
+  modalCloseButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: THEME.green, alignItems: 'center', justifyContent: 'center' },
+  modalCloseCheck: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
   modalInput: { minHeight: 46, backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, paddingVertical: 10, color: THEME.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
   modalLabel: { fontSize: 12, fontWeight: '900', color: THEME.muted, marginBottom: 8, textTransform: 'uppercase' },
   modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
