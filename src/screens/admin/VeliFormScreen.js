@@ -140,7 +140,7 @@ export default function VeliFormScreen() {
   return (
     <View style={s.screen}>
       <AppSuccessToast visible={successToast} message={veliId ? 'Veli güncellendi' : 'Veli kaydedildi'} onHide={() => setSuccessToast(false)} />
-       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView style={s.container}>
         <View style={s.form}>
           <View style={s.field}><Text style={s.label}>Kullanıcı Adı *</Text><TextInput style={s.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder="Örn: veli1" placeholderTextColor="#999" autoCapitalize="none" /></View>
