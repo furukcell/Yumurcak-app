@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import {
   endBefore,
   get,
@@ -293,11 +293,6 @@ export default function MessageDetailScreen() {
 
   return (
     <View style={[styles.safeArea, { paddingTop: insets.top }]}>
-      <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
             <Text style={styles.backArrow}>‹</Text>
@@ -387,36 +382,37 @@ export default function MessageDetailScreen() {
             )}
         </View>
 
-        <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
-          <View style={styles.inputBar}>
-            <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
-              <TextInput
-                ref={inputRef}
-                style={styles.input}
-                value={text}
-                onChangeText={setText}
-                placeholder="Mesaj yaz..."
-                placeholderTextColor="#999"
-                multiline
-                editable={!sending}
-                pointerEvents="auto"
-                textAlignVertical="top"
-                blurOnSubmit={false}
-                underlineColorAndroid="transparent"
-              />
-            </TouchableOpacity>
+        <KeyboardStickyView offset={{ closed: insets.bottom, opened: 0 }}>
+          <View style={styles.inputOuter} pointerEvents="box-none">
+            <View style={styles.inputBar}>
+              <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
+                <TextInput
+                  ref={inputRef}
+                  style={styles.input}
+                  value={text}
+                  onChangeText={setText}
+                  placeholder="Mesaj yaz..."
+                  placeholderTextColor="#999"
+                  multiline
+                  editable={!sending}
+                  pointerEvents="auto"
+                  textAlignVertical="top"
+                  blurOnSubmit={false}
+                  underlineColorAndroid="transparent"
+                />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
-              onPress={sendMessage}
-              disabled={!text.trim() || sending}
-              activeOpacity={0.85}
-            >
-              {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.sendText}>Gönder</Text>}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
+                onPress={sendMessage}
+                disabled={!text.trim() || sending}
+                activeOpacity={0.85}
+              >
+                {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.sendText}>Gönder</Text>}
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardStickyView>
     </View>
   );
 }
