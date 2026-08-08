@@ -98,11 +98,16 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
         </tr>`;
     }
 
+    // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
+    const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
+    const etkinlikText = etkinlikler.map((it) => it?.etkinlik || '').filter(Boolean).join(', ');
+    const aciklamaText = etkinlikler.map((it) => it?.aciklama || '').filter(Boolean).join(' · ');
+
     return `
       <tr>
         <td>${escapeHtml(dateLabel)}<br/><span class="weekday">${escapeHtml(day)}</span></td>
-        <td>${escapeHtml(item.etkinlik || '')}</td>
-        <td>${escapeHtml(item.aciklama || '')}</td>
+        <td>${escapeHtml(etkinlikText)}</td>
+        <td>${escapeHtml(aciklamaText)}</td>
       </tr>`;
   }).join('');
 
