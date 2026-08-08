@@ -326,7 +326,7 @@ export default function TeacherMessagesScreen() {
       <Modal visible={newMessageOpen} transparent animationType="slide" onRequestClose={() => setNewMessageOpen(false)}>
         <View style={styles.drawerOverlay}>
           <TouchableOpacity style={styles.drawerBackdrop} activeOpacity={1} onPress={() => setNewMessageOpen(false)} />
-          <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.drawerSheet}>
             <View style={styles.drawerHandle} />
             <View style={styles.drawerHeader}>
