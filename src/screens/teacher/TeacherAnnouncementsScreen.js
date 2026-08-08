@@ -218,7 +218,7 @@ export default function TeacherAnnouncementsScreen() {
         rightText={showForm ? 'Kapat' : '+ Ekle'}
         onRightPress={showForm ? () => { setShowForm(false); resetForm(); } : openCreateForm}
       />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.filterRow}>
           <FilterChip active={filter === 'all'} label="📣 Tümü" onPress={() => setFilter('all')} />
