@@ -691,12 +691,6 @@ const MEAL_VERB_PHRASES = {
   yemedi: 'pek iştahlı değildi',
 };
 
-const MEAL_EMOJI = {
-  bitirdi: '🙂',
-  az_yedi: '😐',
-  yemedi: '😕',
-};
-
 const MEAL_ORDER = { bitirdi: 0, az_yedi: 1, yemedi: 2 };
 
 function joinTurkish(list) {
@@ -708,11 +702,6 @@ function joinTurkish(list) {
 function capitalizeFirst(text) {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function getMoodEmoji(mood) {
-  const found = MOOD_LISTESI.find((m) => m.label.toLowerCase() === String(mood || '').toLowerCase());
-  return found?.emoji || '';
 }
 
 // Bugünün öğün durumlarını dünkü ile kıyaslar; belirgin bir fark yoksa
@@ -741,20 +730,19 @@ function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsS
 
   // 1) Ruh hali — çocuğun adıyla açılış cümlesi
   if (mood && mood !== 'Bekleniyor') {
-    const emoji = getMoodEmoji(mood);
-    sentences.push(`${namePrefix} ${emoji ? emoji + ' ' : ''}${mood.toLowerCase()} görünüyordu.`);
+    sentences.push(`${namePrefix} ${mood.toLowerCase()} görünüyordu.`);
     openerUsed = true;
   }
 
-  // 2) Öğünler — önce iyi geçenler, sonra iştahsız olanlar; her biri kendi
-  // emojisi ve yumuşak bir ifadeyle, tek tek anlatılır.
+  // 2) Öğünler — önce iyi geçenler, sonra iştahsız olanlar; her biri
+  // yumuşak bir ifadeyle, tek tek anlatılır.
   const mealFragments = mealsSummary
     .filter((item) => MEAL_VERB_PHRASES[item.status])
     .sort((a, b) => MEAL_ORDER[a.status] - MEAL_ORDER[b.status])
     .map((item) => {
       const place = MEAL_LOCATIVE[item.key] || item.label;
       const menuPart = item.menu ? ` (${item.menu})` : '';
-      return `${MEAL_EMOJI[item.status]} ${place}${menuPart} ${MEAL_VERB_PHRASES[item.status]}`;
+      return `${place}${menuPart} ${MEAL_VERB_PHRASES[item.status]}`;
     });
 
   if (mealFragments.length > 0) {
@@ -768,7 +756,7 @@ function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsS
 
   // 3) Uyku bilgisi
   if (sleep && sleep !== 'Bekleniyor') {
-    const sleepText = /saat/i.test(sleep) ? `😴 ${sleep} uyudu.` : `😴 Uyku durumu: ${sleep}.`;
+    const sleepText = /saat/i.test(sleep) ? `${sleep} uyudu.` : `Uyku durumu: ${sleep}.`;
     sentences.push(openerUsed ? sleepText : `${namePrefix} ${sleepText}`);
     openerUsed = true;
   }
