@@ -174,7 +174,7 @@ export default function AdminServiceScreen({ navigation }) {
         <AppSuccessToast visible={successToast} message="Servis bilgisi güncellendi" onHide={() => setSuccessToast(false)} />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
          >
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
