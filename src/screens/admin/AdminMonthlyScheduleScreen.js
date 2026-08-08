@@ -16,6 +16,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
+import ActivityChipRow from '../../components/ActivityChipRow';
 import ActivityLibraryPicker from '../../components/ActivityLibraryPicker';
 import ActivityAutocompleteInput from '../../components/ActivityAutocompleteInput';
 import { ETKINLIK_KATEGORILERI } from '../../constants';
@@ -38,16 +39,28 @@ import {
 const NODE_PATH = 'dersProgramlari';
 const KAYNAK = 'admin_aylik';
 
-function emptyScheduleValue() {
+// FAZ — Çoklu Etkinlik Girişi: bir gün artık TEK etkinlik değil, her biri
+// kendi kategori/tema/açıklamasını taşıyan bir "etkinlikler" dizisi.
+function emptyActivityItem() {
   return { etkinlik: '', aciklama: '', kategori: '', tema: '' };
+}
+
+function hasActivityItemContent(item) {
+  return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
+}
+
+function emptyScheduleValue() {
+  return { etkinlikler: [] };
 }
 
 function hasScheduleContent(value) {
   if (!value) return false;
-  return !!(String(value.etkinlik || '').trim() || String(value.aciklama || '').trim());
+  const list = Array.isArray(value.etkinlikler) ? value.etkinlikler : [];
+  return list.some(hasActivityItemContent);
 }
 
 function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now, sinifId }) {
+  const list = Array.isArray(value.etkinlikler) ? value.etkinlikler : [];
   return {
     kresId,
     sinifId: sinifId || null,
@@ -56,10 +69,12 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
     baslik: `${monthLabel} Ders Programı`,
-    etkinlik: String(value.etkinlik || '').trim(),
-    aciklama: String(value.aciklama || '').trim(),
-    kategori: value.kategori || null,
-    tema: value.tema || null,
+    etkinlikler: list.filter(hasActivityItemContent).map((item) => ({
+      etkinlik: String(item.etkinlik || '').trim(),
+      aciklama: String(item.aciklama || '').trim(),
+      kategori: item.kategori || null,
+      tema: item.tema || null,
+    })),
     aktif: true,
     createdAt: now,
     updatedAt: now,
@@ -68,7 +83,8 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
 
 function schedulePreview(value) {
   if (!hasScheduleContent(value)) return '';
-  return [value?.etkinlik, value?.aciklama].filter(Boolean).join(' · ');
+  const list = Array.isArray(value.etkinlikler) ? value.etkinlikler : [];
+  return list.map((item) => item?.etkinlik).filter(Boolean).join(' · ');
 }
 
 export default function AdminMonthlyScheduleScreen({ navigation }) {
@@ -108,6 +124,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
   const [values, setValues] = useState(() => createInitialValues(days, emptyScheduleValue));
   const [view, setView] = useState('list');
   const [selectedDateKey, setSelectedDateKey] = useState('');
+  const [editingIndex, setEditingIndex] = useState(-1);
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
@@ -144,10 +161,14 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       kaynak: KAYNAK,
       matchExtra: forClass(sinifId),
       valueMapper: (record) => ({
-        etkinlik: record.etkinlik || '',
-        aciklama: record.aciklama || '',
-        kategori: record.kategori || '',
-        tema: record.tema || '',
+        etkinlikler: Array.isArray(record.etkinlikler) && record.etkinlikler.length > 0
+          ? record.etkinlikler.map((item) => ({
+              etkinlik: item?.etkinlik || '',
+              aciklama: item?.aciklama || '',
+              kategori: item?.kategori || '',
+              tema: item?.tema || '',
+            }))
+          : [],
       }),
     }).then((loadedValues) => {
       if (cancelled) return;
@@ -170,31 +191,57 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
     setSelectedDateKey('');
   }
 
-  function updateField(dateKey, field, text) {
-    setValues((prev) => ({
-      ...prev,
-      [dateKey]: { ...(prev[dateKey] || emptyScheduleValue()), [field]: text },
-    }));
+  // FAZ — Çoklu Etkinlik Girişi: artık dateKey + o günün etkinlikler
+  // dizisindeki INDEX üzerinden çalışıyoruz.
+  function updateItemField(dateKey, index, field, text) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const list = [...(current.etkinlikler || [])];
+      if (!list[index]) return prev;
+      list[index] = { ...list[index], [field]: text };
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
+    });
   }
 
   // Autocomplete'ten bir öneri seçilince kategori/tema'yı (öğretmen henüz
   // kendi seçmediyse) havuzdan gelen değerle otomatik dolduruyoruz.
-  function handleActivitySuggestion(dateKey, item) {
+  function handleActivitySuggestion(dateKey, index, item) {
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
-      return {
-        ...prev,
-        [dateKey]: {
-          ...current,
-          kategori: current.kategori || item.kategori || '',
-          tema: current.tema || item.tema || '',
-        },
+      const list = [...(current.etkinlikler || [])];
+      if (!list[index]) return prev;
+      list[index] = {
+        ...list[index],
+        kategori: list[index].kategori || item.kategori || '',
+        tema: list[index].tema || item.tema || '',
       };
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
     });
+  }
+
+  function addActivityItem(dateKey) {
+    let newIndex = 0;
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const existing = current.etkinlikler || [];
+      newIndex = existing.length;
+      return { ...prev, [dateKey]: { ...current, etkinlikler: [...existing, emptyActivityItem()] } };
+    });
+    setEditingIndex(newIndex);
+  }
+
+  function removeActivityItem(dateKey, index) {
+    setValues((prev) => {
+      const current = prev[dateKey] || emptyScheduleValue();
+      const list = (current.etkinlikler || []).filter((_, i) => i !== index);
+      return { ...prev, [dateKey]: { ...current, etkinlikler: list } };
+    });
+    setEditingIndex((prev) => (prev === index ? -1 : prev > index ? prev - 1 : prev));
   }
 
   function clearDay(dateKey) {
     setValues((prev) => ({ ...prev, [dateKey]: emptyScheduleValue() }));
+    setEditingIndex(-1);
   }
 
   const daysWithContent = useMemo(
@@ -216,10 +263,14 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         days,
         matchExtra: forClass(sinifId),
         valueMapper: (prevItem) => ({
-          etkinlik: prevItem?.etkinlik || '',
-          aciklama: prevItem?.aciklama || '',
-          kategori: prevItem?.kategori || '',
-          tema: prevItem?.tema || '',
+          etkinlikler: Array.isArray(prevItem?.etkinlikler) && prevItem.etkinlikler.length > 0
+            ? prevItem.etkinlikler.map((item) => ({
+                etkinlik: item?.etkinlik || '',
+                aciklama: item?.aciklama || '',
+                kategori: item?.kategori || '',
+                tema: item?.tema || '',
+              }))
+            : [],
         }),
       });
 
@@ -389,7 +440,11 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
             view={view}
             onChangeView={setView}
             selectedDateKey={selectedDateKey}
-            onSelectDay={setSelectedDateKey}
+            onSelectDay={(dateKey) => {
+              setSelectedDateKey(dateKey);
+              const list = values[dateKey]?.etkinlikler || [];
+              setEditingIndex(list.length > 0 ? 0 : -1);
+            }}
             theme={theme}
             renderDayPreview={(day) => {
               const preview = schedulePreview(values[day.dateKey]);
@@ -423,54 +478,67 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
-                <TouchableOpacity onPress={() => setSelectedDateKey('')} activeOpacity={0.8}>
+                <TouchableOpacity onPress={() => { setSelectedDateKey(''); setEditingIndex(-1); }} activeOpacity={0.8}>
                   <Text style={styles.modalClose}>Kapat</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.libraryRow}>
-                <ActivityLibraryPicker
-                  yasGrubu={yasGrubu}
-                  initialKategori={selectedValue.kategori || ETKINLIK_KATEGORILERI[0].key}
-                  onSelect={(ad) => updateField(selectedDateKey, 'etkinlik', ad)}
-                  theme={theme}
-                />
-              </View>
-
-              <ActivityAutocompleteInput
-                value={selectedValue.etkinlik}
-                onChangeText={(text) => updateField(selectedDateKey, 'etkinlik', text)}
-                onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, item)}
-                placeholder="Etkinlik (örn: Parmak Boyası)"
-                style={styles.modalInput}
+              <ActivityChipRow
+                items={selectedValue.etkinlikler}
+                activeIndex={editingIndex}
+                onSelect={setEditingIndex}
+                onAdd={() => addActivityItem(selectedDateKey)}
+                onRemove={(index) => removeActivityItem(selectedDateKey, index)}
                 theme={theme}
               />
 
-              <Text style={styles.modalLabel}>Kategori</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-                {ETKINLIK_KATEGORILERI.map((item) => {
-                  const active = selectedValue.kategori === item.key;
-                  return (
-                    <TouchableOpacity
-                      key={item.key}
-                      style={[styles.kategoriChip, active && styles.kategoriChipActive]}
-                      onPress={() => updateField(selectedDateKey, 'kategori', active ? '' : item.key)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{item.emoji} {item.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+              {editingIndex >= 0 && selectedValue.etkinlikler[editingIndex] ? (
+                <>
+                  <View style={styles.libraryRow}>
+                    <ActivityLibraryPicker
+                      yasGrubu={yasGrubu}
+                      initialKategori={selectedValue.etkinlikler[editingIndex].kategori || ETKINLIK_KATEGORILERI[0].key}
+                      onSelect={(ad) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', ad)}
+                      theme={theme}
+                    />
+                  </View>
 
-              <TextInput
-                value={selectedValue.aciklama}
-                onChangeText={(text) => updateField(selectedDateKey, 'aciklama', text)}
-                placeholder="Açıklama (opsiyonel)"
-                placeholderTextColor={theme.muted}
-                style={styles.modalInput}
-                multiline
-              />
+                  <ActivityAutocompleteInput
+                    value={selectedValue.etkinlikler[editingIndex].etkinlik}
+                    onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)}
+                    onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)}
+                    placeholder="Etkinlik (örn: Parmak Boyası)"
+                    style={styles.modalInput}
+                    theme={theme}
+                  />
+
+                  <Text style={styles.modalLabel}>Kategori</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {ETKINLIK_KATEGORILERI.map((item) => {
+                      const active = selectedValue.etkinlikler[editingIndex].kategori === item.key;
+                      return (
+                        <TouchableOpacity
+                          key={item.key}
+                          style={[styles.kategoriChip, active && styles.kategoriChipActive]}
+                          onPress={() => updateItemField(selectedDateKey, editingIndex, 'kategori', active ? '' : item.key)}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{item.emoji} {item.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+
+                  <TextInput
+                    value={selectedValue.etkinlikler[editingIndex].aciklama}
+                    onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'aciklama', text)}
+                    placeholder="Açıklama (opsiyonel)"
+                    placeholderTextColor={theme.muted}
+                    style={styles.modalInput}
+                    multiline
+                  />
+                </>
+              ) : null}
 
               {hasScheduleContent(selectedValue) ? (
                 <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>

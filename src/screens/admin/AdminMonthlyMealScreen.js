@@ -10,7 +10,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
-import MealAutocompleteInput from '../../components/MealAutocompleteInput';
+import MealChipListInput from '../../components/MealChipListInput';
 import { createNotification } from '../../services/notificationCenter';
 import {
   getDaysOfMonth,
@@ -28,13 +28,21 @@ import {
 const NODE_PATH = 'yemekListeleri';
 const KAYNAK = 'admin_aylik';
 
+// FAZ — Çoklu Yemek Girişi: her öğün artık tek metin değil, yemek adlarından
+// oluşan bir dizi (chip listesi). mealLibrary havuzuna her yemek AYRI yazılır.
+function toMealArray(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  const text = String(value || '').trim();
+  return text ? [text] : [];
+}
+
 function emptyMealValue() {
-  return { kahvalti: '', ogle: '', araOgun: '' };
+  return { kahvalti: [], ogle: [], araOgun: [] };
 }
 
 function hasMealContent(value) {
   if (!value) return false;
-  return !!(String(value.kahvalti || '').trim() || String(value.ogle || '').trim() || String(value.araOgun || '').trim());
+  return toMealArray(value.kahvalti).length > 0 || toMealArray(value.ogle).length > 0 || toMealArray(value.araOgun).length > 0;
 }
 
 function buildMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now }) {
@@ -47,9 +55,9 @@ function buildMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now
     tarih: day.dateKey,
     baslik: `${monthLabel} Yemek Listesi`,
     ogunler: {
-      kahvalti: String(value.kahvalti || '').trim(),
-      ogle: String(value.ogle || '').trim(),
-      araOgun: String(value.araOgun || '').trim(),
+      kahvalti: toMealArray(value.kahvalti),
+      ogle: toMealArray(value.ogle),
+      araOgun: toMealArray(value.araOgun),
     },
     aktif: true,
     createdAt: now,
@@ -59,7 +67,7 @@ function buildMealRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now
 
 function mealPreview(value) {
   if (!hasMealContent(value)) return '';
-  return [value?.kahvalti, value?.ogle, value?.araOgun].filter(Boolean).join(' · ');
+  return [...toMealArray(value?.kahvalti), ...toMealArray(value?.ogle), ...toMealArray(value?.araOgun)].join(' · ');
 }
 
 export default function AdminMonthlyMealScreen({ navigation }) {
@@ -111,9 +119,9 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       monthKey,
       kaynak: KAYNAK,
       valueMapper: (record) => ({
-        kahvalti: record.ogunler?.kahvalti || '',
-        ogle: record.ogunler?.ogle || '',
-        araOgun: record.ogunler?.araOgun || '',
+        kahvalti: toMealArray(record.ogunler?.kahvalti),
+        ogle: toMealArray(record.ogunler?.ogle),
+        araOgun: toMealArray(record.ogunler?.araOgun),
       }),
       onError: (error) => {
         if (cancelled) return;
@@ -144,10 +152,10 @@ export default function AdminMonthlyMealScreen({ navigation }) {
     setSelectedDateKey('');
   }
 
-  function updateField(dateKey, field, text) {
+  function updateMealList(dateKey, field, list) {
     setValues((prev) => ({
       ...prev,
-      [dateKey]: { ...(prev[dateKey] || emptyMealValue()), [field]: text },
+      [dateKey]: { ...(prev[dateKey] || emptyMealValue()), [field]: list },
     }));
   }
 
@@ -173,9 +181,9 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         currentMonthDate: monthDate,
         days,
         valueMapper: (prevItem) => ({
-          kahvalti: prevItem?.ogunler?.kahvalti || '',
-          ogle: prevItem?.ogunler?.ogle || '',
-          araOgun: prevItem?.ogunler?.araOgun || '',
+          kahvalti: toMealArray(prevItem?.ogunler?.kahvalti),
+          ogle: toMealArray(prevItem?.ogunler?.ogle),
+          araOgun: toMealArray(prevItem?.ogunler?.araOgun),
         }),
       });
 
@@ -377,28 +385,30 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
 
-              <MealAutocompleteInput
+              <Text style={styles.modalLabel}>Kahvaltı</Text>
+              <MealChipListInput
                 ogun="kahvalti"
-                value={selectedValue.kahvalti}
-                onChangeText={(text) => updateField(selectedDateKey, 'kahvalti', text)}
-                placeholder="Kahvaltı"
-                style={styles.modalInput}
+                values={selectedValue.kahvalti}
+                onChange={(list) => updateMealList(selectedDateKey, 'kahvalti', list)}
+                placeholder="Kahvaltı yemeği ekle"
                 theme={theme}
               />
-              <MealAutocompleteInput
+
+              <Text style={styles.modalLabel}>Öğle Yemeği</Text>
+              <MealChipListInput
                 ogun="ogle"
-                value={selectedValue.ogle}
-                onChangeText={(text) => updateField(selectedDateKey, 'ogle', text)}
-                placeholder="Öğle yemeği"
-                style={styles.modalInput}
+                values={selectedValue.ogle}
+                onChange={(list) => updateMealList(selectedDateKey, 'ogle', list)}
+                placeholder="Öğle yemeği ekle"
                 theme={theme}
               />
-              <MealAutocompleteInput
+
+              <Text style={styles.modalLabel}>Ara Öğün</Text>
+              <MealChipListInput
                 ogun="araOgun"
-                value={selectedValue.araOgun}
-                onChangeText={(text) => updateField(selectedDateKey, 'araOgun', text)}
-                placeholder="Ara öğün"
-                style={styles.modalInput}
+                values={selectedValue.araOgun}
+                onChange={(list) => updateMealList(selectedDateKey, 'araOgun', list)}
+                placeholder="Ara öğün ekle"
                 theme={theme}
               />
 
@@ -451,6 +461,7 @@ function createStyles(theme) {
     modalTitle: { fontSize: 18, fontWeight: '900', color: theme.text },
     modalClose: { color: theme.primary, fontWeight: '900' },
     modalInput: { minHeight: 46, backgroundColor: theme.bg, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 10, color: theme.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
+    modalLabel: { fontSize: 12, fontWeight: '900', color: theme.muted, marginBottom: 8, textTransform: 'uppercase' },
     modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
     modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
   });
