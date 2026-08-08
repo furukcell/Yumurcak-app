@@ -50,7 +50,7 @@ Güncel öncelik sırası:
 - Fotoğraf/video yükleme, çoklu medya, otomatik optimizasyon (1920px/%80 kalite foto, ~720p/50MB video)
 - 24 saatlik `expiresAt` görünürlük kuralı
 - Uygulama içi görüntüleme/oynatma, cihaz galerisine kaydetme
-- **Kalan opsiyonel iş:** Storage'dan fiziksel silme için scheduled Cloud Function (şu an sadece uygulama içi gizleme var)
+- **Otomatik temizlik (TAMAMLANDI):** `cleanupExpiredGalleryDaily` scheduled Cloud Function — yüklenmeden 48 saat (2 gün) sonra galeri kaydını hem Storage'dan hem Realtime Database'den (ana kayıt + `kresGalerileri`/`sinifGalerileri`/`cocukGalerileri` index node'ları) otomatik siler. Aynı zamanda yemek fotoğrafları için `cleanupExpiredMealPhotosDaily` da eklendi (bkz. README.md → Aktif Cloud Functions).
 
 ### İletişim ve Operasyon
 
