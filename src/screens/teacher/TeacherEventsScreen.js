@@ -91,7 +91,7 @@ export default function TeacherEventsScreen() {
         rightText={showForm ? 'Kapat' : '+ Ekle'}
         onRightPress={() => setShowForm((v) => !v)}
       />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {showForm ? (
           <View style={styles.formCard}>
