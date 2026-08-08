@@ -51,17 +51,42 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
+
+    let hideTimeoutId = null;
+
     const hideAndroidNavigationBar = async () => {
       try {
-        await NavigationBar.setBehaviorAsync('overlay-swipe');
+        // Not: SDK 54'te edge-to-edge zorunlu olduğu için setBehaviorAsync,
+        // setBackgroundColorAsync ve setButtonStyleAsync artık etkisiz
+        // (Expo dokümantasyonu: "supported only when edge-to-edge is disabled").
+        // Bu yüzden gizliliği addVisibilityListener ile kendimiz koruyoruz.
         await NavigationBar.setVisibilityAsync('hidden');
-        await NavigationBar.setBackgroundColorAsync('transparent');
-        await NavigationBar.setButtonStyleAsync('dark');
       } catch (error) {
         console.warn('Android navigation bar gizlenemedi:', error);
       }
     };
+
     hideAndroidNavigationBar();
+
+    const subscription = NavigationBar.addVisibilityListener(({ visibility }) => {
+      if (hideTimeoutId) {
+        clearTimeout(hideTimeoutId);
+        hideTimeoutId = null;
+      }
+      // Kullanıcı gezinme çubuğunu görünür kıldıysa (dokunma/kaydırma ile),
+      // 3 saniye sonra otomatik olarak tekrar gizle. Üst durum çubuğu
+      // (bildirim/saat alanı) bu mantığa dahil değil, o her zaman görünür kalır.
+      if (visibility === 'visible') {
+        hideTimeoutId = setTimeout(() => {
+          hideAndroidNavigationBar();
+        }, 3000);
+      }
+    });
+
+    return () => {
+      if (hideTimeoutId) clearTimeout(hideTimeoutId);
+      subscription.remove();
+    };
   }, []);
 
   return (
