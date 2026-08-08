@@ -2,7 +2,7 @@
 
 Bu dosya, önceden ayrı ayrı tutulan üç yol haritasının (ROADMAP.md, YUMURCAK_YOL_HARITASI.md, dökümanlar modülü yol haritası) harmanlanmış, tek ve güncel halidir.
 
-> Son güncelleme: 6 Ağustos 2026
+> Son güncelleme: 8 Ağustos 2026
 
 ---
 
