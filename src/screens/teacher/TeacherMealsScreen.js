@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, Platform, Modal } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ref, push, remove, update, onValue } from 'firebase/database';
+import { ref, push, remove, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { database, storage } from '../../config/firebase';
@@ -267,8 +267,9 @@ export default function TeacherMealsScreen() {
       setMonthlyPublishedCount(0);
       return undefined;
     }
+    const q = query(ref(database, MONTHLY_NODE_PATH), orderByChild('kresId'), equalTo(kresId));
     const unsub = onValue(
-      ref(database, MONTHLY_NODE_PATH),
+      q,
       (snap) => setMonthlyPublishedCount(countPublished(snap.val(), { kresId, monthKey, kaynak: MONTHLY_KAYNAK, matchExtra: forTeacherClass(currentClass.id) })),
       () => setMonthlyPublishedCount(0)
     );
