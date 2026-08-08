@@ -169,15 +169,19 @@ export default function TeacherMessagesScreen() {
       updatedAt: now,
     };
 
-    await update(ref(database, `mesajKonusmalari/${conversationId}`), conversationMeta);
     setNewMessageOpen(false);
-
     navigation.navigate('MessageDetail', {
       conversationId,
       conversationMeta,
       title: kurum?.yoneticiAd || 'Yönetim',
       subtitle: kurum?.ad || 'Kurum yönetimi',
     });
+
+    try {
+      await update(ref(database, `mesajKonusmalari/${conversationId}`), conversationMeta);
+    } catch (error) {
+      console.warn('Konuşma meta verisi güncellenemedi:', error?.message || error);
+    }
   };
 
   const openParentChat = async (contact) => {
@@ -211,16 +215,29 @@ export default function TeacherMessagesScreen() {
       updatedAt: now,
     };
 
-    await update(ref(database, `mesajKonusmalari/${conversationId}`), conversationMeta);
+    // FAZ FIX — "Mesajlara girince veli ile sohbete tıklayınca tepki yok
+    // hiç girmiyor" hatası: burada daha önce hiç var olmayan bir
+    // "drawerQuery" state'ini setDrawerQuery('') ile sıfırlamaya
+    // çalışıyorduk. drawerQuery hiç tanımlı değildi, bu yüzden bu satır
+    // her tıklamada ReferenceError fırlatıp navigation.navigate'e hiç
+    // ulaşılmasını engelliyordu — kullanıcı tıklıyor ama ekran hiç açılmıyordu.
+    // Ayrıca navigasyonu artık veritabanı yazma işleminin (await update)
+    // başarılı olmasına bağımlı tutmuyoruz: önce sohbete giriyoruz, meta
+    // güncellemesi arka planda devam ediyor — bir ağ/izin sorunu olsa bile
+    // tıklama artık "tepkisiz" kalmıyor.
     setNewMessageOpen(false);
-    setDrawerQuery('');
-
     navigation.navigate('MessageDetail', {
       conversationId,
       conversationMeta,
       title: getUserName(contact.veli),
       subtitle: `${getChildName(contact.child)} velisi`,
     });
+
+    try {
+      await update(ref(database, `mesajKonusmalari/${conversationId}`), conversationMeta);
+    } catch (error) {
+      console.warn('Konuşma meta verisi güncellenemedi:', error?.message || error);
+    }
   };
 
   return (
