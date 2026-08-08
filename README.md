@@ -4,7 +4,7 @@ Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / Reac
 
 Proje şu an **Google Play'de yayında**. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri medya optimizasyonu eklenmiş; uyum, rozet, gelişim, sınıf ortalaması, dökümanlar/PDF sistemi ve bildirim kapsamı güncellenmiştir.
 
-> Son güncelleme: 6 Ağustos 2026
+> Son güncelleme: 8 Ağustos 2026
 
 ---
 
@@ -182,6 +182,7 @@ sendPushOnNotificationCreate
 createNotificationOnDailyReportCreate
 createNotificationOnGalleryCreate
 createNotificationOnPollCreate
+sendPollAnswerReminders
 createNotificationOnWeeklyBadgeWrite
 createNotificationOnAttendanceWrite
 createNotificationOnMealListCreate
@@ -190,6 +191,11 @@ createNotificationOnPhysicalDevelopmentCreate
 createNotificationOnAdaptationWrite
 updateActivityPoolOnScheduleWrite
 updateMealPoolOnMealWrite
+createNotificationOnAnnouncementCreate
+createNotificationOnEventCreate
+checkBirthdaysDaily
+cleanupExpiredGalleryDaily
+cleanupExpiredMealPhotosDaily
 ```
 
 Telefona push giden bildirimler:
@@ -210,6 +216,26 @@ pushTokenCount
 pushSentAt
 pushProvider
 pushError
+```
+
+---
+
+## Otomatik Temizlik (Scheduled Cleanup)
+
+Galeri ve yemek listesi fotoğrafları uygulamada 24 saat sonra client tarafında gizleniyor, ama Storage ve Realtime Database'de kalıcı olarak duruyordu. İki zamanlanmış (`pubsub.schedule`) Cloud Function bunu 48 saat (2 gün) sonra kalıcı olarak temizler:
+
+```txt
+cleanupExpiredGalleryDaily      → her gün 04:00 (Europe/Istanbul)
+cleanupExpiredMealPhotosDaily   → her gün 04:15 (Europe/Istanbul)
+```
+
+- **cleanupExpiredGalleryDaily:** `galeri/` altında `createdAt`'i 48 saatten eski olan kayıtları bulur; tüm `mediaItems` dosyalarını Storage'dan siler, ardından `galeri/{id}` kaydını ve `kresGalerileri`/`sinifGalerileri`/`cocukGalerileri` index node'larını Realtime Database'den kaldırır.
+- **cleanupExpiredMealPhotosDaily:** `yemekListeleri/` altındaki her öğünde (`ogunler/{mealKey}`) `fotoPath` var ve yüklenmesinin üzerinden 48 saat geçmişse, Storage'daki dosyayı siler ve sadece `fotoUrl`/`fotoPath` alanlarını temizler — öğün metni (`text`) silinmez.
+
+Manuel deploy (sadece bu iki fonksiyonu güncellemek için):
+
+```bash
+firebase deploy --only functions:cleanupExpiredGalleryDaily,functions:cleanupExpiredMealPhotosDaily
 ```
 
 ---
