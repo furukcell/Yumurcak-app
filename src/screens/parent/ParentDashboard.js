@@ -1,35 +1,80 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Image } from 'react-native';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../../config/firebase';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
 import AppNotificationButton from '../../components/AppNotificationButton';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { uyumGorunurMu } from '../../utils/uyum';
+import { getChildBirthDate, calculateChildAge } from '../../utils/childDates';
+
+function getPhysicalValue(item, key) {
+  const value = item?.[key];
+  if (typeof value === 'number') return value;
+  const text = String(value || '').replace(',', '.');
+  const match = text.match(/\d+(\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function formatMeasurement(item, key, suffix) {
+  const value = getPhysicalValue(item, key);
+  if (!value) return '-';
+  return `${value}${suffix}`;
+}
+
+function getSortableDate(item) {
+  const key = item?.tarih || item?.dateKey || '';
+  if (key) return new Date(key).getTime() || 0;
+  return Number(item?.createdAt || item?.updatedAt || 0);
+}
+
+function formatAllergySummary(raw) {
+  const tags = String(raw || '')
+    .split(/[,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (!tags.length) return { text: 'Yok', hasAllergy: false };
+  const shown = tags.slice(0, 2).join(', ');
+  const extra = tags.length > 2 ? ` +${tags.length - 2}` : '';
+  return { text: `${shown}${extra}`, hasAllergy: true };
+}
 
 export default function ParentDashboardScreen({ navigation }) {
   
 const base = useParentBase();
 const { theme } = useAppTheme();
 const styles = useMemo(() => createStyles(theme), [theme]);
-const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl, parentId, kresId } = base;
-const reports = useNodeList('gunlukRaporlar', kresId);
+const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl, parentId, kresId, sinif, ogretmen } = base;
+const physicalRaw = useNodeList('fizikselGelisim', kresId);
 const unreadMessages = useUnreadMessagesCount(parentId);
+const [medical, setMedical] = useState(null);
 
-  const childReports = useMemo(() => {
-    if (!selectedChild?.id) return [];
-    return reports
+useEffect(() => {
+  if (!selectedChild?.id) {
+    setMedical(null);
+    return undefined;
+  }
+  const r = ref(database, `medikalBilgiler/${selectedChild.id}`);
+  const unsub = onValue(r, (snap) => setMedical(snap.val()));
+  return () => unsub();
+}, [selectedChild?.id]);
+
+  const lastPhysical = useMemo(() => {
+    if (!selectedChild?.id) return null;
+    return physicalRaw
       .filter((item) => item.cocukId === selectedChild.id)
-      .sort((a, b) => String(b.tarih || '').localeCompare(String(a.tarih || '')));
-  }, [reports, selectedChild?.id]);
-
-  const todayReport = childReports[0];
+      .sort((a, b) => getSortableDate(b) - getSortableDate(a))[0] || null;
+  }, [physicalRaw, selectedChild?.id]);
 
   if (loading) return <LoadingScreen text="Veli ekranı hazırlanıyor..." />;
 
-  const getMood = () => todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || 'Mutlu';
-  const getMeal = () => todayReport?.yemekDurumu || (todayReport?.yemek ? 'İyi' : 'İyi');
-  const getSleep = () => todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || 'İyi');
+  const childAge = calculateChildAge(getChildBirthDate(selectedChild));
+  const sinifAdi = sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifAd || '';
+  const ogretmenAdi = `${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim();
+  const metaParts = [childAge, sinifAdi, ogretmenAdi].filter(Boolean);
+  const allergy = formatAllergySummary(medical?.alerjiler);
   const showUyumCard = selectedChild && uyumGorunurMu(selectedChild);
 
   const featuredActions = [
@@ -80,25 +125,38 @@ const unreadMessages = useUnreadMessagesCount(parentId);
         <Text style={styles.greetingSub}>Bilgi ve işlemlere buradan hızlıca ulaşabilirsin.</Text>
 
         {selectedChild ? (
-          <View style={styles.heroCard}>
-            <View style={styles.heroTop}>
-              <View style={styles.avatar}>
+          <View style={styles.idCard}>
+            <View style={styles.idTop}>
+              <View style={styles.idAvatar}>
                 {parentPhotoUrl ? (
-                  <Image source={{ uri: parentPhotoUrl }} style={styles.avatarImage} />
+                  <Image source={{ uri: parentPhotoUrl }} style={styles.idAvatarImage} />
                 ) : (
-                  <Text style={styles.avatarText}>👧</Text>
+                  <Text style={styles.idAvatarText}>👧</Text>
                 )}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.heroName}>{childName}</Text>
-                <Text style={styles.heroSub}>Bugünün özeti</Text>
+                <Text style={styles.idName} numberOfLines={1}>{childName}</Text>
+                <Text style={styles.idMeta} numberOfLines={1}>{metaParts.length ? metaParts.join(' · ') : kresAdi || 'Kreş öğrencisi'}</Text>
               </View>
             </View>
-            <View style={styles.summaryPanel}>
-              {renderSummaryItem(styles, '😊', 'Ruh Hali', getMood(), theme.orange)}
-              {renderSummaryItem(styles, '🍴', 'Yemek', getMeal(), theme.primary)}
-              {renderSummaryItem(styles, '🌙', 'Uyku', getSleep(), theme.blue)}
-              {renderSummaryItem(styles, '☑️', 'Yoklama', selectedChild ? 'Geldi' : '-', theme.green)}
+            <View style={styles.idStatsBar}>
+              <View style={styles.idStat}>
+                <Text style={styles.idStatIcon}>📏</Text>
+                <Text style={styles.idStatLabel}>BOY</Text>
+                <Text style={styles.idStatValue}>{formatMeasurement(lastPhysical, 'boy', ' cm')}</Text>
+              </View>
+              <View style={styles.idStatDivider} />
+              <View style={styles.idStat}>
+                <Text style={styles.idStatIcon}>⚖️</Text>
+                <Text style={styles.idStatLabel}>KİLO</Text>
+                <Text style={styles.idStatValue}>{formatMeasurement(lastPhysical, 'kilo', ' kg')}</Text>
+              </View>
+              <View style={styles.idStatDivider} />
+              <View style={styles.idStat}>
+                <Text style={styles.idStatIcon}>⚠️</Text>
+                <Text style={styles.idStatLabel}>ALERJİ</Text>
+                <Text style={[styles.idStatValue, allergy.hasAllergy && styles.idStatValueWarn]} numberOfLines={1}>{allergy.text}</Text>
+              </View>
             </View>
           </View>
         ) : (
@@ -146,16 +204,6 @@ const unreadMessages = useUnreadMessagesCount(parentId);
   );
 }
 
-function renderSummaryItem(styles, icon, label, value, color) {
-  return (
-    <View style={styles.summaryItem}>
-      <Text style={[styles.summaryIcon, { color }]}>{icon}</Text>
-      <Text style={styles.summaryLabel}>{label}</Text>
-      <Text style={styles.summaryValue}>{value}</Text>
-    </View>
-  );
-}
-
 const createStyles = (theme) => StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -173,18 +221,20 @@ const createStyles = (theme) => StyleSheet.create({
   profileImage: { width: 44, height: 44, borderRadius: 22 },
   greeting: { fontSize: 20, fontWeight: '900', color: theme.text, marginBottom: 4 },
   greetingSub: { fontSize: 13, color: theme.muted, marginBottom: 18 },
-  heroCard: { backgroundColor: theme.primary, borderRadius: 24, padding: 16, marginBottom: 24, shadowColor: theme.primary, shadowOpacity: 0.22, shadowRadius: 18, elevation: 6 },
-  heroTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 14, borderWidth: 3, borderColor: 'rgba(255,255,255,0.65)', overflow: 'hidden' },
-  avatarImage: { width: 76, height: 76, borderRadius: 38 },
-  avatarText: { fontSize: 36 },
-  heroName: { color: '#fff', fontSize: 21, fontWeight: '900' },
-  heroSub: { color: 'rgba(255,255,255,0.86)', fontSize: 14, marginTop: 4, fontWeight: '600' },
-  summaryPanel: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 18, padding: 10, flexDirection: 'row', justifyContent: 'space-between' },
-  summaryItem: { flex: 1, alignItems: 'center', paddingVertical: 6 },
-  summaryIcon: { fontSize: 20, marginBottom: 4 },
-  summaryLabel: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '700' },
-  summaryValue: { color: '#fff', fontSize: 13, fontWeight: '900', marginTop: 2, textAlign: 'center' },
+  idCard: { borderRadius: 24, marginBottom: 24, shadowColor: theme.primary, shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6, overflow: 'hidden' },
+  idTop: { backgroundColor: theme.primary, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 22 },
+  idAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 3, borderColor: 'rgba(255,255,255,0.65)', overflow: 'hidden' },
+  idAvatarImage: { width: 60, height: 60, borderRadius: 30 },
+  idAvatarText: { fontSize: 28 },
+  idName: { color: '#fff', fontSize: 18, fontWeight: '900' },
+  idMeta: { color: 'rgba(255,255,255,0.88)', fontSize: 12, marginTop: 3, fontWeight: '700' },
+  idStatsBar: { backgroundColor: theme.card, marginTop: -10, borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingVertical: 12, paddingHorizontal: 8, flexDirection: 'row' },
+  idStat: { flex: 1, alignItems: 'center', paddingHorizontal: 4 },
+  idStatDivider: { width: 1, backgroundColor: theme.border, marginVertical: 2 },
+  idStatIcon: { fontSize: 17 },
+  idStatLabel: { color: theme.muted, fontSize: 10, fontWeight: '800', marginTop: 3 },
+  idStatValue: { color: theme.text, fontSize: 13, fontWeight: '900', marginTop: 2, textAlign: 'center' },
+  idStatValueWarn: { color: theme.red },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.text, marginBottom: 12, marginTop: 2 },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10 },
   quickAction: { width: '48%', borderRadius: 22, paddingVertical: 18, paddingHorizontal: 12, marginBottom: 12, alignItems: 'center', borderWidth: 1.5, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
