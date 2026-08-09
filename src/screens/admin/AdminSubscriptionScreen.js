@@ -28,6 +28,7 @@ import {
   purchaseRevenueCatPackage,
   restoreRevenueCatPurchases,
 } from '../../services/revenueCat';
+import { getSubscriptionEndDate, getSubscriptionStatus } from '../../utils/subscriptionStatus';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -171,8 +172,9 @@ export default function AdminSubscriptionScreen() {
     return () => { alive = false; };
   }, [revenueCatUserId]);
 
-  const status = useMemo(() => getStatus(subscription), [subscription]);
-  const remainingDays = useMemo(() => getRemainingDays(subscription), [subscription]);
+  const status = useMemo(() => getSubscriptionStatus(subscription), [subscription]);
+  const remainingDays = status.remainingDays ?? 0;
+  const statusColors = useMemo(() => getStatusColors(status), [status]);
   const studentCount = children.length;
   const suggestedTier = getSuggestedTier(studentCount);
   const activeTier = subscription?.planTier ? getTierById(subscription.planTier) : suggestedTier;
@@ -377,7 +379,7 @@ export default function AdminSubscriptionScreen() {
 
       const months = Math.min(Number(promo.sureAy || 1), 1);
       const now = new Date();
-      const currentEnd = getCurrentEndDate(subscription);
+      const currentEnd = getSubscriptionEndDate(subscription);
       const startBase = currentEnd && currentEnd > now ? currentEnd : now;
       const end = addMonths(startBase, months);
       const tier = suggestedTier || PACKAGE_TIERS[0];
@@ -439,14 +441,20 @@ export default function AdminSubscriptionScreen() {
           <Text style={styles.heroDesc}>{kres?.ad || 'Kreş'} için öğrenci sayısına göre paket yönetimi</Text>
         </View>
 
-        <View style={styles.statusCard}>
+        <View style={[styles.statusCard, (status.key === 'grace_period' || status.key === 'expired') && styles.statusCardDanger]}>
           <View style={styles.statusTop}>
             <Text style={styles.statusTitle}>{status.label}</Text>
-            <Text style={[styles.statusBadge, { backgroundColor: status.bg, color: status.color }]}>{status.badge}</Text>
+            <Text style={[styles.statusBadge, { backgroundColor: statusColors.bg, color: statusColors.color }]}>{statusColors.badge}</Text>
           </View>
           <Text style={styles.statusText}>Plan: {getPlanLabel(subscription)}</Text>
           <Text style={styles.statusText}>Bitiş: {subscription?.bitisTarihi || subscription?.demoBitisTarihi || '-'}</Text>
-          <Text style={styles.statusText}>Kalan gün: {remainingDays}</Text>
+          {status.key === 'grace_period' ? (
+            <Text style={[styles.statusText, { color: THEME.red, fontWeight: '900' }]}>
+              Gecikme: {status.daysOverdue}. gün — {status.message}
+            </Text>
+          ) : (
+            <Text style={styles.statusText}>Kalan gün: {remainingDays}</Text>
+          )}
         </View>
 
         <View style={[styles.usageCard, overLimit && styles.usageDanger]}>
@@ -559,26 +567,27 @@ function PlanCard({ tier, period, studentCount, active, suggested, disabled, sav
   );
 }
 
-function getStatus(subscription) {
-  if (!subscription) return { label: 'Abonelik Yok', badge: 'Pasif', color: THEME.red, bg: '#FFE8EE' };
-  if (subscription.durum === 'aktif') return { label: 'Aktif Abonelik', badge: 'Aktif', color: THEME.green, bg: '#E8FBEA' };
-  if (subscription.durum === 'demo') return { label: 'Demo Kullanım', badge: 'Demo', color: THEME.orange, bg: '#FFF4D8' };
-  return { label: 'Abonelik Pasif', badge: 'Pasif', color: THEME.red, bg: '#FFE8EE' };
-}
-
-function getCurrentEndDate(subscription) {
-  const raw = subscription?.bitisTarihi || subscription?.demoBitisTarihi;
-  if (!raw) return null;
-  const date = new Date(`${raw}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function getRemainingDays(subscription) {
-  const end = getCurrentEndDate(subscription);
-  if (!end) return 0;
-  const now = new Date();
-  const diff = Math.ceil((end - now) / (24 * 60 * 60 * 1000));
-  return Math.max(0, diff);
+// status.key: none | expired | grace_period | expiring_soon | demo | active | passive
+// status.severity (sadece expiring_soon/grace_period'da): 'critical' | 'warning'
+function getStatusColors(status) {
+  switch (status.key) {
+    case 'active':
+      return { badge: 'Aktif', color: THEME.green, bg: '#E8FBEA' };
+    case 'demo':
+      return { badge: 'Demo', color: THEME.orange, bg: '#FFF4D8' };
+    case 'expiring_soon':
+      return status.severity === 'critical'
+        ? { badge: 'Son Günler', color: THEME.red, bg: '#FFE8EE' }
+        : { badge: 'Yaklaşıyor', color: THEME.orange, bg: '#FFF4D8' };
+    case 'grace_period':
+      return { badge: 'Ödeme Gecikti', color: THEME.red, bg: '#FFE8EE' };
+    case 'expired':
+      return { badge: 'Süresi Doldu', color: THEME.red, bg: '#FFE8EE' };
+    case 'none':
+    case 'passive':
+    default:
+      return { badge: 'Pasif', color: THEME.red, bg: '#FFE8EE' };
+  }
 }
 
 function addMonths(date, months) {
@@ -607,6 +616,7 @@ const styles = StyleSheet.create({
   heroTitle: { color: '#fff', fontSize: 25, fontWeight: '900', marginTop: 8 },
   heroDesc: { color: 'rgba(255,255,255,0.82)', fontWeight: '700', marginTop: 6, lineHeight: 20 },
   statusCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14 },
+  statusCardDanger: { borderColor: THEME.red, backgroundColor: '#FFF7F8' },
   statusTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   statusTitle: { color: THEME.text, fontSize: 18, fontWeight: '900' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, overflow: 'hidden', fontWeight: '900', fontSize: 12 },
