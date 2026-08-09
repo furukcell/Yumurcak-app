@@ -4,7 +4,7 @@
 // AdminMonthlyScheduleScreen ile AYNI veri modelini (dersProgramlari,
 // gün-bazlı kayıt, yayınla/kaldır) kullanır. Üstte "Bugün" kartı var.
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useNavigation } from '@react-navigation/native';
@@ -127,6 +127,21 @@ export default function TeacherScheduleScreen() {
   const [successMessage, setSuccessMessage] = useState('');
   const [customKazanimText, setCustomKazanimText] = useState('');
 
+  // BUG FIX — "diğer güne geçince yazdığım kayboluyor" şikayeti: aşağıdaki
+  // senkron useEffect, kreş genelinde 'dersProgramlari' düğümünde HERHANGİ
+  // bir değişiklik olduğunda (başka bir öğretmen/admin başka bir günü/sınıfı
+  // yayınlasa bile) tetikleniyordu ve o an ekranda AÇIK OLMAYAN her günü
+  // Firebase'deki (henüz yayınlanmamışsa ESKİ) haliyle eziyordu. Yani bir
+  // güne yazıp ✓'a basıp başka güne geçince, artık "açık" olmadığı için o
+  // gün senkrona yakalanıp eski/yayınlanmış haline geri dönüyordu.
+  // Çözüm: sadece o an açık günü değil, henüz YAYINLANMAMIŞ (yerelde
+  // değiştirilmiş) tüm günleri bu otomatik senkrondan koruyoruz. Bu set
+  // sadece "publish" başarılı olunca veya ay değişince temizlenir.
+  const dirtyDatesRef = useRef(new Set());
+  function markDirty(dateKey) {
+    if (dateKey) dirtyDatesRef.current.add(dateKey);
+  }
+
   // publishedCount ve bugünün etkinliği: hook zaten kresId'ye göre
   // filtrelenmiş 'dersProgramlari' listesini veriyor, ayrıca query açmaya gerek yok.
   const classSchedules = useMemo(
@@ -188,6 +203,7 @@ export default function TeacherScheduleScreen() {
       monthRecords.forEach((record) => {
         const dateKey = record?.tarih;
         if (!dateKey || dateKey === selectedDateKey) return;
+        if (dirtyDatesRef.current.has(dateKey)) return; // yayınlanmamış yerel değişiklik — ezme
         const mapped = mapRecordToValue(record);
         if (JSON.stringify(prev[dateKey]) !== JSON.stringify(mapped)) {
           next[dateKey] = mapped;
@@ -291,17 +307,20 @@ export default function TeacherScheduleScreen() {
     setMonthDate(next);
     setValues(createInitialValues(getDaysOfMonth(next), emptyScheduleValue));
     setSelectedDateKey('');
+    dirtyDatesRef.current.clear();
   }
 
   function jumpToMonth(date) {
     setMonthDate(date);
     setValues(createInitialValues(getDaysOfMonth(date), emptyScheduleValue));
     setSelectedDateKey('');
+    dirtyDatesRef.current.clear();
   }
 
   // FAZ — Çoklu Etkinlik Girişi: dateKey + o günün etkinlikler dizisindeki
   // INDEX üzerinden çalışıyoruz (Admin ekranıyla aynı desen).
   function updateItemField(dateKey, index, field, text) {
+    markDirty(dateKey);
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
       const list = [...(current.etkinlikler || [])];
@@ -314,6 +333,7 @@ export default function TeacherScheduleScreen() {
   // FAZ 10 — Hazır Kazanımlar: sabit etiketlerden aç/kapa veya elle
   // özel bir kazanım ekle. Tekrar eden etiketler otomatik engellenir.
   function toggleKazanim(dateKey, index, etiket) {
+    markDirty(dateKey);
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
       const list = [...(current.etkinlikler || [])];
@@ -327,6 +347,7 @@ export default function TeacherScheduleScreen() {
   }
 
   function setKazanimlar(dateKey, index, kazanimlar) {
+    markDirty(dateKey);
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
       const list = [...(current.etkinlikler || [])];
@@ -340,6 +361,7 @@ export default function TeacherScheduleScreen() {
   // yazılıyor, burada sadece havuzdan gelen kategori/tema'yı (varsa ve
   // öğretmen henüz kendi seçmediyse) otomatik dolduruyoruz.
   function handleActivitySuggestion(dateKey, index, item) {
+    markDirty(dateKey);
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
       const list = [...(current.etkinlikler || [])];
@@ -354,6 +376,7 @@ export default function TeacherScheduleScreen() {
   }
 
   function addActivityItem(dateKey) {
+    markDirty(dateKey);
     let newIndex = 0;
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
@@ -366,6 +389,7 @@ export default function TeacherScheduleScreen() {
   }
 
   function removeActivityItem(dateKey, index) {
+    markDirty(dateKey);
     setValues((prev) => {
       const current = prev[dateKey] || emptyScheduleValue();
       const list = (current.etkinlikler || []).filter((_, i) => i !== index);
@@ -376,6 +400,7 @@ export default function TeacherScheduleScreen() {
   }
 
   function clearDay(dateKey) {
+    markDirty(dateKey);
     setValues((prev) => ({ ...prev, [dateKey]: emptyScheduleValue() }));
     setEditingIndex(-1);
   }
@@ -402,7 +427,10 @@ export default function TeacherScheduleScreen() {
       setValues((prev) => {
         const next = { ...prev };
         Object.entries(copiedValues).forEach(([dateKey, value]) => {
-          if (value) next[dateKey] = value;
+          if (value) {
+            next[dateKey] = value;
+            markDirty(dateKey);
+          }
         });
         return next;
       });
@@ -462,6 +490,7 @@ export default function TeacherScheduleScreen() {
         createdBy: teacherId || '',
       });
 
+      dirtyDatesRef.current.clear();
       setSuccessMessage(`${monthLabel} ders programı yayınlandı`);
       setSuccessToast(true);
     } catch (error) {
@@ -511,6 +540,7 @@ export default function TeacherScheduleScreen() {
 
   function useLastYearSchedule() {
     if (!lastYearSchedule || !selectedDateKey) return;
+    markDirty(selectedDateKey);
     setValues((prev) => ({
       ...prev,
       [selectedDateKey]: mapRecordToValue(lastYearSchedule),
