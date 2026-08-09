@@ -1,6 +1,7 @@
 // ============================================================
 // YUMURCAK — SuperAdminStack.js
 // FAZ 17: Firebase Index Migration ekranı eklendi
+// FAZ 18: Abonelik Yönetimi (Google Play + Manuel/IBAN) ekranı eklendi
 // ============================================================
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,6 +12,7 @@ import SuperAdminKresDetailScreen from '../screens/superadmin/SuperAdminKresDeta
 import SuperAdminKresCreateScreen from '../screens/superadmin/SuperAdminKresCreateScreen';
 import SuperAdminIndexMigrationScreen from '../screens/superadmin/SuperAdminIndexMigrationScreen';
 import SuperAdminSupportScreen from '../screens/superadmin/SuperAdminSupportScreen';
+import SuperAdminSubscriptionsScreen from '../screens/superadmin/SuperAdminSubscriptionsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +31,7 @@ export default function SuperAdminStack() {
       <Stack.Screen name="SuperAdminKresCreate" component={SuperAdminKresCreateScreen} />
       <Stack.Screen name="SuperAdminIndexMigration" component={SuperAdminIndexMigrationScreen} />
       <Stack.Screen name="SuperAdminSupport" component={SuperAdminSupportScreen} />
+      <Stack.Screen name="SuperAdminSubscriptions" component={SuperAdminSubscriptionsScreen} />
     </Stack.Navigator>
   );
 }
