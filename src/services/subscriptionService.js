@@ -4,7 +4,7 @@
 // AdminSubscriptionScreen.js (tenant, Google Play satın alma) VE
 // SuperAdminSubscriptionsScreen.js (manuel/IBAN tanımlama) buradan kullanır.
 // ============================================================
-import { get, onValue, ref, set } from 'firebase/database';
+import { get, onValue, push, ref, set } from 'firebase/database';
 import { database } from '../config/firebase';
 import { REVENUECAT_ENTITLEMENT_ID } from './revenueCat';
 
@@ -132,6 +132,25 @@ export async function writeSubscriptionRecord({
     createdAt: existingSubscription?.createdAt || Date.now(),
     updatedAt: Date.now(),
   });
+
+  // Ciro/istatistik ekranı için ödeme geçmişi kaydı.
+  // Demo (0 TL) kayıtları loglamıyoruz, sadece gerçek ödemeler.
+  if (price && Number(price) > 0) {
+    await push(ref(database, `odemeGecmisi/${kresId}`), {
+      kresId,
+      kaynak: source, // 'revenuecat' | 'manuel_iban' | 'manuel_admin' | ...
+      tierId: tier.id,
+      tierTitle: tier.title,
+      period: selectedPeriod,
+      fiyat: Number(price),
+      paraBirimi: 'TRY',
+      odemeReferansi: odemeReferansi || '',
+      manuelNot: manuelNot || '',
+      tanimlayanUid: tanimlayanUid || '',
+      tarih: toDateStr(new Date()),
+      createdAt: Date.now(),
+    });
+  }
 }
 
 /**
@@ -218,5 +237,52 @@ export function subscribeAllSubscriptions(callback) {
   return () => {
     unsubKresler();
     unsubAbonelik();
+  };
+}
+
+/**
+ * İstatistik ekranı için: tüm ödeme geçmişini kaynak bazında (google/manuel)
+ * toplayıp ciro özeti çıkarır. Google Play ciro rakamları, kullanıcı uygulamayı
+ * açıp senkronize ettikçe kaydedildiği için RevenueCat panelindeki kesin
+ * rakamla küçük farklar gösterebilir — arka planda sessizce yenilenen
+ * abonelikler burada anlık yakalanmaz. Kesin Google Play cirosu için
+ * RevenueCat dashboard referans alınmalı, buradaki rakam yaklaşık/işletme takibi içindir.
+ */
+export async function getRevenueSummary({ startDate = null, endDate = null } = {}) {
+  const snap = await get(ref(database, 'odemeGecmisi'));
+  const data = snap.val() || {};
+
+  let googleTotal = 0;
+  let googleCount = 0;
+  let manualTotal = 0;
+  let manualCount = 0;
+  const entries = [];
+
+  Object.entries(data).forEach(([kresId, payments]) => {
+    Object.entries(payments || {}).forEach(([paymentId, payment]) => {
+      const tarih = payment?.tarih || '';
+      if (startDate && tarih < startDate) return;
+      if (endDate && tarih > endDate) return;
+
+      const fiyat = Number(payment?.fiyat || 0);
+      entries.push({ kresId, paymentId, ...payment });
+
+      if (payment?.kaynak === 'revenuecat') {
+        googleTotal += fiyat;
+        googleCount += 1;
+      } else if (payment?.kaynak === 'manuel_iban' || payment?.kaynak === 'manuel_admin') {
+        manualTotal += fiyat;
+        manualCount += 1;
+      }
+    });
+  });
+
+  return {
+    googleTotal,
+    googleCount,
+    manualTotal,
+    manualCount,
+    grandTotal: googleTotal + manualTotal,
+    entries: entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
   };
 }
