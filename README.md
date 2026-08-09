@@ -4,7 +4,7 @@ Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / Reac
 
 Proje şu an **Google Play'de yayında**. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri medya optimizasyonu eklenmiş; uyum, rozet, gelişim, sınıf ortalaması, dökümanlar/PDF sistemi ve bildirim kapsamı güncellenmiştir.
 
-> Son güncelleme: 8 Ağustos 2026
+> Son güncelleme: 9 Ağustos 2026
 
 ---
 
@@ -21,7 +21,6 @@ Kalan ana işler:
 - App Store sürümü
 - Kurum demoları
 - İlk pilot kreşlerden geri bildirim toplama
-- Yapay zeka destekli günlük özet metni (planlama aşamasında — bkz. ROADMAP.md Faz 21)
 ```
 
 ---
@@ -36,7 +35,8 @@ Firebase: 12.0.0
 Firebase Auth: kullanıcı girişi ve rol ayrımı
 Firebase Realtime Database: uygulama verileri (Firestore KULLANILMIYOR)
 Firebase Storage: profil, galeri, yemek ve gelişim medya dosyaları
-Firebase Cloud Functions: push bildirim, otomatik bildirim tetikleyicileri, etkinlik/yemek havuzu güncellemeleri
+Firebase Cloud Functions: push bildirim, otomatik bildirim tetikleyicileri, etkinlik/yemek havuzu güncellemeleri, günlük AI özet üretimi
+Gemini API: gemini-3.5-flash-lite — günlük AI özet metni (Cloud Functions üzerinden, secret: GEMINI_API_KEY)
 RevenueCat: react-native-purchases 9.0.0
 Push: expo-notifications + Expo Push API
 Medya seçimi: expo-image-picker
@@ -106,6 +106,7 @@ Firebase project: yumurcak-app
 - RevenueCat abonelik altyapısı, Google Play abonelik ürünleri
 - Uygulama içi yasal metinler
 - Kullanıcıya görünen tarih formatlarında `DD.MM.YYYY` standardı
+- **Yapay zeka destekli günlük özet** — her gün saat 17:00'de, Gemini ile otomatik üretilir (bkz. aşağıdaki bölüm)
 - **Dökümanlar / Aylık Belgeler modülü** (bkz. aşağıdaki bölüm)
 
 ---
@@ -157,6 +158,50 @@ Belge türleri:
 
 ---
 
+## Yapay Zeka Destekli Günlük Özet (Gemini)
+
+Öğretmen gün içinde veriyi parça parça girer (günlük rapor, yemek listesi, ders programı, etkinlik, rozet, boy/kilo ölçümü, uyum takibi, ilaç takibi, yoklama). Her ayrı kayıt için ayrı bir bildirim/özet üretmek yerine, sistem **her gün Türkiye saatiyle 17:00'de tek seferlik** çalışıp o ana kadar girilmiş **tüm** verileri toplar, Gemini'ye gönderir ve veliye gösterilecek doğal, sıcak bir günlük özet metni üretir — rakip uygulamalarda olmayan bir fark.
+
+```txt
+Cloud Function: generateDailyAiComments
+Bölge: europe-west1
+Tetikleyici: pubsub.schedule('every day 17:00') — Europe/Istanbul
+Model: gemini-3.5-flash-lite
+Secret: GEMINI_API_KEY (Firebase secret, .env değil)
+Yazılan node: gunlukYorumlar/{cocukId}/{tarih}
+Gösterildiği yer: Veli özet ekranı → DailyCommentCard.js
+```
+
+Nasıl çalışır:
+
+```txt
+17:00'de tüm çocuklar taranır
+        ↓
+O çocuk için o gün hiç veri girilmemişse → Gemini'ye HİÇ gidilmez (kota israfı yok)
+        ↓
+Veri varsa → günlük rapor, yemek, ders programı, etkinlik, rozet, gelişim ölçümü,
+             yoklama, uyum takibi, ilaç takibi + son 7 günün özeti tek prompt'ta birleştirilir
+        ↓
+Gemini 2-4 cümlelik, samimi, "gerçek öğretmen yazmış gibi" bir özet üretir
+        ↓
+gunlukYorumlar/{cocukId}/{tarih} kaydına yazılır
+        ↓
+Veli özet ekranında "Günlük kısa yorum" kartında gösterilir
+```
+
+Önemli tasarım kararları:
+
+```txt
+- Bir çocukta hata olursa diğerlerini etkilemez (try/catch + Promise.all izolasyonu)
+- "Bugün okula gelmedi" durumunda diğer verileri yok sayıp tek cümlelik kısa not yazdırır
+- Prompt her seferinde cümle yapısını/açılışı farklılaştırmaya zorlanır — art arda gelen
+  özetler birbirinin kalıbı gibi durmasın diye
+- Ham alan adları (mood, durum vb.) hiçbir zaman kullanıcıya olduğu gibi gösterilmez,
+  hepsi doğal cümleye çevrilir
+```
+
+---
+
 ## Push Bildirim Sistemi
 
 Push bildirim gönderimi uygulama içinden çıkarılmış ve Firebase Cloud Functions tarafına taşınmıştır. Uygulama sadece `bildirimler` node'una kayıt oluşturur; Cloud Function hedef kullanıcıların Expo push tokenlarını bulur ve bildirimi telefona gönderir.
@@ -196,6 +241,7 @@ createNotificationOnEventCreate
 checkBirthdaysDaily
 cleanupExpiredGalleryDaily
 cleanupExpiredMealPhotosDaily
+generateDailyAiComments
 ```
 
 Telefona push giden bildirimler:
@@ -288,7 +334,7 @@ kresler                anketler             medikalBilgiler
 siniflar               odemeler             fizikselGelisim
 cocuklar               mesajlar             uyumKayitlari
 gunlukRaporlar         bildirimler          haftaninRozetleri
-yoklamalar              abonelikler
+yoklamalar              abonelikler          gunlukYorumlar (AI özet)
 
 --- Dökümanlar modülü ---
 yemekListeleri          nobetCizelgeleri     geziFormlari
@@ -341,6 +387,7 @@ Eski başka proje function'ları silinmemelidir.
 - ✅ Duyuru, anket, ödeme, kurum zili, mesajlaşma
 - ✅ Push bildirimleri, Firebase Cloud Functions
 - ✅ RevenueCat entegrasyonu, Google Play satın alma testi, Restore Purchase
+- ✅ Yapay zeka destekli günlük özet (Gemini, günlük 17:00 tetikleyici)
 - ✅ Firebase Database / Storage Rules
 - ✅ Android Release Build, Google Play Production Yayını
 
