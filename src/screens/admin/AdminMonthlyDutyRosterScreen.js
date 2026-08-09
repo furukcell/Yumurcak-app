@@ -7,7 +7,8 @@
 // tek alan: "Nöbetçi Personel" + opsiyonel "Not".
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -347,12 +348,16 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
         </ScrollView>
 
         <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDateKey('')}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalSheet}>
+          <KeyboardAvoidingView
+            style={styles.modalBackdrop}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          >
+            <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent} keyboardShouldPersistTaps="handled">
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{selectedDay?.label}</Text>
-                <TouchableOpacity onPress={() => setSelectedDateKey('')} activeOpacity={0.8}>
-                  <Text style={styles.modalClose}>Kapat</Text>
+                <TouchableOpacity onPress={() => setSelectedDateKey('')} activeOpacity={0.8} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseCheck}>✓</Text>
                 </TouchableOpacity>
               </View>
 
@@ -377,8 +382,8 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
                   <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
                 </TouchableOpacity>
               ) : null}
-            </View>
-          </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </Modal>
       </SafeAreaView>
     </ThemedBackground>
@@ -416,10 +421,13 @@ function createStyles(theme) {
     saveButton: { backgroundColor: theme.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
     saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '900' },
     modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-    modalSheet: { backgroundColor: theme.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, paddingBottom: 30 },
+    modalSheet: { backgroundColor: theme.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '88%' },
+    modalSheetContent: { padding: 18, paddingBottom: 30 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     modalTitle: { fontSize: 18, fontWeight: '900', color: theme.text },
     modalClose: { color: theme.primary, fontWeight: '900' },
+    modalCloseButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: theme.green, alignItems: 'center', justifyContent: 'center' },
+    modalCloseCheck: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
     modalInput: { minHeight: 46, backgroundColor: theme.bg, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 10, color: theme.text, fontWeight: '700', marginBottom: 10, textAlignVertical: 'top' },
     modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
     modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
