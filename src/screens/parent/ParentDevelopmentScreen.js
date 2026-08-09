@@ -10,22 +10,20 @@ import {
   THEME,
   getMonthKey,
   getMonthLabel,
-  isAbsentStatus,
 } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
 import { sortWeeklyBadgesNewestFirst } from '../../utils/weeklyBadges';
+import {
+  MOOD_LABELS,
+  computeMonthlyAggregate,
+  buildMonthlyComment,
+  formatSleep,
+  percent,
+  getPhysicalValue,
+  buildDelta,
+} from '../../utils/developmentInsights';
 
-const MEAL_KEYS = ['kahvalti', 'ogle', 'araOgun'];
 const MIN_AVERAGE_COUNT = 5;
-const MOOD_LABELS = {
-  mutlu: 'Mutlu',
-  iyi: 'İyi',
-  normal: 'Normal',
-  sakin: 'Sakin',
-  huzursuz: 'Huzursuz',
-  uzgun: 'Üzgün',
-  yorgun: 'Yorgun',
-};
 
 export default function ParentDevelopmentScreen({ navigation }) {
   const { loading, selectedChild, childName, kresId, sinifId } = useParentBase();
@@ -46,6 +44,7 @@ export default function ParentDevelopmentScreen({ navigation }) {
   }, [monthOffset]);
 
   const monthKey = getMonthKey(targetMonth);
+  const previousMonthKey = getMonthKey(new Date(targetMonth.getFullYear(), targetMonth.getMonth() - 1, 1));
 
   const badgeHistory = useMemo(() => {
     if (!selectedChild?.id) return [];
@@ -55,11 +54,40 @@ export default function ParentDevelopmentScreen({ navigation }) {
       .sort(sortWeeklyBadgesNewestFirst);
   }, [badgesRaw, selectedChild?.id]);
 
+  // Belirli bir ay (monthKey) için ham listeleri filtreleyip computeMonthlyAggregate'e
+  // uygun şekle sokar. Hem mevcut hem önceki ay için aynı fonksiyon çağrılır.
+  const filterForMonth = (targetKey) => {
+    const reports = reportsRaw.filter((item) => item.cocukId === selectedChild.id && isInMonth(item, targetKey));
+    const attendance = attendanceRaw.filter((item) => item.cocukId === selectedChild.id && isInMonth(item, targetKey));
+
+    const events = eventsRaw.filter((item) => {
+      if (item.aktif === false) return false;
+      if (item.kresId && kresId && item.kresId !== kresId) return false;
+      if (Array.isArray(item.sinifIds) && sinifId) return item.sinifIds.includes(sinifId) && isInMonth(item, targetKey);
+      if (item.sinifId && sinifId) return item.sinifId === sinifId && isInMonth(item, targetKey);
+      return isInMonth(item, targetKey);
+    });
+
+    const menuDays = mealsRaw.filter((item) => {
+      if (item.aktif === false) return false;
+      if (item.kresId && kresId && item.kresId !== kresId) return false;
+      if (item.sinifId && sinifId && item.sinifId !== sinifId) return false;
+      return isInMonth(item, targetKey);
+    }).length;
+
+    return { reports, attendance, events, menuDays };
+  };
+
   const monthly = useMemo(() => {
     if (!selectedChild?.id) return null;
 
-    const reports = reportsRaw.filter((item) => item.cocukId === selectedChild.id && isInMonth(item, monthKey));
-    const attendance = attendanceRaw.filter((item) => item.cocukId === selectedChild.id && isInMonth(item, monthKey));
+    const currentRaw = filterForMonth(monthKey);
+    const previousRaw = filterForMonth(previousMonthKey);
+
+    const current = computeMonthlyAggregate(currentRaw);
+    const previous = computeMonthlyAggregate(previousRaw);
+    const hasPreviousData = previousRaw.attendance.length > 0 || previousRaw.reports.length > 0 || previousRaw.events.length > 0;
+
     const physicalAll = physicalRaw
       .filter((item) => item.cocukId === selectedChild.id)
       .sort((a, b) => getSortableDate(b) - getSortableDate(a));
@@ -68,46 +96,9 @@ export default function ParentDevelopmentScreen({ navigation }) {
     const lastPhysical = physicalAll[0] || null;
     const previousPhysical = physicalAll[1] || null;
 
-    const events = eventsRaw.filter((item) => {
-      if (item.aktif === false) return false;
-      if (item.kresId && kresId && item.kresId !== kresId) return false;
-      if (Array.isArray(item.sinifIds) && sinifId) return item.sinifIds.includes(sinifId) && isInMonth(item, monthKey);
-      if (item.sinifId && sinifId) return item.sinifId === sinifId && isInMonth(item, monthKey);
-      return isInMonth(item, monthKey);
-    });
-
-    const menuDays = mealsRaw.filter((item) => {
-      if (item.aktif === false) return false;
-      if (item.kresId && kresId && item.kresId !== kresId) return false;
-      if (item.sinifId && sinifId && item.sinifId !== sinifId) return false;
-      return isInMonth(item, monthKey);
-    }).length;
-
-    const presentDays = attendance.filter((item) => !isAbsentStatus(item.durum || item.status)).length;
-    const absentDays = attendance.filter((item) => isAbsentStatus(item.durum || item.status)).length;
-    const attendanceTotal = attendance.length;
-
-    const moodCounts = reports.reduce((acc, item) => {
-      const key = normalizeMood(item.mood || item.ruhHali || item.durum || item.genelDurum);
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-
-    const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0] || ['bekleniyor', 0];
-    const positiveMoodDays = (moodCounts.mutlu || 0) + (moodCounts.iyi || 0) + (moodCounts.sakin || 0);
-
-    const sleepValues = reports
-      .map((item) => extractSleepHours(item))
-      .filter((value) => Number.isFinite(value) && value > 0);
-    const averageSleep = sleepValues.length ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length : 0;
-
-    const mealStats = buildMealStats(reports);
-    const mealGoodTotal = mealStats.good;
-    const mealTotal = mealStats.total;
-
     return {
-      reports,
-      attendance,
+      reports: currentRaw.reports,
+      attendance: currentRaw.attendance,
       physical,
       physicalAll,
       physicalChart,
@@ -115,33 +106,25 @@ export default function ParentDevelopmentScreen({ navigation }) {
       previousPhysical,
       heightDelta: buildDelta(lastPhysical, previousPhysical, 'boy'),
       weightDelta: buildDelta(lastPhysical, previousPhysical, 'kilo'),
-      events,
-      menuDays,
-      presentDays,
-      absentDays,
-      attendanceTotal,
-      moodCounts,
-      topMood,
-      positiveMoodDays,
-      averageSleep,
-      sleepDays: sleepValues.length,
-      mealGoodTotal,
-      mealTotal,
+      events: currentRaw.events,
+      menuDays: current.menuDays,
+      presentDays: current.presentDays,
+      absentDays: current.absentDays,
+      attendanceTotal: current.attendanceTotal,
+      moodCounts: current.moodCounts,
+      topMood: current.topMood,
+      positiveMoodDays: current.positiveMoodDays,
+      averageSleep: current.averageSleep,
+      sleepDays: current.sleepDays,
+      mealGoodTotal: current.mealGoodTotal,
+      mealTotal: current.mealTotal,
       comment: buildMonthlyComment({
         childName,
-        presentDays,
-        absentDays,
-        attendanceTotal,
-        positiveMoodDays,
-        reportDays: reports.length,
-        topMood,
-        averageSleep,
-        mealGoodTotal,
-        mealTotal,
-        eventCount: events.length,
+        current,
+        previous: hasPreviousData ? previous : null,
       }),
     };
-  }, [selectedChild?.id, reportsRaw, attendanceRaw, physicalRaw, eventsRaw, mealsRaw, monthKey, kresId, sinifId, childName]);
+  }, [selectedChild?.id, reportsRaw, attendanceRaw, physicalRaw, eventsRaw, mealsRaw, monthKey, previousMonthKey, kresId, sinifId, childName]);
 
   const classAverage = useMemo(() => {
     if (!selectedChild?.id || !sinifId) return null;
@@ -594,80 +577,10 @@ function getSortableDate(item) {
   return Number.isFinite(raw) ? raw : 0;
 }
 
-function normalizeMood(value) {
-  const raw = String(value || 'bekleniyor').toLowerCase().trim();
-  if (raw.includes('mutlu')) return 'mutlu';
-  if (raw.includes('iyi')) return 'iyi';
-  if (raw.includes('sakin')) return 'sakin';
-  if (raw.includes('huzursuz')) return 'huzursuz';
-  if (raw.includes('üzg') || raw.includes('uzg')) return 'uzgun';
-  if (raw.includes('yorgun')) return 'yorgun';
-  if (raw.includes('normal')) return 'normal';
-  return raw || 'bekleniyor';
-}
-
-function extractSleepHours(item) {
-  const value = item?.uyku?.sure || item?.uykuSuresi || item?.uykuSaat || item?.uyku || item?.uykuDurumu;
-  if (typeof value === 'number') return value;
-  const text = String(value || '').replace(',', '.');
-  const match = text.match(/\d+(\.\d+)?/);
-  return match ? Number(match[0]) : 0;
-}
-
-function buildMealStats(reports) {
-  return reports.reduce((acc, item) => {
-    const yemek = item.yemek || item.yemekDurumu || {};
-    MEAL_KEYS.forEach((key) => {
-      const raw = yemek?.[key]?.durum || yemek?.[key] || item?.[key];
-      if (!raw) return;
-      acc.total += 1;
-      if (isGoodMeal(raw)) acc.good += 1;
-    });
-    return acc;
-  }, { good: 0, total: 0 });
-}
-
-function isGoodMeal(value) {
-  const raw = String(value || '').toLowerCase();
-  return raw.includes('bitirdi') || raw.includes('iyi') || raw.includes('yedi') || raw.includes('tamam');
-}
-
-function percent(value, total) {
-  if (!total) return 0;
-  return Math.round((value / total) * 100);
-}
-
-function formatSleep(value) {
-  if (!value) return 'Kayıt yok';
-  const hours = Math.floor(value);
-  const minutes = Math.round((value - hours) * 60);
-  if (hours <= 0) return `${minutes} dk`;
-  if (minutes <= 0) return `${hours} sa`;
-  return `${hours} sa ${minutes} dk`;
-}
-
-function getPhysicalValue(item, key) {
-  const value = item?.[key];
-  if (typeof value === 'number') return value;
-  const text = String(value || '').replace(',', '.');
-  const match = text.match(/\d+(\.\d+)?/);
-  return match ? Number(match[0]) : 0;
-}
-
 function formatMeasurement(item, key, suffix) {
   const value = getPhysicalValue(item, key);
   if (!value) return '-';
   return `${value}${suffix}`;
-}
-
-function buildDelta(current, previous, key) {
-  const now = getPhysicalValue(current, key);
-  const before = getPhysicalValue(previous, key);
-  if (!now || !before) return 'Önceki kayıt yok';
-  const diff = Number((now - before).toFixed(1));
-  if (diff > 0) return `+${diff}`;
-  if (diff < 0) return `${diff}`;
-  return 'Değişim yok';
 }
 
 function formatDate(item) {
@@ -692,44 +605,6 @@ function getMoodColor(key) {
 
 function getFirstName(value) {
   return String(value || 'Çocuğunuz').trim().split(' ')[0] || 'Çocuğunuz';
-}
-
-function buildMonthlyComment(data) {
-  const name = String(data.childName || 'Çocuğunuz').split(' ')[0] || 'Çocuğunuz';
-  const parts = [];
-
-  if (data.attendanceTotal > 0) {
-    if (percent(data.presentDays, data.attendanceTotal) >= 80) {
-      parts.push(`${name} bu ay kreşe düzenli katılım göstermiş.`);
-    } else {
-      parts.push(`${name} için bu ay katılım tarafında takip edilmesi gereken birkaç gün görünüyor.`);
-    }
-  } else {
-    parts.push(`${name} için bu ay yoklama kaydı henüz yeterli değil.`);
-  }
-
-  if (data.reportDays > 0) {
-    const moodLabel = MOOD_LABELS[data.topMood?.[0]] || data.topMood?.[0] || 'genel durum';
-    parts.push(`Ruh hali kayıtlarında en çok "${moodLabel}" öne çıkıyor.`);
-  }
-
-  if (data.mealTotal > 0) {
-    if (percent(data.mealGoodTotal, data.mealTotal) >= 70) {
-      parts.push('Yemek düzeni genel olarak olumlu görünüyor.');
-    } else {
-      parts.push('Yemek tarafında bazı günlerde destek gerekebilir.');
-    }
-  }
-
-  if (data.averageSleep > 0) {
-    parts.push(`Uyku ortalaması ${formatSleep(data.averageSleep)} civarında.`);
-  }
-
-  if (data.eventCount > 0) {
-    parts.push(`Bu ay ${data.eventCount} etkinlik kaydı bulunuyor; sosyal ve sınıf içi katılım takip edilebilir.`);
-  }
-
-  return parts.join(' ');
 }
 
 const localStyles = StyleSheet.create({
