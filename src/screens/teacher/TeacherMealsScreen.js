@@ -14,6 +14,7 @@ import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayStr
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
 import MealChipListInput from '../../components/MealChipListInput';
+import MealAutocompleteInput from '../../components/MealAutocompleteInput';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
