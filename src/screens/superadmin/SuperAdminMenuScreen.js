@@ -14,10 +14,12 @@ const COLORS = {
   orange: '#F59E0B',
   purple: '#A78BFA',
   red: '#EF4444',
+  gold: '#EAB308',
 };
 
 const ITEMS = [
   { title: 'Platform Dashboard', desc: 'Kreşler, abonelik ve genel istatistikler', icon: '📊', screen: 'SuperAdminDashboard', color: COLORS.blue },
+  { title: 'Abonelik Yönetimi', desc: 'Google Play ve Manuel/IBAN abonelikleri görüntüle, manuel abonelik tanımla', icon: '💎', screen: 'SuperAdminSubscriptions', color: COLORS.gold },
   { title: 'Gelen Destek Mesajları', desc: 'İstek, şikayet, görüş ve cevaplama kutusu', icon: '💬', screen: 'SuperAdminSupport', color: COLORS.green },
   { title: 'Yeni Kreş Ekle', desc: 'Kurum + yönetici hesabı + demo abonelik oluştur', icon: '🏫', screen: 'SuperAdminKresCreate', color: COLORS.orange },
   { title: 'Firebase Index / Veri Düzeni', desc: 'Kreş, kullanıcı, çocuk ve mesaj indexlerini oluştur', icon: '🧩', screen: 'SuperAdminIndexMigration', color: COLORS.purple },
