@@ -57,14 +57,14 @@ export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSel
   return (
     <>
       <TouchableOpacity style={[styles.trigger, { backgroundColor: palette.primarySoft }]} onPress={openPicker} activeOpacity={0.85}>
-        <Text style={[styles.triggerText, { color: palette.primary }]}>💡 Etkinlik Öner</Text>
+        <Text style={[styles.triggerText, { color: palette.primary }]}>💡 Ders Öner</Text>
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View style={[styles.sheet, { backgroundColor: palette.card, borderColor: palette.border }]}>
             <View style={styles.headerRow}>
-              <Text style={[styles.title, { color: palette.text }]}>Etkinlik Öner</Text>
+              <Text style={[styles.title, { color: palette.text }]}>Ders Öner</Text>
               <TouchableOpacity onPress={() => setOpen(false)} activeOpacity={0.8}>
                 <Text style={[styles.close, { color: palette.primary }]}>Kapat</Text>
               </TouchableOpacity>
@@ -124,7 +124,7 @@ export default function ActivityLibraryPicker({ yasGrubu, initialKategori, onSel
             <TextInput
               value={searchText}
               onChangeText={setSearchText}
-              placeholder="Etkinlik ara..."
+              placeholder="Ders ara..."
               placeholderTextColor={palette.muted}
               style={[styles.searchInput, { backgroundColor: palette.bg, borderColor: palette.border, color: palette.text }]}
             />
