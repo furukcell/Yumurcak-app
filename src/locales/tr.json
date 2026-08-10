@@ -1,5 +1,70 @@
 {
-  "common": {},
+  "common": {
+    "today": "Bugün",
+    "and": "ve",
+    "operationSuccessful": "İşlem başarılı"
+  },
   "nav": {},
-  "parent": {}
+  "parent": {
+    "pdfBar": {
+      "print": "Yazdır",
+      "shareDownload": "Paylaş / İndir",
+      "noRecordsTitle": "Yayınlanmış Kayıt Yok",
+      "noRecordsBody": "{{monthLabel}} için henüz yayınlanmış bir belge yok. Önce ayı paylaşman gerekiyor.",
+      "errorTitle": "Hata",
+      "printErrorBody": "Belge yazdırılamadı.",
+      "shareErrorBody": "Belge paylaşılamadı veya bu cihazda paylaşım desteklenmiyor.",
+      "docType": {
+        "yemek": "Yemek Listesi",
+        "nobet": "Nöbet Çizelgesi",
+        "gorev": "Personel Görev Listesi",
+        "ders": "Ders Programı"
+      }
+    },
+    "mealCard": {
+      "monthlyList": "Aylık Liste",
+      "classList": "Sınıf Listesi",
+      "institutionList": "Kurum Listesi",
+      "defaultTitle": "Günlük Yemek Listesi",
+      "emptyTitle": "Bugün için öğün bekleniyor",
+      "emptyDesc": "Öğretmen kahvaltı, öğle veya ara öğün ekledikçe burada görünür.",
+      "mealName": {
+        "kahvalti": "Kahvaltı",
+        "ogle": "Öğle",
+        "araOgun": "Ara Öğün"
+      },
+      "addUpdate": "Ekle / güncelle",
+      "notEnteredYet": "Henüz girilmedi",
+      "edit": "Düzenle",
+      "addMeal": "+ Öğün ekle"
+    },
+    "dailyComment": {
+      "title": "Günlük kısa yorum",
+      "readyBadge": "17:00’de hazır",
+      "defaultChildName": "Çocuğunuz",
+      "pendingText": "{{name}} için günlük özet, öğretmenin bugün girdiği bilgilere göre bugün saat 17:00’de otomatik oluşturulacak.",
+      "opener": "{{name}} bugün",
+      "moodBody": "{{emoji}}{{mood}} görünüyordu.",
+      "mealsBody": "{{meals}}.",
+      "mealFragment": "{{emoji}} {{place}}{{menu}} {{verb}}",
+      "mealPlace": {
+        "kahvalti": "kahvaltıda",
+        "ogle": "öğle yemeğinde",
+        "araOgun": "ara öğünde"
+      },
+      "mealVerb": {
+        "bitirdi": "iyi yedi",
+        "az_yedi": "az yedi",
+        "yemedi": "pek iştahlı değildi"
+      },
+      "trendBetter": "Dünküne göre bugün iştahı daha iyiydi.",
+      "trendWorse": "Dünküne göre bugün iştahı biraz daha azdı.",
+      "sleepDuration": "😴 {{sleep}} uyudu.",
+      "sleepStatus": "😴 Uyku durumu: {{sleep}}.",
+      "programBodySingle": "programda \"{{title}}\" vardı.",
+      "programBodyMultiple": "programda {{titles}} yer aldı.",
+      "teacherNote": "Öğretmen notu: {{note}}",
+      "noInfo": "{{name}} için bugün henüz bilgi girilmedi."
+    }
+  }
 }
