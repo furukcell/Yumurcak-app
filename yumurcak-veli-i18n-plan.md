@@ -65,7 +65,7 @@ yeterli olacak — ekran/component dosyalarına tekrar dokunulmayacak.
 
 Ekran ekran, tam dosya olarak teslim edilecek. Sıra (kullanım sıklığına göre):
 
-1. `ParentSummaryScreen.js`
+1. `ParentSummaryScreen.js`✅
 2. `ParentDashboard.js`
 3. `ParentScheduleScreen.js`
 4. `ParentMealsScreen.js`
