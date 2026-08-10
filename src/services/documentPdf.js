@@ -100,7 +100,13 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
 
     // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
     const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
-    const etkinlikText = etkinlikler.map((it) => it?.etkinlik || '').filter(Boolean).join(', ');
+    const etkinlikText = etkinlikler
+      .map((it) => {
+        const saatPrefix = it?.baslangicSaati ? `${it.baslangicSaati}${it.bitisSaati ? '-' + it.bitisSaati : ''} ` : '';
+        return it?.etkinlik ? `${saatPrefix}${it.etkinlik}` : '';
+      })
+      .filter(Boolean)
+      .join(', ');
     const aciklamaText = etkinlikler.map((it) => it?.aciklama || '').filter(Boolean).join(' · ');
 
     return `
