@@ -12,6 +12,7 @@
 // ============================================================
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { query, ref, orderByChild, equalTo, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import {
@@ -52,14 +53,15 @@ function fetchPublishedRecords({ nodePath, kresId, monthKey, kaynak, sinifId }) 
   });
 }
 
-function docTypeLabel(docType) {
-  if (docType === 'yemek') return 'Yemek Listesi';
-  if (docType === 'nobet') return 'Nöbet Çizelgesi';
-  if (docType === 'gorev') return 'Personel Görev Listesi';
-  return 'Ders Programı';
+function docTypeLabel(docType, t) {
+  if (docType === 'yemek') return t('parent.pdfBar.docType.yemek');
+  if (docType === 'nobet') return t('parent.pdfBar.docType.nobet');
+  if (docType === 'gorev') return t('parent.pdfBar.docType.gorev');
+  return t('parent.pdfBar.docType.ders');
 }
 
 export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docType, monthKey, monthLabel, sinifId, sinifAd, theme }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState('');
   const palette = theme || { primary: '#6C3DEB', primarySoft: '#EFE8FF', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8' };
 
@@ -70,7 +72,7 @@ export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docTyp
     ]);
 
     if (records.length === 0) {
-      Alert.alert('Yayınlanmış Kayıt Yok', `${monthLabel} için henüz yayınlanmış bir belge yok. Önce ayı paylaşman gerekiyor.`);
+      Alert.alert(t('parent.pdfBar.noRecordsTitle'), t('parent.pdfBar.noRecordsBody', { monthLabel }));
       return null;
     }
 
@@ -84,7 +86,7 @@ export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docTyp
       if (html) await printMonthlyDocument(html);
     } catch (error) {
       console.warn('PDF yazdırılamadı:', error?.message || error);
-      Alert.alert('Hata', 'Belge yazdırılamadı.');
+      Alert.alert(t('parent.pdfBar.errorTitle'), t('parent.pdfBar.printErrorBody'));
     } finally {
       setBusy('');
     }
@@ -94,10 +96,10 @@ export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docTyp
     setBusy('share');
     try {
       const html = await prepareHtml();
-      if (html) await shareMonthlyDocumentPdf(html, `${docTypeLabel(docType)} - ${monthLabel}`);
+      if (html) await shareMonthlyDocumentPdf(html, `${docTypeLabel(docType, t)} - ${monthLabel}`);
     } catch (error) {
       console.warn('PDF paylaşılamadı:', error?.message || error);
-      Alert.alert('Hata', 'Belge paylaşılamadı veya bu cihazda paylaşım desteklenmiyor.');
+      Alert.alert(t('parent.pdfBar.errorTitle'), t('parent.pdfBar.shareErrorBody'));
     } finally {
       setBusy('');
     }
@@ -111,7 +113,7 @@ export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docTyp
         onPress={handlePrint}
         activeOpacity={0.85}
       >
-        {busy === 'print' ? <ActivityIndicator color={palette.primary} /> : <Text style={[styles.btnText, { color: palette.primary }]}>🖨️ Yazdır</Text>}
+        {busy === 'print' ? <ActivityIndicator color={palette.primary} /> : <Text style={[styles.btnText, { color: palette.primary }]}>🖨️ {t('parent.pdfBar.print')}</Text>}
       </TouchableOpacity>
       <TouchableOpacity
         disabled={!!busy}
@@ -119,7 +121,7 @@ export default function MonthlyDocumentPdfBar({ kresId, nodePath, kaynak, docTyp
         onPress={handleShare}
         activeOpacity={0.85}
       >
-        {busy === 'share' ? <ActivityIndicator color="#fff" /> : <Text style={[styles.btnText, { color: '#fff' }]}>📤 Paylaş / İndir</Text>}
+        {busy === 'share' ? <ActivityIndicator color="#fff" /> : <Text style={[styles.btnText, { color: '#fff' }]}>📤 {t('parent.pdfBar.shareDownload')}</Text>}
       </TouchableOpacity>
     </View>
   );
