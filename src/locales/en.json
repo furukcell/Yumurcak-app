@@ -4,7 +4,14 @@
     "and": "and",
     "operationSuccessful": "Operation successful"
   },
-  "nav": {},
+  "nav": {
+    "summary": "Summary",
+    "home": "Home",
+    "homeCompact": "Home",
+    "reports": "Reports",
+    "development": "Growth",
+    "messages": "Messages"
+  },
   "parent": {
     "pdfBar": {
       "print": "Print",
