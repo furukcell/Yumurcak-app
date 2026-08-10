@@ -38,8 +38,18 @@ const KAYNAK = 'admin_aylik';
 // FAZ — Çoklu Etkinlik Girişi: bir gün artık TEK etkinlik değil, her biri
 // kendi kategori/tema/açıklama/kazanımlarını taşıyan bir dizi.
 function emptyActivityItem() {
-  return { etkinlik: '', aciklama: '', kategori: '', tema: '', kazanimlar: [] };
+  return { etkinlik: '', aciklama: '', kategori: '', tema: '', kazanimlar: [], baslangicSaati: '', bitisSaati: '' };
 }
+
+// 08:00 - 18:00 arası, yarım saat aralıklarla hazır saat seçenekleri.
+const SAAT_SECENEKLERI = (() => {
+  const list = [];
+  for (let h = 8; h <= 18; h += 1) {
+    list.push(`${String(h).padStart(2, '0')}:00`);
+    if (h !== 18) list.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return list;
+})();
 
 function hasActivityItemContent(item) {
   return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
@@ -71,6 +81,8 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
       kategori: item.kategori || null,
       tema: item.tema || null,
       kazanimlar: Array.isArray(item.kazanimlar) ? item.kazanimlar : [],
+      baslangicSaati: item.baslangicSaati || null,
+      bitisSaati: item.bitisSaati || null,
     })),
     aktif: true,
     createdAt: now,
@@ -95,6 +107,8 @@ function mapRecordToValue(record) {
       kategori: item?.kategori || '',
       tema: item?.tema || '',
       kazanimlar: Array.isArray(item?.kazanimlar) ? item.kazanimlar : [],
+      baslangicSaati: item?.baslangicSaati || '',
+      bitisSaati: item?.bitisSaati || '',
     })),
   };
 }
@@ -659,7 +673,7 @@ export default function TeacherScheduleScreen() {
 
       <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={closeModal}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
+          <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text>
               <TouchableOpacity onPress={closeModal} activeOpacity={0.8} style={styles.modalCloseButton}>
@@ -713,6 +727,40 @@ export default function TeacherScheduleScreen() {
                     </Text>
                   </View>
                 ) : null}
+
+                <Text style={styles.modalLabel}>Başlangıç Saati</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                  {SAAT_SECENEKLERI.map((saat) => {
+                    const active = selectedItem.baslangicSaati === saat;
+                    return (
+                      <TouchableOpacity
+                        key={saat}
+                        style={[styles.saatChip, active && styles.saatChipActive]}
+                        onPress={() => updateItemField(selectedDateKey, editingIndex, 'baslangicSaati', active ? '' : saat)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.saatChipText, active && styles.saatChipTextActive]}>{saat}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <Text style={styles.modalLabel}>Bitiş Saati</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                  {SAAT_SECENEKLERI.map((saat) => {
+                    const active = selectedItem.bitisSaati === saat;
+                    return (
+                      <TouchableOpacity
+                        key={saat}
+                        style={[styles.saatChip, active && styles.saatChipActive]}
+                        onPress={() => updateItemField(selectedDateKey, editingIndex, 'bitisSaati', active ? '' : saat)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.saatChipText, active && styles.saatChipTextActive]}>{saat}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
 
                 <Text style={styles.modalLabel}>Kategori</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
@@ -792,7 +840,7 @@ export default function TeacherScheduleScreen() {
                 <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
               </TouchableOpacity>
             ) : null}
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -828,7 +876,12 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: THEME.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '900' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: THEME.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, paddingBottom: 30 },
+  modalSheet: { backgroundColor: THEME.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '88%' },
+  modalSheetContent: { padding: 18, paddingBottom: 30 },
+  saatChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: THEME.border, backgroundColor: THEME.bg },
+  saatChipActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  saatChipText: { fontWeight: '800', fontSize: 12, color: THEME.text },
+  saatChipTextActive: { color: '#FFF' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
