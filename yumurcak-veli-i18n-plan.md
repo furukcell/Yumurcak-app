@@ -54,10 +54,10 @@ yeterli olacak — ekran/component dosyalarına tekrar dokunulmayacak.
 ## Faz 3 — Navigasyon başlıkları
 
 **Değişecek dosyalar (1):**
-- `src/navigation/ParentStack.js` — tab bar ve ekran başlıkları
+- `src/navigation/ParentStack.js` — tab bar ve ekran başlıkları✅
 
 **Güncellenecek:**
-- `src/locales/tr.json` / `en.json` — `nav` bölümü eklenir
+- `src/locales/tr.json` / `en.json` — `nav` bölümü eklenir✅
 
 ---
 
