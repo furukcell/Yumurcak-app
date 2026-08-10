@@ -114,7 +114,7 @@ function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsS
     pushSentence(programBody);
   }
 
-  const hasRealNote = note && note !== 'Bugün için öğretmen notu henüz girilmedi.';
+  const hasRealNote = note && note !== t('parent.summary.noTeacherNoteYet');
   if (hasRealNote) {
     sentences.push(t('parent.dailyComment.teacherNote', { note }));
   }
