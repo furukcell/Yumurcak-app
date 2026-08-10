@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentShared';
@@ -30,12 +31,12 @@ function getSortableDate(item) {
   return Number(item?.createdAt || item?.updatedAt || 0);
 }
 
-function formatAllergySummary(raw) {
+function formatAllergySummary(raw, t) {
   const tags = String(raw || '')
     .split(/[,\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
-  if (!tags.length) return { text: 'Yok', hasAllergy: false };
+  if (!tags.length) return { text: t('parent.dashboard.none'), hasAllergy: false };
   const shown = tags.slice(0, 2).join(', ');
   const extra = tags.length > 2 ? ` +${tags.length - 2}` : '';
   return { text: `${shown}${extra}`, hasAllergy: true };
@@ -45,6 +46,7 @@ export default function ParentDashboardScreen({ navigation }) {
   
 const base = useParentBase();
 const { theme } = useAppTheme();
+const { t } = useTranslation();
 const styles = useMemo(() => createStyles(theme), [theme]);
 const { loading, selectedChild, childName, parentName, cikisYap, kresAdi, parentPhotoUrl, parentId, kresId, sinif, ogretmen } = base;
 const physicalRaw = useNodeList('fizikselGelisim', kresId);
@@ -68,36 +70,36 @@ useEffect(() => {
       .sort((a, b) => getSortableDate(b) - getSortableDate(a))[0] || null;
   }, [physicalRaw, selectedChild?.id]);
 
-  if (loading) return <LoadingScreen text="Veli ekranı hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.dashboard.loading')} />;
 
   const childAge = calculateChildAge(getChildBirthDate(selectedChild));
   const sinifAdi = sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifAd || '';
   const ogretmenAdi = `${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim();
   const metaParts = [childAge, sinifAdi, ogretmenAdi].filter(Boolean);
-  const allergy = formatAllergySummary(medical?.alerjiler);
+  const allergy = formatAllergySummary(medical?.alerjiler, t);
   const showUyumCard = selectedChild && uyumGorunurMu(selectedChild);
 
   const featuredActions = [
-    ['🔔', 'Kurum Zili', 'ParentBell', 'Geliyorum / kapıdayım bildir', '#FFF4C7', '#F5C84B'],
-    ['💳', 'Ödeme Takibi', 'ParentPayments', 'Aidat ve ücret kayıtları', '#E8FBEA', '#7DDC8C'],
-    ['🗳️', 'Anketler', 'ParentPolls', 'Kurum anketleri ve oylamalar', '#DFF4FF', '#7CCAF0'],
-    ['☎️', 'Kurum İletişim', 'ParentContact', 'Telefon, adres ve yetkili', '#F1E6FF', '#C69AF6'],
+    ['🔔', t('parent.dashboard.institutionBell'), 'ParentBell', t('parent.dashboard.bellDesc'), '#FFF4C7', '#F5C84B'],
+    ['💳', t('parent.dashboard.paymentTracking'), 'ParentPayments', t('parent.dashboard.paymentTrackingDesc'), '#E8FBEA', '#7DDC8C'],
+    ['🗳️', t('parent.dashboard.polls'), 'ParentPolls', t('parent.dashboard.pollsDesc'), '#DFF4FF', '#7CCAF0'],
+    ['☎️', t('parent.dashboard.institutionContact'), 'ParentContact', t('parent.dashboard.institutionContactDesc'), '#F1E6FF', '#C69AF6'],
   ];
 
   const quickActions = [
-    ['📋', 'Günlük Rapor', 'ParentReports', '#FFF0DD', '#F3B36C'],
-    ['✅', 'Yoklama', 'ParentAttendance', '#E7FAD9', '#8ED36A'],
-    ['🍽️', 'Yemek Listesi', 'ParentMeals', '#FFE4EA', '#F5A0B3'],
-    ['📘', 'Ders Programı', 'ParentSchedule', '#E4ECFF', '#8FA6F5'],
-    ['💬', 'Mesajlar', 'ParentMessages', '#E9F0FF', '#94AFFF'],
-    ['🖼️', 'Galeri', 'ParentGallery', '#E8F8E9', '#86D78B'],
-    ['🎉', 'Etkinlikler', 'ParentEvents', '#EFE4FF', '#B99BF6'],
-    ['📈', 'Gelişim', 'ParentDevelopment', '#E0F5FF', '#81CFF1'],
-    ['🩺', 'Medikal', 'ParentMedical', '#DDF8F4', '#67D6C9'],
-    ['🚌', 'Servis', 'ParentService', '#FFF1D5', '#EDBA5E'],
-    ['📣', 'Duyurular', 'ParentAnnouncements', '#FFE6F5', '#EE99D0'],
-    ...(showUyumCard ? [['🌱', 'Uyum Skoru', 'ParentUyum', '#E8FBEA', '#7DDC8C']] : []),
-    ['🏅', 'Rozetlerim', 'ParentBadges', '#FFF7E8', '#F0C36A'],
+    ['📋', t('parent.dashboard.dailyReport'), 'ParentReports', '#FFF0DD', '#F3B36C'],
+    ['✅', t('parent.dashboard.attendance'), 'ParentAttendance', '#E7FAD9', '#8ED36A'],
+    ['🍽️', t('parent.dashboard.mealList'), 'ParentMeals', '#FFE4EA', '#F5A0B3'],
+    ['📘', t('parent.dashboard.lessonSchedule'), 'ParentSchedule', '#E4ECFF', '#8FA6F5'],
+    ['💬', t('parent.dashboard.messages'), 'ParentMessages', '#E9F0FF', '#94AFFF'],
+    ['🖼️', t('parent.dashboard.gallery'), 'ParentGallery', '#E8F8E9', '#86D78B'],
+    ['🎉', t('parent.dashboard.events'), 'ParentEvents', '#EFE4FF', '#B99BF6'],
+    ['📈', t('parent.dashboard.development'), 'ParentDevelopment', '#E0F5FF', '#81CFF1'],
+    ['🩺', t('parent.dashboard.medical'), 'ParentMedical', '#DDF8F4', '#67D6C9'],
+    ['🚌', t('parent.dashboard.service'), 'ParentService', '#FFF1D5', '#EDBA5E'],
+    ['📣', t('parent.dashboard.announcements'), 'ParentAnnouncements', '#FFE6F5', '#EE99D0'],
+    ...(showUyumCard ? [['🌱', t('parent.dashboard.adaptationScore'), 'ParentUyum', '#E8FBEA', '#7DDC8C']] : []),
+    ['🏅', t('parent.dashboard.myBadges'), 'ParentBadges', '#FFF7E8', '#F0C36A'],
   ];
 
   return (
@@ -106,8 +108,8 @@ useEffect(() => {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.logo} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
-            <Text style={styles.brandSub}>Veli Paneli</Text>
+            <Text style={styles.logo} numberOfLines={1}>{kresAdi || t('parent.dashboard.institutionFallback')}</Text>
+            <Text style={styles.brandSub}>{t('parent.dashboard.parentPanel')}</Text>
           </View>
          <View style={styles.headerActions}>
          <AppNotificationButton navigation={navigation} />
@@ -121,8 +123,8 @@ useEffect(() => {
    </View>
     </View>
 
-        <Text style={styles.greeting}>Merhaba, {parentName} 👋</Text>
-        <Text style={styles.greetingSub}>Bilgi ve işlemlere buradan hızlıca ulaşabilirsin.</Text>
+        <Text style={styles.greeting}>{t('parent.dashboard.greeting', { parentName })} 👋</Text>
+        <Text style={styles.greetingSub}>{t('parent.dashboard.greetingSub')}</Text>
 
         {selectedChild ? (
           <View style={styles.idCard}>
@@ -136,34 +138,34 @@ useEffect(() => {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.idName} numberOfLines={1}>{childName}</Text>
-                <Text style={styles.idMeta} numberOfLines={1}>{metaParts.length ? metaParts.join(' · ') : kresAdi || 'Kreş öğrencisi'}</Text>
+                <Text style={styles.idMeta} numberOfLines={1}>{metaParts.length ? metaParts.join(' · ') : kresAdi || t('parent.dashboard.daycareStudent')}</Text>
               </View>
             </View>
             <View style={styles.idStatsBar}>
               <View style={styles.idStat}>
                 <Text style={styles.idStatIcon}>📏</Text>
-                <Text style={styles.idStatLabel}>BOY</Text>
+                <Text style={styles.idStatLabel}>{t('parent.dashboard.height')}</Text>
                 <Text style={styles.idStatValue}>{formatMeasurement(lastPhysical, 'boy', ' cm')}</Text>
               </View>
               <View style={styles.idStatDivider} />
               <View style={styles.idStat}>
                 <Text style={styles.idStatIcon}>⚖️</Text>
-                <Text style={styles.idStatLabel}>KİLO</Text>
+                <Text style={styles.idStatLabel}>{t('parent.dashboard.weight')}</Text>
                 <Text style={styles.idStatValue}>{formatMeasurement(lastPhysical, 'kilo', ' kg')}</Text>
               </View>
               <View style={styles.idStatDivider} />
               <View style={styles.idStat}>
                 <Text style={styles.idStatIcon}>⚠️</Text>
-                <Text style={styles.idStatLabel}>ALERJİ</Text>
+                <Text style={styles.idStatLabel}>{t('parent.dashboard.allergy')}</Text>
                 <Text style={[styles.idStatValue, allergy.hasAllergy && styles.idStatValueWarn]} numberOfLines={1}>{allergy.text}</Text>
               </View>
             </View>
           </View>
         ) : (
-          <EmptyState icon="👧" title="Sisteme kayıtlı çocuk bulunmuyor" desc="Yönetici panelinden çocuğa bu veli bağlanmalı." />
+          <EmptyState icon="👧" title={t('parent.summary.noChildTitle')} desc={t('parent.summary.noChildDesc')} />
         )}
 
-        <Text style={styles.sectionTitle}>Hızlı Aksiyonlar</Text>
+        <Text style={styles.sectionTitle}>{t('parent.dashboard.quickActionsTitle')}</Text>
         <View style={styles.quickGrid}>
           {featuredActions.map(([icon, label, route, desc, bg, border]) => (
             <TouchableOpacity key={route} style={[styles.quickAction, styles.featuredAction, { backgroundColor: bg, borderColor: border }]} onPress={() => navigation.navigate(route)} activeOpacity={0.82}>
@@ -174,7 +176,7 @@ useEffect(() => {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Diğer İşlemler</Text>
+        <Text style={styles.sectionTitle}>{t('parent.dashboard.otherActionsTitle')}</Text>
         <View style={styles.quickGrid}>
           {quickActions.map(([icon, label, route, bg, border]) => {
             const isMessages = route === 'ParentMessages';
@@ -197,7 +199,7 @@ useEffect(() => {
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={cikisYap} activeOpacity={0.85}>
-          <Text style={styles.logoutText}>↩ Çıkış Yap</Text>
+          <Text style={styles.logoutText}>↩ {t('parent.dashboard.logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
