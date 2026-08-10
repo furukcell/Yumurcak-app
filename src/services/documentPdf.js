@@ -74,6 +74,38 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
 
   const sorted = [...(records || [])].sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
 
+  const isDers = !isMeal && !isDuty;
+
+  // FAZ — Saat Aralığı: dersler için saat bazlı ızgara (saatler üstte
+  // sütun başlığı, altına o saatteki ders). Sütunlar hiçbir sabit dilime
+  // (yarım saat / tam saat) zorlanmıyor — o ay girilen derslerde
+  // kullanılan TÜM farklı başlangıç-bitiş saat çiftleri, kendi gerçek
+  // süreleriyle birer sütun olur (07:30-09:30 gibi 2 saatlik bir blokla
+  // 09:30-10:00 gibi yarım saatlik bir blok aynı ay/gün içinde yan yana
+  // sorunsuz durabilir). Böylece her kreş kendi kullandığı düzensiz
+  // saat yapısına göre otomatik doğru ızgarayı alır. Hiç saat girilmemiş
+  // eski aylarda önceki (tek "Etkinlik" sütunu) davranış korunur.
+  let saatSlots = [];
+  let hasSaatsizDers = false;
+  if (isDers) {
+    const slotSet = new Set();
+    sorted.forEach((item) => {
+      const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
+      etkinlikler.forEach((it) => {
+        if (!it?.etkinlik) return;
+        if (it.baslangicSaati) slotSet.add(`${it.baslangicSaati}|${it.bitisSaati || ''}`);
+        else hasSaatsizDers = true;
+      });
+    });
+    saatSlots = Array.from(slotSet)
+      .sort()
+      .map((key) => {
+        const [bas, bit] = key.split('|');
+        return { key, label: bit ? `${bas}-${bit}` : bas };
+      });
+  }
+  const useSaatGrid = isDers && saatSlots.length > 0;
+
   const rows = sorted.map((item) => {
     const dateLabel = formatDateTr(item.tarih);
     const day = weekdayLabel(item.tarih);
@@ -100,13 +132,36 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
 
     // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
     const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
-    const etkinlikText = etkinlikler
-      .map((it) => {
-        const saatPrefix = it?.baslangicSaati ? `${it.baslangicSaati}${it.bitisSaati ? '-' + it.bitisSaati : ''} ` : '';
-        return it?.etkinlik ? `${saatPrefix}${it.etkinlik}` : '';
-      })
-      .filter(Boolean)
-      .join(', ');
+
+    if (useSaatGrid) {
+      const bySlot = {};
+      const saatsizList = [];
+      etkinlikler.forEach((it) => {
+        if (!it?.etkinlik) return;
+        if (it.baslangicSaati) {
+          const key = `${it.baslangicSaati}|${it.bitisSaati || ''}`;
+          (bySlot[key] = bySlot[key] || []).push(it);
+        } else {
+          saatsizList.push(it);
+        }
+      });
+      const cellHtml = (it) => {
+        const ders = escapeHtml(it.etkinlik);
+        const aciklama = it.aciklama ? `<br/><span class="ders-aciklama">${escapeHtml(it.aciklama)}</span>` : '';
+        return `${ders}${aciklama}`;
+      };
+      const slotCells = saatSlots
+        .map(({ key }) => `<td>${(bySlot[key] || []).map(cellHtml).join('<br/>')}</td>`)
+        .join('');
+      const saatsizCell = hasSaatsizDers ? `<td>${saatsizList.map(cellHtml).join('<br/>')}</td>` : '';
+      return `
+        <tr>
+          <td>${escapeHtml(dateLabel)}<br/><span class="weekday">${escapeHtml(day)}</span></td>
+          ${slotCells}${saatsizCell}
+        </tr>`;
+    }
+
+    const etkinlikText = etkinlikler.map((it) => it?.etkinlik || '').filter(Boolean).join(', ');
     const aciklamaText = etkinlikler.map((it) => it?.aciklama || '').filter(Boolean).join(' · ');
 
     return `
@@ -121,9 +176,15 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
     ? '<th>Tarih</th><th>Kahvaltı</th><th>Öğle Yemeği</th><th>Ara Öğün</th>'
     : isDuty
     ? '<th>Tarih</th><th>Nöbetçi Personel</th><th>Not</th>'
+    : useSaatGrid
+    ? `<th>Tarih</th>${saatSlots.map((s) => `<th>${escapeHtml(s.label)}</th>`).join('')}${hasSaatsizDers ? '<th>Diğer</th>' : ''}`
     : '<th>Tarih</th><th>Etkinlik</th><th>Açıklama</th>';
 
-  const colSpan = isMeal ? 4 : 3;
+  const colSpan = isMeal
+    ? 4
+    : useSaatGrid
+    ? 1 + saatSlots.length + (hasSaatsizDers ? 1 : 0)
+    : 3;
 
   return `
   <html>
@@ -142,6 +203,7 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
       th { background: #EFE8FF; color: #4B22B8; text-align: left; padding: 8px; border: 1px solid #EEEAF8; }
       td { padding: 8px; border: 1px solid #EEEAF8; vertical-align: top; }
       .weekday { font-size: 9px; color: #707386; }
+      .ders-aciklama { font-size: 9px; color: #707386; }
       .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: space-between; }
       .signature { margin-top: 40px; font-size: 11px; text-align: right; }
       .empty { text-align: center; color: #707386; padding: 18px; }
