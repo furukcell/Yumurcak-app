@@ -33,16 +33,16 @@ yeterli olacak — ekran/component dosyalarına tekrar dokunulmayacak.
 - `src/components/Card.js` ✅
 - `src/components/Button.js`✅
 - `src/components/Loading.js`✅
-- `src/components/DailyCommentCard.js`
-- `src/components/MealTodayCard.js`
-- `src/components/DailyChecklistCard.js`
-- `src/components/ActivityBalanceCard.js`
-- `src/components/MonthlyDocumentPdfBar.js`
-- `src/components/MonthlyCalendarView.js`
-- `src/components/AppSuccessToast.js`
-- `src/components/ReportCard.js`
-- `src/components/SegmentedTabs.js`
-- `src/components/AppNotificationButton.js`
+- `src/components/DailyCommentCard.js`✅
+- `src/components/MealTodayCard.js`✅
+- `src/components/DailyChecklistCard.js`✅
+- `src/components/ActivityBalanceCard.js`✅
+- `src/components/MonthlyDocumentPdfBar.js`✅
+- `src/components/MonthlyCalendarView.js`✅
+- `src/components/AppSuccessToast.js`✅
+- `src/components/ReportCard.js`✅
+- `src/components/SegmentedTabs.js`✅
+- `src/components/AppNotificationButton.js`✅
 
 **Güncellenecek:**
 - `src/locales/tr.json` / `en.json` — `common` bölümü doldurulur (Kaydet, İptal, Yükleniyor, Hata mesajları vb.)
