@@ -1,7 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-export default function AppSuccessToast({ visible, message = 'İşlem başarılı', onHide }) {
+export default function AppSuccessToast({ visible, message, onHide }) {
+  const { t } = useTranslation();
+  const displayMessage = message || t('common.operationSuccessful');
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-12)).current;
 
@@ -57,7 +60,7 @@ export default function AppSuccessToast({ visible, message = 'İşlem başarıl�
       <View style={styles.iconCircle}>
         <Text style={styles.icon}>✓</Text>
       </View>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={styles.message}>{displayMessage}</Text>
     </Animated.View>
   );
 }
