@@ -57,7 +57,8 @@ function mealHasContent(item) {
 }
 
 function scheduleHasContent(item) {
-  return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
+  const list = Array.isArray(item?.etkinlikler) ? item.etkinlikler : [];
+  return list.some((entry) => String(entry?.etkinlik || '').trim());
 }
 
 const MEAL_STATUS_LABELS = {
@@ -213,11 +214,22 @@ export default function ParentSummaryScreen({ navigation }) {
     // Bir güne normalde tek kayıt düşer; republish sonrası eski/boş kopya
     // kalmışsa içeriği dolu ve en güncel olanı seç.
     const best = pickFreshestRecord(matches, scheduleHasContent);
-    const list = best ? [best] : [];
-    return list
-      .map((item) => ({ ...item, baslik: item.etkinlik || item.baslik }))
-      .sort((a, b) => String(a.saat || a.baslangicSaati || '').localeCompare(String(b.saat || b.baslangicSaati || '')))
-      .slice(0, 3);
+    // Kayıt artık günün derslerini "etkinlikler" dizisinde tutuyor (her biri
+    // kendi adı, saati ve varsa kazanımlarıyla). Veli ekranında her dersi
+    // ayrı bir satır olarak göstermek için diziyi açıyoruz.
+    const entries = Array.isArray(best?.etkinlikler) ? best.etkinlikler : [];
+    return entries
+      .filter((entry) => String(entry?.etkinlik || '').trim())
+      .map((entry, index) => ({
+        id: `${best?.id || 'ders'}-${index}`,
+        baslik: entry.etkinlik,
+        saat: entry.baslangicSaati
+          ? `${entry.baslangicSaati}${entry.bitisSaati ? ` - ${entry.bitisSaati}` : ''}`
+          : '',
+        kazanimlar: Array.isArray(entry.kazanimlar) ? entry.kazanimlar.filter((k) => String(k || '').trim()) : [],
+      }))
+      .sort((a, b) => String(a.saat || '').localeCompare(String(b.saat || '')))
+      .slice(0, 6);
   }, [schedules, kresId, sinifId, today]);
 
   const currentMonthKey = useMemo(() => getMonthKey(new Date()), []);
@@ -435,8 +447,19 @@ export default function ParentSummaryScreen({ navigation }) {
           <View style={styles.scheduleList}>
             {[...todaySchedules, ...todayEvents].slice(0, 4).map((item, index) => (
               <View key={`${item.id || index}`} style={styles.lessonLine}>
-                <Text style={styles.lessonMain} numberOfLines={1}>{getProgramTitle(item)}</Text>
-                <Text style={styles.lessonTime}>{item.saat || item.baslangicSaati || ''}</Text>
+                <View style={styles.lessonHeadRow}>
+                  <Text style={styles.lessonMain} numberOfLines={1}>{getProgramTitle(item)}</Text>
+                  <Text style={styles.lessonTime}>{item.saat || item.baslangicSaati || ''}</Text>
+                </View>
+                {Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0 ? (
+                  <View style={styles.lessonKazanimWrap}>
+                    {item.kazanimlar.map((kazanim, kIndex) => (
+                      <Text key={`${item.id || index}-k-${kIndex}`} style={styles.lessonKazanimChip} numberOfLines={1}>
+                        🎯 {kazanim}
+                      </Text>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             ))}
             {todaySchedules.length === 0 && todayEvents.length === 0 ? (
@@ -808,9 +831,12 @@ const createStyles = (theme) => StyleSheet.create({
   mealNo: { color: theme.red, backgroundColor: '#FFE8EE' },
   mealWaiting: { color: theme.muted, backgroundColor: theme.primarySoft },
   scheduleList: { marginTop: 10, gap: 8 },
-  lessonLine: { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, borderRadius: 15, paddingHorizontal: 11, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  lessonLine: { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, borderRadius: 15, paddingHorizontal: 11, paddingVertical: 10 },
+  lessonHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   lessonMain: { flex: 1, color: theme.text, fontSize: 12, fontWeight: '900' },
   lessonTime: { color: theme.muted, fontSize: 10.5, fontWeight: '800', marginLeft: 8 },
+  lessonKazanimWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7 },
+  lessonKazanimChip: { color: theme.primary, backgroundColor: theme.primarySoft, fontSize: 9.7, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden', maxWidth: '100%' },
   emptyInline: { color: theme.muted, fontWeight: '700', fontSize: 12, paddingVertical: 8 },
   twoGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   smallCard: { width: '48.7%', minHeight: 112, backgroundColor: theme.card, borderRadius: 19, padding: 13, borderWidth: 1, borderColor: theme.border },
