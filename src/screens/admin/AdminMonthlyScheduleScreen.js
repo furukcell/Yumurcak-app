@@ -43,8 +43,18 @@ const KAYNAK = 'admin_aylik';
 // FAZ — Çoklu Etkinlik Girişi: bir gün artık TEK etkinlik değil, her biri
 // kendi kategori/tema/açıklamasını taşıyan bir "etkinlikler" dizisi.
 function emptyActivityItem() {
-  return { etkinlik: '', aciklama: '', kategori: '', tema: '' };
+  return { etkinlik: '', aciklama: '', kategori: '', tema: '', baslangicSaati: '', bitisSaati: '' };
 }
+
+// 08:00 - 18:00 arası, yarım saat aralıklarla hazır saat seçenekleri.
+const SAAT_SECENEKLERI = (() => {
+  const list = [];
+  for (let h = 8; h <= 18; h += 1) {
+    list.push(`${String(h).padStart(2, '0')}:00`);
+    if (h !== 18) list.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return list;
+})();
 
 function hasActivityItemContent(item) {
   return !!(String(item?.etkinlik || '').trim() || String(item?.aciklama || '').trim());
@@ -75,6 +85,8 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
       aciklama: String(item.aciklama || '').trim(),
       kategori: item.kategori || null,
       tema: item.tema || null,
+      baslangicSaati: item.baslangicSaati || null,
+      bitisSaati: item.bitisSaati || null,
     })),
     aktif: true,
     createdAt: now,
@@ -178,6 +190,8 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                     aciklama: item?.aciklama || '',
                     kategori: item?.kategori || '',
                     tema: item?.tema || '',
+                    baslangicSaati: item?.baslangicSaati || '',
+                    bitisSaati: item?.bitisSaati || '',
                   }))
                 : [],
             };
@@ -215,6 +229,8 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
               aciklama: item?.aciklama || '',
               kategori: item?.kategori || '',
               tema: item?.tema || '',
+              baslangicSaati: item?.baslangicSaati || '',
+              bitisSaati: item?.bitisSaati || '',
             }))
           : [],
       }),
@@ -317,6 +333,8 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                 aciklama: item?.aciklama || '',
                 kategori: item?.kategori || '',
                 tema: item?.tema || '',
+                baslangicSaati: item?.baslangicSaati || '',
+                bitisSaati: item?.bitisSaati || '',
               }))
             : [],
         }),
@@ -563,6 +581,40 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                     style={styles.modalInput}
                     theme={theme}
                   />
+
+                  <Text style={styles.modalLabel}>Başlangıç Saati</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {SAAT_SECENEKLERI.map((saat) => {
+                      const active = selectedValue.etkinlikler[editingIndex].baslangicSaati === saat;
+                      return (
+                        <TouchableOpacity
+                          key={saat}
+                          style={[styles.kategoriChip, active && styles.kategoriChipActive]}
+                          onPress={() => updateItemField(selectedDateKey, editingIndex, 'baslangicSaati', active ? '' : saat)}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{saat}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+
+                  <Text style={styles.modalLabel}>Bitiş Saati</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                    {SAAT_SECENEKLERI.map((saat) => {
+                      const active = selectedValue.etkinlikler[editingIndex].bitisSaati === saat;
+                      return (
+                        <TouchableOpacity
+                          key={saat}
+                          style={[styles.kategoriChip, active && styles.kategoriChipActive]}
+                          onPress={() => updateItemField(selectedDateKey, editingIndex, 'bitisSaati', active ? '' : saat)}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{saat}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
 
                   <Text style={styles.modalLabel}>Kategori</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
