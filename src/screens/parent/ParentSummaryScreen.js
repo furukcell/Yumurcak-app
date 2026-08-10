@@ -14,6 +14,7 @@ import {
   Easing,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState, toDateKey, useDailyAiComment } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemePatternBackground from '../../components/ThemePatternBackground';
@@ -25,12 +26,9 @@ import DailyCommentCard from '../../components/DailyCommentCard';
 import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
 import { MOOD_LISTESI } from '../../constants';
 
-const MEAL_LABELS = {
-  kahvalti: 'Kahvaltı',
-  ogle: 'Öğle',
-  araOgun: 'Ara Öğün',
-};
-
+// Not: öğün isimleri (Kahvaltı/Öğle/Ara Öğün) için ayrı bir sabit tutmuyoruz,
+// MealTodayCard.js'de zaten tanımlı olan "parent.mealCard.mealName.<key>"
+// çeviri anahtarları burada da (t ile) yeniden kullanılıyor.
 // Aynı gün için (republish/çift kayıt gibi nedenlerle) birden fazla aktif
 // kayıt varsa: önce içeriği DOLU olanları öne al, aralarında da en son
 // güncelleneni seç. Böylece eski/boş bir kayıt yanlışlıkla gösterilmez.
@@ -61,11 +59,12 @@ function scheduleHasContent(item) {
   return list.some((entry) => String(entry?.etkinlik || '').trim());
 }
 
-const MEAL_STATUS_LABELS = {
-  yemedi: 'Yemedi',
-  az_yedi: 'Az yedi',
-  bitirdi: 'Yedi',
-};
+function getMealStatusLabel(status, t) {
+  if (status === 'yemedi') return t('parent.summary.mealStatus.yemedi');
+  if (status === 'az_yedi') return t('parent.summary.mealStatus.az_yedi');
+  if (status === 'bitirdi') return t('parent.summary.mealStatus.bitirdi');
+  return t('parent.summary.mealStatus.waiting');
+}
 
 const BALLOONS = [
   { left: '4%', color: '#AEEBFF', delay: 0, duration: 9200, size: 50 },
@@ -89,6 +88,7 @@ const CONFETTI = [
 export default function ParentSummaryScreen({ navigation }) {
   const base = useParentBase();
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const {
@@ -282,27 +282,27 @@ export default function ParentSummaryScreen({ navigation }) {
       .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0))[0] || null;
   }, [weeklyBadges, selectedChild?.id, weekKey]);
 
-  if (loading) return <LoadingScreen text="Özet hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.summary.loading')} />;
 
   if (!selectedChild) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ThemePatternBackground />
         <View style={styles.emptyWrap}>
-          <EmptyState icon="👧" title="Sisteme kayıtlı çocuk bulunmuyor" desc="Yönetici panelinden çocuğa bu veli bağlanmalı." />
+          <EmptyState icon="👧" title={t('parent.summary.noChildTitle')} desc={t('parent.summary.noChildDesc')} />
         </View>
       </SafeAreaView>
     );
   }
 
-  const mealsSummary = buildMealSummary(todayReport, todayMeal);
-  const yesterdayMealsSummary = buildMealSummary(yesterdayReport, null);
-  const mood = todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || 'Bekleniyor';
+  const mealsSummary = buildMealSummary(todayReport, todayMeal, t);
+  const yesterdayMealsSummary = buildMealSummary(yesterdayReport, null, t);
+  const mood = todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || t('parent.summary.waiting');
   const moodEmoji = getMoodEmoji(mood);
-  const sleep = todayReport?.uyku?.sure ? `${todayReport.uyku.sure} saat` : (todayReport?.uykuDurumu || todayReport?.uyku || 'Bekleniyor');
-  const attendanceDisplay = getAttendanceDisplay(styles, todayAttendance);
-  const attendanceLabel = todayAttendance ? (todayAttendance.durum || todayAttendance.status || 'Kreşte') : 'Bekleniyor';
-  const note = todayReport?.not || todayReport?.ogretmenNotu || todayReport?.aciklama || 'Bugün için öğretmen notu henüz girilmedi.';
+  const sleep = todayReport?.uyku?.sure ? `${todayReport.uyku.sure} ${t('parent.summary.hours')}` : (todayReport?.uykuDurumu || todayReport?.uyku || t('parent.summary.waiting'));
+  const attendanceDisplay = getAttendanceDisplay(styles, todayAttendance, t);
+  const attendanceLabel = todayAttendance ? (todayAttendance.durum || todayAttendance.status || t('parent.summary.atDaycare')) : t('parent.summary.waiting');
+  const note = todayReport?.not || todayReport?.ogretmenNotu || todayReport?.aciklama || t('parent.summary.noTeacherNoteYet');
   const childFirstName = (selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim || '').trim().split(' ')[0];
 
   return (
@@ -312,10 +312,10 @@ export default function ParentSummaryScreen({ navigation }) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.logo} numberOfLines={1}>Bugünün Özeti</Text>
+            <Text style={styles.logo} numberOfLines={1}>{t('parent.summary.title')}</Text>
             <Text style={styles.brandSub}>{kresAdi || 'Yumurcak'} · {formatDate(today)}</Text>
           </View>
-          {isBirthday ? <Text style={styles.birthdayTopBadge}>🎂 Bugün doğum günü var</Text> : null}
+          {isBirthday ? <Text style={styles.birthdayTopBadge}>🎂 {t('parent.summary.birthdayBadge')}</Text> : null}
           <TouchableOpacity onPress={() => navigation.navigate('ParentProfile')} style={styles.profileButton} activeOpacity={0.82}>
             {parentPhotoUrl ? (
               <Image source={{ uri: parentPhotoUrl }} style={styles.profileImage} />
@@ -336,11 +336,11 @@ export default function ParentSummaryScreen({ navigation }) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.childName}>{childName}</Text>
-            <Text style={styles.childSub}>{isBirthday ? `Bugün ${childName} için çok özel bir gün! 🎂` : `Merhaba ${parentName}, bugün olanları tek ekranda topladık.`}</Text>
+            <Text style={styles.childSub}>{isBirthday ? t('parent.summary.birthdaySpecialDay', { childName }) : t('parent.summary.greeting', { parentName })}</Text>
             <View style={styles.pillRow}>
               <Text style={[styles.pill, styles.pillGreen]}>✅ {attendanceLabel}</Text>
               <Text style={styles.pill}>{moodEmoji} {mood}</Text>
-              <Text style={[styles.pill, styles.pillOrange]}>🍽️ {getMainMealStatus(mealsSummary)}</Text>
+              <Text style={[styles.pill, styles.pillOrange]}>🍽️ {getMainMealStatus(mealsSummary, t)}</Text>
             </View>
           </View>
         </View>
@@ -349,8 +349,8 @@ export default function ParentSummaryScreen({ navigation }) {
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('ParentBell')} activeOpacity={0.82}>
             <View style={[styles.quickActionIcon, styles.iconOrange]}><Text style={styles.quickActionIconText}>🔔</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.quickActionTitle}>Kurum Zili</Text>
-              <Text style={styles.quickActionDesc}>Geliyorum / Kapıdayım</Text>
+              <Text style={styles.quickActionTitle}>{t('parent.summary.institutionBell')}</Text>
+              <Text style={styles.quickActionDesc}>{t('parent.summary.bellDesc')}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('ParentMessages')} activeOpacity={0.82}>
@@ -363,8 +363,8 @@ export default function ParentSummaryScreen({ navigation }) {
               ) : null}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.quickActionTitle, unreadMessages > 0 && styles.quickActionTitleUnread]}>Mesaj</Text>
-              <Text style={styles.quickActionDesc}>Öğretmene yaz</Text>
+              <Text style={[styles.quickActionTitle, unreadMessages > 0 && styles.quickActionTitleUnread]}>{t('parent.summary.message')}</Text>
+              <Text style={styles.quickActionDesc}>{t('parent.summary.writeToTeacher')}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -383,19 +383,19 @@ export default function ParentSummaryScreen({ navigation }) {
         />
 
         <View style={styles.miniGrid}>
-          <MiniCard styles={styles} icon={moodEmoji} value={mood} label="Ruh hali" />
-          <MiniCard styles={styles} icon={attendanceDisplay.icon} value={attendanceDisplay.value} label="Yoklama" valueStyle={attendanceDisplay.color} />
-          <MiniCard styles={styles} icon="😴" value={sleep} label="Uyku" />
-          <MiniCard styles={styles} icon="🎨" value={`${todayEvents.length}/3`} label="Etkinlik" />
+          <MiniCard styles={styles} icon={moodEmoji} value={mood} label={t('parent.summary.mood')} />
+          <MiniCard styles={styles} icon={attendanceDisplay.icon} value={attendanceDisplay.value} label={t('parent.summary.attendance')} valueStyle={attendanceDisplay.color} />
+          <MiniCard styles={styles} icon="😴" value={sleep} label={t('parent.summary.sleep')} />
+          <MiniCard styles={styles} icon="🎨" value={`${todayEvents.length}/3`} label={t('parent.summary.activity')} />
         </View>
 
         {pendingPayment ? (
           <TouchableOpacity style={[styles.wideCard, styles.paymentAlert]} onPress={() => navigation.navigate('ParentPayments')} activeOpacity={0.82}>
             <View style={[styles.bigIcon, styles.iconOrange]}><Text style={styles.bigIconText}>💳</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Ödeme hatırlatması</Text>
-              <Text style={styles.cardDesc}>{pendingPayment.baslik || pendingPayment.aciklama || 'Bekleyen ödeme kaydı var.'}</Text>
-              <Text style={styles.amountText}>{formatAmount(pendingPayment.tutar || pendingPayment.ucret || pendingPayment.miktar)}</Text>
+              <Text style={styles.cardTitle}>{t('parent.summary.paymentReminder')}</Text>
+              <Text style={styles.cardDesc}>{pendingPayment.baslik || pendingPayment.aciklama || t('parent.summary.pendingPaymentDesc')}</Text>
+              <Text style={styles.amountText}>{formatAmount(pendingPayment.tutar || pendingPayment.ucret || pendingPayment.miktar, t)}</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
@@ -405,20 +405,20 @@ export default function ParentSummaryScreen({ navigation }) {
           <TouchableOpacity style={[styles.wideCard, styles.pollAlert]} onPress={() => navigation.navigate('ParentPolls')} activeOpacity={0.82}>
             <View style={[styles.bigIcon, styles.iconPurple]}><Text style={styles.bigIconText}>🗳️</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Cevap bekleyen anket</Text>
-              <Text style={styles.cardDesc}>{activePoll.soru || activePoll.baslik || activePoll.title || 'Kurumun yeni anketi var.'}</Text>
+              <Text style={styles.cardTitle}>{t('parent.summary.pendingPollTitle')}</Text>
+              <Text style={styles.cardDesc}>{activePoll.soru || activePoll.baslik || activePoll.title || t('parent.summary.pendingPollDesc')}</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
         ) : null}
 
-        <SectionHead styles={styles} title="Yemek ve Menü" action="Yemek listesi" onPress={() => navigation.navigate('ParentMeals')} />
+        <SectionHead styles={styles} title={t('parent.summary.mealSectionTitle')} action={t('parent.summary.mealSectionAction')} onPress={() => navigation.navigate('ParentMeals')} />
         <View style={styles.card}>
           <View style={styles.cardRowTop}>
             <View style={[styles.bigIcon, styles.iconOrange]}><Text style={styles.bigIconText}>🍽️</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Bugünkü öğünler</Text>
-              <Text style={styles.cardDesc}>Menü ve öğretmen bildirimi birlikte gösterilir.</Text>
+              <Text style={styles.cardTitle}>{t('parent.summary.todaysMeals')}</Text>
+              <Text style={styles.cardDesc}>{t('parent.summary.todaysMealsDesc')}</Text>
             </View>
           </View>
           <View style={styles.mealBox}>
@@ -428,27 +428,27 @@ export default function ParentSummaryScreen({ navigation }) {
                   <Image source={{ uri: item.photo }} style={styles.mealThumb} resizeMode="cover" />
                 ) : null}
                 <Text style={styles.mealName}>{item.label}</Text>
-                <Text style={styles.mealMenu} numberOfLines={2}>{item.menu || 'Menü girilmedi'}</Text>
+                <Text style={styles.mealMenu} numberOfLines={2}>{item.menu || t('parent.summary.menuNotEntered')}</Text>
                 <Text style={[styles.mealStatus, getMealStatusStyle(styles, item.status)]}>{item.statusLabel}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        <SectionHead styles={styles} title="Ders ve Etkinlikler" action="Program" onPress={() => navigation.navigate('ParentEvents')} />
+        <SectionHead styles={styles} title={t('parent.summary.scheduleSectionTitle')} action={t('parent.summary.scheduleSectionAction')} onPress={() => navigation.navigate('ParentEvents')} />
         <View style={styles.card}>
           <View style={styles.cardRowTop}>
             <View style={[styles.bigIcon, styles.iconBlue]}><Text style={styles.bigIconText}>📚</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Bugünkü program</Text>
-              <Text style={styles.cardDesc}>Ders programı ve etkinlik kayıtlarından çekilir.</Text>
+              <Text style={styles.cardTitle}>{t('parent.summary.todaysProgram')}</Text>
+              <Text style={styles.cardDesc}>{t('parent.summary.todaysProgramDesc')}</Text>
             </View>
           </View>
           <View style={styles.scheduleList}>
             {[...todaySchedules, ...todayEvents].slice(0, 4).map((item, index) => (
               <View key={`${item.id || index}`} style={styles.lessonLine}>
                 <View style={styles.lessonHeadRow}>
-                  <Text style={styles.lessonMain} numberOfLines={1}>{getProgramTitle(item)}</Text>
+                  <Text style={styles.lessonMain} numberOfLines={1}>{getProgramTitle(item, t)}</Text>
                   <Text style={styles.lessonTime}>{item.saat || item.baslangicSaati || ''}</Text>
                 </View>
                 {Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0 ? (
@@ -463,7 +463,7 @@ export default function ParentSummaryScreen({ navigation }) {
               </View>
             ))}
             {todaySchedules.length === 0 && todayEvents.length === 0 ? (
-              <Text style={styles.emptyInline}>Bugün için program veya etkinlik girilmedi.</Text>
+              <Text style={styles.emptyInline}>{t('parent.summary.noProgramToday')}</Text>
             ) : null}
           </View>
           {hasMonthlySchedule ? (
@@ -482,17 +482,17 @@ export default function ParentSummaryScreen({ navigation }) {
           ) : null}
         </View>
 
-        <SectionHead styles={styles} title="Diğer Özetler" action="Tümünü gör" onPress={() => navigation.navigate('ParentReports')} />
+        <SectionHead styles={styles} title={t('parent.summary.otherSummariesTitle')} action={t('parent.summary.otherSummariesAction')} onPress={() => navigation.navigate('ParentReports')} />
         <View style={styles.twoGrid}>
           <TouchableOpacity style={styles.smallCard} onPress={() => navigation.navigate('ParentReports')} activeOpacity={0.82}>
             <Text style={styles.smallIcon}>📋</Text>
-            <Text style={styles.smallTitle}>Günlük rapor</Text>
+            <Text style={styles.smallTitle}>{t('parent.summary.dailyReport')}</Text>
             <Text style={styles.smallDesc} numberOfLines={3}>{note}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.smallCard, styles.noticeCard]} onPress={() => navigation.navigate('ParentAnnouncements')} activeOpacity={0.82}>
             <Text style={styles.smallIcon}>📢</Text>
-            <Text style={styles.smallTitle}>Duyuru</Text>
-            <Text style={styles.smallDesc} numberOfLines={3}>{latestAnnouncement?.baslik || latestAnnouncement?.title || latestAnnouncement?.icerik || 'Yeni duyuru yok.'}</Text>
+            <Text style={styles.smallTitle}>{t('parent.summary.announcement')}</Text>
+            <Text style={styles.smallDesc} numberOfLines={3}>{latestAnnouncement?.baslik || latestAnnouncement?.title || latestAnnouncement?.icerik || t('parent.summary.noNewAnnouncement')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -506,8 +506,8 @@ export default function ParentSummaryScreen({ navigation }) {
             ) : null}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.cardTitle, unreadMessages > 0 && styles.cardTitleUnread]}>Mesajlar</Text>
-            <Text style={styles.cardDesc}>Öğretmen ve kurum mesajlarını buradan takip edebilirsin.</Text>
+            <Text style={[styles.cardTitle, unreadMessages > 0 && styles.cardTitleUnread]}>{t('parent.summary.messages')}</Text>
+            <Text style={styles.cardDesc}>{t('parent.summary.messagesDesc')}</Text>
           </View>
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
@@ -515,8 +515,8 @@ export default function ParentSummaryScreen({ navigation }) {
         <TouchableOpacity style={styles.wideCard} onPress={() => navigation.navigate('ParentDevelopment')} activeOpacity={0.82}>
           <View style={[styles.bigIcon, styles.iconGreen]}><Text style={styles.bigIconText}>📈</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Aylık gelişim raporu</Text>
-            <Text style={styles.cardDesc}>AI yorumlu aylık gelişim ve istatistikleri incele.</Text>
+            <Text style={styles.cardTitle}>{t('parent.summary.monthlyDevelopmentReport')}</Text>
+            <Text style={styles.cardDesc}>{t('parent.summary.monthlyDevelopmentReportDesc')}</Text>
           </View>
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
@@ -529,19 +529,20 @@ export default function ParentSummaryScreen({ navigation }) {
 }
 
 function WeeklyStarCard({ styles, item }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.weeklyStarCard}>
       <View style={styles.weeklyStarHead}>
-        <Text style={styles.weeklyStarTitle}>🌟 Haftanın Yıldızı</Text>
-        <Text style={styles.weeklyStarTag}>Bu Hafta</Text>
+        <Text style={styles.weeklyStarTitle}>🌟 {t('parent.summary.weeklyStarTitle')}</Text>
+        <Text style={styles.weeklyStarTag}>{t('parent.summary.thisWeek')}</Text>
       </View>
       <View style={styles.weeklyStarBody}>
         <View style={styles.weeklyStarIconBox}>
           <Text style={styles.weeklyStarIcon}>{item.badgeEmoji || item.rozetEmoji || '🌟'}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.weeklyStarBadge}>{item.badgeTitle || item.rozetAdi || 'Rozet'}</Text>
-          <Text style={styles.weeklyStarDesc}>{item.note || item.not || item.badgeDesc || item.rozetAciklama || 'Bu hafta güzel bir davranışıyla öne çıktı.'}</Text>
+          <Text style={styles.weeklyStarBadge}>{item.badgeTitle || item.rozetAdi || t('parent.summary.badge')}</Text>
+          <Text style={styles.weeklyStarDesc}>{item.note || item.not || item.badgeDesc || item.rozetAciklama || t('parent.summary.weeklyStarDefaultDesc')}</Text>
           <Text style={styles.weeklyStarWeek}>{item.haftaLabel || `${item.haftaBaslangic || ''} - ${item.haftaBitis || ''}`}</Text>
         </View>
       </View>
@@ -603,6 +604,7 @@ function BirthdayCelebrationOverlay({ styles }) {
 }
 
 function BirthdayPopup({ visible, childName, onClose, styles }) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.popupBackdrop}>
@@ -611,11 +613,11 @@ function BirthdayPopup({ visible, childName, onClose, styles }) {
             <Text style={styles.popupCloseText}>×</Text>
           </TouchableOpacity>
           <Text style={styles.popupCake}>🧁</Text>
-          <Text style={styles.popupTitle}>🎉 Doğum Günün Kutlu Olsun!</Text>
-          <Text style={styles.popupText}>Bugün {childName}'in doğum günü.</Text>
-          <Text style={styles.popupSub}>Mutlu yaşlar, nice güzel yaşlara! 💜</Text>
+          <Text style={styles.popupTitle}>🎉 {t('parent.summary.happyBirthdayTitle')}</Text>
+          <Text style={styles.popupText}>{t('parent.summary.birthdayPopupText', { childName })}</Text>
+          <Text style={styles.popupSub}>{t('parent.summary.birthdayPopupSub')}</Text>
           <TouchableOpacity style={styles.popupButton} onPress={onClose} activeOpacity={0.86}>
-            <Text style={styles.popupButtonText}>Tamam</Text>
+            <Text style={styles.popupButtonText}>{t('common.ok')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -669,7 +671,7 @@ function getMealMenuText(value) {
   return String(value);
 }
 
-function buildMealSummary(report, mealList) {
+function buildMealSummary(report, mealList, t) {
   const reportMeal = report?.yemek || {};
   const menu = mealList?.ogunler || {};
 
@@ -677,20 +679,20 @@ function buildMealSummary(report, mealList) {
     const rawStatus = reportMeal?.[key]?.durum || (reportMeal?.[key] === true ? 'bitirdi' : '') || '';
     return {
       key,
-      label: MEAL_LABELS[key],
+      label: t(`parent.mealCard.mealName.${key}`),
       menu: getMealMenuText(menu?.[key]),
       photo: getMealPhoto(menu?.[key]),
       status: rawStatus,
-      statusLabel: MEAL_STATUS_LABELS[rawStatus] || rawStatus || 'Bekleniyor',
+      statusLabel: getMealStatusLabel(rawStatus, t),
     };
   });
 }
 
-function getMainMealStatus(items) {
-  if (items.some((item) => item.status === 'yemedi')) return 'Yemedi';
-  if (items.some((item) => item.status === 'az_yedi')) return 'Az yedi';
-  if (items.some((item) => item.status === 'bitirdi')) return 'Yedi';
-  return 'Bekleniyor';
+function getMainMealStatus(items, t) {
+  if (items.some((item) => item.status === 'yemedi')) return t('parent.summary.mealStatus.yemedi');
+  if (items.some((item) => item.status === 'az_yedi')) return t('parent.summary.mealStatus.az_yedi');
+  if (items.some((item) => item.status === 'bitirdi')) return t('parent.summary.mealStatus.bitirdi');
+  return t('parent.summary.mealStatus.waiting');
 }
 
 // Seçilen ruh haline (MOOD_LISTESI'ndeki "label") karşılık gelen emojiyi
@@ -704,15 +706,15 @@ function getMoodEmoji(moodLabel) {
 // Yoklama durumuna göre ikon + görüntülenecek metin + renk döndürür.
 // 'geldi' / 'gec' → yeşil onay; 'gelmedi' → kırmızı çarpı; kayıt yoksa
 // (henüz yoklama girilmemiş) → bekleniyor.
-function getAttendanceDisplay(styles, attendance) {
+function getAttendanceDisplay(styles, attendance, t) {
   const durum = attendance?.durum || attendance?.status || '';
   if (durum === 'geldi' || durum === 'gec') {
-    return { icon: '✅', value: durum === 'gec' ? 'Geç geldi' : 'Geldi', color: styles.attendanceGreen };
+    return { icon: '✅', value: durum === 'gec' ? t('parent.summary.arrivedLate') : t('parent.summary.arrived'), color: styles.attendanceGreen };
   }
   if (durum === 'gelmedi') {
-    return { icon: '❌', value: 'Gelmedi', color: styles.attendanceRed };
+    return { icon: '❌', value: t('parent.summary.didNotArrive'), color: styles.attendanceRed };
   }
-  return { icon: '⏳', value: 'Bekleniyor', color: null };
+  return { icon: '⏳', value: t('parent.summary.waiting'), color: null };
 }
 
 function getMealStatusStyle(styles, status) {
@@ -722,8 +724,8 @@ function getMealStatusStyle(styles, status) {
   return styles.mealWaiting;
 }
 
-function getProgramTitle(item) {
-  return item.baslik || item.dersAdi || item.etkinlikAdi || item.ad || 'Program';
+function getProgramTitle(item, t) {
+  return item.baslik || item.dersAdi || item.etkinlikAdi || item.ad || t('parent.summary.program');
 }
 
 function getDayKey(date) {
@@ -753,8 +755,8 @@ function isPaid(item) {
   return item?.odendi === true || item?.paid === true || durum === 'odendi' || durum === 'ödendi' || durum === 'paid';
 }
 
-function formatAmount(value) {
-  if (value === undefined || value === null || value === '') return 'Tutar belirtilmedi';
+function formatAmount(value, t) {
+  if (value === undefined || value === null || value === '') return t('parent.summary.amountNotSpecified');
   const num = Number(value);
   if (Number.isNaN(num)) return String(value);
   return `${num.toLocaleString('tr-TR')} TL`;
