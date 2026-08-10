@@ -24,6 +24,7 @@ export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, o
         {list.map((item, index) => {
           const active = index === activeIndex;
           const label = String(item?.etkinlik || '').trim() || 'Yeni Ders';
+          const saatPrefix = item?.baslangicSaati ? `${item.baslangicSaati}${item.bitisSaati ? '-' + item.bitisSaati : ''} ` : '';
           return (
             <TouchableOpacity
               key={index}
@@ -35,7 +36,7 @@ export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, o
               activeOpacity={0.85}
             >
               <Text style={[styles.chipText, { color: active ? '#fff' : palette.text }]} numberOfLines={1}>
-                {kategoriEmoji(item?.kategori)} {label}
+                {kategoriEmoji(item?.kategori)} {saatPrefix}{label}
               </Text>
               <TouchableOpacity onPress={() => onRemove(index)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                 <Text style={[styles.chipRemove, { color: active ? '#fff' : palette.muted }]}>×</Text>
