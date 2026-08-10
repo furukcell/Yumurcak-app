@@ -10,6 +10,8 @@ import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import './src/i18n';
+import { LanguageProvider } from './src/context/LanguageContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -95,16 +97,18 @@ export default function App() {
   return (
     <KeyboardProvider>
       <SafeAreaProvider>
-        <AuthProvider>
-          <NavigationContainer linking={YUMURCAK_LINKING}>
-            <PushTokenSync />
-            <NotificationDeepLinkHandler />
-            <StatusBar style="dark" backgroundColor="#F8F6FF" />
-            <ErrorBoundary onRetry={() => setNavKey((k) => k + 1)}>
-              <RootNavigator key={navKey} />
-            </ErrorBoundary>
-          </NavigationContainer>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <NavigationContainer linking={YUMURCAK_LINKING}>
+              <PushTokenSync />
+              <NotificationDeepLinkHandler />
+              <StatusBar style="dark" backgroundColor="#F8F6FF" />
+              <ErrorBoundary onRetry={() => setNavKey((k) => k + 1)}>
+                <RootNavigator key={navKey} />
+              </ErrorBoundary>
+            </NavigationContainer>
+          </AuthProvider>
+        </LanguageProvider>
       </SafeAreaProvider>
     </KeyboardProvider>
   );
