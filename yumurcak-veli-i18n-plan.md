@@ -11,7 +11,7 @@ yeterli olacak — ekran/component dosyalarına tekrar dokunulmayacak.
 
 ---
 
-## Faz 1 — Altyapı kurulumu
+## Faz 1 — Altyapı kurulumu ✅
 
 **Yeni dosyalar:**
 - `src/i18n.js` — i18next init, AsyncStorage'dan dil okuma/yazma, cihaz dili algılama
@@ -30,9 +30,9 @@ yeterli olacak — ekran/component dosyalarına tekrar dokunulmayacak.
 ## Faz 2 — Paylaşılan component'lerin çevirisi
 
 **Değişecek dosyalar (13):**
-- `src/components/Card.js`
-- `src/components/Button.js`
-- `src/components/Loading.js`
+- `src/components/Card.js` ✅
+- `src/components/Button.js`✅
+- `src/components/Loading.js`✅
 - `src/components/DailyCommentCard.js`
 - `src/components/MealTodayCard.js`
 - `src/components/DailyChecklistCard.js`
