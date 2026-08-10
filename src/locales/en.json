@@ -1,5 +1,70 @@
 {
-  "common": {},
+  "common": {
+    "today": "Today",
+    "and": "and",
+    "operationSuccessful": "Operation successful"
+  },
   "nav": {},
-  "parent": {}
+  "parent": {
+    "pdfBar": {
+      "print": "Print",
+      "shareDownload": "Share / Download",
+      "noRecordsTitle": "No Published Record",
+      "noRecordsBody": "There's no published document for {{monthLabel}} yet. You need to publish the month first.",
+      "errorTitle": "Error",
+      "printErrorBody": "The document could not be printed.",
+      "shareErrorBody": "The document could not be shared, or sharing isn't supported on this device.",
+      "docType": {
+        "yemek": "Meal List",
+        "nobet": "Duty Roster",
+        "gorev": "Staff Task List",
+        "ders": "Lesson Schedule"
+      }
+    },
+    "mealCard": {
+      "monthlyList": "Monthly List",
+      "classList": "Class List",
+      "institutionList": "Institution List",
+      "defaultTitle": "Daily Meal List",
+      "emptyTitle": "Waiting for today's meals",
+      "emptyDesc": "This will appear once the teacher adds breakfast, lunch, or a snack.",
+      "mealName": {
+        "kahvalti": "Breakfast",
+        "ogle": "Lunch",
+        "araOgun": "Snack"
+      },
+      "addUpdate": "Add / update",
+      "notEnteredYet": "Not entered yet",
+      "edit": "Edit",
+      "addMeal": "+ Add meal"
+    },
+    "dailyComment": {
+      "title": "Daily summary",
+      "readyBadge": "Ready at 5:00 PM",
+      "defaultChildName": "Your child",
+      "pendingText": "{{name}}'s daily summary will be generated automatically today at 5:00 PM, based on what the teacher enters.",
+      "opener": "Today, {{name}}",
+      "moodBody": "seemed {{emoji}}{{mood}}.",
+      "mealsBody": "{{meals}}.",
+      "mealFragment": "{{emoji}} {{verb}}{{menu}} {{place}}",
+      "mealPlace": {
+        "kahvalti": "at breakfast",
+        "ogle": "at lunch",
+        "araOgun": "at snack time"
+      },
+      "mealVerb": {
+        "bitirdi": "ate well",
+        "az_yedi": "ate a little",
+        "yemedi": "didn't have much appetite"
+      },
+      "trendBetter": "Their appetite was better today than yesterday.",
+      "trendWorse": "Their appetite was a bit lower today than yesterday.",
+      "sleepDuration": "😴 slept {{sleep}}.",
+      "sleepStatus": "😴 Sleep status: {{sleep}}.",
+      "programBodySingle": "the schedule included \"{{title}}\".",
+      "programBodyMultiple": "the schedule included {{titles}}.",
+      "teacherNote": "Teacher's note: {{note}}",
+      "noInfo": "No information has been entered for {{name}} today yet."
+    }
+  }
 }
