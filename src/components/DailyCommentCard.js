@@ -5,35 +5,27 @@
 // Cümle üretim mantığı (buildDailyComment) ve ona özel tüm
 // yardımcılar burada yaşıyor — Summary ekranı sadece veriyi
 // prop olarak geçiyor, metni kendi üretmiyor.
+//
+// Not: mood (ruh hali) ve sleep (uyku) değerleri öğretmenin
+// serbest girdiği ham veridir, otomatik çevrilmez — sadece
+// bu dosyadaki sabit cümle kalıpları (t() ile) çevriliyor.
 // ============================================================
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { MOOD_LISTESI } from '../constants';
 
-const MEAL_LOCATIVE = {
-  kahvalti: 'kahvaltıda',
-  ogle: 'öğle yemeğinde',
-  araOgun: 'ara öğünde',
-};
-
-const MEAL_VERB_PHRASES = {
-  bitirdi: 'iyi yedi',
-  az_yedi: 'az yedi',
-  yemedi: 'pek iştahlı değildi',
-};
-
+const MEAL_ORDER = { bitirdi: 0, az_yedi: 1, yemedi: 2 };
 const MEAL_EMOJI = {
   bitirdi: '🙂',
   az_yedi: '😐',
   yemedi: '😕',
 };
 
-const MEAL_ORDER = { bitirdi: 0, az_yedi: 1, yemedi: 2 };
-
-function joinTurkish(list) {
+function joinList(list, t) {
   if (list.length === 0) return '';
   if (list.length === 1) return list[0];
-  return `${list.slice(0, -1).join(', ')} ve ${list[list.length - 1]}`;
+  return `${list.slice(0, -1).join(', ')} ${t('common.and')} ${list[list.length - 1]}`;
 }
 
 function capitalizeFirst(text) {
@@ -46,9 +38,16 @@ function getMoodEmoji(mood) {
   return found?.emoji || '';
 }
 
+function buildMealFragmentText(item, t) {
+  const place = t(`parent.dailyComment.mealPlace.${item.key}`, { defaultValue: item.label });
+  const verb = t(`parent.dailyComment.mealVerb.${item.status}`);
+  const menu = item.menu ? ` (${item.menu})` : '';
+  return t('parent.dailyComment.mealFragment', { emoji: MEAL_EMOJI[item.status], place, verb, menu });
+}
+
 // Bugünün öğün durumlarını dünkü ile kıyaslar; belirgin bir fark yoksa
 // (gürültü olmasın diye) hiçbir şey söylemez.
-function buildMealTrend(todaySummary, yesterdaySummary) {
+function buildMealTrend(todaySummary, yesterdaySummary, t) {
   const scoreOf = (summary) => {
     const scored = summary
       .filter((item) => MEAL_ORDER[item.status] !== undefined)
@@ -60,48 +59,48 @@ function buildMealTrend(todaySummary, yesterdaySummary) {
   const yesterdayScore = scoreOf(yesterdaySummary);
   if (todayScore === null || yesterdayScore === null) return '';
   const diff = todayScore - yesterdayScore;
-  if (diff >= 0.5) return 'Dünküne göre bugün iştahı daha iyiydi.';
-  if (diff <= -0.5) return 'Dünküne göre bugün iştahı biraz daha azdı.';
+  if (diff >= 0.5) return t('parent.dailyComment.trendBetter');
+  if (diff <= -0.5) return t('parent.dailyComment.trendWorse');
   return '';
 }
 
-function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsSummary, sleep, schedules, events, note }) {
+function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsSummary, sleep, schedules, events, note, t }) {
   const sentences = [];
-  const namePrefix = childFirstName ? `${childFirstName} bugün` : 'Bugün';
+  const name = childFirstName || t('parent.dailyComment.defaultChildName');
+  const opener = t('parent.dailyComment.opener', { name });
   let openerUsed = false;
+
+  const pushSentence = (body) => {
+    sentences.push(openerUsed ? capitalizeFirst(body) : `${opener} ${body}`);
+    openerUsed = true;
+  };
 
   // 1) Ruh hali — çocuğun adıyla açılış cümlesi
   if (mood && mood !== 'Bekleniyor') {
     const emoji = getMoodEmoji(mood);
-    sentences.push(`${namePrefix} ${emoji ? emoji + ' ' : ''}${mood.toLowerCase()} görünüyordu.`);
-    openerUsed = true;
+    pushSentence(t('parent.dailyComment.moodBody', { emoji: emoji ? `${emoji} ` : '', mood: mood.toLowerCase() }));
   }
 
   // 2) Öğünler — önce iyi geçenler, sonra iştahsız olanlar; her biri kendi
   // emojisi ve yumuşak bir ifadeyle, tek tek anlatılır.
   const mealFragments = (mealsSummary || [])
-    .filter((item) => MEAL_VERB_PHRASES[item.status])
+    .filter((item) => MEAL_ORDER[item.status] !== undefined)
     .sort((a, b) => MEAL_ORDER[a.status] - MEAL_ORDER[b.status])
-    .map((item) => {
-      const place = MEAL_LOCATIVE[item.key] || item.label;
-      const menuPart = item.menu ? ` (${item.menu})` : '';
-      return `${MEAL_EMOJI[item.status]} ${place}${menuPart} ${MEAL_VERB_PHRASES[item.status]}`;
-    });
+    .map((item) => buildMealFragmentText(item, t));
 
   if (mealFragments.length > 0) {
-    const mealSentence = `${joinTurkish(mealFragments)}.`;
-    sentences.push(openerUsed ? capitalizeFirst(mealSentence) : `${namePrefix} ${mealSentence}`);
-    openerUsed = true;
+    pushSentence(t('parent.dailyComment.mealsBody', { meals: joinList(mealFragments, t) }));
 
-    const trend = buildMealTrend(mealsSummary || [], yesterdayMealsSummary || []);
+    const trend = buildMealTrend(mealsSummary || [], yesterdayMealsSummary || [], t);
     if (trend) sentences.push(trend);
   }
 
   // 3) Uyku bilgisi
   if (sleep && sleep !== 'Bekleniyor') {
-    const sleepText = /saat/i.test(sleep) ? `😴 ${sleep} uyudu.` : `😴 Uyku durumu: ${sleep}.`;
-    sentences.push(openerUsed ? sleepText : `${namePrefix} ${sleepText}`);
-    openerUsed = true;
+    const sleepBody = /saat/i.test(sleep)
+      ? t('parent.dailyComment.sleepDuration', { sleep })
+      : t('parent.dailyComment.sleepStatus', { sleep });
+    pushSentence(sleepBody);
   }
 
   // 4) Bugünkü ders programı ve etkinlikler, başlıklarıyla birlikte
@@ -109,20 +108,19 @@ function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsS
     .map((item) => item.baslik || item.dersAdi || item.etkinlikAdi || item.ad || '')
     .filter(Boolean);
   if (programTitles.length > 0) {
-    const programText = programTitles.length === 1
-      ? `programda "${programTitles[0]}" vardı.`
-      : `programda ${programTitles.map((t) => `"${t}"`).join(', ')} yer aldı.`;
-    sentences.push(openerUsed ? `Bugün ${programText}` : `${namePrefix} ${programText}`);
-    openerUsed = true;
+    const programBody = programTitles.length === 1
+      ? t('parent.dailyComment.programBodySingle', { title: programTitles[0] })
+      : t('parent.dailyComment.programBodyMultiple', { titles: programTitles.map((title) => `"${title}"`).join(', ') });
+    pushSentence(programBody);
   }
 
   const hasRealNote = note && note !== 'Bugün için öğretmen notu henüz girilmedi.';
   if (hasRealNote) {
-    sentences.push(`Öğretmen notu: ${note}`);
+    sentences.push(t('parent.dailyComment.teacherNote', { note }));
   }
 
   if (sentences.length === 0) {
-    return childFirstName ? `${childFirstName} için bugün henüz bilgi girilmedi.` : 'Bugün için henüz bilgi girilmedi.';
+    return t('parent.dailyComment.noInfo', { name });
   }
 
   return sentences.join(' ');
@@ -140,6 +138,7 @@ export default function DailyCommentCard({
   note,
   aiComment,
 }) {
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const currentHour = new Date().getHours();
   const isAfter5PM = currentHour >= 17;
@@ -152,11 +151,11 @@ export default function DailyCommentCard({
     return (
       <View style={styles.commentCard}>
         <View style={styles.commentHead}>
-          <Text style={styles.commentTitle}>✨ Günlük kısa yorum</Text>
-          <Text style={[styles.todayTag, styles.pendingTag]}>17:00’de hazır</Text>
+          <Text style={styles.commentTitle}>✨ {t('parent.dailyComment.title')}</Text>
+          <Text style={[styles.todayTag, styles.pendingTag]}>{t('parent.dailyComment.readyBadge')}</Text>
         </View>
         <Text style={styles.commentText}>
-          {childFirstName ? `${childFirstName} için günlük` : 'Günlük'} özet, öğretmenin bugün girdiği bilgilere göre bugün saat 17:00’de otomatik oluşturulacak.
+          {t('parent.dailyComment.pendingText', { name: childFirstName || t('parent.dailyComment.defaultChildName') })}
         </Text>
       </View>
     );
@@ -173,13 +172,14 @@ export default function DailyCommentCard({
       schedules,
       events,
       note,
+      t,
     });
 
   return (
     <View style={styles.commentCard}>
       <View style={styles.commentHead}>
-        <Text style={styles.commentTitle}>✨ Günlük kısa yorum</Text>
-        <Text style={styles.todayTag}>Bugün</Text>
+        <Text style={styles.commentTitle}>✨ {t('parent.dailyComment.title')}</Text>
+        <Text style={styles.todayTag}>{t('common.today')}</Text>
       </View>
       <Text style={styles.commentText}>{dailyComment}</Text>
     </View>
