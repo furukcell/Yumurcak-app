@@ -3,6 +3,7 @@ import { Text, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import ParentSummaryScreen from '../screens/parent/ParentSummaryScreen';
 import ParentDashboardScreen from '../screens/parent/ParentDashboard';
@@ -41,6 +42,7 @@ function TabIcon({ icon, focused, color, compact }) {
 
 function ParentTabs() {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const compact = width < 360;
@@ -58,11 +60,11 @@ function ParentTabs() {
   const iconProps = (icon) => ({ focused, color }) => <TabIcon icon={icon} focused={focused} color={color} compact={compact} />;
   return (
     <Tab.Navigator initialRouteName="ParentSummary" screenOptions={tabOptions}>
-      <Tab.Screen name="ParentSummary" component={ParentSummaryScreen} options={{ title: 'Özet', tabBarIcon: iconProps('📊') }} />
-      <Tab.Screen name="ParentDashboard" component={ParentDashboardScreen} options={{ title: compact ? 'Ana' : 'Anasayfa', tabBarIcon: iconProps('🏠') }} />
-      <Tab.Screen name="ParentReportsTab" component={ParentReportsScreen} options={{ title: 'Rapor', tabBarIcon: iconProps('📋') }} />
-      <Tab.Screen name="ParentDevelopmentTab" component={ParentDevelopmentScreen} options={{ title: 'Gelişim', tabBarIcon: iconProps('📈') }} />
-      <Tab.Screen name="ParentMessagesTab" component={ParentMessagesScreen} options={{ title: 'Mesaj', tabBarIcon: iconProps('💬') }} />
+      <Tab.Screen name="ParentSummary" component={ParentSummaryScreen} options={{ title: t('nav.summary'), tabBarIcon: iconProps('📊') }} />
+      <Tab.Screen name="ParentDashboard" component={ParentDashboardScreen} options={{ title: compact ? t('nav.homeCompact') : t('nav.home'), tabBarIcon: iconProps('🏠') }} />
+      <Tab.Screen name="ParentReportsTab" component={ParentReportsScreen} options={{ title: t('nav.reports'), tabBarIcon: iconProps('📋') }} />
+      <Tab.Screen name="ParentDevelopmentTab" component={ParentDevelopmentScreen} options={{ title: t('nav.development'), tabBarIcon: iconProps('📈') }} />
+      <Tab.Screen name="ParentMessagesTab" component={ParentMessagesScreen} options={{ title: t('nav.messages'), tabBarIcon: iconProps('💬') }} />
     </Tab.Navigator>
   );
 }
