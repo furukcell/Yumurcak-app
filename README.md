@@ -1,398 +1,973 @@
-# Yumurcak Kreş
+# 🐣 Yumurcak Kreş
 
-Yumurcak Kreş; kreş yöneticisi, öğretmen ve veli panelleri olan Expo / React Native tabanlı mobil kreş takip uygulamasıdır. Amaç; kreşteki günlük akışı, çocuk takibini, veli iletişimini, duyuru/anket süreçlerini, yemek, galeri, gelişim, ödeme, uyum, dökümanlar ve bildirim süreçlerini tek uygulamada toplamaktır.
+> **Kreş yönetimi, öğretmen takibi ve veli iletişimini tek platformda birleştiren mobil SaaS uygulaması.**
 
-Proje şu an **Google Play'de yayında**. Yönetici, öğretmen ve veli panellerindeki ana modüller tamamlanmış; push bildirimler Firebase Cloud Functions tarafına taşınmış; RevenueCat / Google Play abonelik akışı kurulmuş; galeri medya optimizasyonu eklenmiş; uyum, rozet, gelişim, sınıf ortalaması, dökümanlar/PDF sistemi ve bildirim kapsamı güncellenmiştir.
+Yumurcak; kreşlerin günlük operasyonlarını, öğretmenlerin çocuk takibini ve velilerin çocuklarıyla ilgili günlük bilgilere erişimini tek bir mobil uygulamada birleştirmek amacıyla geliştirilmiştir.
 
-> Son güncelleme: 9 Ağustos 2026
+Uygulama **Expo / React Native + Firebase** altyapısı üzerine kuruludur ve yönetici, öğretmen, veli ve superadmin rollerini destekler.
 
 ---
 
-## Güncel Durum
+## 🚀 Güncel Durum
+
+### 🟢 Ana ürün tamamlandı
+
+Yumurcak'ın ana ürün geliştirme fazları tamamlanmıştır.
+
+Şu anda proje:
 
 ```txt
-Durum: Google Play'de yayında
-Ana modüller: Tamamlandı
-Dökümanlar / PDF modülü: Tamamlandı (Faz 0-9)
-Push bildirim: Firebase Cloud Functions ile aktif
-Abonelik: RevenueCat + Google Play aktif
-Pilot kullanım: Başladı
-Kalan ana işler:
-- App Store sürümü
-- Kurum demoları
-- İlk pilot kreşlerden geri bildirim toplama
+Ana ürün geliştirme        ✅ TAMAMLANDI
+Admin paneli               ✅
+Öğretmen paneli            ✅
+Veli paneli                ✅
+Firebase backend           ✅
+Günlük takip               ✅
+Bildirim sistemi           ✅
+Galeri                     ✅
+Döküman / PDF sistemi      ✅
+Uyum modülü                ✅
+Gelişim sistemi            ✅
+Rozet sistemi              ✅
+Mesajlaşma                 ✅
+Duyuru / Anket             ✅
+Ödeme takibi               ✅
+Abonelik altyapısı         ✅
+AI günlük özet             ✅
+Dil desteği                🟡 DEVAM EDİYOR
+Pilot kurumlar             🟡 HAZIRLANIYOR
+Son gerçek cihaz testleri  🟡 DEVAM EDİYOR
 ```
 
+Yumurcak artık yeni özelliklerin sürekli eklendiği erken aşama bir prototip değil; **gerçek kreşlerde kullanılmak üzere hazırlanmış, ticari kullanıma yönelik bir SaaS ürünüdür.**
+
 ---
 
-## Teknoloji
+# 🎯 Ürünün Amacı
+
+Yumurcak'ın amacı kreş içerisindeki dağınık iletişim ve takip süreçlerini tek bir dijital sistem altında toplamaktır.
+
+Geleneksel yapı:
 
 ```txt
-Expo SDK: 54
-React Native: 0.81.5
-React: 19.1.0
-Firebase: 12.0.0
-Firebase Auth: kullanıcı girişi ve rol ayrımı
-Firebase Realtime Database: uygulama verileri (Firestore KULLANILMIYOR)
-Firebase Storage: profil, galeri, yemek ve gelişim medya dosyaları
-Firebase Cloud Functions: push bildirim, otomatik bildirim tetikleyicileri, etkinlik/yemek havuzu güncellemeleri, günlük AI özet üretimi
-Gemini API: gemini-3.5-flash-lite — günlük AI özet metni (Cloud Functions üzerinden, secret: GEMINI_API_KEY)
-RevenueCat: react-native-purchases 9.0.0
-Push: expo-notifications + Expo Push API
-Medya seçimi: expo-image-picker
-Fotoğraf optimizasyonu: expo-image-manipulator
-Video optimizasyonu: react-native-compressor
-Medya indirme / cihaz galerisine kaydetme: expo-file-system + expo-media-library
-PDF / yazdırma: expo-print + expo-sharing
-Android sistem bar: expo-navigation-bar
-Android klavye davranışı: softwareKeyboardLayoutMode = resize
+Öğretmen
+   ↓
+Kağıt / WhatsApp / Excel
+   ↓
+Yönetici
+   ↓
+Veli
 ```
 
----
-
-## Uygulama Bilgileri
+Yumurcak ile:
 
 ```txt
-Uygulama adı: Yumurcak Kreş
-Android package: com.furukcell.yumurcakapp
-App version: 1.0.0
-Android versionCode: 1
-compileSdkVersion: 35
-targetSdkVersion: 35
-minSdkVersion: 24
-Firebase project: yumurcak-app
+             ┌──────────────┐
+             │   YUMURCAK   │
+             └──────┬───────┘
+                    │
+       ┌────────────┼────────────┐
+       ↓            ↓            ↓
+    Yönetici     Öğretmen       Veli
+       │            │            │
+       └────────────┼────────────┘
+                    ↓
+             Firebase Backend
 ```
 
----
-
-## Roller
-
-| Rol | Açıklama |
-| --- | --- |
-| `superadmin` | Platform / kreş yönetimi ve üst seviye işlemler |
-| `yonetici` | Kurum, sınıf, çocuk, öğretmen, veli, ödeme, duyuru, anket, galeri, tema, abonelik, bildirim, yasal metin, istatistik, dökümanlar ve çocuk uyum ayarı yönetimi |
-| `ogretmen` | Kendi sınıfındaki çocuklar, yoklama, günlük rapor, medikal bilgi, fiziksel gelişim, uyum takibi, haftanın yıldızı rozeti, yemek listesi, ders programı, galeri, mesaj, duyuru, gezi formu, ilaç takip formu, tema ve bildirim ekranları |
-| `veli` | Çocuğa ait özet, haftanın yıldızı rozeti, rozet albümü, günlük/aylık rapor, uyum skoru, sınıf ortalaması, ödeme, yemek, gelişim, medikal bilgi, anket, galeri, mesaj, bildirim, aylık bülten ve yasal metin ekranları |
+Tüm taraflar aynı veri yapısı üzerinden çalışır.
 
 ---
 
-## Tamamlanan Ana Özellikler
+# 👥 Kullanıcı Rolleri
 
-- Rol bazlı giriş ve otomatik yönlendirme
-- Firebase Auth tabanlı kullanıcı akışı
-- Realtime Database ile kurum, sınıf, çocuk, veli, öğretmen ve günlük takip verileri
-- Firebase Storage ile profil fotoğrafı, galeri ve medya altyapısı
-- Kreş ve sınıf bazlı tema sistemi
-- Veli / öğretmen / admin panellerinde modern pastel kart tasarımları
-- Veli özet ekranı
-- Veli doğum günü kutlama modu
-- Öğretmen doğum günleri ekranı
-- Öğretmen `Haftanın Yıldızı` rozet ekranı, veli özetinde haftalık rozet kartı, `Rozetlerim` ekranı, `Rozet Albümü`
-- Veli gelişim ekranında `Aylık Gelişim` ve `Sınıf Ortalaması` tabları, anonim sınıf ortalaması karşılaştırması
-- Yeni başlayan çocuklar için 30 günlük `Uyum Modülü`, veli `Uyum Skoru`, öğretmen günlük `Uyum Takibi`
-- Admin çocuk formunda `Mevcut öğrenci / Yeni başlayan` ayrımı
-- Öğretmen günlük rapor ekranı (ruh hali, öğün detayları, uyku süresi, tuvalet sayısı, öğretmen notu)
-- Yoklama sistemi
-- Galeri fotoğraf / video paylaşımı, uygulama içi görüntüleme/oynatma, cihaz galerisine kaydetme, yükleme öncesi medya optimizasyonu
-- Medikal bilgi takibi ve ilaç takip formu (günlük uygulama log'u)
-- Fiziksel gelişim kaydı ve geçmişi
-- Duyuru sistemi (hedefli: kurum / veli / öğretmen / sınıf)
-- Anket / oylama sistemi
-- Mesajlaşma sistemi
-- Kurum Zili
-- Ödeme takibi
-- Uygulama içi bildirim merkezi
-- Firebase Cloud Functions tabanlı push notification sistemi
-- RevenueCat abonelik altyapısı, Google Play abonelik ürünleri
-- Uygulama içi yasal metinler
-- Kullanıcıya görünen tarih formatlarında `DD.MM.YYYY` standardı
-- **Yapay zeka destekli günlük özet** — her gün saat 17:00'de, Gemini ile otomatik üretilir (bkz. aşağıdaki bölüm)
-- **Dökümanlar / Aylık Belgeler modülü** (bkz. aşağıdaki bölüm)
+## 👨‍💼 Yönetici
+
+Kreşin tüm operasyonunu yönetir.
+
+* Kurum yönetimi
+* Sınıf yönetimi
+* Öğretmen yönetimi
+* Çocuk yönetimi
+* Veli bağlantıları
+* Ödeme takibi
+* Yemek listeleri
+* Ders programları
+* Galeri
+* Duyurular
+* Anketler
+* Kurum Zili
+* Medikal bilgiler
+* Gelişim takibi
+* Uyum takibi
+* Rozetler
+* Belgeler / PDF
+* Tema yönetimi
+* Abonelik
 
 ---
 
-## Dökümanlar / Aylık Belgeler Modülü
+## 👩‍🏫 Öğretmen
 
-Eskiden yemek listesi ve ders programı hem A4 fotoğraf yükleyerek hem de ayrı ayrı elle giriliyordu. Bu modül **tek veri girişi → çoklu çıktı** mantığıyla yeniden kuruldu: öğretmen/yönetici bir ayı bir kez doldurur, sistem bunu hem yazdırılabilir/paylaşılabilir PDF'e hem de günlük özet kartlarına otomatik besler.
+Günlük çocuk takibinin merkezidir.
 
-Ortak mimari:
+* Günlük rapor
+* Ruh hali
+* Kahvaltı / öğle / ara öğün
+* Uyku
+* Tuvalet
+* Öğretmen notu
+* Yoklama
+* Fiziksel gelişim
+* Uyum takibi
+* Haftanın Yıldızı
+* Rozet
+* Galeri
+* Ders programı
+* Duyuru
+* Mesajlaşma
+* Hazır duyuru araçları
+* Günlük kontrol paneli
+
+---
+
+## 👨‍👩‍👧 Veli
+
+Çocuğuyla ilgili bilgileri tek uygulamadan takip eder.
+
+* Günlük özet
+* Günlük rapor
+* Yemek bilgileri
+* Uyku
+* Tuvalet
+* Ruh hali
+* Öğretmen notları
+* Yoklama
+* Fiziksel gelişim
+* Aylık gelişim
+* Sınıf ortalaması
+* Uyum skoru
+* Rozetler
+* Haftanın Yıldızı
+* Galeri
+* Fotoğraf / video
+* Duyurular
+* Anketler
+* Mesajlaşma
+* Ödeme bilgileri
+* Yemek listesi
+* Ders programı
+* PDF belgeleri
+* Bildirim merkezi
+
+---
+
+## 🛡️ Superadmin
+
+Yumurcak platformunun merkezi yönetimi için kullanılan yönetim katmanıdır.
+
+* Kreş yönetimi
+* Kurum kontrolü
+* Kullanıcı yönetimi
+* Sistem yönetimi
+* Merkezi içerik yapıları
+* Abonelik kontrolü
+
+---
+
+# 📱 Ana Modüller
+
+## 📋 Günlük Takip
+
+Öğretmen tek ekrandan çocuğun günlük durumunu kaydedebilir.
+
+### Günlük rapor
+
+* Ruh hali
+* Kahvaltı
+* Öğle yemeği
+* Ara öğün
+* Uyku süresi
+* Tuvalet
+* Öğretmen notu
+
+Yemek durumları:
 
 ```txt
-Gün-bazlı belgeler (her gün ayrı kayıt): yemekListeleri, dersProgramlari, nobetCizelgeleri
-Tek-kayıt / ay-bazlı bölümlü belgeler: aylikBultenler, personelGorevListeleri
-Ay kavramı olmayan bağımsız belgeler: servisBilgileri, geziFormlari, ilacTakipFormlari
-Hesaplanan rapor (elle girilmez): Doğum Günü Takvimi (cocuklar.dogumTarihi'nden)
+Yemedi
+Az yedi
+Bitirdi
 ```
 
-Ortak özellikler (tüm belge türlerinde):
-
-- Liste / Takvim görünüm toggle'ı (`MonthlyCalendarView`)
-- Taslak doldur → `Ayı Yayınla` / `Yayından Kaldır`
-- `Geçen Ayı Kopyala`
-- Aylık/yayın bazlı `Arşiv` (`MonthlyArchivePicker`)
-- Kurumsal PDF (logo, okul adı, telefon, adres, müdür imzası — `kresler/{kresId}`'den otomatik)
-- Tek ekrandan Yazdır / Paylaş / İndir (`MonthlyDocumentPdfBar`, `expo-print` + `expo-sharing`)
-
-Belge türleri:
-
-| Belge | Ekran (Admin) | Kapsam |
-| --- | --- | --- |
-| Yemek Listesi | `AdminMonthlyMealScreen` | Sınıf bazlı, günlük |
-| Ders Programı | `AdminMonthlyScheduleScreen` | Sınıf bazlı, günlük |
-| Aylık Bülten | `AdminMonthlyBulletinScreen` | Kurum geneli, bölümlü |
-| Nöbet Çizelgesi | `AdminMonthlyDutyRosterScreen` | Kurum geneli, günlük |
-| Personel Görev Listesi | `AdminMonthlyStaffTasksScreen` | Kurum geneli, bölümlü |
-| Servis Listesi | `AdminServiceScreen` | Çocuk bazlı, ay kavramı yok |
-| Doğum Günü Takvimi | `AdminBirthdayCalendarScreen` | Hesaplanan, ay kavramı var |
-| Gezi Formu | `AdminGeziFormListScreen` / `...EditScreen` | Bağımsız kayıtlar |
-| İlaç Takip Formu | `TeacherMedicationForm...` (3 ekran) | Sağlık belgesi, öğretmen tarafında |
-
-Öğretmen tarafında ders programı kendi sınıfına otomatik bağlanır (`TeacherScheduleScreen`), veli tarafında günlük özet ve aylık yemek/PDF ekranlarına otomatik akar.
-
-### Etkinlik ve Yemek Kütüphanesi (kreşler arası anonim havuz)
-
-- `etkinlikHavuzu` / `yemekHavuzu`: tüm kreşler arasında paylaşılan, **tamamen anonim** (okul/öğretmen/çocuk bilgisi içermez) kullanım istatistiği havuzu. Client sadece okuyabilir (`.write: false`), Cloud Functions (Admin SDK) günceller.
-- `_etkinlikHavuzuMeta` / `_yemekHavuzuMeta`: farklı kreş sayısını hesaplamak için tamamen gizli node'lar (`.read: false`, `.write: false`).
-- Öğretmen "Etkinlik Öner" / yazarken-öner (autocomplete) ile daha önce kullanılmış, popüler etkinlik ve yemekleri görüp tek dokunuşla seçebilir.
-- Yaş grubu artık serbest metin değil, standart bir listeden seçiliyor (`YAS_GRUPLARI`).
+girilebilir.
 
 ---
 
-## Yapay Zeka Destekli Günlük Özet (Gemini)
+# 🧒 Gelişim Takibi
 
-Öğretmen gün içinde veriyi parça parça girer (günlük rapor, yemek listesi, ders programı, etkinlik, rozet, boy/kilo ölçümü, uyum takibi, ilaç takibi, yoklama). Her ayrı kayıt için ayrı bir bildirim/özet üretmek yerine, sistem **her gün Türkiye saatiyle 17:00'de tek seferlik** çalışıp o ana kadar girilmiş **tüm** verileri toplar, Gemini'ye gönderir ve veliye gösterilecek doğal, sıcak bir günlük özet metni üretir — rakip uygulamalarda olmayan bir fark.
+Çocuğun fiziksel gelişimi düzenli olarak kaydedilebilir.
+
+Veli tarafında:
+
+* Aylık Gelişim
+* Sınıf Ortalaması
+
+ekranları bulunur.
+
+Sınıf ortalaması:
+
+* Minimum 5 çocuk şartı
+* Anonim karşılaştırma
+* Çocuk isimlerini göstermeme
+* Sıralama / derece göstermeme
+
+mantığıyla çalışır.
+
+---
+
+# 🌱 Uyum Modülü
+
+Yeni başlayan çocukların ilk 30 günlük adaptasyon sürecini takip etmek için geliştirilmiştir.
 
 ```txt
-Cloud Function: generateDailyAiComments
-Bölge: europe-west1
-Tetikleyici: pubsub.schedule('every day 17:00') — Europe/Istanbul
-Model: gemini-3.5-flash-lite
-Secret: GEMINI_API_KEY (Firebase secret, .env değil)
-Yazılan node: gunlukYorumlar/{cocukId}/{tarih}
-Gösterildiği yer: Veli özet ekranı → DailyCommentCard.js
-```
-
-Nasıl çalışır:
-
-```txt
-17:00'de tüm çocuklar taranır
+Yeni başlayan çocuk
         ↓
-O çocuk için o gün hiç veri girilmemişse → Gemini'ye HİÇ gidilmez (kota israfı yok)
+30 günlük takip
         ↓
-Veri varsa → günlük rapor, yemek, ders programı, etkinlik, rozet, gelişim ölçümü,
-             yoklama, uyum takibi, ilaç takibi + son 7 günün özeti tek prompt'ta birleştirilir
+Öğretmen günlük değerlendirmesi
         ↓
-Gemini 2-4 cümlelik, samimi, "gerçek öğretmen yazmış gibi" bir özet üretir
+Uyum skoru
         ↓
-gunlukYorumlar/{cocukId}/{tarih} kaydına yazılır
-        ↓
-Veli özet ekranında "Günlük kısa yorum" kartında gösterilir
+Veli bilgilendirmesi
 ```
 
-Önemli tasarım kararları:
+Özellikler:
+
+* Yeni başlayan öğrenci tanımlama
+* Günlük uyum kaydı
+* Öğretmen Uyum Takibi
+* Otomatik uyum skoru
+* 30 günlük takip
+* Takibin otomatik kapanması
+* Veli Uyum Skoru
+* Uyum bildirimleri
+
+---
+
+# 🏆 Rozet & Haftanın Yıldızı
+
+Çocukların olumlu davranışlarını desteklemek için geliştirilmiştir.
+
+* Haftanın Yıldızı
+* Rozet verme
+* Rozet geçmişi
+* Veli Rozetlerim
+* Haftalık rozet kartı
+* Push bildirimi
+
+Rozetler yalnızca ilgili çocuğun velisi tarafından görüntülenebilir.
+
+---
+
+# 📸 Galeri
+
+Kreş ile veli arasındaki görsel iletişimi sağlar.
+
+Desteklenen içerikler:
+
+* Fotoğraf
+* Video
+* Çoklu medya
+* Grid görünümü
+* Uygulama içi görüntüleme
+* Uygulama içi video oynatma
+* Cihaza kaydetme
+
+### Medya optimizasyonu
+
+Fotoğraflar otomatik olarak optimize edilir.
 
 ```txt
-- Bir çocukta hata olursa diğerlerini etkilemez (try/catch + Promise.all izolasyonu)
-- "Bugün okula gelmedi" durumunda diğer verileri yok sayıp tek cümlelik kısa not yazdırır
-- Prompt her seferinde cümle yapısını/açılışı farklılaştırmaya zorlanır — art arda gelen
-  özetler birbirinin kalıbı gibi durmasın diye
-- Ham alan adları (mood, durum vb.) hiçbir zaman kullanıcıya olduğu gibi gösterilmez,
-  hepsi doğal cümleye çevrilir
+Fotoğraf → maksimum 1920px / optimize kalite
+Video    → yaklaşık 720p / boyut kontrolü
+```
+
+Galeride süreli görünürlük ve otomatik temizlik mekanizmaları da bulunmaktadır.
+
+---
+
+# 🔔 Bildirim Sistemi
+
+Bildirim sistemi Firebase Cloud Functions üzerinden çalışır.
+
+Temel akış:
+
+```txt
+Uygulamada olay oluşur
+        ↓
+Firebase
+        ↓
+Cloud Function
+        ↓
+Bildirim kaydı
+        ↓
+Expo Push API
+        ↓
+Kullanıcının telefonu
+```
+
+Desteklenen bildirimler:
+
+* Duyuru
+* Ödeme
+* Mesaj
+* Kurum Zili
+* Günlük Rapor
+* Galeri
+* Anket
+* Haftanın Yıldızı
+* Rozet
+* Yoklama
+* Yemek Listesi
+* Medikal Bilgi
+* Fiziksel Gelişim
+* Uyum
+
+Bildirim durumları takip edilebilir:
+
+```txt
+pending
+sent
+no_tokens
+error
+skipped_empty_body
+```
+
+Ayrıca bildirimlere bağlı deep-link yapısı bulunmaktadır.
+
+---
+
+# 💬 İletişim
+
+Kreş, öğretmen ve veli arasındaki iletişim uygulama içine alınmıştır.
+
+### Duyurular
+
+Hedefli duyuru:
+
+* Kurum
+* Sınıf
+* Öğretmen
+* Veli
+
+bazında gönderilebilir.
+
+### Anket
+
+* Anket oluşturma
+* Hedef kitle seçimi
+* Oylama
+* Sonuç görüntüleme
+* Bildirim
+
+### Mesajlaşma
+
+Kullanıcılar uygulama içerisinden iletişim kurabilir.
+
+---
+
+# 🔔 Kurum Zili
+
+Kreş yönetiminin tüm kuruma veya belirli kullanıcı gruplarına hızlı bildirim göndermesini sağlar.
+
+---
+
+# 🍽️ Yemek Listesi
+
+Aylık yemek planları yapılandırılmış veri olarak oluşturulur.
+
+Desteklenen yapı:
+
+* Gün
+* Kahvaltı
+* Öğle yemeği
+* Ara öğün
+* Açıklama
+
+Liste ve takvim görünümü bulunur.
+
+Aylık plan:
+
+```txt
+Taslak
+   ↓
+Kontrol
+   ↓
+Ayı Yayınla
+   ↓
+Veli / Öğretmen
+```
+
+şeklinde çalışır.
+
+---
+
+# 📚 Ders Programı
+
+Aylık ders / etkinlik programı yapılandırılmış veriler üzerinden oluşturulur.
+
+* Gün bazlı etkinlik
+* Açıklama
+* Aylık program
+* Takvim görünümü
+* Liste görünümü
+* Yayınlama
+* Yayından kaldırma
+* Önceki aydan kopyalama
+* Arşiv
+
+Öğretmen kendi sınıfına otomatik bağlanır.
+
+Veli tarafında ise yayınlanmış program günlük özet ekranına otomatik beslenir.
+
+---
+
+# 📄 PDF & Döküman Sistemi
+
+Yumurcak'ın önemli özelliklerinden biri yapılandırılmış veriden otomatik belge üretmesidir.
+
+Tek veri:
+
+```txt
+Yemek / Ders / Kurum bilgisi
+          ↓
+      PDF Renderer
+          ↓
+       A4 belge
+```
+
+Desteklenen belgeler:
+
+* Aylık Yemek Listesi
+* Ders Programı
+* Aylık Bülten
+* Nöbet Çizelgesi
+* Personel Görev Listesi
+* Servis Listesi
+* Doğum Günü Takvimi
+* Gezi Formu
+* İlaç Takip Formu
+
+PDF sistemi:
+
+* Admin
+* Öğretmen
+* Veli
+
+tarafında ortak renderer mantığı kullanır.
+
+Tekrar eden ayrı PDF üretim kodları yerine ortak servis mimarisi kullanılmıştır.
+
+---
+
+# 🗂️ İçerik Kütüphaneleri
+
+## Etkinlik Kütüphanesi
+
+Kreşler arasında anonim olarak ortak kullanılabilen etkinlik havuzu bulunur.
+
+* Etkinlik arama
+* Otomatik tamamlama
+* Yaş grubu standardizasyonu
+* Merkezi havuz
+* Kreşler arasında anonim veri
+
+## Yemek Kütüphanesi
+
+Benzer şekilde yemek havuzu bulunur.
+
+Amaç öğretmenin her ay içerikleri sıfırdan oluşturmak zorunda kalmamasıdır.
+
+---
+
+# 🤖 Yapay Zeka Günlük Özeti
+
+Öğretmenin girdiği günlük veriler kullanılarak veliye daha doğal bir günlük özet oluşturulması için AI altyapısı hazırlanmıştır.
+
+Veriler:
+
+```txt
+Ruh hali
+Yemek
+Uyku
+Tuvalet
+Öğretmen notu
+        ↓
+      AI
+        ↓
+Doğal günlük özet
+```
+
+Amaç; klasik:
+
+> “Bugün yemeğini yedi. Uykusunu uyudu.”
+
+gibi mekanik metinler yerine daha doğal ve bağlamlı bir veli iletişimi sağlamaktır.
+
+---
+
+# 💳 Abonelik Sistemi
+
+Yumurcak ticari SaaS modeliyle çalışacak şekilde tasarlanmıştır.
+
+Altyapı:
+
+* RevenueCat
+* Google Play Billing
+* YUMURCAK Pro entitlement
+* Google Play ürünleri
+* Offering / Package sistemi
+
+### Güncel fiyatlandırma
+
+| Paket       | Öğrenci |    Aylık |    Yıllık |
+| ----------- | ------: | -------: | --------: |
+| Başlangıç   |    0–30 | 1.250 TL | 12.500 TL |
+| Profesyonel |   31–50 | 1.750 TL | 17.500 TL |
+| Kurum       |  51–100 | 2.750 TL | 27.500 TL |
+| Kurumsal    |    100+ |     Özel |      Özel |
+
+> Pilot kurumlara özel başlangıç fiyatları ayrıca uygulanabilir.
+
+---
+
+# 🔐 Güvenlik & Gizlilik
+
+Yumurcak çocuk verileriyle çalışan bir sistem olduğu için veri izolasyonu temel mimari prensiplerden biridir.
+
+Altyapıda:
+
+* Firebase Authentication
+* Firebase Realtime Database
+* Firebase Storage
+* Rol bazlı erişim
+* `kresId` bazlı veri izolasyonu
+* Sınıf bazlı erişim
+* Veli / çocuk ilişkilendirmesi
+* Storage erişim kuralları
+* KVKK Aydınlatma Metni
+* Gizlilik Politikası
+* Kullanım Şartları
+* Hesap silme sayfası
+
+bulunmaktadır.
+
+Özellikle farklı kreşlerin birbirlerinin verilerine erişmemesi için kurum bazlı veri izolasyonu uygulanır.
+
+---
+
+# 🏗️ Teknik Mimari
+
+```txt
+React Native / Expo
+        │
+        ├── React Navigation
+        ├── Context API
+        ├── i18next
+        ├── Expo Notifications
+        ├── Expo Print
+        ├── Expo Sharing
+        └── RevenueCat
+                │
+                ↓
+             Firebase
+                │
+       ┌────────┼────────┐
+       ↓        ↓        ↓
+     Auth      RTDB    Storage
+                         │
+                         ↓
+                  Cloud Functions
+                         │
+                         ↓
+                    Expo Push
 ```
 
 ---
 
-## Push Bildirim Sistemi
+# 🧩 Kullanılan Teknolojiler
 
-Push bildirim gönderimi uygulama içinden çıkarılmış ve Firebase Cloud Functions tarafına taşınmıştır. Uygulama sadece `bildirimler` node'una kayıt oluşturur; Cloud Function hedef kullanıcıların Expo push tokenlarını bulur ve bildirimi telefona gönderir.
+### Mobile
 
-Akış:
+* React Native
+* Expo SDK
+* React Navigation
+* React Native Safe Area
+* React Native Keyboard Controller
+
+### Backend
+
+* Firebase Authentication
+* Firebase Realtime Database
+* Firebase Storage
+* Firebase Cloud Functions
+
+### Bildirim
+
+* Expo Notifications
+* Expo Push API
+* Firebase Cloud Functions
+
+### Monetization
+
+* RevenueCat
+* Google Play Billing
+
+### Documents
+
+* Expo Print
+* Expo Sharing
+* HTML → PDF render
+
+### Internationalization
+
+* i18next
+* react-i18next
+* AsyncStorage
+
+### CI/CD
+
+* GitHub
+* GitHub Actions
+* EAS Build
+* Codemagic
+
+---
+
+# 🌍 Dil Desteği
+
+Dil desteği şu anda aktif geliştirme aşamasındadır.
+
+Mevcut altyapı:
 
 ```txt
-Uygulama / Admin / Öğretmen / Veli olayı
+Türkçe   ✅
+İngilizce kaynaklar  ✅
+i18next  ✅
+LanguageContext  ✅
+Dil tercihi saklama  ✅
+```
+
+Sonraki adım:
+
+```txt
+Ekranların i18n anahtarlarına geçirilmesi
         ↓
-Firebase Realtime Database kaydı
+Dil seçici
         ↓
-Cloud Function otomatik tetiklenir
+Türkçe / İngilizce uçtan uca test
+```
+
+Dil sistemi tamamlandığında Yumurcak'ın uluslararası kullanıma uygun altyapısı güçlendirilmiş olacaktır.
+
+---
+
+# 🧪 Canlıya Geçiş Durumu
+
+Ana ürün geliştirmesi tamamlanmıştır.
+
+Şu anda odak:
+
+### 1. Dil desteği
+
+```txt
+🟡 DEVAM EDİYOR
+```
+
+### 2. Gerçek cihaz testleri
+
+```txt
+🟡 SON KONTROLLER
+```
+
+Kontrol edilecek temel akışlar:
+
+* Admin giriş
+* Öğretmen giriş
+* Veli giriş
+* Kullanıcı bağlantıları
+* Günlük rapor
+* Yoklama
+* Gelişim
+* Uyum
+* Rozet
+* Galeri
+* Duyuru
+* Anket
+* Ödeme
+* Mesaj
+* Bildirim
+* PDF
+* Tema
+* Döküman yayınlama
+* Geçen ayı kopyalama
+* Arşiv
+
+### 3. Abonelik testi
+
+```txt
+🟡 SON KONTROL
+```
+
+* Google Play satın alma
+* RevenueCat entitlement
+* Restore
+* Firebase abonelik kaydı
+
+### 4. Firebase güvenlik kontrolü
+
+```txt
+🟡 SON AUDIT
+```
+
+### 5. Pilot kurumlar
+
+```txt
+🟡 HAZIRLANIYOR
+```
+
+Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
+
+---
+
+# 🗺️ Ürün Yol Haritası
+
+## Faz 1 — Temel Platform
+
+**TAMAMLANDI ✅**
+
+* Firebase
+* Authentication
+* Roller
+* Admin
+* Öğretmen
+* Veli
+* Superadmin
+* Kurum yönetimi
+
+## Faz 2 — Günlük Takip
+
+**TAMAMLANDI ✅**
+
+* Günlük rapor
+* Yoklama
+* Yemek
+* Gelişim
+* Uyum
+
+## Faz 3 — İletişim
+
+**TAMAMLANDI ✅**
+
+* Duyuru
+* Anket
+* Mesajlaşma
+* Kurum Zili
+* Push notification
+
+## Faz 4 — Galeri
+
+**TAMAMLANDI ✅**
+
+* Fotoğraf
+* Video
+* Optimizasyon
+* Görüntüleme
+* Kaydetme
+* Otomatik temizlik
+
+## Faz 5 — Gelişim & Motivasyon
+
+**TAMAMLANDI ✅**
+
+* Fiziksel gelişim
+* Sınıf ortalaması
+* Uyum
+* Rozet
+* Haftanın Yıldızı
+
+## Faz 6 — Dökümanlar
+
+**TAMAMLANDI ✅**
+
+* Aylık yemek listesi
+* Ders programı
+* Liste / Takvim
+* Yayınlama
+* Yayından kaldırma
+* Geçen ayı kopyalama
+* Arşiv
+* PDF
+* Belge şablonları
+* Etkinlik kütüphanesi
+* Yemek kütüphanesi
+* Öğretmen verimlilik araçları
+
+## Faz 7 — Ticari Sistem
+
+**TAMAMLANDI ✅**
+
+* RevenueCat
+* Google Play abonelik
+* Pro entitlement
+* Paket sistemi
+
+## Faz 8 — AI
+
+**TAMAMLANDI ✅**
+
+* AI günlük özet altyapısı
+
+## Faz 9 — Çoklu Dil
+
+**🟡 DEVAM EDİYOR**
+
+* i18n altyapısı
+* Türkçe kaynaklar
+* İngilizce kaynaklar
+* Dil tercihi
+* Ekranların i18n sistemine geçirilmesi
+* Dil seçici
+* Uçtan uca dil testi
+
+## Faz 10 — Pilot & Ölçekleme
+
+**🟡 SIRADAKİ ANA AŞAMA**
+
+```txt
+Pilot kreşler
+     ↓
+Gerçek kullanım
+     ↓
+Geri bildirim
+     ↓
+Hata / UX düzeltmeleri
+     ↓
+İlk ücretli müşteriler
+     ↓
+Kreş sayısının artırılması
+```
+
+---
+
+# 🎯 Yumurcak'ın Bundan Sonraki Hedefi
+
+Artık ana hedef yeni özellik eklemek değildir.
+
+Ana hedef:
+
+> **Yumurcak'ı gerçek kreşlerde düzenli kullanılan, para kazanan ve ölçeklenebilir bir SaaS ürününe dönüştürmek.**
+
+Öncelik sırası:
+
+```txt
+1. Dil desteğini tamamla
         ↓
-bildirimler/{bildirimId} kaydı oluşur veya mevcut bildirim işlenir
+2. Gerçek cihaz testlerini bitir
         ↓
-Expo Push API ile telefona push gider
-```
-
-Aktif Cloud Functions:
-
-```txt
-sendPushOnNotificationCreate
-createNotificationOnDailyReportCreate
-createNotificationOnGalleryCreate
-createNotificationOnPollCreate
-sendPollAnswerReminders
-createNotificationOnWeeklyBadgeWrite
-createNotificationOnAttendanceWrite
-createNotificationOnMealListCreate
-createNotificationOnMedicalWrite
-createNotificationOnPhysicalDevelopmentCreate
-createNotificationOnAdaptationWrite
-updateActivityPoolOnScheduleWrite
-updateMealPoolOnMealWrite
-createNotificationOnAnnouncementCreate
-createNotificationOnEventCreate
-checkBirthdaysDaily
-cleanupExpiredGalleryDaily
-cleanupExpiredMealPhotosDaily
-generateDailyAiComments
-```
-
-Telefona push giden bildirimler:
-
-```txt
-✅ Duyuru          ✅ Galeri fotoğraf / video   ✅ Medikal bilgi
-✅ Ödeme kaydı     ✅ Anket                     ✅ Fiziksel gelişim
-✅ Mesaj           ✅ Haftanın Yıldızı / Rozet  ✅ Uyum takibi
-✅ Kurum Zili      ✅ Yoklama
-✅ Günlük rapor    ✅ Yemek listesi
-```
-
-Bildirim durumları `bildirimler` kaydında izlenir:
-
-```txt
-pushStatus: pending | sent | no_tokens | error | skipped_empty_body
-pushTokenCount
-pushSentAt
-pushProvider
-pushError
+3. Firebase Rules son kontrol
+        ↓
+4. RevenueCat / Google Play gerçek satın alma testi
+        ↓
+5. Pilot kreşleri sisteme al
+        ↓
+6. Gerçek kullanım verisi topla
+        ↓
+7. Hataları ve UX sorunlarını düzelt
+        ↓
+8. İlk düzenli abonelikleri başlat
+        ↓
+9. Satış ve büyüme
 ```
 
 ---
 
-## Otomatik Temizlik (Scheduled Cleanup)
+# 📊 Ürün Vizyonu
 
-Galeri ve yemek listesi fotoğrafları uygulamada 24 saat sonra client tarafında gizleniyor, ama Storage ve Realtime Database'de kalıcı olarak duruyordu. İki zamanlanmış (`pubsub.schedule`) Cloud Function bunu 48 saat (2 gün) sonra kalıcı olarak temizler:
+Yumurcak yalnızca bir “kreş takip uygulaması” olarak konumlandırılmamaktadır.
+
+Uzun vadeli hedef:
 
 ```txt
-cleanupExpiredGalleryDaily      → her gün 04:00 (Europe/Istanbul)
-cleanupExpiredMealPhotosDaily   → her gün 04:15 (Europe/Istanbul)
+                    YUMURCAK
+                       │
+        ┌──────────────┼──────────────┐
+        ↓              ↓              ↓
+     Yönetim        Öğretmen         Veli
+        │              │              │
+        └──────────────┼──────────────┘
+                       ↓
+                Ortak Veri Sistemi
+                       ↓
+              Akıllı Kreş Platformu
 ```
 
-- **cleanupExpiredGalleryDaily:** `galeri/` altında `createdAt`'i 48 saatten eski olan kayıtları bulur; tüm `mediaItems` dosyalarını Storage'dan siler, ardından `galeri/{id}` kaydını ve `kresGalerileri`/`sinifGalerileri`/`cocukGalerileri` index node'larını Realtime Database'den kaldırır.
-- **cleanupExpiredMealPhotosDaily:** `yemekListeleri/` altındaki her öğünde (`ogunler/{mealKey}`) `fotoPath` var ve yüklenmesinin üzerinden 48 saat geçmişse, Storage'daki dosyayı siler ve sadece `fotoUrl`/`fotoPath` alanlarını temizler — öğün metni (`text`) silinmez.
-
-Manuel deploy (sadece bu iki fonksiyonu güncellemek için):
-
-```bash
-firebase deploy --only functions:cleanupExpiredGalleryDaily,functions:cleanupExpiredMealPhotosDaily
-```
+Amaç; kreşin günlük operasyonundan veli iletişimine, doküman üretiminden çocuk gelişimine kadar mümkün olduğunca fazla süreci tek platformda toplamaktır.
 
 ---
 
-## Abonelik / RevenueCat
+# 📌 Proje Özeti
 
-RevenueCat ve Google Play abonelik altyapısı kurulmuştur. Admin panelinden paket seçimi yapılır. RevenueCat paketi okunamazsa ödeme yapmadan abonelik açılmaz; manuel aktif etme butonu canlı risk nedeniyle kaldırılmıştır.
+**Yumurcak Kreş**, gerçek kreşlerin günlük kullanımına yönelik geliştirilen mobil SaaS platformudur.
 
-Paketler:
-
-| Paket | Öğrenci Aralığı | Aylık | Yıllık |
-| --- | ---: | ---: | ---: |
-| Başlangıç | 0-30 | 1.000 TL | 10.000 TL |
-| Profesyonel | 31-50 | 1.500 TL | 15.000 TL |
-| Kurum | 51-100 | 3.000 TL | 30.000 TL |
-| 100+ | Özel teklif | Manuel | Manuel |
-
-RevenueCat yapılandırması:
+### Bugünkü ürün:
 
 ```txt
-Offering: default
-Entitlement: YUMURCAK Pro
-Android public key: REVENUECAT_ANDROID_PUBLIC_KEY
+🟢 Ana ürün tamamlandı
+🟢 Admin paneli
+🟢 Öğretmen paneli
+🟢 Veli paneli
+🟢 Superadmin
+🟢 Firebase backend
+🟢 Günlük takip
+🟢 Gelişim
+🟢 Uyum
+🟢 Rozet
+🟢 Galeri
+🟢 Mesajlaşma
+🟢 Duyuru
+🟢 Anket
+🟢 Bildirim
+🟢 Ödeme
+🟢 PDF / Döküman
+🟢 RevenueCat
+🟢 AI günlük özet
+🟡 Dil desteği
+🟡 Son gerçek cihaz testleri
+🟡 Pilot kurumlar
 ```
 
-Package eşleşmeleri:
+**Yumurcak artık fikir veya prototip aşamasında değildir.**
 
-```txt
-baslangic_aylik
-baslangic_yillik
-profesyonel_aylik
-profesyonel_yillik
-kurum_aylik
-kurum_yillik
-```
-
-Dahili demo promosyon kodu:
-
-```txt
-PILOT1AY
-```
+**Hedef: Gerçek kreşlerde kullanılan, sürdürülebilir abonelik geliri üreten ve zaman içerisinde Türkiye'deki kreşler için kapsamlı bir dijital yönetim platformuna dönüşen bir SaaS ürünü olmaktır.**
 
 ---
 
-## Firebase Ana Veri Yapıları
+## 📄 Yasal
 
-```txt
-kullanicilar          duyurular            galeri
-kresler                anketler             medikalBilgiler
-siniflar               odemeler             fizikselGelisim
-cocuklar               mesajlar             uyumKayitlari
-gunlukRaporlar         bildirimler          haftaninRozetleri
-yoklamalar              abonelikler          gunlukYorumlar (AI özet)
+Yasal dokümanlar:
 
---- Dökümanlar modülü ---
-yemekListeleri          nobetCizelgeleri     geziFormlari
-dersProgramlari         personelGorevListeleri  ilacTakipFormlari
-aylikBultenler          servisBilgileri
+* Gizlilik Politikası
+* KVKK Aydınlatma Metni
+* Kullanım Şartları
+* Hesap Silme
 
---- Etkinlik / Yemek kütüphanesi (anonim, kreşler arası) ---
-etkinlikHavuzu          _etkinlikHavuzuMeta (gizli)
-yemekHavuzu             _yemekHavuzuMeta (gizli)
-```
+`docs/` klasörü altında bulunmaktadır.
 
 ---
 
-## Sınıf Ortalaması Gizlilik Kuralı
+## 👨‍💻 Geliştirici
 
-Veli gelişim ekranında sınıf ortalaması sadece anonim ve toplu şekilde gösterilir.
+**FK Digital**
 
-```txt
-Minimum 5 çocuk ölçümü şartı
-Başka çocuk adı gösterilmez
-Sıralama / derece yok
-4/18, ilk %25, en iyi / en kötü ifadeleri yok
-```
-
-Yorum dili: `Ortalamaya yakın` / `Ortalamanın üzerinde` / `Ortalamanın altında`
-
----
-
-## Cloud Functions Deploy
-
-```bash
-firebase deploy --only functions --project yumurcak-app
-```
-
-Dikkat:
-
-```txt
-Başka Firebase projesi aktif olsa bile --project yumurcak-app kullanılmalıdır.
-Eski başka proje function'ları silinmemelidir.
-```
-
----
-
-## Tamamlanan Yayın Öncesi Testler
-
-- ✅ Admin / Öğretmen / Veli girişi ve rol bazlı yönlendirme
-- ✅ Günlük rapor, yoklama, fiziksel gelişim, uyum modülü akışları
-- ✅ Haftanın Yıldızı / Rozet sistemi
-- ✅ Galeri fotoğraf/video yükleme ve medya optimizasyonu
-- ✅ Duyuru, anket, ödeme, kurum zili, mesajlaşma
-- ✅ Push bildirimleri, Firebase Cloud Functions
-- ✅ RevenueCat entegrasyonu, Google Play satın alma testi, Restore Purchase
-- ✅ Yapay zeka destekli günlük özet (Gemini, günlük 17:00 tetikleyici)
-- ✅ Firebase Database / Storage Rules
-- ✅ Android Release Build, Google Play Production Yayını
-
----
-
-## Not
-
-Yumurcak Kreş şu anda Google Play üzerinde yayındadır. Yönetici, öğretmen ve veli panelleri aktif olarak çalışmaktadır. Kalan işler ve sıradaki geliştirmeler için **ROADMAP.md** dosyasına bakınız.
+Yumurcak Kreş, FK Digital tarafından geliştirilen bir ürünüdür.
