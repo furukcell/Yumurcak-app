@@ -4,7 +4,14 @@
     "and": "ve",
     "operationSuccessful": "İşlem başarılı"
   },
-  "nav": {},
+  "nav": {
+    "summary": "Özet",
+    "home": "Anasayfa",
+    "homeCompact": "Ana",
+    "reports": "Rapor",
+    "development": "Gelişim",
+    "messages": "Mesaj"
+  },
   "parent": {
     "pdfBar": {
       "print": "Yazdır",
