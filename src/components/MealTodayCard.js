@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   primary: '#6C3DEB',
@@ -12,6 +13,10 @@ const COLORS = {
   border: '#EEEAF8',
 };
 
+// Not: title alanı geriye dönük uyumluluk için korunuyor — TeacherMealsScreen.js
+// bu diziyi import edip meal.title'ı doğrudan kullanıyor, o yüzden burada
+// hâlâ Türkçe duruyor. MealTodayCard'ın kendi render'ı aşağıda t() ile
+// ayrı bir çeviri kullanıyor (parent.mealCard.mealName.<key>).
 const MEALS = [
   { key: 'kahvalti', title: 'Kahvaltı', icon: '🥐', accent: '#FFF4DE', border: '#FFE2A8' },
   { key: 'ogle', title: 'Öğle', icon: '🍲', accent: '#EAF7FF', border: '#BEEAFF' },
@@ -41,24 +46,31 @@ function formatDate(value) {
 export { MEALS, getMealText, getMealPhoto };
 
 export default function MealTodayCard({ item, className, title, editable = false, onMealPress }) {
+  const { t } = useTranslation();
   const ogunler = item?.ogunler || {};
   const isEmpty = !MEALS.some((meal) => getMealText(ogunler[meal.key]) || getMealPhoto(ogunler[meal.key]));
+
+  const typeChipText = item?.kaynak === 'admin_aylik'
+    ? t('parent.mealCard.monthlyList')
+    : item?.sinifId
+      ? t('parent.mealCard.classList')
+      : t('parent.mealCard.institutionList');
 
   return (
     <View style={styles.card}>
       <View style={styles.chipRow}>
         <Text style={styles.dateChip}>📅 {formatDate(item?.tarih || item?.baslangicTarihi)}</Text>
-        <Text style={styles.typeChip}>{item?.kaynak === 'admin_aylik' ? 'Aylık Liste' : item?.sinifId ? 'Sınıf Listesi' : 'Kurum Listesi'}</Text>
+        <Text style={styles.typeChip}>{typeChipText}</Text>
         {className ? <Text style={styles.classChip}>★ {className}</Text> : null}
       </View>
 
-      <Text style={styles.title}>{title || item?.baslik || 'Günlük Yemek Listesi'}</Text>
+      <Text style={styles.title}>{title || item?.baslik || t('parent.mealCard.defaultTitle')}</Text>
 
       {isEmpty ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyIcon}>🍽️</Text>
-          <Text style={styles.emptyTitle}>Bugün için öğün bekleniyor</Text>
-          <Text style={styles.emptyDesc}>Öğretmen kahvaltı, öğle veya ara öğün ekledikçe burada görünür.</Text>
+          <Text style={styles.emptyTitle}>{t('parent.mealCard.emptyTitle')}</Text>
+          <Text style={styles.emptyDesc}>{t('parent.mealCard.emptyDesc')}</Text>
         </View>
       ) : null}
 
@@ -67,6 +79,7 @@ export default function MealTodayCard({ item, className, title, editable = false
         const text = getMealText(value);
         const photo = getMealPhoto(value);
         const filled = !!text || !!photo;
+        const mealTitle = t(`parent.mealCard.mealName.${meal.key}`);
 
         return (
           <TouchableOpacity
@@ -80,11 +93,11 @@ export default function MealTodayCard({ item, className, title, editable = false
             </View>
 
             <View style={styles.mealTextBox}>
-              <Text style={styles.mealTitle}>{meal.title}</Text>
+              <Text style={styles.mealTitle}>{mealTitle}</Text>
               <Text style={[styles.mealDesc, !filled && styles.emptyMealDesc]} numberOfLines={2}>
-                {text || (editable ? 'Ekle / güncelle' : 'Henüz girilmedi')}
+                {text || (editable ? t('parent.mealCard.addUpdate') : t('parent.mealCard.notEnteredYet'))}
               </Text>
-              {editable ? <Text style={styles.editHint}>{filled ? 'Düzenle' : '+ Öğün ekle'}</Text> : null}
+              {editable ? <Text style={styles.editHint}>{filled ? t('parent.mealCard.edit') : t('parent.mealCard.addMeal')}</Text> : null}
             </View>
 
             {photo ? (
