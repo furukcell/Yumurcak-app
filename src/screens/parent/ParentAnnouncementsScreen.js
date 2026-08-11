@@ -4,6 +4,7 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, THEME } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
 
@@ -11,23 +12,23 @@ function targetRoleOf(item) {
   return item.targetRole || item.hedefRol || item.hedefTipi || 'all';
 }
 
-function labelOf(item) {
+function labelOf(item, t) {
   const role = targetRoleOf(item);
-  if (role === 'sinif') return 'Sınıf Duyurusu';
-  if (role === 'veli') return 'Veli Duyurusu';
-  return 'Kurum Duyurusu';
+  if (role === 'sinif') return t('parent.announcements.classAnnouncement');
+  if (role === 'veli') return t('parent.announcements.parentAnnouncement');
+  return t('parent.announcements.institutionAnnouncement');
 }
 
-function titleOf(item) {
-  return item.baslik || item.title || 'Duyuru';
+function titleOf(item, t) {
+  return item.baslik || item.title || t('parent.announcements.defaultTitle');
 }
 
 function textOf(item) {
   return item.icerik || item.message || item.metin || item.aciklama || '-';
 }
 
-function isImportant(item) {
-  const title = titleOf(item).toLocaleLowerCase('tr-TR');
+function isImportant(item, t) {
+  const title = titleOf(item, t).toLocaleLowerCase('tr-TR');
   const text = textOf(item).toLocaleLowerCase('tr-TR');
   return item.onemli === true || item.important === true || title.includes('önem') || text.includes('önem');
 }
@@ -41,6 +42,7 @@ function timeTextOf(item) {
 }
 
 export default function ParentAnnouncementsScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
   
   const announcements = useNodeList('duyurular', kresId);
@@ -61,39 +63,39 @@ export default function ParentAnnouncementsScreen({ navigation }) {
       .filter((item) => {
         if (filter === 'class') return targetRoleOf(item) === 'sinif';
         if (filter === 'school') return targetRoleOf(item) !== 'sinif';
-        if (filter === 'important') return isImportant(item);
+        if (filter === 'important') return isImportant(item, t);
         return true;
       })
       .sort((a, b) => Number(b.createdAt || b.tarih || 0) - Number(a.createdAt || a.tarih || 0));
-  }, [announcements, kresId, sinifId, filter]);
+  }, [announcements, kresId, sinifId, filter, t]);
 
-  if (loading) return <LoadingScreen text="Duyurular hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.announcements.loading')} />;
 
   return (
-    <ScreenShell title="Duyurular" emoji="📣" navigation={navigation}>
+    <ScreenShell title={t('parent.announcements.title')} emoji="📣" navigation={navigation}>
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Duyurular için çocuğunuzun sınıfa bağlı olması gerekir." />
+        <EmptyState icon="👧" title={t('parent.announcements.noChildTitle')} desc={t('parent.announcements.noChildDesc')} />
       ) : announcements.length === 0 ? (
-        <EmptyState icon="📣" title="Henüz duyuru yok" desc="Kurum veya öğretmen duyuru eklediğinde burada görünecek." />
+        <EmptyState icon="📣" title={t('parent.announcements.emptyTitle')} desc={t('parent.announcements.emptyDesc')} />
       ) : (
         <>
           <View style={local.filterRow}>
-            <FilterChip active={filter === 'all'} label="▦ Tümü" onPress={() => setFilter('all')} />
-            <FilterChip active={filter === 'class'} label="👥 Sınıf" onPress={() => setFilter('class')} />
-            <FilterChip active={filter === 'school'} label="🏫 Kurum" onPress={() => setFilter('school')} />
-            <FilterChip active={filter === 'important'} label="★ Önemli" onPress={() => setFilter('important')} />
+            <FilterChip active={filter === 'all'} label={`▦ ${t('parent.announcements.filterAll')}`} onPress={() => setFilter('all')} />
+            <FilterChip active={filter === 'class'} label={`👥 ${t('parent.announcements.filterClass')}`} onPress={() => setFilter('class')} />
+            <FilterChip active={filter === 'school'} label={`🏫 ${t('parent.announcements.filterInstitution')}`} onPress={() => setFilter('school')} />
+            <FilterChip active={filter === 'important'} label={`★ ${t('parent.announcements.filterImportant')}`} onPress={() => setFilter('important')} />
           </View>
 
           <View style={local.infoBanner}>
             <View style={local.bannerIconBox}><Text style={local.bannerIcon}>🔔</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={local.bannerTitle}>Duyuruları kaçırmayın</Text>
-              <Text style={local.bannerText}>Kurum ve sınıf bilgilendirmelerini buradan takip edebilirsiniz.</Text>
+              <Text style={local.bannerTitle}>{t('parent.announcements.bannerTitle')}</Text>
+              <Text style={local.bannerText}>{t('parent.announcements.bannerText')}</Text>
             </View>
           </View>
 
           {visible.length === 0 ? (
-            <EmptyState icon="🔎" title="Bu filtrede duyuru yok" desc="Başka bir filtre seçerek duyuruları görüntüleyebilirsin." />
+            <EmptyState icon="🔎" title={t('parent.announcements.noResultsTitle')} desc={t('parent.announcements.noResultsDesc')} />
           ) : (
             visible.map((item) => {
               const role = targetRoleOf(item);
@@ -101,24 +103,24 @@ export default function ParentAnnouncementsScreen({ navigation }) {
               const expanded = expandedId === item.id;
               const dateText = item.tarih ? formatDisplayDate(item.tarih) : formatDisplayDate(item.createdAt || item.updatedAt || '');
               const timeText = timeTextOf(item);
-              const important = isImportant(item);
+              const important = isImportant(item, t);
 
               return (
                 <TouchableOpacity key={item.id} style={local.card} onPress={() => setExpandedId(expanded ? null : item.id)} activeOpacity={0.88}>
                   <View style={local.cardTopRow}>
-                    <Text style={[local.typePill, isClass ? local.classPill : local.schoolPill]}>{isClass ? '👥 ' : '🏫 '}{labelOf(item)}</Text>
-                    {important ? <Text style={local.importantPill}>★ ÖNEMLİ</Text> : null}
+                    <Text style={[local.typePill, isClass ? local.classPill : local.schoolPill]}>{isClass ? '👥 ' : '🏫 '}{labelOf(item, t)}</Text>
+                    {important ? <Text style={local.importantPill}>★ {t('parent.announcements.important')}</Text> : null}
                   </View>
-                  <Text style={local.title}>{titleOf(item)}</Text>
+                  <Text style={local.title}>{titleOf(item, t)}</Text>
                   <Text style={local.desc} numberOfLines={expanded ? 0 : 2}>{textOf(item)}</Text>
                   <View style={local.bottomRow}>
                     <View style={[local.dateIconBox, isClass ? local.classDateIcon : local.schoolDateIcon]}><Text style={local.dateIcon}>📅</Text></View>
                     <View style={{ flex: 1 }}>
-                      <Text style={local.dateText}>{dateText || 'Tarih yok'}</Text>
+                      <Text style={local.dateText}>{dateText || t('parent.announcements.noDate')}</Text>
                       {timeText ? <Text style={local.timeText}>{timeText}</Text> : null}
                     </View>
                     <View style={[local.detailButton, isClass ? local.detailButtonBlue : local.detailButtonGreen]}>
-                      <Text style={[local.detailButtonText, isClass ? local.detailTextBlue : local.detailTextGreen]}>{expanded ? 'Kapat' : 'Detayları Gör'}</Text>
+                      <Text style={[local.detailButtonText, isClass ? local.detailTextBlue : local.detailTextGreen]}>{expanded ? t('parent.announcements.close') : t('parent.announcements.seeDetails')}</Text>
                       <Text style={[local.detailArrow, isClass ? local.detailTextBlue : local.detailTextGreen]}>{expanded ? '⌃' : '›'}</Text>
                     </View>
                   </View>
