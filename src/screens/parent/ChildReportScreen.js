@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
@@ -20,6 +21,7 @@ const THEME = {
 };
 
 export default function ChildReportScreen() {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const { child } = route.params;
@@ -88,45 +90,45 @@ export default function ChildReportScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
-              <Text style={styles.dateText}>{isFirst ? 'Bugün' : item.tarih || 'Rapor'}</Text>
+              <Text style={styles.dateText}>{isFirst ? t('parent.childReport.today') : item.tarih || t('parent.childReport.reportFallback')}</Text>
               <Text style={styles.dateSubText}>{item.tarih || '-'}</Text>
             </View>
 
             <View style={styles.moodBadge}>
               <Text style={styles.moodIcon}>{getMoodIcon(item.mood)}</Text>
-              <Text style={styles.moodLabel}>{item.mood || 'Mutlu'}</Text>
+              <Text style={styles.moodLabel}>{item.mood || t('parent.childReport.moodFallback')}</Text>
             </View>
           </View>
 
           <View style={styles.metricsRow}>
             <View style={styles.metricItem}>
               <Text style={styles.metricIcon}>🍽️</Text>
-              <Text style={styles.metricLabel}>Kahvaltı</Text>
+              <Text style={styles.metricLabel}>{t('parent.childReport.breakfast')}</Text>
               <Text style={styles.metricValue}>{item.yemek?.kahvalti ? '✅' : '❌'}</Text>
             </View>
 
             <View style={styles.metricItem}>
               <Text style={styles.metricIcon}>🥗</Text>
-              <Text style={styles.metricLabel}>Öğle</Text>
+              <Text style={styles.metricLabel}>{t('parent.childReport.lunch')}</Text>
               <Text style={styles.metricValue}>{item.yemek?.ogle ? '✅' : '❌'}</Text>
             </View>
 
             <View style={styles.metricItem}>
               <Text style={styles.metricIcon}>🍎</Text>
-              <Text style={styles.metricLabel}>İkindi</Text>
+              <Text style={styles.metricLabel}>{t('parent.childReport.snack')}</Text>
               <Text style={styles.metricValue}>{item.yemek?.araOgun ? '✅' : '❌'}</Text>
             </View>
 
             <View style={styles.metricItem}>
               <Text style={styles.metricIcon}>💤</Text>
-              <Text style={styles.metricLabel}>Uyku</Text>
-              <Text style={styles.metricValue}>{item.uyku?.sure ? `${item.uyku.sure}s` : '-'}</Text>
+              <Text style={styles.metricLabel}>{t('parent.childReport.sleep')}</Text>
+              <Text style={styles.metricValue}>{item.uyku?.sure ? t('parent.childReport.hoursValue', { count: item.uyku.sure }) : '-'}</Text>
             </View>
 
             <View style={[styles.metricItem, { borderRightWidth: 0 }]}>
               <Text style={styles.metricIcon}>🚽</Text>
-              <Text style={styles.metricLabel}>Tuvalet</Text>
-              <Text style={styles.metricValue}>{item.tuvalet?.sayi ? `${item.tuvalet.sayi}x` : '-'}</Text>
+              <Text style={styles.metricLabel}>{t('parent.childReport.toilet')}</Text>
+              <Text style={styles.metricValue}>{item.tuvalet?.sayi ? t('parent.childReport.timesValue', { count: item.tuvalet.sayi }) : '-'}</Text>
             </View>
           </View>
 
@@ -134,7 +136,7 @@ export default function ChildReportScreen() {
             <View style={styles.noteBox}>
               <Text style={styles.noteAvatar}>👩‍🏫</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.noteTitle}>Öğretmen Notu</Text>
+                <Text style={styles.noteTitle}>{t('parent.childReport.teacherNote')}</Text>
                 <Text style={styles.noteText}>{item.not}</Text>
               </View>
             </View>
@@ -148,7 +150,7 @@ export default function ChildReportScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Raporlar yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('parent.childReport.loading')}</Text>
       </View>
     );
   }
@@ -158,10 +160,10 @@ export default function ChildReportScreen() {
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
           <Text style={styles.backArrow}>‹</Text>
-          <Text style={styles.backLabel}>Geri</Text>
+          <Text style={styles.backLabel}>{t('parent.childReport.back')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>{child?.ad || child?.adSoyad || 'Raporlar'}</Text>
+        <Text style={styles.headerTitle}>{child?.ad || child?.adSoyad || t('parent.childReport.headerFallback')}</Text>
 
         <View style={styles.headerSpacer} />
       </View>
@@ -169,8 +171,8 @@ export default function ChildReportScreen() {
       {reports.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>📝</Text>
-          <Text style={styles.emptyTitle}>Henüz rapor yok</Text>
-          <Text style={styles.emptyDesc}>Öğretmen günlük rapor girdiğinde burada görünecek.</Text>
+          <Text style={styles.emptyTitle}>{t('parent.childReport.noReportsTitle')}</Text>
+          <Text style={styles.emptyDesc}>{t('parent.childReport.noReportsDesc')}</Text>
         </View>
       ) : (
         <FlatList
