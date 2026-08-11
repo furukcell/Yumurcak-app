@@ -16,6 +16,7 @@ import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import i18n from '../../i18n';
 
 export const THEME = {
   primary: '#6C3DEB',
@@ -42,10 +43,17 @@ function useParentSharedStyles() {
   return useMemo(() => createStyles(theme || THEME), [theme]);
 }
 
+// Not: MONTH_LABELS artık sadece geriye dönük referans; getMonthLabel
+// aşağıda i18n.t() ile "common.months.<key>" çevirisini kullanıyor.
+// Bu dosya (parentShared.js) sadece veli ekranlarında import edildiği
+// için burada React hook'u olmadan da (bileşen dışı fonksiyon) doğrudan
+// i18n.t() çağırmak güvenli — dil değiştiğinde üst ağaç zaten yeniden
+// render olup güncel çeviriyle tekrar çağırıyor.
 export const MONTH_LABELS = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
   'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
 ];
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 export const GUNLER = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma'];
 export const GUN_LABEL = {
@@ -71,7 +79,8 @@ export function getMonthKey(date = new Date()) {
 export function getMonthLabel(monthKey) {
   const [year, month] = String(monthKey || '').split('-');
   const monthIndex = Number(month) - 1;
-  return `${MONTH_LABELS[monthIndex] || monthKey || 'Ay'} ${year || ''}`.trim();
+  const monthName = MONTH_KEYS[monthIndex] ? i18n.t(`common.months.${MONTH_KEYS[monthIndex]}`) : (monthKey || i18n.t('parent.schedule.monthFallback'));
+  return `${monthName} ${year || ''}`.trim();
 }
 
 export function getDayKey(date = new Date()) {
