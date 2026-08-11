@@ -4,14 +4,16 @@
 // ============================================================
 import React from 'react';
 import { View, Text, TouchableOpacity, Linking, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenShell, InfoRow, LoadingScreen, useParentBase, styles, THEME } from './parentShared';
 
 export default function ParentContactScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, kres, yonetici, ogretmen, sinif } = useParentBase();
 
-  if (loading) return <LoadingScreen text="İletişim bilgileri hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.contact.loading')} />;
 
-  const kurumAdi = kres?.ad || 'Kurum';
+  const kurumAdi = kres?.ad || t('parent.contact.institutionFallback');
   const kurumTelefon = kres?.telefon || '';
   const kurumWhatsapp = kres?.whatsapp || kurumTelefon;
   const adminName =
@@ -23,45 +25,45 @@ export default function ParentContactScreen({ navigation }) {
   const teacherPhone = ogretmen?.telefon || '';
 
   return (
-    <ScreenShell title="Kurum İletişim" emoji="☎️" navigation={navigation}>
+    <ScreenShell title={t('parent.contact.title')} emoji="☎️" navigation={navigation}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>🏫 {kurumAdi}</Text>
-        <InfoRow icon="📍" label="Adres" value={kres?.adres} />
-        <InfoRow icon="☎️" label="Kurum Telefon" value={kurumTelefon} />
-        <InfoRow icon="✉️" label="E-posta" value={kres?.email} />
-        <InfoRow icon="🌐" label="Website" value={kres?.website} />
-        <InfoRow icon="⏰" label="Çalışma Saatleri" value={kres?.calismaSaatleri} />
-        {kres?.not ? <InfoRow icon="📝" label="Not" value={kres.not} /> : null}
+        <InfoRow icon="📍" label={t('parent.contact.address')} value={kres?.adres} />
+        <InfoRow icon="☎️" label={t('parent.contact.institutionPhone')} value={kurumTelefon} />
+        <InfoRow icon="✉️" label={t('parent.contact.email')} value={kres?.email} />
+        <InfoRow icon="🌐" label={t('parent.contact.website')} value={kres?.website} />
+        <InfoRow icon="⏰" label={t('parent.contact.workingHours')} value={kres?.calismaSaatleri} />
+        {kres?.not ? <InfoRow icon="📝" label={t('parent.contact.note')} value={kres.not} /> : null}
 
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-          <TouchableOpacity style={[local.button, { backgroundColor: THEME.primary }]} onPress={() => callPhone(kurumTelefon)}>
-            <Text style={local.buttonText}>Kurumu Ara</Text>
+          <TouchableOpacity style={[local.button, { backgroundColor: THEME.primary }]} onPress={() => callPhone(kurumTelefon, t)}>
+            <Text style={local.buttonText}>{t('parent.contact.callInstitution')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[local.button, { backgroundColor: THEME.green }]} onPress={() => whatsapp(kurumWhatsapp)}>
-            <Text style={local.buttonText}>WhatsApp</Text>
+          <TouchableOpacity style={[local.button, { backgroundColor: THEME.green }]} onPress={() => whatsapp(kurumWhatsapp, t)}>
+            <Text style={local.buttonText}>{t('parent.contact.whatsapp')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>👤 Yönetici</Text>
-        <InfoRow icon="👤" label="Ad Soyad" value={adminName} />
-        <InfoRow icon="☎️" label="Telefon" value={adminPhone} />
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => callPhone(adminPhone)}>
-          <Text style={styles.secondaryButtonText}>Yöneticiyi Ara</Text>
+        <Text style={styles.cardTitle}>{t('parent.contact.administratorTitle')}</Text>
+        <InfoRow icon="👤" label={t('parent.contact.fullName')} value={adminName} />
+        <InfoRow icon="☎️" label={t('parent.contact.phone')} value={adminPhone} />
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => callPhone(adminPhone, t)}>
+          <Text style={styles.secondaryButtonText}>{t('parent.contact.callAdministrator')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>👩‍🏫 Öğretmen ve Sınıf</Text>
-        <InfoRow icon="🏫" label="Sınıf" value={sinif?.ad} />
-        <InfoRow icon="👩‍🏫" label="Öğretmen" value={teacherName} />
-        <InfoRow icon="☎️" label="Öğretmen Telefon" value={teacherPhone} />
+        <Text style={styles.cardTitle}>{t('parent.contact.teacherAndClassTitle')}</Text>
+        <InfoRow icon="🏫" label={t('parent.contact.className')} value={sinif?.ad} />
+        <InfoRow icon="👩‍🏫" label={t('parent.contact.teacher')} value={teacherName} />
+        <InfoRow icon="☎️" label={t('parent.contact.teacherPhone')} value={teacherPhone} />
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => navigation.navigate('ParentMessages')}
         >
-          <Text style={styles.secondaryButtonText}>Mesaj Gönder</Text>
+          <Text style={styles.secondaryButtonText}>{t('parent.contact.sendMessage')}</Text>
         </TouchableOpacity>
       </View>
     </ScreenShell>
@@ -72,15 +74,15 @@ function onlyDigits(phone) {
   return String(phone || '').replace(/\D/g, '');
 }
 
-function callPhone(phone) {
+function callPhone(phone, t) {
   const digits = onlyDigits(phone);
-  if (!digits) return Alert.alert('Telefon yok', 'Aranacak telefon numarası bulunamadı.');
+  if (!digits) return Alert.alert(t('parent.contact.noPhoneTitle'), t('parent.contact.noPhoneDesc'));
   Linking.openURL(`tel:${digits}`);
 }
 
-function whatsapp(phone) {
+function whatsapp(phone, t) {
   const digits = onlyDigits(phone);
-  if (!digits) return Alert.alert('Telefon yok', 'WhatsApp için telefon numarası bulunamadı.');
+  if (!digits) return Alert.alert(t('parent.contact.noPhoneTitle'), t('parent.contact.noWhatsappDesc'));
   const normalized = digits.startsWith('90') ? digits : `90${digits}`;
   Linking.openURL(`https://wa.me/${normalized}`);
 }
