@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { ref, onValue } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { ScreenShell, EmptyState, InfoRow, LoadingScreen, useParentBase, styles } from './parentShared';
 
 export default function ParentServiceScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, selectedChild } = useParentBase();
   const [service, setService] = useState(null);
 
@@ -15,21 +17,21 @@ export default function ParentServiceScreen({ navigation }) {
     return () => unsub();
   }, [selectedChild?.id]);
 
-  if (loading) return <LoadingScreen text="Servis bilgisi hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.service.loading')} />;
 
   return (
-    <ScreenShell title="Servis" emoji="🚌" navigation={navigation}>
+    <ScreenShell title={t('parent.service.title')} emoji="🚌" navigation={navigation}>
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Servis bilgisi için çocuk bağlantısı gerekir." />
+        <EmptyState icon="👧" title={t('parent.service.noChildTitle')} desc={t('parent.service.noChildDesc')} />
       ) : !service || service.servisKullaniyor === false ? (
-        <EmptyState icon="🚌" title="Servis kullanmıyorsunuz" desc="Yönetici servis bilgisi eklediğinde burada görünecek." />
+        <EmptyState icon="🚌" title={t('parent.service.noServiceTitle')} desc={t('parent.service.noServiceDesc')} />
       ) : (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Servis Bilgileri</Text>
-          <InfoRow icon="✅" label="Durum" value="Servis kullanıyor" />
-          <InfoRow icon="🕗" label="Alış saati" value={service.alisSaati} />
-          <InfoRow icon="🕔" label="Bırakış saati" value={service.birakisSaati} />
-          <InfoRow icon="📝" label="Not" value={service.servisNotu} />
+          <Text style={styles.cardTitle}>{t('parent.service.cardTitle')}</Text>
+          <InfoRow icon="✅" label={t('parent.service.statusLabel')} value={t('parent.service.statusValue')} />
+          <InfoRow icon="🕗" label={t('parent.service.pickupTimeLabel')} value={service.alisSaati} />
+          <InfoRow icon="🕔" label={t('parent.service.dropoffTimeLabel')} value={service.birakisSaati} />
+          <InfoRow icon="📝" label={t('parent.service.noteLabel')} value={service.servisNotu} />
         </View>
       )}
     </ScreenShell>
