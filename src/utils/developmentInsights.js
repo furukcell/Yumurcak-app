@@ -4,12 +4,17 @@
 // bu yüzden ekrandan ayrı test edilebilir.
 
 import { isAbsentStatus } from '../screens/parent/parentShared';
+import i18n from '../i18n';
 
 // Öğretmen tarafında ChildReportScreen.js, MOOD_LISTESI'ndeki (src/constants.js)
 // label değerlerinden birini (örn. "Neşeli") aynen "mood"/"ruhHali" alanına yazıyor.
 // Eskiden buradaki liste bu gerçek değerlerle örtüşmüyordu (örn. "iyi", "sakin",
 // "huzursuz" hiç kullanılmıyor; "Neşeli", "Hasta", "Sinirli", "Heyecanlı" hiç
 // tanınmıyordu) — aşağıdaki liste gerçek MOOD_LISTESI ile birebir eşleşiyor.
+// Not: bu obje hâlâ "key -> Türkçe değer" eşlemesi olarak kalıyor (öğretmen
+// tarafındaki ham veri Türkçe yazıldığı için), ama ekranda gösterilirken
+// i18n.t('parent.development.moodLabel.<key>') üzerinden çevrilebiliyor —
+// bkz. getMoodLabel() aşağıda.
 export const MOOD_LABELS = {
   mutlu: 'Mutlu',
   neseli: 'Neşeli',
@@ -20,6 +25,10 @@ export const MOOD_LABELS = {
   sinirli: 'Sinirli',
   heyecanli: 'Heyecanlı',
 };
+
+export function getMoodLabel(key) {
+  return i18n.t(`parent.development.moodLabel.${key}`, { defaultValue: MOOD_LABELS[key] || key });
+}
 
 // Yorum motorunda "olumlu"/"olumsuz" gün sayımı için kategori ataması.
 // yorgun bilinçli olarak nötr bırakıldı (ne olumlu ne olumsuz sayılıyor).
@@ -100,12 +109,12 @@ export function percent(value, total) {
 }
 
 export function formatSleep(value) {
-  if (!value) return 'Kayıt yok';
+  if (!value) return i18n.t('parent.development.noRecord');
   const hours = Math.floor(value);
   const minutes = Math.round((value - hours) * 60);
-  if (hours <= 0) return `${minutes} dk`;
-  if (minutes <= 0) return `${hours} sa`;
-  return `${hours} sa ${minutes} dk`;
+  if (hours <= 0) return i18n.t('parent.development.minutesShort', { minutes });
+  if (minutes <= 0) return i18n.t('parent.development.hoursShort', { hours });
+  return i18n.t('parent.development.hoursMinutesShort', { hours, minutes });
 }
 
 export function getPhysicalValue(item, key) {
@@ -119,11 +128,11 @@ export function getPhysicalValue(item, key) {
 export function buildDelta(current, previous, key) {
   const now = getPhysicalValue(current, key);
   const before = getPhysicalValue(previous, key);
-  if (!now || !before) return 'Önceki kayıt yok';
+  if (!now || !before) return i18n.t('parent.development.noPreviousRecord');
   const diff = Number((now - before).toFixed(1));
   if (diff > 0) return `+${diff}`;
   if (diff < 0) return `${diff}`;
-  return 'Değişim yok';
+  return i18n.t('parent.development.noChange');
 }
 
 // Filtrelenmiş (o aya ait) ham listelerden tek bir aylık özet objesi üretir.
