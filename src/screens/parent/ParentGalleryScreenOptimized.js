@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { onValue, ref } from 'firebase/database';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { database } from '../../config/firebase';
@@ -77,8 +78,8 @@ function normalizeMediaItems(item) {
   }];
 }
 
-function getTitle(item) {
-  return item?.baslik || item?.title || item?.aciklama || item?.hedefAdi || 'Galeri paylaşımı';
+function getTitle(item, t) {
+  return item?.baslik || item?.title || item?.aciklama || item?.hedefAdi || t('parent.gallery.sharePost');
 }
 
 function getDateText(timestamp) {
@@ -87,13 +88,13 @@ function getDateText(timestamp) {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function getRemainingText(expiresAt, now) {
+function getRemainingText(expiresAt, now, t) {
   const diff = Number(expiresAt || 0) - now;
-  if (diff <= 0) return 'Süresi doldu';
+  if (diff <= 0) return t('parent.gallery.expired');
   const hours = Math.floor(diff / (60 * 60 * 1000));
   const minutes = Math.ceil((diff % (60 * 60 * 1000)) / (60 * 1000));
-  if (hours <= 0) return `${minutes} dk kaldı`;
-  return `${hours} sa ${minutes} dk kaldı`;
+  if (hours <= 0) return t('parent.gallery.remainingMinutes', { minutes });
+  return t('parent.gallery.remainingHoursMinutes', { hours, minutes });
 }
 
 function VideoPlayer({ uri }) {
@@ -104,6 +105,7 @@ function VideoPlayer({ uri }) {
 }
 
 export default function ParentGalleryScreenOptimized({ navigation }) {
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const userId = kullanici?.uid || kullanici?.id;
   const [children, setChildren] = useState([]);
@@ -242,14 +244,14 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
     try {
       setSavingMediaId(media.id || media.url);
       await saveGalleryMediaToDevice(media);
-      Alert.alert('Kaydedildi', media.type === 'video' ? 'Video telefon galerisine kaydedildi.' : 'Fotoğraf telefon galerisine kaydedildi.');
+      Alert.alert(t('parent.gallery.savedTitle'), media.type === 'video' ? t('parent.gallery.videoSaved') : t('parent.gallery.photoSaved'));
     } catch (error) {
       console.error('Galeri medyası kaydedilemedi:', error?.message || error);
       if (error?.code === 'permission-denied') {
-        Alert.alert('İzin Gerekli', 'Medyanın telefona kaydedilebilmesi için galeri izni vermen gerekiyor.');
+        Alert.alert(t('parent.gallery.permissionRequiredTitle'), t('parent.gallery.permissionRequiredDesc'));
         return;
       }
-      Alert.alert('Kaydedilemedi', 'Medya telefona kaydedilemedi. Lütfen izinleri ve internet bağlantısını kontrol et.');
+      Alert.alert(t('parent.gallery.saveFailedTitle'), t('parent.gallery.saveFailedDesc'));
     } finally {
       setSavingMediaId('');
     }
@@ -261,7 +263,7 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
     return (
       <TouchableOpacity key={media.id || `${item.id}-${index}`} style={[styles.gridTile, total === 1 && styles.singleTile, total === 3 && index === 0 && styles.largeTile]} onPress={() => openViewer(item, index)} activeOpacity={0.88}>
         {isVideo ? (
-          <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>Video</Text></View>
+          <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>{t('parent.gallery.video')}</Text></View>
         ) : (
           <Image source={{ uri: media.thumbnailUrl || media.url }} style={styles.tileImage} resizeMode="cover" />
         )}
@@ -296,14 +298,14 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
       <Modal visible={!!viewerItem} transparent animationType="fade" onRequestClose={() => setViewerItem(null)}>
         <SafeAreaView style={styles.viewerBackdrop}>
           <View style={styles.viewerHeader}>
-            <TouchableOpacity style={styles.viewerButton} onPress={() => setViewerItem(null)}><Text style={styles.viewerButtonText}>Kapat</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.viewerButton} onPress={() => setViewerItem(null)}><Text style={styles.viewerButtonText}>{t('parent.gallery.close')}</Text></TouchableOpacity>
             <Text style={styles.viewerCounter}>{viewerIndex + 1} / {mediaItems.length}</Text>
             <TouchableOpacity style={[styles.viewerButton, isSaving && styles.viewerButtonDisabled]} onPress={() => saveMedia(media)} disabled={isSaving}>
-              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.viewerButtonText}>Kaydet</Text>}
+              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.viewerButtonText}>{t('parent.gallery.save')}</Text>}
             </TouchableOpacity>
           </View>
           <View style={styles.viewerStage}>{isVideo ? <VideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
-          {mediaItems.length > 1 ? <View style={styles.viewerNavRow}><TouchableOpacity disabled={viewerIndex === 0} style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.max(0, index - 1))}><Text style={styles.viewerButtonText}>‹ Önceki</Text></TouchableOpacity><TouchableOpacity disabled={viewerIndex === mediaItems.length - 1} style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.min(mediaItems.length - 1, index + 1))}><Text style={styles.viewerButtonText}>Sonraki ›</Text></TouchableOpacity></View> : null}
+          {mediaItems.length > 1 ? <View style={styles.viewerNavRow}><TouchableOpacity disabled={viewerIndex === 0} style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.max(0, index - 1))}><Text style={styles.viewerButtonText}>‹ {t('parent.gallery.previous')}</Text></TouchableOpacity><TouchableOpacity disabled={viewerIndex === mediaItems.length - 1} style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} onPress={() => setViewerIndex((index) => Math.min(mediaItems.length - 1, index + 1))}><Text style={styles.viewerButtonText}>{t('parent.gallery.next')} ›</Text></TouchableOpacity></View> : null}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
             {mediaItems.map((thumb, index) => {
               const active = viewerIndex === index;
@@ -323,16 +325,16 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
     );
   }
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={THEME.primary} size="large" /><Text style={styles.loadingText}>Galeri hazırlanıyor...</Text></View>;
+  if (loading) return <View style={styles.center}><ActivityIndicator color={THEME.primary} size="large" /><Text style={styles.loadingText}>{t('parent.gallery.loading')}</Text></View>;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>{navigation?.canGoBack?.() ? <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹ Geri</Text></TouchableOpacity> : <View style={styles.backButton} />}<View style={{ flex: 1, alignItems: 'center' }}><Text style={styles.headerTitle}>Galeri</Text><Text style={styles.headerSub}>Veli sadece görüntüler</Text></View><Text style={styles.headerIcon}>🖼️</Text></View>
+      <View style={styles.header}>{navigation?.canGoBack?.() ? <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹ {t('parent.gallery.back')}</Text></TouchableOpacity> : <View style={styles.backButton} />}<View style={{ flex: 1, alignItems: 'center' }}><Text style={styles.headerTitle}>{t('parent.gallery.title')}</Text><Text style={styles.headerSub}>{t('parent.gallery.headerSub')}</Text></View><Text style={styles.headerIcon}>🖼️</Text></View>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Aktif Galeri</Text>
-        {visibleGallery.length === 0 ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>Aktif galeri yok</Text><Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text></View> : visibleGallery.map((item) => {
+        <Text style={styles.sectionTitle}>{t('parent.gallery.activeGallery')}</Text>
+        {visibleGallery.length === 0 ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>{t('parent.gallery.emptyTitle')}</Text><Text style={styles.emptyDesc}>{t('parent.gallery.emptyDesc')}</Text></View> : visibleGallery.map((item) => {
           const mediaItems = normalizeMediaItems(item);
-          return <View key={item.id} style={styles.mediaCard}>{renderPreviewGrid(item)}<View style={styles.mediaBody}><View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getTitle(item)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View></View><Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || item.targetType || 'Kurum'}</Text><Text style={styles.mediaMeta}>Yüklenme: {getDateText(item.createdAt)}</Text><View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {getRemainingText(item.expiresAt, now)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>Aç</Text></TouchableOpacity></View></View></View>;
+          return <View key={item.id} style={styles.mediaCard}>{renderPreviewGrid(item)}<View style={styles.mediaBody}><View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getTitle(item, t)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{t('parent.gallery.mediaCount', { count: mediaItems.length })}</Text></View></View><Text style={styles.mediaMeta}>{t('parent.gallery.target')}: {item.hedefAdi || item.targetType || t('parent.gallery.institutionFallback')}</Text><Text style={styles.mediaMeta}>{t('parent.gallery.uploaded')}: {getDateText(item.createdAt)}</Text><View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {getRemainingText(item.expiresAt, now, t)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>{t('parent.gallery.open')}</Text></TouchableOpacity></View></View></View>;
         })}
       </ScrollView>
       {renderViewer()}
