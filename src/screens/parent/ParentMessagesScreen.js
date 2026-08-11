@@ -4,12 +4,13 @@
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, EmptyState, LoadingScreen, THEME, useParentBase } from './parentShared';
 import { safeUnread } from '../../utils/messageHelpers';
 
-function formatMessageTime(value) {
+function formatMessageTime(value, t) {
   if (!value) return '';
   const date = new Date(Number(value));
   if (Number.isNaN(date.getTime())) return '';
@@ -19,15 +20,16 @@ function formatMessageTime(value) {
   const startYesterday = startToday - 24 * 60 * 60 * 1000;
 
   if (date.getTime() >= startToday) return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  if (date.getTime() >= startYesterday) return 'Dün';
+  if (date.getTime() >= startYesterday) return t('parent.messages.yesterday');
   return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
 }
 
-function getLastTime(meta) {
-  return formatMessageTime(meta?.sonMesajAt || meta?.updatedAt || meta?.createdAt || 0);
+function getLastTime(meta, t) {
+  return formatMessageTime(meta?.sonMesajAt || meta?.updatedAt || meta?.createdAt || 0, t);
 }
 
 export default function ParentMessagesScreen({ navigation }) {
+  const { t } = useTranslation();
   const base = useParentBase();
   const { loading, parentId, selectedChild, childName, kresId, kres, sinif, ogretmen, yonetici, parentName } = base;
 
@@ -59,16 +61,16 @@ export default function ParentMessagesScreen({ navigation }) {
     ? `admin_${adminId}_veli_${parentId}`
     : null;
 
-  if (loading) return <LoadingScreen text="Mesajlar hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.messages.loading')} />;
 
   const openTeacherChat = async () => {
     if (!parentId || !teacherId || !selectedChild?.id) {
-      Alert.alert('Eksik Bilgi', 'Öğretmen veya çocuk bağlantısı bulunamadı.');
+      Alert.alert(t('parent.messages.missingInfoTitle'), t('parent.messages.missingTeacherInfo'));
       return;
     }
 
     const conversationId = `veli_${parentId}_ogretmen_${teacherId}_cocuk_${selectedChild.id}`;
-    const title = getName(ogretmen) || 'Öğretmen';
+    const title = getName(ogretmen) || t('parent.messages.teacherFallback');
     const now = Date.now();
 
     const conversationMeta = {
@@ -99,18 +101,18 @@ export default function ParentMessagesScreen({ navigation }) {
       conversationId,
       conversationMeta,
       title,
-      subtitle: `${childName} için öğretmen görüşmesi`,
+      subtitle: t('parent.messages.teacherConversationSubtitle', { childName }),
     });
   };
 
   const openAdminChat = async () => {
     if (!parentId || !adminId) {
-      Alert.alert('Eksik Bilgi', 'Yönetici bilgisi bulunamadı. Kurum bilgilerinden yönetici atanmalı.');
+      Alert.alert(t('parent.messages.missingInfoTitle'), t('parent.messages.missingAdminInfo'));
       return;
     }
 
     const conversationId = `admin_${adminId}_veli_${parentId}`;
-    const title = getName(yonetici) || kres?.yoneticiAd || 'Yönetim';
+    const title = getName(yonetici) || kres?.yoneticiAd || t('parent.messages.managementFallback');
     const now = Date.now();
 
     const conversationMeta = {
@@ -129,7 +131,7 @@ export default function ParentMessagesScreen({ navigation }) {
         [adminId]: 'yonetici',
         [parentId]: 'veli',
       },
-      baslik: `${parentName} · ${kres?.ad || 'Kurum'}`,
+      baslik: `${parentName} · ${kres?.ad || t('parent.messages.institutionFallback')}`,
       aktif: true,
       updatedAt: now,
     };
@@ -140,7 +142,7 @@ export default function ParentMessagesScreen({ navigation }) {
       conversationId,
       conversationMeta,
       title,
-      subtitle: `${kres?.ad || 'Kurum'} yönetimi`,
+      subtitle: t('parent.messages.adminConversationSubtitle', { institution: kres?.ad || t('parent.messages.institutionFallback') }),
     });
   };
 
@@ -150,16 +152,16 @@ export default function ParentMessagesScreen({ navigation }) {
   const teacherUnread = safeUnread(teacherMeta, parentId);
 
   return (
-    <ScreenShell title="Mesajlar" emoji="💬" navigation={navigation}>
+    <ScreenShell title={t('nav.messages')} emoji="💬" navigation={navigation}>
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bağlantısı yok" desc="Mesajlaşma için çocuğunuzun hesaba bağlı olması gerekir." />
+        <EmptyState icon="👧" title={t('parent.messages.noChildTitle')} desc={t('parent.messages.noChildDesc')} />
       ) : (
         <>
           {showInfo ? (
             <View style={local.infoBanner}>
               <View style={local.infoIconBox}><Text style={local.infoIcon}>💬</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={local.infoText}>Öğretmeniniz ve kurum yönetimi ile güvenli şekilde mesajlaşabilirsiniz.</Text>
+                <Text style={local.infoText}>{t('parent.messages.infoBannerText')}</Text>
               </View>
               <TouchableOpacity onPress={() => setShowInfo(false)} activeOpacity={0.85}>
                 <Text style={local.infoClose}>♡</Text>
@@ -169,36 +171,36 @@ export default function ParentMessagesScreen({ navigation }) {
 
           <ContactCard
             icon="🏫"
-            title="Kurum Yönetimi"
-            desc={adminMeta.sonMesaj || kres?.ad || 'Kurum ile yazış'}
-            sub="Aidat, kayıt ve genel konular"
+            title={t('parent.messages.institutionManagement')}
+            desc={adminMeta.sonMesaj || kres?.ad || t('parent.messages.chatWithInstitution')}
+            sub={t('parent.messages.adminCardSub')}
             unread={adminUnread}
-            time={getLastTime(adminMeta)}
-            tag="Resmi"
+            time={getLastTime(adminMeta, t)}
+            tag={t('parent.messages.officialTag')}
             highlight
             onPress={openAdminChat}
           />
 
           <View style={local.sectionRow}>
-            <Text style={local.sectionTitle}>Öğretmenler</Text>
-            <Text style={local.sectionAction}>{childName || 'Çocuk'} için</Text>
+            <Text style={local.sectionTitle}>{t('parent.messages.teachersTitle')}</Text>
+            <Text style={local.sectionAction}>{t('parent.messages.forChild', { childName: childName || t('parent.messages.childFallback') })}</Text>
           </View>
 
           <ContactCard
             icon="👩‍🏫"
-            title={getName(ogretmen) || 'Öğretmen'}
-            desc={teacherMeta.sonMesaj || 'Öğretmenle güvenli sohbet başlat'}
-            sub="Sınıf öğretmeni"
+            title={getName(ogretmen) || t('parent.messages.teacherFallback')}
+            desc={teacherMeta.sonMesaj || t('parent.messages.startTeacherChat')}
+            sub={t('parent.messages.classTeacherSub')}
             unread={teacherUnread}
-            time={getLastTime(teacherMeta)}
+            time={getLastTime(teacherMeta, t)}
             onPress={openTeacherChat}
           />
 
           <View style={local.securityCard}>
             <View style={local.securityIconBox}><Text style={local.securityIcon}>🔒</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={local.securityTitle}>Güvenli İletişim</Text>
-              <Text style={local.securityText}>Mesajlar sadece ilgili veli, öğretmen ve kurum yönetimi tarafından görüntülenir.</Text>
+              <Text style={local.securityTitle}>{t('parent.messages.secureCommunicationTitle')}</Text>
+              <Text style={local.securityText}>{t('parent.messages.secureCommunicationText')}</Text>
             </View>
             <Text style={local.securityDecor}>🛡️</Text>
           </View>
