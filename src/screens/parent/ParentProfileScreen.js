@@ -17,34 +17,48 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
 import { database, storage } from '../../config/firebase';
+import { setAppLanguage } from '../../i18n';
 import { ScreenShell, InfoRow, EmptyState, LoadingScreen, useParentBase, styles, THEME } from './parentShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function ParentProfileScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
   const { loading, selectedChild, childName, parentName, kullanici, parentId, parentPhotoUrl, sinif, ogretmen, cikisYap } = useParentBase();
   const [photoUrl, setPhotoUrl] = useState(parentPhotoUrl || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [changingLang, setChangingLang] = useState(false);
   const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
 
   useEffect(() => {
     setPhotoUrl(parentPhotoUrl || '');
   }, [parentPhotoUrl]);
 
-  if (loading) return <LoadingScreen text="Profil hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.profile.loading')} />;
 
   const showSuccessToast = (message) => {
     setSuccessToast({ visible: true, message });
   };
 
+  const changeLanguage = async (lng) => {
+    if (lng === i18n.language || changingLang) return;
+    setChangingLang(true);
+    try {
+      await setAppLanguage(lng);
+    } finally {
+      setChangingLang(false);
+    }
+  };
+
   const pickAndUploadPhoto = async () => {
-    if (!parentId) return Alert.alert('Hata', 'Veli hesabı bulunamadı.');
+    if (!parentId) return Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.accountNotFoundDesc'));
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Profil fotoğrafı seçmek için galeri izni vermen gerekiyor.');
+        Alert.alert(t('parent.profile.permissionRequiredTitle'), t('parent.profile.permissionRequiredDesc'));
         return;
       }
 
@@ -77,22 +91,22 @@ export default function ParentProfileScreen({ navigation }) {
       });
 
       setPhotoUrl(downloadUrl);
-      showSuccessToast('Profil fotoğrafı yüklendi');
+      showSuccessToast(t('parent.profile.photoUploaded'));
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
+      Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.uploadFailedDesc'));
     } finally {
       setUploading(false);
     }
   };
 
   const removePhoto = async () => {
-    if (!parentId) return Alert.alert('Hata', 'Veli hesabı bulunamadı.');
+    if (!parentId) return Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.accountNotFoundDesc'));
 
-    Alert.alert('Profil Fotoğrafı', 'Fotoğrafı profilden kaldırmak istiyor musun?', [
-      { text: 'Vazgeç', style: 'cancel' },
+    Alert.alert(t('parent.profile.photoAlertTitle'), t('parent.profile.photoAlertDesc'), [
+      { text: t('parent.profile.cancel'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('parent.profile.remove'),
         style: 'destructive',
         onPress: async () => {
           setSaving(true);
@@ -104,10 +118,10 @@ export default function ParentProfileScreen({ navigation }) {
             });
 
             setPhotoUrl('');
-            showSuccessToast('Profil fotoğrafı kaldırıldı');
+            showSuccessToast(t('parent.profile.photoRemoved'));
           } catch (err) {
             console.error(err);
-            Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
+            Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.removeFailedDesc'));
           } finally {
             setSaving(false);
           }
@@ -124,10 +138,10 @@ export default function ParentProfileScreen({ navigation }) {
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
 
-      <ScreenShell title="Profil" emoji="👤" navigation={navigation}>
+      <ScreenShell title={t('parent.profile.title')} emoji="👤" navigation={navigation}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Profil Resmi</Text>
-          <Text style={local.hintText}>Seçtiğin fotoğraf anasayfa ve özet ekranındaki profil alanlarında otomatik görünür.</Text>
+          <Text style={styles.cardTitle}>{t('parent.profile.photoTitle')}</Text>
+          <Text style={local.hintText}>{t('parent.profile.photoHint')}</Text>
 
           <View style={local.avatarWrap}>
             {photoUrl ? (
@@ -143,43 +157,67 @@ export default function ParentProfileScreen({ navigation }) {
             {uploading ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={local.primaryButtonText}>Galeriden Fotoğraf Seç</Text>
+              <Text style={local.primaryButtonText}>{t('parent.profile.pickPhotoButton')}</Text>
             )}
           </TouchableOpacity>
 
           {photoUrl ? (
             <TouchableOpacity style={local.removeButton} onPress={removePhoto} disabled={saving || uploading}>
-              <Text style={local.removeButtonText}>{saving ? 'Kaldırılıyor...' : 'Fotoğrafı Kaldır'}</Text>
+              <Text style={local.removeButtonText}>{saving ? t('parent.profile.removing') : t('parent.profile.removePhotoButton')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
         {!selectedChild ? (
-          <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Yönetici panelinden çocuğa bu veli bağlanmalı." />
+          <EmptyState icon="👧" title={t('parent.profile.noChildTitle')} desc={t('parent.profile.noChildDesc')} />
         ) : (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>👧 {childName}</Text>
-            <Text style={styles.cardText}>{selectedChild?.yas || selectedChild?.dogumTarihi || 'Kreş öğrencisi'}</Text>
+            <Text style={styles.cardText}>{selectedChild?.yas || selectedChild?.dogumTarihi || t('parent.profile.studentFallback')}</Text>
           </View>
         )}
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Veli Bilgileri</Text>
-          <InfoRow icon="👤" label="Veli" value={parentName} />
-          <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon} />
-          <InfoRow icon="✉️" label="Kullanıcı" value={kullanici?.kullaniciAdi} />
+          <Text style={styles.cardTitle}>{t('parent.profile.parentInfoTitle')}</Text>
+          <InfoRow icon="👤" label={t('parent.profile.parentLabel')} value={parentName} />
+          <InfoRow icon="☎️" label={t('parent.profile.phoneLabel')} value={kullanici?.telefon} />
+          <InfoRow icon="✉️" label={t('parent.profile.usernameLabel')} value={kullanici?.kullaniciAdi} />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Kurum Bilgileri</Text>
-          <InfoRow icon="🏫" label="Sınıf" value={sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifId} />
-          <InfoRow icon="👩‍🏫" label="Öğretmen" value={`${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim()} />
+          <Text style={styles.cardTitle}>{t('parent.profile.institutionInfoTitle')}</Text>
+          <InfoRow icon="🏫" label={t('parent.profile.classLabel')} value={sinif?.ad || selectedChild?.sinifAdi || selectedChild?.sinifId} />
+          <InfoRow icon="👩‍🏫" label={t('parent.profile.teacherLabel')} value={`${ogretmen?.ad || ''} ${ogretmen?.soyad || ''}`.trim()} />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>⚖️ Yasal Metinler</Text>
+          <Text style={styles.cardTitle}>🌐 {t('parent.profile.languageTitle')}</Text>
+          <Text style={styles.cardText}>{t('parent.profile.languageDesc')}</Text>
+
+          <View style={local.langRow}>
+            <TouchableOpacity
+              style={[local.langButton, i18n.language === 'tr' && local.langButtonActive]}
+              onPress={() => changeLanguage('tr')}
+              disabled={changingLang}
+              activeOpacity={0.85}
+            >
+              <Text style={[local.langButtonText, i18n.language === 'tr' && local.langButtonTextActive]}>Türkçe</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[local.langButton, i18n.language === 'en' && local.langButtonActive]}
+              onPress={() => changeLanguage('en')}
+              disabled={changingLang}
+              activeOpacity={0.85}
+            >
+              <Text style={[local.langButtonText, i18n.language === 'en' && local.langButtonTextActive]}>English</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>⚖️ {t('parent.profile.legalTitle')}</Text>
           <Text style={styles.cardText}>
-            Kullanım şartları, gizlilik politikası ve KVKK aydınlatma metni.
+            {t('parent.profile.legalDesc')}
           </Text>
 
           <TouchableOpacity
@@ -187,25 +225,25 @@ export default function ParentProfileScreen({ navigation }) {
             onPress={() => navigation.navigate('LegalDocuments')}
             activeOpacity={0.85}
           >
-            <Text style={styles.secondaryButtonText}>Yasal Metinleri Gör</Text>
+            <Text style={styles.secondaryButtonText}>{t('parent.profile.legalButton')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🌈 Yumurcak</Text>
-          <Text style={styles.cardText}>Uygulama hakkında bilgi alabilir veya Yumurcak destek ekibine mesaj gönderebilirsin.</Text>
+          <Text style={styles.cardText}>{t('parent.profile.aboutDesc')}</Text>
 
           <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('ParentAbout')} activeOpacity={0.85}>
-            <Text style={styles.secondaryButtonText}>Hakkımızda</Text>
+            <Text style={styles.secondaryButtonText}>{t('parent.profile.aboutButton')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.secondaryButton, local.supportButton]} onPress={() => navigation.navigate('ParentSupport')} activeOpacity={0.85}>
-            <Text style={styles.secondaryButtonText}>Bize Yazın</Text>
+            <Text style={styles.secondaryButtonText}>{t('parent.profile.supportButton')}</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={cikisYap} activeOpacity={0.85}>
-          <Text style={styles.secondaryButtonText}>↩ Çıkış Yap</Text>
+          <Text style={styles.secondaryButtonText}>↩ {t('parent.profile.logoutButton')}</Text>
         </TouchableOpacity>
       </ScreenShell>
     </>
@@ -235,4 +273,9 @@ const local = {
   },
   removeButtonText: { color: '#FF4D6D', fontWeight: '900' },
   supportButton: { marginTop: 10 },
+  langRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  langButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 14, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
+  langButtonActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  langButtonText: { color: THEME.primary, fontWeight: '900' },
+  langButtonTextActive: { color: '#FFF' },
 };
