@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ref, push, serverTimestamp } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, useParentBase, LoadingScreen, EmptyState } from './parentShared';
@@ -7,6 +8,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { createRoleNotification } from '../../services/notificationCenter';
 
 export default function ParentBellScreen({ navigation }) {
+  const { t } = useTranslation();
   const base = useParentBase();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -16,11 +18,11 @@ export default function ParentBellScreen({ navigation }) {
   const { loading, selectedChild, childName, parentName, kresId, kresAdi, kullanici } = base;
   const veliId = kullanici?.uid || kullanici?.id;
 
-  if (loading) return <LoadingScreen text="Kurum zili hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.bell.loading')} />;
   if (!selectedChild?.id) {
     return (
-      <ScreenShell title="Kurum Zili" emoji="🔔" navigation={navigation}>
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Kurum zili için veli hesabına bağlı çocuk gerekir." />
+      <ScreenShell title={t('parent.bell.title')} emoji="🔔" navigation={navigation}>
+        <EmptyState icon="👧" title={t('parent.bell.noChildTitle')} desc={t('parent.bell.noChildDesc')} />
       </ScreenShell>
     );
   }
@@ -28,7 +30,7 @@ export default function ParentBellScreen({ navigation }) {
   const sendBell = async (durum) => {
     if (sending) return;
     if (!kresId) {
-      Alert.alert('Kurum bilgisi eksik', 'Çocuğun bağlı olduğu kurum bilgisi okunamadı. Lütfen tekrar deneyin.');
+      Alert.alert(t('parent.bell.missingKresTitle'), t('parent.bell.missingKresDesc'));
       return;
     }
 
@@ -57,25 +59,25 @@ export default function ParentBellScreen({ navigation }) {
        createdBy: veliId || '',
     });
 
-      Alert.alert('Bildirim gönderildi', durum === 'geliyorum' ? 'Kuruma yaklaştığınız bildirildi.' : 'Kapıda olduğunuz bildirildi.');
+      Alert.alert(t('parent.bell.sentTitle'), durum === 'geliyorum' ? t('parent.bell.sentComing') : t('parent.bell.sentAtDoor'));
     } catch (error) {
-      Alert.alert('Hata', 'Bildirim gönderilemedi. Lütfen tekrar deneyin.');
+      Alert.alert(t('parent.bell.errorTitle'), t('parent.bell.errorDesc'));
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <ScreenShell title="Kurum Zili" emoji="🔔" navigation={navigation} subtitle={kresAdi}>
+    <ScreenShell title={t('parent.bell.title')} emoji="🔔" navigation={navigation} subtitle={kresAdi}>
       <View style={styles.childCard}>
         <Text style={styles.childIcon}>👧</Text>
         <View style={{ flex: 1 }}>
           <Text style={styles.childName}>{childName}</Text>
-          <Text style={styles.childDesc}>Bildirim kuruma ve yetkili personele düşer.</Text>
+          <Text style={styles.childDesc}>{t('parent.bell.notifyDesc')}</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Teslim Türü</Text>
+      <Text style={styles.sectionTitle}>{t('parent.bell.deliveryTypeTitle')}</Text>
       <View style={styles.typeRow}>
         <TouchableOpacity
           style={[styles.typeButton, teslimTuru === 'alacagim' && styles.typeButtonActive]}
@@ -83,7 +85,7 @@ export default function ParentBellScreen({ navigation }) {
           disabled={sending}
           activeOpacity={0.85}
         >
-          <Text style={[styles.typeText, teslimTuru === 'alacagim' && styles.typeTextActive]}>👋 Alacağım</Text>
+          <Text style={[styles.typeText, teslimTuru === 'alacagim' && styles.typeTextActive]}>👋 {t('parent.bell.pickup')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.typeButton, teslimTuru === 'birakacagim' && styles.typeButtonActive]}
@@ -91,23 +93,23 @@ export default function ParentBellScreen({ navigation }) {
           disabled={sending}
           activeOpacity={0.85}
         >
-          <Text style={[styles.typeText, teslimTuru === 'birakacagim' && styles.typeTextActive]}>🏫 Bırakacağım</Text>
+          <Text style={[styles.typeText, teslimTuru === 'birakacagim' && styles.typeTextActive]}>🏫 {t('parent.bell.dropoff')}</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={[styles.bellCard, styles.yellowCard, sending && styles.disabledCard]} onPress={() => sendBell('geliyorum')} disabled={sending} activeOpacity={0.88}>
         <View style={styles.circle}><Text style={styles.circleEmoji}>🚗</Text></View>
-        <Text style={styles.bellTitle}>GELİYORUM</Text>
-        <Text style={styles.bellDesc}>Kuruma yaklaşıyorum. Çocuğumu teslim için hazırlayınız.</Text>
+        <Text style={styles.bellTitle}>{t('parent.bell.comingTitle')}</Text>
+        <Text style={styles.bellDesc}>{t('parent.bell.comingDesc')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.bellCard, styles.greenCard, sending && styles.disabledCard]} onPress={() => sendBell('kapidayim')} disabled={sending} activeOpacity={0.88}>
         <View style={styles.circle}><Text style={styles.circleEmoji}>📍</Text></View>
-        <Text style={styles.bellTitle}>KAPIDAYIM</Text>
-        <Text style={styles.bellDesc}>Kapıdayım. Öğrenciyi teslim almak / teslim etmek istiyorum.</Text>
+        <Text style={styles.bellTitle}>{t('parent.bell.atDoorTitle')}</Text>
+        <Text style={styles.bellDesc}>{t('parent.bell.atDoorDesc')}</Text>
       </TouchableOpacity>
 
-      {sending ? <Text style={styles.sendingText}>Gönderiliyor...</Text> : null}
+      {sending ? <Text style={styles.sendingText}>{t('parent.bell.sending')}</Text> : null}
     </ScreenShell>
   );
 }
