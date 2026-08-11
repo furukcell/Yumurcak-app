@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { sortWeeklyBadgesNewestFirst } from '../../utils/weeklyBadges';
@@ -19,7 +20,7 @@ function getWeekLabel(item) {
 }
 
 export default function ParentBadgesScreen({ navigation }) {
-  
+  const { t } = useTranslation();
  const base = useParentBase();
  const { theme } = useAppTheme();
  const styles = useMemo(() => createStyles(theme), [theme]);
@@ -53,20 +54,20 @@ export default function ParentBadgesScreen({ navigation }) {
     return groups;
   }, [childBadges]);
 
-  if (loading) return <LoadingScreen text="Rozet geçmişi hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.badges.loading')} />;
 
   return (
-    <ScreenShell title="Rozetlerim" emoji="🏅" navigation={navigation} subtitle={childName}>
+    <ScreenShell title={t('parent.dashboard.myBadges')} emoji="🏅" navigation={navigation} subtitle={childName}>
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Bu ekran için veliye bağlı çocuk kaydı gerekir." />
+        <EmptyState icon="👧" title={t('parent.badges.noChildTitle')} desc={t('parent.badges.noChildDesc')} />
       ) : childBadges.length === 0 ? (
-        <EmptyState icon="🏅" title="Henüz rozet yok" desc="Öğretmen rozet verdiğinde burada hafta hafta görünecek." />
+        <EmptyState icon="🏅" title={t('parent.badges.emptyTitle')} desc={t('parent.badges.emptyDesc')} />
       ) : (
         <>
           <View style={styles.heroCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroTitle}>{childName}</Text>
-              <Text style={styles.heroText}>Kazandığı tüm haftalık rozetler burada saklanır.</Text>
+              <Text style={styles.heroText}>{t('parent.badges.heroText')}</Text>
             </View>
             <Text style={styles.heroEmoji}>{latestBadge?.badgeEmoji || latestBadge?.rozetEmoji || '🏅'}</Text>
           </View>
@@ -74,21 +75,21 @@ export default function ParentBadgesScreen({ navigation }) {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{childBadges.length}</Text>
-              <Text style={styles.statLabel}>Toplam Rozet</Text>
+              <Text style={styles.statLabel}>{t('parent.badges.totalBadges')}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{thisMonthCount}</Text>
-              <Text style={styles.statLabel}>Bu Ay</Text>
+              <Text style={styles.statLabel}>{t('parent.badges.thisMonth')}</Text>
             </View>
           </View>
 
           {latestBadge ? (
             <View style={styles.latestCard}>
-              <Text style={styles.latestHeader}>Son Kazanılan Rozet</Text>
+              <Text style={styles.latestHeader}>{t('parent.badges.latestBadge')}</Text>
               <View style={styles.latestRow}>
                 <Text style={styles.latestEmoji}>{latestBadge.badgeEmoji || latestBadge.rozetEmoji || '🌟'}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.latestTitle}>{cleanText(latestBadge.badgeTitle || latestBadge.rozetAdi, 'Rozet')}</Text>
+                  <Text style={styles.latestTitle}>{cleanText(latestBadge.badgeTitle || latestBadge.rozetAdi, t('parent.summary.badge'))}</Text>
                   <Text style={styles.latestSub}>{getWeekLabel(latestBadge)}</Text>
                   {latestBadge.note || latestBadge.not ? <Text style={styles.latestNote}>{latestBadge.note || latestBadge.not}</Text> : null}
                 </View>
@@ -97,18 +98,18 @@ export default function ParentBadgesScreen({ navigation }) {
           ) : null}
 
           <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>🔒 Sadece sana özel</Text>
-            <Text style={styles.infoText}>Bu geçmiş sadece {childName} için gösterilir. Diğer çocukların rozetleri ve notları veli ekranında görünmez.</Text>
+            <Text style={styles.infoTitle}>🔒 {t('parent.badges.justForYouTitle')}</Text>
+            <Text style={styles.infoText}>{t('parent.badges.justForYouDesc', { childName })}</Text>
           </View>
 
           {groupedBadges.map((group) => (
             <View key={group.key} style={styles.weekCard}>
               <View style={styles.weekHeader}>
                 <Text style={styles.weekTitle}>📅 {group.label}</Text>
-                <Text style={styles.weekCount}>{group.items.length} rozet</Text>
+                <Text style={styles.weekCount}>{t('parent.badges.badgeCount', { count: group.items.length })}</Text>
               </View>
               {group.items.map((item) => (
-                <BadgeRow key={item.id || `${item.weekKey}_${item.badgeId}`} item={item} styles={styles} />
+                <BadgeRow key={item.id || `${item.weekKey}_${item.badgeId}`} item={item} styles={styles} t={t} />
               ))}
             </View>
           ))}
@@ -118,9 +119,9 @@ export default function ParentBadgesScreen({ navigation }) {
   );
 }
 
-function BadgeRow({ item, styles }) {
-  const title = cleanText(item.badgeTitle || item.rozetAdi, 'Haftanın Rozeti');
-  const desc = cleanText(item.badgeDesc || item.rozetAciklama, 'Güzel davranışı için verildi.');
+function BadgeRow({ item, styles, t }) {
+  const title = cleanText(item.badgeTitle || item.rozetAdi, t('parent.badges.defaultBadgeTitle'));
+  const desc = cleanText(item.badgeDesc || item.rozetAciklama, t('parent.badges.defaultBadgeDesc'));
   const note = cleanText(item.note || item.not, '');
   const teacher = cleanText(item.ogretmenAdi || item.kaydedenAd || '', '');
 
