@@ -4,10 +4,13 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
 import MealTodayCard, { getMealText, getMealPhoto } from '../../components/MealTodayCard';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
+
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 function getCurrentMonthKey() {
   const date = new Date();
@@ -15,12 +18,12 @@ function getCurrentMonthKey() {
   return `${date.getFullYear()}-${month}`;
 }
 
-function formatMonthLabel(monthKey) {
-  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+function formatMonthLabel(monthKey, t) {
   const parts = String(monthKey || '').split('-');
   const year = parts[0];
   const monthIndex = Number(parts[1]) - 1;
-  return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
+  const monthName = MONTH_KEYS[monthIndex] ? t(`common.months.${MONTH_KEYS[monthIndex]}`) : t('parent.schedule.monthFallback');
+  return `${monthName} ${year || ''}`.trim();
 }
 
 function getTodayKey() {
@@ -31,14 +34,14 @@ function getTodayKey() {
   return `${y}-${m}-${day}`;
 }
 
-function buildEmptyTodayMeal(kresId, sinifId, childName) {
+function buildEmptyTodayMeal(kresId, sinifId, childName, t) {
   const today = getTodayKey();
   return {
     kresId: kresId || '',
     sinifId: sinifId || '',
     tip: 'gunluk',
     tarih: today,
-    baslik: `${childName || 'Sınıf'} Günlük Yemek Listesi`,
+    baslik: t('parent.meals.dailyMealListTitle', { name: childName || t('parent.meals.classFallback') }),
     ogunler: {},
     aktif: true,
     createdAt: Date.now(),
@@ -53,8 +56,8 @@ function mergeMealValue(monthlyValue, dailyValue) {
   return hasMealValue(dailyValue) ? dailyValue : (monthlyValue || {});
 }
 
-function mergeTodayMeal({ kresId, sinifId, childName, monthlyMeal, dailyMeal }) {
-  const emptyMeal = buildEmptyTodayMeal(kresId, sinifId, childName);
+function mergeTodayMeal({ kresId, sinifId, childName, monthlyMeal, dailyMeal, t }) {
+  const emptyMeal = buildEmptyTodayMeal(kresId, sinifId, childName, t);
   const base = monthlyMeal || emptyMeal;
   const dailyOguns = dailyMeal?.ogunler || {};
   const monthlyOguns = monthlyMeal?.ogunler || {};
@@ -78,6 +81,7 @@ function mergeTodayMeal({ kresId, sinifId, childName, monthlyMeal, dailyMeal }) 
 }
 
 export default function ParentMealsScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
   const meals = useNodeList('yemekListeleri', kresId);
   const [tab, setTab] = useState('today');
@@ -121,14 +125,15 @@ export default function ParentMealsScreen({ navigation }) {
     childName: selectedChild?.ad || selectedChild?.adSoyad || selectedChild?.isim,
     monthlyMeal: todayMonthlyMeal,
     dailyMeal: todayDailyMeal,
+    t,
   });
 
-  if (loading) return <LoadingScreen text="Yemek listesi hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.meals.loading')} />;
 
   return (
-    <ScreenShell title="Yemek Listesi" emoji="🍽️" navigation={navigation}>
+    <ScreenShell title={t('parent.meals.title')} emoji="🍽️" navigation={navigation}>
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Yemek listesi için çocuğunuzun sınıfa bağlı olması gerekir." />
+        <EmptyState icon="👧" title={t('parent.meals.noChildTitle')} desc={t('parent.meals.noChildDesc')} />
       ) : (
         <>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
@@ -136,13 +141,13 @@ export default function ParentMealsScreen({ navigation }) {
               style={[localStyles.tab, tab === 'today' && localStyles.tabActive]}
               onPress={() => setTab('today')}
             >
-              <Text style={[localStyles.tabText, tab === 'today' && localStyles.tabTextActive]}>Bugün</Text>
+              <Text style={[localStyles.tabText, tab === 'today' && localStyles.tabTextActive]}>{t('common.today')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[localStyles.tab, tab === 'monthly' && localStyles.tabActive]}
               onPress={() => setTab('monthly')}
             >
-              <Text style={[localStyles.tabText, tab === 'monthly' && localStyles.tabTextActive]}>Aylık</Text>
+              <Text style={[localStyles.tabText, tab === 'monthly' && localStyles.tabTextActive]}>{t('parent.meals.monthly')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -150,17 +155,17 @@ export default function ParentMealsScreen({ navigation }) {
             <MealTodayCard
               item={todayMeal}
               className={todayMeal?.hedefAdi || todayMeal?.sinifAdi || selectedChild?.sinifAdi || ''}
-              title="Günlük Yemek Listesi"
+              title={t('parent.mealCard.defaultTitle')}
             />
           ) : tab === 'monthly' ? (
             monthlyMeals.length === 0 ? (
-              <EmptyState icon="📅" title="Aylık yemek listesi yok" desc={`${formatMonthLabel(currentMonthKey)} için yönetici aylık liste yayınladığında burada görünür.`} />
+              <EmptyState icon="📅" title={t('parent.meals.noMonthlyTitle')} desc={t('parent.meals.noMonthlyDesc', { month: formatMonthLabel(currentMonthKey, t) })} />
             ) : (
               <>
                 <View style={localStyles.monthInfoCard}>
-                  <Text style={localStyles.monthInfoTitle}>📅 {formatMonthLabel(currentMonthKey)} Aylık Yemek Listesi</Text>
+                  <Text style={localStyles.monthInfoTitle}>📅 {t('parent.meals.monthlyListTitle', { month: formatMonthLabel(currentMonthKey, t) })}</Text>
                   <Text style={localStyles.monthInfoText}>
-                    {isClassMonthly ? 'Sınıf öğretmeni tarafından yayınlanan aylık menü.' : 'Yönetici tarafından yayınlanan kurum geneli aylık menü.'}
+                    {isClassMonthly ? t('parent.meals.classMonthlyDesc') : t('parent.meals.institutionMonthlyDesc')}
                   </Text>
                 </View>
                 <MonthlyDocumentPdfBar
@@ -170,10 +175,10 @@ export default function ParentMealsScreen({ navigation }) {
                   sinifId={isClassMonthly ? sinifId : undefined}
                   docType="yemek"
                   monthKey={currentMonthKey}
-                  monthLabel={formatMonthLabel(currentMonthKey)}
+                  monthLabel={formatMonthLabel(currentMonthKey, t)}
                   theme={THEME}
                 />
-                {monthlyMeals.map((item) => <MealCard key={item.id} item={item} />)}
+                {monthlyMeals.map((item) => <MealCard key={item.id} item={item} t={t} />)}
               </>
             )
           ) : null}
@@ -183,20 +188,20 @@ export default function ParentMealsScreen({ navigation }) {
   );
 }
 
-function MealCard({ item }) {
+function MealCard({ item, t }) {
   const ogunler = item.ogunler || {};
   const isMonthly = item.kaynak === 'admin_aylik' || item.kaynak === 'ogretmen_aylik';
 
   return (
     <View style={styles.card}>
       <Text style={[styles.badge, { backgroundColor: THEME.primarySoft, color: THEME.primary }]}> 
-        {isMonthly ? 'Aylık Liste' : item.sinifId ? 'Sınıf Listesi' : 'Kurum Listesi'}
+        {isMonthly ? t('parent.pdfBar.docType.yemek') : item.sinifId ? t('parent.mealCard.classList') : t('parent.mealCard.institutionList')}
       </Text>
-      <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.baslik || 'Yemek Listesi'}</Text>
+      <Text style={[styles.cardTitle, { marginTop: 8 }]}>{item.baslik || t('parent.mealCard.defaultTitle')}</Text>
       <Text style={styles.cardText}>📅 {formatDisplayDate(item.tarih || item.baslangicTarihi)}</Text>
-      {renderMeal('Kahvaltı', '🥐', ogunler.kahvalti)}
-      {renderMeal('Öğle', '🍲', ogunler.ogle)}
-      {renderMeal('Ara Öğün', '🍎', ogunler.araOgun)}
+      {renderMeal(t('parent.mealCard.mealName.kahvalti'), '🥐', ogunler.kahvalti)}
+      {renderMeal(t('parent.mealCard.mealName.ogle'), '🍲', ogunler.ogle)}
+      {renderMeal(t('parent.mealCard.mealName.araOgun'), '🍎', ogunler.araOgun)}
     </View>
   );
 }
