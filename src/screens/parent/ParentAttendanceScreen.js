@@ -5,19 +5,21 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME, getMonthKey, getMonthLabel, isAbsentStatus } from './parentShared';
 import { formatDisplayDate } from '../../utils/dateFormat';
 
-const STATUS_LABELS = {
-  geldi: 'Geldi',
-  gelmedi: 'Gelmedi',
-  gec: 'Geç',
-  devamsiz: 'Devamsız',
-  devamsız: 'Devamsız',
-};
+function getStatusLabel(status, t) {
+  const value = String(status || '').toLowerCase();
+  if (value === 'geldi') return t('parent.attendance.status.geldi');
+  if (value === 'gelmedi') return t('parent.attendance.status.gelmedi');
+  if (value === 'gec') return t('parent.attendance.status.gec');
+  if (value === 'devamsiz' || value === 'devamsız') return t('parent.attendance.status.devamsiz');
+  return status || '-';
+}
 
 export default function ParentAttendanceScreen({ navigation }) {
-   
+  const { t } = useTranslation();
   const { loading, selectedChild, kresId } = useParentBase();
   const raw = useNodeList('yoklamalar', kresId);
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -46,33 +48,33 @@ export default function ParentAttendanceScreen({ navigation }) {
   const yearAbsences = childRecords.filter((item) => isAbsentStatus(item.durum)).length;
   const monthAbsences = days.filter((item) => isAbsentStatus(item.durum)).length;
 
-  if (loading) return <LoadingScreen text="Yoklama hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.attendance.loading')} />;
 
   return (
-    <ScreenShell title="Yoklama" emoji="✅" navigation={navigation}>
+    <ScreenShell title={t('parent.attendance.title')} emoji="✅" navigation={navigation}>
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Yoklama geçmişi için çocuğunuzun veli hesabına bağlı olması gerekir." />
+        <EmptyState icon="👧" title={t('parent.attendance.noChildTitle')} desc={t('parent.attendance.noChildDesc')} />
       ) : (
         <>
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Özet</Text>
-            <Text style={styles.cardText}>Bu ay devamsızlık: {monthAbsences} gün</Text>
-            <Text style={styles.cardText}>Son 12 ay toplam devamsızlık: {yearAbsences} gün</Text>
+            <Text style={styles.cardTitle}>{t('parent.attendance.summary')}</Text>
+            <Text style={styles.cardText}>{t('parent.attendance.monthAbsences', { count: monthAbsences })}</Text>
+            <Text style={styles.cardText}>{t('parent.attendance.yearAbsences', { count: yearAbsences })}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Son 12 Ay</Text>
+          <Text style={styles.sectionTitle}>{t('parent.attendance.last12Months')}</Text>
           {months.map((month) => (
             <TouchableOpacity key={month.key} style={styles.card} onPress={() => setSelectedMonth(month.key)} activeOpacity={0.84}>
               <Text style={styles.cardTitle}>{getMonthLabel(month.key)}</Text>
-              <Text style={styles.cardText}>{month.absentCount} devamsızlık</Text>
+              <Text style={styles.cardText}>{t('parent.attendance.absenceCount', { count: month.absentCount })}</Text>
             </TouchableOpacity>
           ))}
 
-          {currentMonth ? <Text style={styles.sectionTitle}>{getMonthLabel(currentMonth)} Gün Detayı</Text> : null}
+          {currentMonth ? <Text style={styles.sectionTitle}>{t('parent.attendance.dayDetailTitle', { month: getMonthLabel(currentMonth) })}</Text> : null}
           {days.length === 0 ? (
-            <EmptyState icon="📅" title="Bu ay kayıt yok" desc="Yoklama kaydı girildiğinde burada görünecek." />
+            <EmptyState icon="📅" title={t('parent.attendance.noRecordsTitle')} desc={t('parent.attendance.noRecordsDesc')} />
           ) : (
-            days.map((item) => <AttendanceDay key={`${item.tarih}_${item.cocukId}`} item={item} />)
+            days.map((item) => <AttendanceDay key={`${item.tarih}_${item.cocukId}`} item={item} t={t} />)
           )}
         </>
       )}
@@ -93,7 +95,7 @@ function buildLast12Months(records) {
   });
 }
 
-function AttendanceDay({ item }) {
+function AttendanceDay({ item, t }) {
   const absent = isAbsentStatus(item.durum);
   const isLate = String(item.durum || '').toLowerCase() === 'gec';
 
@@ -109,9 +111,9 @@ function AttendanceDay({ item }) {
           },
         ]}
       >
-        Durum: {STATUS_LABELS[item.durum] || item.durum || '-'}
+        {t('parent.attendance.status.label')}: {getStatusLabel(item.durum, t)}
       </Text>
-      {item.not ? <Text style={styles.cardText}>Not: {item.not}</Text> : null}
+      {item.not ? <Text style={styles.cardText}>{t('parent.attendance.note')}: {item.not}</Text> : null}
     </View>
   );
 }
