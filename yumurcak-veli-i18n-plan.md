@@ -83,13 +83,13 @@ Ekran ekran, tam dosya olarak teslim edilecek. Sıra (kullanım sıklığına g�
 16. `ParentPaymentsScreen.js`✅
 17. `ParentPollsScreen.js`✅
 18. `ParentReportsScreen.js`✅
-19. `ParentServiceScreen.js`
-20. `ParentSupportScreen.js`
-21. `ParentAboutScreen.js`
-22. `ParentAdaptationScoreScreen.js`
-23. `ChildReportScreen.js`
+19. `ParentServiceScreen.js`✅
+20. `ParentSupportScreen.js`✅
+21. `ParentAboutScreen.js`✅
+22. `ParentAdaptationScoreScreen.js`✅
+23. `ChildReportScreen.js`✅
 24. `parentShared.js`✅ (yardımcı metin/format fonksiyonları varsa)
-25. `ParentProfileScreen.js`
+25. `ParentProfileScreen.js`✅
 
 **Güncellenecek:**
 - `src/locales/tr.json` / `en.json` — `parent` bölümü, her ekran tamamlandıkça büyür
