@@ -15,15 +15,13 @@ export default function useNotifications() {
 
     // Bildirime tıklandığında
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
-      
-      // Rapor bildirimi ise rapor ekranına git
-      if (data.type === 'report') {
-        navigation.navigate('ChildReport', { childId: data.childId });
-      }
-      // Duyuru bildirimi ise duyuru ekranına git
-      else if (data.type === 'announcement') {
-        navigation.navigate('AnnouncementList');
+      const data = response.notification.request.content.data || {};
+
+      // Backend (functions/index.js) her bildirimde routeName + routeParams gönderiyor.
+      // Eskiden burada data.type kontrol ediliyordu ama backend hiç 'type' alanı
+      // göndermiyor (tip/routeName gönderiyor) — bu yüzden hiçbir bildirim yönlendirme yapmıyordu.
+      if (data.routeName) {
+        navigation.navigate(data.routeName, data.routeParams || undefined);
       }
     });
 
