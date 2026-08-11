@@ -1,18 +1,32 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { ScreenShell, useNodeList, useParentBase, LoadingScreen, EmptyState, includesId, MONTH_LABELS, pad2 } from './parentShared';
+import { useTranslation } from 'react-i18next';
+import { ScreenShell, useNodeList, useParentBase, LoadingScreen, EmptyState, includesId, pad2 } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { formatDisplayDate } from '../../utils/dateFormat';
 
-const STATUS_META = {
-  odendi: { label: 'Ödendi', icon: '✅', color: '#20B45B', bg: '#E9FBEF' },
-  bekliyor: { label: 'Bekliyor', icon: '⏳', color: '#FF9F1C', bg: '#FFF3DF' },
-  gecikti: { label: 'Gecikti', icon: '❗', color: '#FF4D6D', bg: '#FFE8EC' },
-  kayitYok: { label: 'Kayıt yok', icon: '—', color: '#707386', bg: '#F1F2F6' },
-};
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+function formatMonthLabel(monthKey, t) {
+  const parts = String(monthKey || '').split('-');
+  const year = parts[0];
+  const monthIndex = Number(parts[1]) - 1;
+  const monthName = MONTH_KEYS[monthIndex] ? t(`common.months.${MONTH_KEYS[monthIndex]}`) : t('parent.payments.monthFallback');
+  return `${monthName} ${year || ''}`.trim();
+}
+
+function getStatusMeta(statusKey, t) {
+  const META = {
+    odendi: { label: t('parent.payments.statusPaid'), icon: '✅', color: '#20B45B', bg: '#E9FBEF' },
+    bekliyor: { label: t('parent.payments.statusWaiting'), icon: '⏳', color: '#FF9F1C', bg: '#FFF3DF' },
+    gecikti: { label: t('parent.payments.statusOverdue'), icon: '❗', color: '#FF4D6D', bg: '#FFE8EC' },
+    kayitYok: { label: t('parent.payments.statusNoRecord'), icon: '—', color: '#707386', bg: '#F1F2F6' },
+  };
+  return META[statusKey] || META.bekliyor;
+}
 
 export default function ParentPaymentsScreen({ navigation }) {
-  
+  const { t } = useTranslation();
   const base = useParentBase();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -39,7 +53,7 @@ export default function ParentPaymentsScreen({ navigation }) {
       .sort((a, b) => getSortValue(b) - getSortValue(a));
   }, [payments, childIds, parentId, kresId]);
 
-  const last12Months = useMemo(() => buildLastMonths(12), []);
+  const last12Months = useMemo(() => buildLastMonths(12, t), [t]);
 
   const monthlyRows = useMemo(() => {
     const targetChildId = selectedChild?.id ? String(selectedChild.id) : childIds[0];
@@ -70,56 +84,56 @@ export default function ParentPaymentsScreen({ navigation }) {
     };
   }, [monthlyRows]);
 
-  if (loading) return <LoadingScreen text="Ödeme bilgileri hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.payments.loading')} />;
 
   const iban = kres?.iban || kres?.IBAN || kres?.bankaIban || kres?.hesapIban || '';
 
   function showIban() {
     if (!iban) {
-      Alert.alert('IBAN', 'Kurum IBAN bilgisi yönetici tarafından girildiğinde burada gösterilecek.');
+      Alert.alert(t('parent.payments.ibanTitle'), t('parent.payments.ibanMissingDesc'));
       return;
     }
-    Alert.alert('Kurum IBAN', iban);
+    Alert.alert(t('parent.payments.institutionIbanTitle'), iban);
   }
 
   return (
-    <ScreenShell title="Ödeme Takibi" emoji="💳" navigation={navigation} subtitle={kresAdi}>
+    <ScreenShell title={t('parent.payments.title')} emoji="💳" navigation={navigation} subtitle={kresAdi}>
       <View style={styles.heroCard}>
-        <Text style={styles.heroTitle}>Son 12 Ay Ödeme Özeti</Text>
-        <Text style={styles.heroSubtitle}>{selectedChild ? getChildName(selectedChild) : 'Çocuk bağlantısı bekleniyor'}</Text>
+        <Text style={styles.heroTitle}>{t('parent.payments.heroTitle')}</Text>
+        <Text style={styles.heroSubtitle}>{selectedChild ? getChildName(selectedChild, t) : t('parent.payments.heroSubtitleFallback')}</Text>
         <View style={styles.statGrid}>
-          <StatBox styles={styles} label="Toplam" value={formatMoney(stats.totalAmount)} />
-          <StatBox styles={styles} label="Açık" value={formatMoney(stats.openAmount)} danger={stats.openAmount > 0} />
-          <StatBox styles={styles} label="Ödendi" value={String(stats.paidCount)} />
-          <StatBox styles={styles} label="Geciken" value={String(stats.overdueCount)} danger={stats.overdueCount > 0} />
+          <StatBox styles={styles} label={t('parent.payments.statTotal')} value={formatMoney(stats.totalAmount)} />
+          <StatBox styles={styles} label={t('parent.payments.statOpen')} value={formatMoney(stats.openAmount)} danger={stats.openAmount > 0} />
+          <StatBox styles={styles} label={t('parent.payments.statPaid')} value={String(stats.paidCount)} />
+          <StatBox styles={styles} label={t('parent.payments.statOverdue')} value={String(stats.overdueCount)} danger={stats.overdueCount > 0} />
         </View>
       </View>
 
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tabButton, tab === 'son12' && styles.tabActive]} onPress={() => setTab('son12')} activeOpacity={0.85}>
-          <Text style={[styles.tabText, tab === 'son12' && styles.tabActiveText]}>Son 12 Ay</Text>
+          <Text style={[styles.tabText, tab === 'son12' && styles.tabActiveText]}>{t('parent.payments.tabLast12')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabButton, tab === 'tum' && styles.tabActive]} onPress={() => setTab('tum')} activeOpacity={0.85}>
-          <Text style={[styles.tabText, tab === 'tum' && styles.tabActiveText]}>Tüm Kayıtlar</Text>
+          <Text style={[styles.tabText, tab === 'tum' && styles.tabActiveText]}>{t('parent.payments.tabAll')}</Text>
         </TouchableOpacity>
       </View>
 
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bağlantısı yok" desc="Ödeme kayıtlarını görmek için veli hesabına bağlı çocuk gerekir." />
+        <EmptyState icon="👧" title={t('parent.payments.noChildTitle')} desc={t('parent.payments.noChildDesc')} />
       ) : tab === 'son12' ? (
         <View>
-          {monthlyRows.map((row) => <MonthPaymentCard key={row.key} row={row} styles={styles} />)}
+          {monthlyRows.map((row) => <MonthPaymentCard key={row.key} row={row} styles={styles} t={t} />)}
         </View>
       ) : myPayments.length === 0 ? (
-        <EmptyState icon="💳" title="Ödeme kaydı yok" desc="Ödemeniz gereken ücret kaydı olduğunda burada görünecek." />
+        <EmptyState icon="💳" title={t('parent.payments.noRecordsTitle')} desc={t('parent.payments.noRecordsDesc')} />
       ) : (
         <View>
-          {myPayments.map((item, index) => <PaymentCard key={item.id || `${item.cocukId || 'odeme'}-${index}`} item={item} styles={styles} />)}
+          {myPayments.map((item, index) => <PaymentCard key={item.id || `${item.cocukId || 'odeme'}-${index}`} item={item} styles={styles} t={t} />)}
         </View>
       )}
 
       <TouchableOpacity style={styles.ibanButton} onPress={showIban} activeOpacity={0.85}>
-        <Text style={styles.ibanText}>IBAN Bilgisi</Text>
+        <Text style={styles.ibanText}>{t('parent.payments.ibanButton')}</Text>
       </TouchableOpacity>
     </ScreenShell>
   );
@@ -134,16 +148,16 @@ function StatBox({ styles, label, value, danger }) {
   );
 }
 
-function MonthPaymentCard({ row, styles }) {
+function MonthPaymentCard({ row, styles, t }) {
   const record = row.record;
-  const status = STATUS_META[row.status] || STATUS_META.bekliyor;
+  const status = getStatusMeta(row.status, t);
   return (
     <View style={styles.monthCard}>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.monthTitle}>{row.label}</Text>
-        <Text style={styles.monthDesc} numberOfLines={1}>{record?.baslik || record?.title || record?.aciklama || 'Aylık ücret kaydı'}</Text>
-        {record?.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {formatDisplayDate(record.sonOdemeTarihi)}</Text> : null}
-        {record?.odemeTarihi ? <Text style={styles.paidDate}>Ödeme tarihi: {formatDisplayDate(record.odemeTarihi)}</Text> : null}
+        <Text style={styles.monthDesc} numberOfLines={1}>{record?.baslik || record?.title || record?.aciklama || t('parent.payments.monthlyRecordFallback')}</Text>
+        {record?.sonOdemeTarihi ? <Text style={styles.dueDate}>{t('parent.payments.dueDate')}: {formatDisplayDate(record.sonOdemeTarihi)}</Text> : null}
+        {record?.odemeTarihi ? <Text style={styles.paidDate}>{t('parent.payments.paidDate')}: {formatDisplayDate(record.odemeTarihi)}</Text> : null}
       </View>
       <View style={styles.amountBlock}>
         <Text style={styles.amount}>{record ? formatMoney(record.tutar || record.amount) : '-'}</Text>
@@ -155,14 +169,14 @@ function MonthPaymentCard({ row, styles }) {
   );
 }
 
-function PaymentCard({ item, styles }) {
-  const status = STATUS_META[item.durum] || STATUS_META.bekliyor;
+function PaymentCard({ item, styles, t }) {
+  const status = getStatusMeta(item.durum, t);
   return (
     <View style={styles.paymentCard}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.paymentTitle} numberOfLines={1}>{item.baslik || item.aciklama || item.description || 'Ödeme'}</Text>
-        <Text style={styles.paymentDesc}>{item.donem || item.tarih || `${item.ay || ''} ${item.yil || ''}`.trim() || 'Dönem bilgisi yok'}</Text>
-        {item.sonOdemeTarihi ? <Text style={styles.dueDate}>Son ödeme: {formatDisplayDate(item.sonOdemeTarihi)}</Text> : null}
+        <Text style={styles.paymentTitle} numberOfLines={1}>{item.baslik || item.aciklama || item.description || t('parent.payments.paymentFallback')}</Text>
+        <Text style={styles.paymentDesc}>{item.donem || item.tarih || `${item.ay || ''} ${item.yil || ''}`.trim() || t('parent.payments.periodFallback')}</Text>
+        {item.sonOdemeTarihi ? <Text style={styles.dueDate}>{t('parent.payments.dueDate')}: {formatDisplayDate(item.sonOdemeTarihi)}</Text> : null}
       </View>
       <View style={styles.amountBlock}>
         <Text style={styles.amount}>{formatMoney(item.tutar || item.amount)}</Text>
@@ -174,12 +188,12 @@ function PaymentCard({ item, styles }) {
   );
 }
 
-function buildLastMonths(count) {
+function buildLastMonths(count, t) {
   const now = new Date();
   return Array.from({ length: count }).map((_, index) => {
     const d = new Date(now.getFullYear(), now.getMonth() - index, 1);
     const key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
-    return { key, label: `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}` };
+    return { key, label: formatMonthLabel(key, t) };
   });
 }
 
@@ -223,8 +237,8 @@ function toNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function getChildName(child = {}) {
-  return `${child.ad || ''} ${child.soyad || ''}`.trim() || child.adSoyad || child.isim || 'Çocuğum';
+function getChildName(child = {}, t) {
+  return `${child.ad || ''} ${child.soyad || ''}`.trim() || child.adSoyad || child.isim || t('parent.payments.childFallback');
 }
 
 const createStyles = (theme) => {
