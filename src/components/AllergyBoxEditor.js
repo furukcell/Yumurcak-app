@@ -21,7 +21,7 @@ function toValue(list) {
   return list.map((item) => (item || '').trim()).filter(Boolean).join('\n');
 }
 
-export default function AllergyBoxEditor({ value, onChange, accentColor = '#D92929', placeholder = 'Örn: Yumurta' }) {
+export default function AllergyBoxEditor({ value, onChange, accentColor = '#D92929', placeholder = 'Örn: Yumurta', addLabel = '+ Alerji Ekle' }) {
   const [list, setList] = useState(() => toList(value));
 
   // Dışarıdan (örn. Firebase'den ilk yükleme) değer değiştiğinde senkronize et.
@@ -73,7 +73,7 @@ export default function AllergyBoxEditor({ value, onChange, accentColor = '#D929
         </View>
       ))}
       <TouchableOpacity style={[styles.addButton, { borderColor: `${accentColor}66` }]} onPress={addBox} activeOpacity={0.85}>
-        <Text style={[styles.addButtonText, { color: accentColor }]}>+ Alerji Ekle</Text>
+        <Text style={[styles.addButtonText, { color: accentColor }]}>{addLabel}</Text>
       </TouchableOpacity>
     </View>
   );
