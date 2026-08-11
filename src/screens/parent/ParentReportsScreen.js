@@ -4,24 +4,15 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, THEME, MONTH_LABELS } from './parentShared';
+import { useTranslation } from 'react-i18next';
+import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, THEME } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { formatDisplayDate } from '../../utils/dateFormat';
 
-const MEAL_LABELS = {
-  kahvalti: 'Kahvaltı',
-  ogle: 'Öğle Yemeği',
-  araOgun: 'Ara Öğün',
-};
-
-const STATUS_LABELS = {
-  yemedi: 'Yemedi',
-  az_yedi: 'Az yedi',
-  bitirdi: 'Bitirdi',
-};
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 export default function ParentReportsScreen({ navigation }) {
- 
+  const { t } = useTranslation();
   const { loading, selectedChild, kresAdi, kresId } = useParentBase();
   const reports = useNodeList('gunlukRaporlar', kresId);
   const { theme } = useAppTheme();
@@ -35,71 +26,71 @@ export default function ParentReportsScreen({ navigation }) {
       .sort((a, b) => String(b.tarih || b.date || '').localeCompare(String(a.tarih || a.date || '')));
   }, [reports, selectedChild?.id]);
 
-  const monthlyReports = useMemo(() => buildMonthlyReports(childReports), [childReports]);
+  const monthlyReports = useMemo(() => buildMonthlyReports(childReports, t), [childReports, t]);
 
-  if (loading) return <LoadingScreen text="Raporlar hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.reports.loading')} />;
 
   return (
-    <ScreenShell title="Raporlar" emoji="📋" navigation={navigation} subtitle={kresAdi}>
+    <ScreenShell title={t('parent.reports.title')} emoji="📋" navigation={navigation} subtitle={kresAdi}>
       <View style={localStyles.tabRow}>
         <TouchableOpacity style={[localStyles.tabButton, tab === 'daily' && localStyles.tabActive]} onPress={() => setTab('daily')} activeOpacity={0.85}>
-          <Text style={[localStyles.tabText, tab === 'daily' && localStyles.tabActiveText]}>Günlük</Text>
+          <Text style={[localStyles.tabText, tab === 'daily' && localStyles.tabActiveText]}>{t('parent.reports.tabDaily')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[localStyles.tabButton, tab === 'monthly' && localStyles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
-          <Text style={[localStyles.tabText, tab === 'monthly' && localStyles.tabActiveText]}>Aylık</Text>
+          <Text style={[localStyles.tabText, tab === 'monthly' && localStyles.tabActiveText]}>{t('parent.reports.tabMonthly')}</Text>
         </TouchableOpacity>
       </View>
 
       {!selectedChild ? (
-        <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Rapor görmek için çocuğunuzun veli hesabına bağlı olması gerekir." />
+        <EmptyState icon="👧" title={t('parent.reports.noChildTitle')} desc={t('parent.reports.noChildDesc')} />
       ) : childReports.length === 0 ? (
-        <EmptyState icon="📝" title="Henüz rapor yok" desc="Öğretmen günlük rapor girdiğinde burada görünecek." />
+        <EmptyState icon="📝" title={t('parent.reports.noReportsTitle')} desc={t('parent.reports.noReportsDesc')} />
       ) : tab === 'daily' ? (
         <View>
           <View style={localStyles.summaryCard}>
-            <Text style={localStyles.summaryTitle}>Günlük Raporlar</Text>
-            <Text style={localStyles.summaryText}>Son raporlar tarih sırasına göre listelenir. En güncel kayıt üsttedir.</Text>
+            <Text style={localStyles.summaryTitle}>{t('parent.reports.dailySummaryTitle')}</Text>
+            <Text style={localStyles.summaryText}>{t('parent.reports.dailySummaryDesc')}</Text>
           </View>
-          {childReports.map((item, index) => <ReportCard key={item.id} item={item} isToday={index === 0} localStyles={localStyles} />)}
+          {childReports.map((item, index) => <ReportCard key={item.id} item={item} isToday={index === 0} localStyles={localStyles} t={t} />)}
         </View>
       ) : (
         <View>
           <View style={localStyles.summaryCard}>
-            <Text style={localStyles.summaryTitle}>Aylık Özet</Text>
-            <Text style={localStyles.summaryText}>Bu bölüm günlük raporlardan otomatik özet çıkarır. Tanı/teşhis değildir.</Text>
+            <Text style={localStyles.summaryTitle}>{t('parent.reports.monthlySummaryTitle')}</Text>
+            <Text style={localStyles.summaryText}>{t('parent.reports.monthlySummaryDesc')}</Text>
           </View>
-          {monthlyReports.map((item) => <MonthlyCard key={item.monthKey} item={item} localStyles={localStyles} />)}
+          {monthlyReports.map((item) => <MonthlyCard key={item.monthKey} item={item} localStyles={localStyles} t={t} />)}
         </View>
       )}
     </ScreenShell>
   );
 }
 
-function ReportCard({ item, isToday, localStyles }) {
+function ReportCard({ item, isToday, localStyles, t }) {
   const mood = item?.mood || item?.ruhHali || item?.durum || '-';
-  const sleep = item?.uyku?.sure ? `${item.uyku.sure} saat` : (item?.uykuDurumu || '-');
-  const toilet = item?.tuvalet?.sayi ? `${item.tuvalet.sayi} kez` : (item?.tuvaletDurumu || '-');
-  const note = item?.not || item?.ogretmenNotu || item?.notlar || 'Öğretmen notu yok.';
-  const reportDate = item.tarih || item.date || 'Rapor';
+  const sleep = item?.uyku?.sure ? t('parent.reports.sleepHours', { count: item.uyku.sure }) : (item?.uykuDurumu || '-');
+  const toilet = item?.tuvalet?.sayi ? t('parent.reports.toiletCount', { count: item.tuvalet.sayi }) : (item?.tuvaletDurumu || '-');
+  const note = item?.not || item?.ogretmenNotu || item?.notlar || t('parent.reports.noTeacherNote');
+  const reportDate = item.tarih || item.date || t('parent.reports.title');
   const displayReportDate = formatDisplayDate(reportDate);
 
   return (
     <View style={localStyles.card}>
       <View style={localStyles.cardHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={localStyles.cardTitle}>{isToday ? 'En Güncel Rapor' : displayReportDate}</Text>
+          <Text style={localStyles.cardTitle}>{isToday ? t('parent.reports.latestReport') : displayReportDate}</Text>
           <Text style={localStyles.cardSub}>{displayReportDate}</Text>
         </View>
-        {isToday ? <Text style={localStyles.todayBadge}>Güncel</Text> : null}
+        {isToday ? <Text style={localStyles.todayBadge}>{t('parent.reports.current')}</Text> : null}
       </View>
 
       <View style={localStyles.infoGrid}>
-        <InfoPill localStyles={localStyles} icon="😊" label="Ruh hali" value={mood} />
-        <InfoPill localStyles={localStyles} icon="🌙" label="Uyku" value={sleep} />
-        <InfoPill localStyles={localStyles} icon="🚽" label="Tuvalet" value={toilet} />
+        <InfoPill localStyles={localStyles} icon="😊" label={t('parent.reports.moodLabel')} value={mood} />
+        <InfoPill localStyles={localStyles} icon="🌙" label={t('parent.reports.sleepLabel')} value={sleep} />
+        <InfoPill localStyles={localStyles} icon="🚽" label={t('parent.reports.toiletLabel')} value={toilet} />
       </View>
 
-      <MealDetail yemek={item?.yemek} yemekDurumu={item?.yemekDurumu} localStyles={localStyles} />
+      <MealDetail yemek={item?.yemek} yemekDurumu={item?.yemekDurumu} localStyles={localStyles} t={t} />
       <Text style={localStyles.noteText}>👩‍🏫 {note}</Text>
     </View>
   );
@@ -115,32 +106,43 @@ function InfoPill({ localStyles, icon, label, value }) {
   );
 }
 
-function MealDetail({ yemek, yemekDurumu, localStyles }) {
+function MealDetail({ yemek, yemekDurumu, localStyles, t }) {
+  const mealLabels = {
+    kahvalti: t('parent.reports.mealBreakfast'),
+    ogle: t('parent.reports.mealLunch'),
+    araOgun: t('parent.reports.mealSnack'),
+  };
+  const statusLabels = {
+    yemedi: t('parent.reports.statusNotEaten'),
+    az_yedi: t('parent.reports.statusAteLittle'),
+    bitirdi: t('parent.reports.statusFinished'),
+  };
+
   if (!yemek) {
-    return <Text style={localStyles.mealLine}>🍴 Yemek: {yemekDurumu || '-'}</Text>;
+    return <Text style={localStyles.mealLine}>🍴 {t('parent.reports.mealLabel')}: {yemekDurumu || '-'}</Text>;
   }
 
   if (typeof yemek === 'boolean') {
-    return <Text style={localStyles.mealLine}>🍴 Yemek: {yemek ? 'İyi' : '-'}</Text>;
+    return <Text style={localStyles.mealLine}>🍴 {t('parent.reports.mealLabel')}: {yemek ? t('parent.reports.mealGood') : '-'}</Text>;
   }
 
   const keys = ['kahvalti', 'ogle', 'araOgun'];
   const hasDetailed = keys.some((key) => typeof yemek[key] === 'object' && yemek[key]?.durum);
 
   if (!hasDetailed) {
-    const oldSelected = keys.filter((key) => yemek[key]).map((key) => MEAL_LABELS[key]);
-    return <Text style={localStyles.mealLine}>🍴 Yemek: {oldSelected.length ? oldSelected.join(', ') : (yemekDurumu || '-')}</Text>;
+    const oldSelected = keys.filter((key) => yemek[key]).map((key) => mealLabels[key]);
+    return <Text style={localStyles.mealLine}>🍴 {t('parent.reports.mealLabel')}: {oldSelected.length ? oldSelected.join(', ') : (yemekDurumu || '-')}</Text>;
   }
 
   return (
     <View style={localStyles.mealBox}>
-      <Text style={localStyles.mealTitle}>🍴 Yemek Detayları</Text>
+      <Text style={localStyles.mealTitle}>🍴 {t('parent.reports.mealDetailsTitle')}</Text>
       {keys.map((key) => {
         const status = yemek[key]?.durum;
         if (!status) return null;
         return (
           <Text key={key} style={localStyles.mealItem}>
-            • {MEAL_LABELS[key]}: {STATUS_LABELS[status] || status}
+            • {mealLabels[key]}: {statusLabels[status] || status}
           </Text>
         );
       })}
@@ -148,24 +150,24 @@ function MealDetail({ yemek, yemekDurumu, localStyles }) {
   );
 }
 
-function MonthlyCard({ item, localStyles }) {
+function MonthlyCard({ item, localStyles, t }) {
   return (
     <View style={localStyles.monthCard}>
       <View style={localStyles.monthTop}>
         <View>
           <Text style={localStyles.monthTitle}>{item.label}</Text>
-          <Text style={localStyles.monthSub}>{item.count} günlük rapor</Text>
+          <Text style={localStyles.monthSub}>{t('parent.reports.monthlyReportCount', { count: item.count })}</Text>
         </View>
-        <Text style={localStyles.monthBadge}>{item.count} kayıt</Text>
+        <Text style={localStyles.monthBadge}>{t('parent.reports.recordCount', { count: item.count })}</Text>
       </View>
 
       <View style={localStyles.monthStats}>
-        <MonthStat localStyles={localStyles} icon="😊" label="En sık ruh hali" value={item.topMood} />
-        <MonthStat localStyles={localStyles} icon="🌙" label="Uyku ort." value={item.avgSleep ? `${item.avgSleep} saat` : '-'} />
-        <MonthStat localStyles={localStyles} icon="🍴" label="Yemek" value={item.mealSummary} />
+        <MonthStat localStyles={localStyles} icon="😊" label={t('parent.reports.topMoodLabel')} value={item.topMood} />
+        <MonthStat localStyles={localStyles} icon="🌙" label={t('parent.reports.avgSleepLabel')} value={item.avgSleep ? t('parent.reports.sleepHours', { count: item.avgSleep }) : '-'} />
+        <MonthStat localStyles={localStyles} icon="🍴" label={t('parent.reports.mealSummaryLabel')} value={item.mealSummary} />
       </View>
 
-      <Text style={localStyles.monthNote}>Not: Bu aylık özet, girilen günlük raporlardan otomatik oluşturulur.</Text>
+      <Text style={localStyles.monthNote}>{t('parent.reports.monthlyNote')}</Text>
     </View>
   );
 }
@@ -180,7 +182,7 @@ function MonthStat({ localStyles, icon, label, value }) {
   );
 }
 
-function buildMonthlyReports(reports) {
+function buildMonthlyReports(reports, t) {
   const groups = {};
   reports.forEach((report) => {
     const rawDate = String(report.tarih || report.date || '');
@@ -194,18 +196,19 @@ function buildMonthlyReports(reports) {
     .sort(([a], [b]) => String(b).localeCompare(String(a)))
     .map(([monthKey, list]) => ({
       monthKey,
-      label: getMonthTitle(monthKey),
+      label: getMonthTitle(monthKey, t),
       count: list.length,
       topMood: mostCommon(list.map((item) => item?.mood || item?.ruhHali || item?.durum).filter(Boolean)) || '-',
       avgSleep: averageSleep(list),
-      mealSummary: mealSummary(list),
+      mealSummary: mealSummary(list, t),
     }));
 }
 
-function getMonthTitle(monthKey) {
+function getMonthTitle(monthKey, t) {
   const [year, month] = String(monthKey || '').split('-');
   const index = Number(month) - 1;
-  return `${MONTH_LABELS[index] || monthKey} ${year || ''}`.trim();
+  const monthName = MONTH_KEYS[index] ? t(`common.months.${MONTH_KEYS[index]}`) : monthKey;
+  return `${monthName} ${year || ''}`.trim();
 }
 
 function mostCommon(values) {
@@ -228,7 +231,7 @@ function averageSleep(list) {
   return avg.toFixed(avg % 1 === 0 ? 0 : 1);
 }
 
-function mealSummary(list) {
+function mealSummary(list, t) {
   let good = 0;
   let total = 0;
   list.forEach((item) => {
@@ -249,7 +252,7 @@ function mealSummary(list) {
     }
   });
   if (!total) return '-';
-  return `${good}/${total} iyi`;
+  return t('parent.reports.mealSummaryGood', { good, total });
 }
 
 const createStyles = (theme) => {
