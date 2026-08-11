@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, useNodeList, useParentBase, LoadingScreen, EmptyState, includesId, asArray } from './parentShared';
@@ -8,17 +9,18 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 const DEFAULT_POLL_ICON = '🗳️';
 
 export default function ParentPollsScreen({ navigation }) {
+  const { t } = useTranslation();
   const base = useParentBase();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const { loading, kresId, sinifId, kullanici } = base;
-  
+
   const polls = useNodeList('anketler', kresId);
   const [sendingId, setSendingId] = useState(null);
   const [expandedPollId, setExpandedPollId] = useState(null);
 
- 
+
   const veliId = kullanici?.uid || kullanici?.id;
 
   const activePolls = useMemo(() => {
@@ -37,7 +39,7 @@ export default function ParentPollsScreen({ navigation }) {
   const mainPoll = activePolls[0] || null;
   const otherPolls = activePolls.slice(1);
 
-  if (loading) return <LoadingScreen text="Anketler hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.polls.loading')} />;
 
   const vote = async (poll, option) => {
     if (!veliId || !poll?.id || sendingId) return;
@@ -50,7 +52,7 @@ export default function ParentPollsScreen({ navigation }) {
         createdAt: poll.cevaplar?.[veliId]?.createdAt || serverTimestamp(),
       });
     } catch (error) {
-      Alert.alert('Hata', 'Cevap kaydedilemedi. Lütfen tekrar deneyin.');
+      Alert.alert(t('parent.polls.alertErrorTitle'), t('parent.polls.alertErrorDesc'));
     } finally {
       setSendingId(null);
     }
@@ -61,11 +63,11 @@ export default function ParentPollsScreen({ navigation }) {
   };
 
   return (
-    <ScreenShell title="Anketler" emoji="🗳️" navigation={navigation}>
+    <ScreenShell title={t('parent.polls.title')} emoji="🗳️" navigation={navigation}>
       {!veliId ? (
-        <EmptyState icon="👤" title="Veli bilgisi okunamadı" desc="Anketleri cevaplamak için veli hesabı gerekir." />
+        <EmptyState icon="👤" title={t('parent.polls.noParentTitle')} desc={t('parent.polls.noParentDesc')} />
       ) : activePolls.length === 0 ? (
-        <EmptyState icon="🗳️" title="Aktif anket yok" desc="Kurum yeni anket veya oylama açtığında burada görünecek." />
+        <EmptyState icon="🗳️" title={t('parent.polls.noActiveTitle')} desc={t('parent.polls.noActiveDesc')} />
       ) : (
         <>
           <PollDetailCard
@@ -74,13 +76,14 @@ export default function ParentPollsScreen({ navigation }) {
             sendingId={sendingId}
             styles={styles}
             onVote={vote}
+            t={t}
           />
 
           {otherPolls.length > 0 ? (
             <>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionIcon}>📋</Text>
-                <Text style={styles.sectionTitle}>Diğer anketler</Text>
+                <Text style={styles.sectionTitle}>{t('parent.polls.otherPolls')}</Text>
               </View>
 
               {otherPolls.map((poll) => (
@@ -90,6 +93,7 @@ export default function ParentPollsScreen({ navigation }) {
                   veliId={veliId}
                   styles={styles}
                   onPress={() => openPoll(poll.id)}
+                  t={t}
                 />
               ))}
             </>
@@ -100,15 +104,15 @@ export default function ParentPollsScreen({ navigation }) {
   );
 }
 
-function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
+function PollDetailCard({ poll, veliId, sendingId, styles, onVote, t }) {
   const [changeMode, setChangeMode] = useState(false);
 
   if (!poll) return null;
-  const options = normalizeOptions(poll.secenekler || poll.options);
+  const options = normalizeOptions(poll.secenekler || poll.options, t);
   const answer = poll.cevaplar?.[veliId]?.secenek || '';
   const answered = !!answer;
   const desc = poll.aciklama || poll.description || '';
-  const typeLabel = getTargetLabel(poll);
+  const typeLabel = getTargetLabel(poll, t);
 
   const handleVote = (option) => {
     setChangeMode(false);
@@ -118,16 +122,16 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
   return (
     <View style={styles.pollCardHero}>
       <View style={styles.chipRow}>
-        <Text style={styles.activeChip}>● Aktif</Text>
-        <Text style={styles.timeChip}>⏳ {getRemainingText(poll)}</Text>
+        <Text style={styles.activeChip}>{t('parent.polls.activeChip')}</Text>
+        <Text style={styles.timeChip}>⏳ {getRemainingText(poll, t)}</Text>
         <Text style={styles.typeChip}>👨‍👩‍👧 {typeLabel}</Text>
       </View>
 
-      <Text style={styles.pollTitleHero}>{poll.baslik || poll.title || 'Anket'}</Text>
+      <Text style={styles.pollTitleHero}>{poll.baslik || poll.title || t('parent.polls.pollFallback')}</Text>
       {desc ? <Text style={styles.pollDescHero}>{desc}</Text> : null}
 
       {options.length === 0 ? (
-        <Text style={styles.noOptionText}>Bu anket için seçenek eklenmemiş.</Text>
+        <Text style={styles.noOptionText}>{t('parent.polls.noOptionsAvailable')}</Text>
       ) : (
         <View style={styles.optionsWrapHero}>
           {options.map((option, index) => {
@@ -146,7 +150,7 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
 
                 <View style={styles.optionTextBox}>
                   <Text style={[styles.optionHeroTitle, selected && styles.optionHeroTitleSelected]}>{option}</Text>
-                  <Text style={[styles.optionHeroSub, selected && styles.optionHeroSubSelected]}>{getOptionSubtitle(option)}</Text>
+                  <Text style={[styles.optionHeroSub, selected && styles.optionHeroSubSelected]}>{getOptionSubtitle(option, t)}</Text>
                 </View>
 
                 <Text style={[styles.optionDecor, selected && styles.optionDecorSelected]}>{getOptionDecor(option, index)}</Text>
@@ -158,7 +162,7 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
 
       <View style={[styles.answerBox, answered ? styles.answerBoxDone : styles.answerBoxWaiting]}>
         <Text style={[styles.answerText, answered ? styles.answerTextDone : styles.answerTextWaiting]}>
-          {answered ? (changeMode ? '✏️ Yeni cevabını seç' : '✅ Cevabın kaydedildi') : '⏳ Cevabın bekleniyor'}
+          {answered ? (changeMode ? t('parent.polls.answerSelectNew') : t('parent.polls.answerSaved')) : t('parent.polls.answerWaiting')}
         </Text>
         {answered ? (
           <TouchableOpacity
@@ -167,7 +171,7 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
             disabled={sendingId === poll.id}
             activeOpacity={0.82}
           >
-            <Text style={styles.changeText}>{changeMode ? 'Seçeneklerden birine bas' : 'Cevabı değiştir ›'}</Text>
+            <Text style={styles.changeText}>{changeMode ? t('parent.polls.changeAnswerHint') : t('parent.polls.changeAnswer')}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -175,10 +179,10 @@ function PollDetailCard({ poll, veliId, sendingId, styles, onVote }) {
   );
 }
 
-function PollPreviewCard({ poll, veliId, styles, onPress }) {
+function PollPreviewCard({ poll, veliId, styles, onPress, t }) {
   const answered = !!poll.cevaplar?.[veliId];
-  const title = poll.baslik || poll.title || 'Anket';
-  const desc = poll.aciklama || poll.description || 'Anket detayını görüntüle';
+  const title = poll.baslik || poll.title || t('parent.polls.pollFallback');
+  const desc = poll.aciklama || poll.description || t('parent.polls.detailFallback');
 
   return (
     <TouchableOpacity style={styles.previewCard} onPress={onPress} activeOpacity={0.86}>
@@ -190,18 +194,18 @@ function PollPreviewCard({ poll, veliId, styles, onPress }) {
         <Text style={styles.previewDesc} numberOfLines={1}>{desc}</Text>
       </View>
       <Text style={[styles.previewBadge, answered ? styles.previewBadgeDone : styles.previewBadgeWaiting]}>
-        {answered ? '✓ Cevaplandı' : 'Cevapla'}
+        {answered ? t('parent.polls.answered') : t('parent.polls.answerAction')}
       </Text>
       <Text style={styles.previewArrow}>›</Text>
     </TouchableOpacity>
   );
 }
 
-function normalizeOptions(value) {
+function normalizeOptions(value, t) {
   return asArray(value)
     .map((option, index) => {
       if (typeof option === 'string') return option.trim();
-      return String(option?.label || option?.text || option?.baslik || `Seçenek ${index + 1}`).trim();
+      return String(option?.label || option?.text || option?.baslik || t('parent.polls.optionFallback', { index: index + 1 })).trim();
     })
     .filter(Boolean);
 }
@@ -213,31 +217,31 @@ function getSortValue(item) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getRemainingText(poll) {
+function getRemainingText(poll, t) {
   const rawEnd = poll?.bitisTarihi || poll?.expiresAt || poll?.endDate || poll?.sonTarih;
-  if (!rawEnd) return 'Aktif';
+  if (!rawEnd) return t('parent.polls.remainingActive');
 
   const end = typeof rawEnd === 'number' ? rawEnd : Date.parse(rawEnd);
-  if (!Number.isFinite(end)) return 'Aktif';
+  if (!Number.isFinite(end)) return t('parent.polls.remainingActive');
 
   const diff = end - Date.now();
-  if (diff <= 0) return 'Bugün son';
+  if (diff <= 0) return t('parent.polls.remainingEndsToday');
 
   const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-  if (days <= 1) return '1 gün kaldı';
-  return `${days} gün kaldı`;
+  if (days <= 1) return t('parent.polls.remainingOneDay');
+  return t('parent.polls.remainingDays', { count: days });
 }
 
-function getTargetLabel(poll) {
-  if (poll?.sinifId || poll?.sinifIds) return 'Sınıf Anketi';
-  return 'Kurum Anketi';
+function getTargetLabel(poll, t) {
+  if (poll?.sinifId || poll?.sinifIds) return t('parent.polls.classPoll');
+  return t('parent.polls.institutionPoll');
 }
 
-function getOptionSubtitle(option) {
+function getOptionSubtitle(option, t) {
   const normalized = String(option || '').toLocaleLowerCase('tr-TR');
-  if (normalized.includes('evet')) return 'Bu seçeneği tercih ediyorum';
-  if (normalized.includes('hayır') || normalized.includes('hayir')) return 'Bu seçeneği tercih etmiyorum';
-  return 'Seçeneği işaretle';
+  if (normalized.includes('evet')) return t('parent.polls.yesOptionSubtitle');
+  if (normalized.includes('hayır') || normalized.includes('hayir')) return t('parent.polls.noOptionSubtitle');
+  return t('parent.polls.genericOptionSubtitle');
 }
 
 function getOptionDecor(option, index) {
