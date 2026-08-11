@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNodeList, useParentBase, LoadingScreen, EmptyState } from './parentShared';
 import { bugunKey, tarihTr, uyumEmoji, uyumGunNo, uyumGorunurMu, uyumKalanGun, uyumOzet, uyumYazi, UYUM_GUN } from '../../utils/uyum';
 
@@ -12,7 +13,7 @@ const BORDER = '#DDEFE3';
 const ORANGE = '#FF9F1C';
 
 export default function ParentAdaptationScoreScreen({ navigation }) {
-   
+  const { t } = useTranslation();
   const base = useParentBase();
   const { loading, selectedChild, childName, sinif, kresId } = base;
   const records = useNodeList('uyumKayitlari', kresId);
@@ -24,9 +25,9 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [records, selectedChild?.id]);
 
-  if (loading) return <LoadingScreen text="Uyum skoru hazırlanıyor..." />;
-  if (!selectedChild) return <EmptyWrap title="Çocuk bulunamadı" desc="Veliye bağlı çocuk kaydı bulunamadı." />;
-  if (!uyumGorunurMu(selectedChild)) return <EmptyWrap title="Uyum modülü kapalı" desc="Bu çocuk için yeni başlangıç uyum takibi başlatılmamış." />;
+  if (loading) return <LoadingScreen text={t('parent.adaptation.loading')} />;
+  if (!selectedChild) return <EmptyWrap title={t('parent.adaptation.noChildTitle')} desc={t('parent.adaptation.noChildDesc')} />;
+  if (!uyumGorunurMu(selectedChild)) return <EmptyWrap title={t('parent.adaptation.moduleOffTitle')} desc={t('parent.adaptation.moduleOffDesc')} />;
 
   const today = bugunKey();
   const startDate = selectedChild.uyumBaslangicTarihi || today;
@@ -39,7 +40,7 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
   const donePercent = Math.min(100, Math.round((dayNo / UYUM_GUN) * 100));
   const completed = String(selectedChild.uyumDurumu || '') === 'tamamlandi';
   const scoreLabel = hasRecords ? `${score}` : '--';
-  const scoreDesc = hasRecords ? (completed ? '30 günlük süreç tamamlandı' : uyumYazi(score)) : 'İlk öğretmen kaydı bekleniyor';
+  const scoreDesc = hasRecords ? (completed ? t('parent.adaptation.processCompletedDesc') : uyumYazi(score)) : t('parent.adaptation.waitingFirstRecord');
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -47,38 +48,38 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
         <View style={styles.header}>
           <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
           <Text style={styles.headerSpark}>⭐</Text>
-          <Text style={styles.headerTitle}>Uyum Skoru</Text>
+          <Text style={styles.headerTitle}>{t('parent.adaptation.title')}</Text>
           <Text style={styles.childName}>{childName}</Text>
-          <Text style={styles.childSub}>{sinif?.ad || 'Sınıf'} · {completed ? 'Süreç tamamlandı' : `Uyumun ${dayNo}. günü`}</Text>
-          <View style={styles.dayPill}><Text style={styles.dayPillText}>{dayNo}. Gün / {UYUM_GUN}</Text></View>
+          <Text style={styles.childSub}>{sinif?.ad || t('parent.adaptation.classFallback')} · {completed ? t('parent.adaptation.processCompleted') : t('parent.adaptation.dayOfAdaptation', { day: dayNo })}</Text>
+          <View style={styles.dayPill}><Text style={styles.dayPillText}>{t('parent.adaptation.dayPill', { day: dayNo, total: UYUM_GUN })}</Text></View>
         </View>
 
         <View style={styles.scoreCard}>
           <View style={[styles.fakeCircle, !hasRecords && styles.fakeCirclePending]}><Text style={styles.circleEmoji}>{hasRecords ? uyumEmoji(score) : '🌱'}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.scoreText}>{scoreLabel}<Text style={styles.scoreSmall}>/100</Text></Text>
-            <Text style={styles.scoreTitle}>{hasRecords ? 'Uyum Skoru' : 'Skor Bekleniyor'}</Text>
+            <Text style={styles.scoreTitle}>{hasRecords ? t('parent.adaptation.scoreTitle') : t('parent.adaptation.scoreWaitingTitle')}</Text>
             <Text style={styles.scoreDesc}>{scoreDesc}</Text>
           </View>
         </View>
 
         {!hasRecords ? (
           <View style={styles.pendingCard}>
-            <Text style={styles.pendingTitle}>İlk kayıt bekleniyor</Text>
-            <Text style={styles.pendingDesc}>Öğretmen ilk günlük uyum değerlendirmesini kaydettiğinde skor, emoji geçmişi ve notlar burada görünür.</Text>
+            <Text style={styles.pendingTitle}>{t('parent.adaptation.pendingTitle')}</Text>
+            <Text style={styles.pendingDesc}>{t('parent.adaptation.pendingDesc')}</Text>
           </View>
         ) : null}
 
         <View style={styles.progressCard}>
-          <View style={styles.rowBetween}><Text style={styles.cardTitle}>{dayNo} / {UYUM_GUN} tamamlandı</Text><Text style={styles.greenText}>{completed ? 'Tamamlandı' : `${daysLeft} gün kaldı`}</Text></View>
+          <View style={styles.rowBetween}><Text style={styles.cardTitle}>{t('parent.adaptation.progressLabel', { day: dayNo, total: UYUM_GUN })}</Text><Text style={styles.greenText}>{completed ? t('parent.adaptation.completedBadge') : t('parent.adaptation.daysLeftBadge', { count: daysLeft })}</Text></View>
           <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${donePercent}%` }]} /></View>
         </View>
 
         <View style={styles.weekCard}>
-          <View style={styles.rowBetween}><Text style={styles.cardTitle}>Gün Gün Uyum</Text><Text style={styles.muted}>Bugün ⭐</Text></View>
+          <View style={styles.rowBetween}><Text style={styles.cardTitle}>{t('parent.adaptation.dayByDayTitle')}</Text><Text style={styles.muted}>{t('parent.adaptation.todayLabel')} ⭐</Text></View>
           {[0, 1, 2, 3].map((week) => (
             <View key={week} style={styles.weekRow}>
-              <Text style={styles.weekLabel}>{week + 1}. Hafta</Text>
+              <Text style={styles.weekLabel}>{t('parent.adaptation.weekLabel', { week: week + 1 })}</Text>
               {Array.from({ length: week === 3 ? 9 : 7 }).map((_, i) => {
                 const d = week * 7 + i + 1;
                 const rec = childRecords.find((item) => Number(item.gunNo || 0) === d);
@@ -92,37 +93,37 @@ export default function ParentAdaptationScoreScreen({ navigation }) {
 
         <View style={styles.twoCol}>
           <View style={styles.infoCard}>
-            <Text style={styles.cardTitle}>Bugünün Özeti</Text>
-            <Info label="Ağladı mı?" value={hasRecords ? (Number(latest.aglamaDakika || 0) > 0 ? `${latest.aglamaDakika} dk` : 'Hayır') : 'Bekleniyor'} />
-            <Info label="Yemek" value={hasRecords ? foodLabel(latest.yemekDurumu) : 'Bekleniyor'} />
-            <Info label="Çıkış" value={hasRecords ? exitLabel(latest.cikisDurumu) : 'Bekleniyor'} />
-            <Info label="Uyku" value={hasRecords ? (latest.uykuDakika ? `${latest.uykuDakika} dk` : '-') : 'Bekleniyor'} />
+            <Text style={styles.cardTitle}>{t('parent.adaptation.todaySummaryTitle')}</Text>
+            <Info label={t('parent.adaptation.criedLabel')} value={hasRecords ? (Number(latest.aglamaDakika || 0) > 0 ? t('parent.adaptation.minutesValue', { count: latest.aglamaDakika }) : t('parent.adaptation.noValue')) : t('parent.adaptation.waitingValue')} />
+            <Info label={t('parent.adaptation.mealLabel')} value={hasRecords ? foodLabel(latest.yemekDurumu, t) : t('parent.adaptation.waitingValue')} />
+            <Info label={t('parent.adaptation.exitLabel')} value={hasRecords ? exitLabel(latest.cikisDurumu, t) : t('parent.adaptation.waitingValue')} />
+            <Info label={t('parent.adaptation.sleepLabel')} value={hasRecords ? (latest.uykuDakika ? t('parent.adaptation.minutesValue', { count: latest.uykuDakika }) : '-') : t('parent.adaptation.waitingValue')} />
           </View>
           <View style={styles.noteCard}>
-            <Text style={styles.cardTitle}>Öğretmen Notu</Text>
-            <Text style={styles.noteText}>{hasRecords ? (latest.ogretmenNotu || 'Bugün için öğretmen notu henüz girilmedi.') : 'İlk uyum notu kaydedildiğinde burada görünür.'}</Text>
+            <Text style={styles.cardTitle}>{t('parent.adaptation.teacherNoteTitle')}</Text>
+            <Text style={styles.noteText}>{hasRecords ? (latest.ogretmenNotu || t('parent.adaptation.noNoteYet')) : t('parent.adaptation.firstNoteWaiting')}</Text>
           </View>
         </View>
 
         <View style={styles.twoCol}>
           <View style={styles.infoCard}>
-            <View style={styles.rowBetween}><Text style={styles.cardTitle}>Ağlama Trendi</Text><Text style={styles.badge}>{hasRecords ? `%${summary.aglamaAzalma} azaldı` : 'Bekleniyor'}</Text></View>
-            <View style={styles.barRow}>{[1,2,3,4].map((w) => <Bar key={w} week={w} records={childRecords} />)}</View>
+            <View style={styles.rowBetween}><Text style={styles.cardTitle}>{t('parent.adaptation.cryingTrendTitle')}</Text><Text style={styles.badge}>{hasRecords ? t('parent.adaptation.cryingDecreasedBadge', { percent: summary.aglamaAzalma }) : t('parent.adaptation.waitingValue')}</Text></View>
+            <View style={styles.barRow}>{[1,2,3,4].map((w) => <Bar key={w} week={w} records={childRecords} t={t} />)}</View>
           </View>
           <View style={styles.infoCard}>
-            <Text style={styles.cardTitle}>Dönüm Noktaları</Text>
-            <Milestone done={hasMilestone(childRecords, 'ilkAyrilik')} label="İlk ayrılık" />
-            <Milestone done={hasMilestone(childRecords, 'ilkGulumseme')} label="İlk gülümseyerek giriş" />
-            <Milestone done={hasMilestone(childRecords, 'ilkArkadaslik')} label="İlk arkadaşlık" />
-            <Milestone done={hasMilestone(childRecords, 'rahatVeda')} label="Rahat vedalaşma" />
+            <Text style={styles.cardTitle}>{t('parent.adaptation.milestonesTitle')}</Text>
+            <Milestone done={hasMilestone(childRecords, 'ilkAyrilik')} label={t('parent.adaptation.milestoneFirstSeparation')} />
+            <Milestone done={hasMilestone(childRecords, 'ilkGulumseme')} label={t('parent.adaptation.milestoneFirstSmile')} />
+            <Milestone done={hasMilestone(childRecords, 'ilkArkadaslik')} label={t('parent.adaptation.milestoneFirstFriendship')} />
+            <Milestone done={hasMilestone(childRecords, 'rahatVeda')} label={t('parent.adaptation.milestoneEasyGoodbye')} />
           </View>
         </View>
 
         <View style={styles.countdownCard}>
           <Text style={styles.calendar}>📅</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.countdownTitle}>{completed ? 'Uyum süreci tamamlandı' : `${daysLeft} gün kaldı`}</Text>
-            <Text style={styles.countdownDesc}>Başlangıç: {tarihTr(startDate)} · Kayıt: {summary.tamamlanan} gün</Text>
+            <Text style={styles.countdownTitle}>{completed ? t('parent.adaptation.processCompletedShort') : t('parent.adaptation.daysLeftBadge', { count: daysLeft })}</Text>
+            <Text style={styles.countdownDesc}>{t('parent.adaptation.startLabel')}: {tarihTr(startDate)} · {t('parent.adaptation.recordLabel')}: {summary.tamamlanan} {t('parent.adaptation.daysUnit')}</Text>
           </View>
         </View>
       </ScrollView>
@@ -135,15 +136,15 @@ function EmptyWrap({ title, desc }) {
 }
 function Info({ label, value }) { return <View style={styles.infoLine}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value || '-'}</Text></View>; }
 function Milestone({ done, label }) { return <View style={styles.mile}><Text style={[styles.mileDot, done && styles.mileDone]}>{done ? '✓' : '○'}</Text><Text style={styles.mileText}>{label}</Text></View>; }
-function Bar({ week, records }) {
+function Bar({ week, records, t }) {
   const list = records.filter((r) => Math.ceil(Number(r.gunNo || 1) / 7) === week);
   const avg = list.length ? Math.round(list.reduce((s, r) => s + Number(r.aglamaDakika || 0), 0) / list.length) : 0;
   const h = Math.max(8, Math.min(80, avg));
-  return <View style={styles.barWrap}><Text style={styles.barValue}>{avg}</Text><View style={[styles.bar, { height: h }]} /><Text style={styles.barLabel}>{week}. H</Text></View>;
+  return <View style={styles.barWrap}><Text style={styles.barValue}>{avg}</Text><View style={[styles.bar, { height: h }]} /><Text style={styles.barLabel}>{t('parent.adaptation.barWeekLabel', { week })}</Text></View>;
 }
 function hasMilestone(records, key) { return records.some((r) => r?.milestones && r.milestones[key]); }
-function foodLabel(v) { return ({ hepsi: 'Hepsini yedi', yarisi: 'Yarısını yedi', az: 'Az yedi', hic: 'Yemedi' }[v] || '-'); }
-function exitLabel(v) { return ({ gulerek: 'Gülerek ayrıldı', huzunlu: 'Biraz hüzünlü', agladi: 'Ağladı' }[v] || '-'); }
+function foodLabel(v, t) { return ({ hepsi: t('parent.adaptation.foodAll'), yarisi: t('parent.adaptation.foodHalf'), az: t('parent.adaptation.foodLittle'), hic: t('parent.adaptation.foodNone') }[v] || '-'); }
+function exitLabel(v, t) { return ({ gulerek: t('parent.adaptation.exitSmiling'), huzunlu: t('parent.adaptation.exitSad'), agladi: t('parent.adaptation.exitCried') }[v] || '-'); }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
