@@ -67,14 +67,14 @@ Ekran ekran, tam dosya olarak teslim edilecek. Sıra (kullanım sıklığına g�
 
 1. `ParentSummaryScreen.js`✅
 2. `ParentDashboard.js`✅
-3. `ParentScheduleScreen.js`
-4. `ParentMealsScreen.js`
-5. `ParentAnnouncementsScreen.js`
-6. `ParentAttendanceScreen.js`
-7. `ParentMessagesScreen.js`
-8. `ParentEventsScreen.js`
-9. `ParentGalleryScreen.js`
-10. `ParentGalleryScreenOptimized.js`
+3. `ParentScheduleScreen.js`✅
+4. `ParentMealsScreen.js`✅
+5. `ParentAnnouncementsScreen.js`✅
+6. `ParentAttendanceScreen.js`✅
+7. `ParentMessagesScreen.js`✅
+8. `ParentEventsScreen.js`✅
+9. `ParentGalleryScreen.js`✅
+10. `ParentGalleryScreenOptimized.js`✅
 11. `ParentDevelopmentScreen.js`
 12. `ParentBadgesScreen.js`
 13. `ParentBellScreen.js`
@@ -88,7 +88,7 @@ Ekran ekran, tam dosya olarak teslim edilecek. Sıra (kullanım sıklığına g�
 21. `ParentAboutScreen.js`
 22. `ParentAdaptationScoreScreen.js`
 23. `ChildReportScreen.js`
-24. `parentShared.js` (yardımcı metin/format fonksiyonları varsa)
+24. `parentShared.js`✅ (yardımcı metin/format fonksiyonları varsa)
 25. `ParentProfileScreen.js`
 
 **Güncellenecek:**
