@@ -6,7 +6,7 @@
 // oluşturuluyor.
 // ============================================================
 import React, { useMemo, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useRoute } from '@react-navigation/native';
 import { ref, push, update } from 'firebase/database';
@@ -33,7 +33,6 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
   const [baslangicTarihi, setBaslangicTarihi] = useState('');
   const [bitisTarihi, setBitisTarihi] = useState('');
   const [hatirlaticiSaat, setHatirlaticiSaat] = useState('');
-  const [veliOnayi, setVeliOnayi] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
 
@@ -53,17 +52,6 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
     }
     if (hatirlaticiSaat.trim() && !normalizeTimeInput(hatirlaticiSaat)) {
       Alert.alert('Geçersiz Saat', 'Hatırlatma saatini SS:DD formatında gir (örn: 14:30) ya da boş bırak.');
-      return;
-    }
-    if (!veliOnayi) {
-      Alert.alert(
-        'Veli Onayı Yok',
-        'Veli onayı işaretlenmedi. Onay alınmadan ilaç uygulamasına başlamamanı öneririz. Yine de kaydetmek istiyor musun?',
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Yine de Kaydet', onPress: doSave },
-        ]
-      );
       return;
     }
     doSave();
@@ -86,9 +74,10 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
         baslangicTarihi: normalizeChildBirthDate(baslangicTarihi),
         bitisTarihi: normalizeChildBirthDate(bitisTarihi),
         hatirlaticiSaat: normalizeTimeInput(hatirlaticiSaat) || null,
-        veliOnayi,
+        veliOnayi: false,
+        onayDurumu: 'bekliyor',
         kayitlar: {},
-        aktif: true,
+        aktif: false,
         createdAt: now,
         updatedAt: now,
         olusturanId: teacherId || kullanici?.uid || null,
@@ -102,8 +91,8 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
           kresId,
           hedefUserIds: parentIds,
           hedefCocukIds: [cocukId],
-          baslik: '💊 İlaç takip formu oluşturuldu',
-          mesaj: `${getChildName(child)} için "${ilacAdi.trim()}" ilaç takip formu oluşturuldu.`,
+          baslik: '💊 İlaç takip formu onayınızı bekliyor',
+          mesaj: `${getChildName(child)} için "${ilacAdi.trim()}" ilaç takip formu oluşturuldu, onayınız bekleniyor.`,
           tip: 'ilac_takip',
           routeName: 'ParentMedical',
           createdBy: teacherId || kullanici?.uid || '',
@@ -160,13 +149,12 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
             />
             <Text style={styles.hintText}>⏰ Girilirse, o saatte hem öğretmene hem veliye hatırlatma bildirimi gönderilir.</Text>
 
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Veli Onayı Alındı</Text>
-              <Switch value={veliOnayi} onValueChange={setVeliOnayi} trackColor={{ true: THEME.primary }} />
+            <View style={styles.infoBox}>
+              <Text style={styles.infoBoxText}>ℹ️ Form oluşturulduğunda veliye onay isteği gönderilecek. Veli onaylamadan form aktif olmaz ve senin listende görünmez.</Text>
             </View>
 
             <TouchableOpacity disabled={saving} style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={handleSave} activeOpacity={0.85}>
-              <Text style={styles.saveButtonText}>{saving ? 'Kaydediliyor...' : 'Formu Oluştur'}</Text>
+              <Text style={styles.saveButtonText}>{saving ? 'Gönderiliyor...' : 'Onay İsteği Gönder'}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -188,8 +176,8 @@ const styles = StyleSheet.create({
   hintText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: -6, marginBottom: 14 },
   row: { flexDirection: 'row', gap: 10 },
   rowFlex: { flex: 1 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: THEME.card, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16 },
-  switchLabel: { fontWeight: '800', color: THEME.text, fontSize: 14 },
+  infoBox: { backgroundColor: '#F0F6FF', borderWidth: 1, borderColor: '#CDEBFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16 },
+  infoBoxText: { color: '#31527D', fontWeight: '700', fontSize: 13, lineHeight: 19 },
   saveButton: { backgroundColor: THEME.primary, borderRadius: 18, paddingVertical: 16, alignItems: 'center' },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '900' },
 });
