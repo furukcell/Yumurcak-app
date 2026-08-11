@@ -1,17 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { onValue, push, ref, update } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { ScreenShell, styles, useParentBase, LoadingScreen, EmptyState, THEME } from './parentShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
-const TOPICS = [
-  { key: 'istek', label: 'İstek' },
-  { key: 'sikayet', label: 'Şikayet' },
-  { key: 'gorus', label: 'Görüş' },
-  { key: 'teknik', label: 'Teknik Destek' },
-  { key: 'diger', label: 'Diğer' },
-];
+const TOPIC_KEYS = ['istek', 'sikayet', 'gorus', 'teknik', 'diger'];
 
 const MAX_LEN = 5000;
 
@@ -24,14 +19,17 @@ function toList(data) {
   return Object.entries(data).map(([id, item]) => ({ id, ...safeObject(item) }));
 }
 
-function formatDate(value) {
+function formatDate(value, locale) {
   if (!value) return '-';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ParentSupportScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'tr-TR';
+  const TOPICS = TOPIC_KEYS.map((key) => ({ key, label: t(`parent.support.topics.${key}`) }));
   const { loading, kullanici, parentId, parentName, kresId, kresAdi, selectedChild, childName } = useParentBase();
   const [topic, setTopic] = useState('istek');
   const [message, setMessage] = useState('');
@@ -57,17 +55,17 @@ export default function ParentSupportScreen({ navigation }) {
     return () => unsubscribe();
   }, [parentId]);
 
-  const selectedTopicLabel = useMemo(() => TOPICS.find((item) => item.key === topic)?.label || 'İstek', [topic]);
+  const selectedTopicLabel = useMemo(() => TOPICS.find((item) => item.key === topic)?.label || t('parent.support.topics.istek'), [topic, TOPICS, t]);
 
-  if (loading) return <LoadingScreen text="Destek hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.support.loading')} />;
 
   const showSuccess = (text) => setSuccessToast({ visible: true, message: text });
 
   const sendMessage = async () => {
     const clean = message.trim();
-    if (!clean) return Alert.alert('Eksik Bilgi', 'Mesaj alanı boş olamaz.');
-    if (clean.length > MAX_LEN) return Alert.alert('Mesaj Uzun', `Mesaj en fazla ${MAX_LEN} karakter olabilir.`);
-    if (!parentId) return Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı.');
+    if (!clean) return Alert.alert(t('parent.support.missingInfoTitle'), t('parent.support.emptyMessageDesc'));
+    if (clean.length > MAX_LEN) return Alert.alert(t('parent.support.messageTooLongTitle'), t('parent.support.messageTooLongDesc', { max: MAX_LEN }));
+    if (!parentId) return Alert.alert(t('parent.support.errorTitle'), t('parent.support.userNotFoundDesc'));
 
     setSending(true);
     try {
@@ -94,10 +92,10 @@ export default function ParentSupportScreen({ navigation }) {
 
       setMessage('');
       setTopic('istek');
-      showSuccess('Mesajın gönderildi');
+      showSuccess(t('parent.support.messageSent'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Mesaj gönderilemedi. Lütfen tekrar dene.');
+      Alert.alert(t('parent.support.errorTitle'), t('parent.support.sendFailedDesc'));
     } finally {
       setSending(false);
     }
@@ -105,8 +103,8 @@ export default function ParentSupportScreen({ navigation }) {
 
   const sendReply = async (item) => {
     const clean = String(replyText[item.id] || '').trim();
-    if (!clean) return Alert.alert('Eksik Bilgi', 'Yanıt alanı boş olamaz.');
-    if (clean.length > MAX_LEN) return Alert.alert('Yanıt Uzun', `Yanıt en fazla ${MAX_LEN} karakter olabilir.`);
+    if (!clean) return Alert.alert(t('parent.support.missingInfoTitle'), t('parent.support.emptyReplyDesc'));
+    if (clean.length > MAX_LEN) return Alert.alert(t('parent.support.replyTooLongTitle'), t('parent.support.replyTooLongDesc', { max: MAX_LEN }));
 
     setReplyingId(item.id);
     try {
@@ -125,10 +123,10 @@ export default function ParentSupportScreen({ navigation }) {
         [`destekMesajlari/${item.id}/updatedAt`]: now,
       });
       setReplyText((prev) => ({ ...prev, [item.id]: '' }));
-      showSuccess('Yanıtın gönderildi');
+      showSuccess(t('parent.support.replySent'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Yanıt gönderilemedi.');
+      Alert.alert(t('parent.support.errorTitle'), t('parent.support.replyFailedDesc'));
     } finally {
       setReplyingId('');
     }
@@ -143,9 +141,9 @@ export default function ParentSupportScreen({ navigation }) {
           const isAdmin = String(reply.authorRole || '').toLowerCase().includes('super');
           return (
             <View key={reply.id} style={[local.replyItem, isAdmin && local.adminReply]}>
-              <Text style={local.replyAuthor}>{isAdmin ? 'Yumurcak Destek' : (reply.authorName || 'Sen')}</Text>
+              <Text style={local.replyAuthor}>{isAdmin ? t('parent.support.supportAuthor') : (reply.authorName || t('parent.support.youAuthor'))}</Text>
               <Text style={local.replyText}>{reply.mesaj}</Text>
-              <Text style={local.replyDate}>{formatDate(reply.createdAt)}</Text>
+              <Text style={local.replyDate}>{formatDate(reply.createdAt, dateLocale)}</Text>
             </View>
           );
         })}
@@ -161,12 +159,12 @@ export default function ParentSupportScreen({ navigation }) {
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
 
-      <ScreenShell title="Bize Yazın" emoji="💬" navigation={navigation}>
+      <ScreenShell title={t('parent.support.title')} emoji="💬" navigation={navigation}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>💬 Yumurcak Destek</Text>
-          <Text style={styles.cardText}>İstek, şikayet, görüş veya teknik destek konularında bize yazabilirsin.</Text>
+          <Text style={styles.cardTitle}>💬 {t('parent.support.cardTitle')}</Text>
+          <Text style={styles.cardText}>{t('parent.support.cardDesc')}</Text>
 
-          <Text style={local.label}>Konu</Text>
+          <Text style={local.label}>{t('parent.support.topicLabel')}</Text>
           <View style={local.topicWrap}>
             {TOPICS.map((item) => (
               <TouchableOpacity key={item.key} style={[local.topicButton, topic === item.key && local.topicButtonActive]} onPress={() => setTopic(item.key)} activeOpacity={0.85}>
@@ -175,12 +173,12 @@ export default function ParentSupportScreen({ navigation }) {
             ))}
           </View>
 
-          <Text style={local.label}>Mesaj</Text>
+          <Text style={local.label}>{t('parent.support.messageLabel')}</Text>
           <TextInput
             style={local.textArea}
             value={message}
             onChangeText={(text) => setMessage(text.slice(0, MAX_LEN))}
-            placeholder="Mesajını yaz..."
+            placeholder={t('parent.support.messagePlaceholder')}
             placeholderTextColor="#999"
             multiline
             maxLength={MAX_LEN}
@@ -189,37 +187,37 @@ export default function ParentSupportScreen({ navigation }) {
           <Text style={local.counter}>{message.length}/{MAX_LEN}</Text>
 
           <TouchableOpacity style={[local.sendButton, sending && local.disabledButton]} onPress={sendMessage} disabled={sending} activeOpacity={0.85}>
-            {sending ? <ActivityIndicator color="#FFF" /> : <Text style={local.sendButtonText}>Gönder</Text>}
+            {sending ? <ActivityIndicator color="#FFF" /> : <Text style={local.sendButtonText}>{t('parent.support.sendButton')}</Text>}
           </TouchableOpacity>
         </View>
 
-        <Text style={local.sectionTitle}>Son Gönderiler</Text>
+        <Text style={local.sectionTitle}>{t('parent.support.recentTitle')}</Text>
         {messages.length === 0 ? (
-          <EmptyState icon="📭" title="Henüz mesaj yok" desc="Bize yazdığın mesajlar burada görünecek." />
+          <EmptyState icon="📭" title={t('parent.support.noMessagesTitle')} desc={t('parent.support.noMessagesDesc')} />
         ) : (
           messages.map((item) => (
             <View key={item.id} style={styles.card}>
               <View style={local.messageHeader}>
-                <Text style={local.messageTopic}>{item.konuBaslik || item.konu || 'Mesaj'}</Text>
-                <Text style={local.statusBadge}>{item.durum || 'yeni'}</Text>
+                <Text style={local.messageTopic}>{item.konuBaslik || item.konu || t('parent.support.messageFallback')}</Text>
+                <Text style={local.statusBadge}>{item.durum === 'yanitlandi' ? t('parent.support.statusReplied') : t('parent.support.statusNew')}</Text>
               </View>
               <Text style={local.messageText}>{item.mesaj}</Text>
-              <Text style={local.messageDate}>{formatDate(item.createdAt)}</Text>
+              <Text style={local.messageDate}>{formatDate(item.createdAt, dateLocale)}</Text>
               {renderReplies(item)}
 
-              <Text style={local.label}>Yanıtla</Text>
+              <Text style={local.label}>{t('parent.support.replyLabel')}</Text>
               <TextInput
                 style={local.replyInput}
                 value={replyText[item.id] || ''}
                 onChangeText={(text) => setReplyText((prev) => ({ ...prev, [item.id]: text.slice(0, MAX_LEN) }))}
-                placeholder="Eklemek istediğin bir şey var mı?"
+                placeholder={t('parent.support.replyPlaceholder')}
                 placeholderTextColor="#999"
                 multiline
                 maxLength={MAX_LEN}
                 textAlignVertical="top"
               />
               <TouchableOpacity style={[local.replyButton, replyingId === item.id && local.disabledButton]} disabled={replyingId === item.id} onPress={() => sendReply(item)} activeOpacity={0.85}>
-                <Text style={local.replyButtonText}>{replyingId === item.id ? 'Gönderiliyor...' : 'Yanıt Gönder'}</Text>
+                <Text style={local.replyButtonText}>{replyingId === item.id ? t('parent.support.sendingReply') : t('parent.support.sendReplyButton')}</Text>
               </TouchableOpacity>
             </View>
           ))
