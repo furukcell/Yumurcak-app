@@ -79,10 +79,10 @@ Ekran ekran, tam dosya olarak teslim edilecek. Sıra (kullanım sıklığına g�
 12. `ParentBadgesScreen.js`✅
 13. `ParentBellScreen.js`✅
 14. `ParentContactScreen.js`✅
-15. `ParentMedicalScreen.js`
-16. `ParentPaymentsScreen.js`
-17. `ParentPollsScreen.js`
-18. `ParentReportsScreen.js`
+15. `ParentMedicalScreen.js`✅
+16. `ParentPaymentsScreen.js`✅
+17. `ParentPollsScreen.js`✅
+18. `ParentReportsScreen.js`✅
 19. `ParentServiceScreen.js`
 20. `ParentSupportScreen.js`
 21. `ParentAboutScreen.js`
