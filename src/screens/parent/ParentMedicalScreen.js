@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Switch } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ref, onValue, set, update, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, EmptyState, LoadingScreen, useParentBase, THEME } from './parentShared';
@@ -18,10 +19,10 @@ function splitItems(value) {
     .filter(Boolean);
 }
 
-function formatUpdatedAt(value) {
-  if (!value) return 'Henüz güncellenmedi';
+function formatUpdatedAt(value, t) {
+  if (!value) return t('parent.medical.updatedNever');
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Henüz güncellenmedi';
+  if (Number.isNaN(date.getTime())) return t('parent.medical.updatedNever');
   return date.toLocaleDateString('tr-TR');
 }
 
@@ -45,6 +46,7 @@ function getClassName(child) {
 }
 
 export default function ParentMedicalScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, selectedChild, kresId, parentId } = useParentBase();
   const [medical, setMedical] = useState(null);
   const [draft, setDraft] = useState({ alerjiler: '', ilaclar: '', notlar: '' });
@@ -115,11 +117,11 @@ export default function ParentMedicalScreen({ navigation }) {
   async function saveMedicationForm() {
     if (!selectedChild?.id || !formDraft) return;
     if (!formDraft.ilacAdi.trim() || !formDraft.baslangicTarihi.trim() || !formDraft.bitisTarihi.trim()) {
-      Alert.alert('Eksik Bilgi', 'İlaç adı, başlangıç ve bitiş tarihi zorunludur.');
+      Alert.alert(t('parent.medical.alertMissingInfoTitle'), t('parent.medical.alertMissingInfoDesc'));
       return;
     }
     if (formDraft.hatirlaticiSaat?.trim() && !normalizeTimeInput(formDraft.hatirlaticiSaat)) {
-      Alert.alert('Geçersiz Saat', 'Hatırlatma saatini SS:DD formatında gir (örn: 14:30) ya da boş bırak.');
+      Alert.alert(t('parent.medical.alertInvalidTimeTitle'), t('parent.medical.alertInvalidTimeDesc'));
       return;
     }
     setFormSaving(true);
@@ -165,7 +167,7 @@ export default function ParentMedicalScreen({ navigation }) {
         }).catch((error) => console.log('Öğretmen bildirimi gönderilemedi:', error));
       }
     } catch (error) {
-      Alert.alert('Hata', 'İlaç takip formu kaydedilemedi.');
+      Alert.alert(t('parent.medical.errorTitle'), t('parent.medical.alertSaveErrorForm'));
     } finally {
       setFormSaving(false);
     }
@@ -190,20 +192,20 @@ export default function ParentMedicalScreen({ navigation }) {
       });
       setSuccessToast(true);
     } catch (error) {
-      Alert.alert('Hata', 'Medikal bilgiler kaydedilemedi.');
+      Alert.alert(t('parent.medical.errorTitle'), t('parent.medical.alertSaveErrorMedical'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <LoadingScreen text="Medikal bilgiler hazırlanıyor..." />;
+  if (loading) return <LoadingScreen text={t('parent.medical.loading')} />;
 
   return (
     <>
-      <AppSuccessToast visible={successToast} message="Medikal bilgiler güncellendi" onHide={() => setSuccessToast(false)} />
-      <ScreenShell title="Medikal Takip" emoji="🩺" navigation={navigation}>
+      <AppSuccessToast visible={successToast} message={t('parent.medical.successToast')} onHide={() => setSuccessToast(false)} />
+      <ScreenShell title={t('parent.medical.title')} emoji="🩺" navigation={navigation}>
         {!selectedChild ? (
-          <EmptyState icon="👧" title="Çocuk bulunamadı" desc="Medikal bilgi için çocuk bağlantısı gerekir." />
+          <EmptyState icon="👧" title={t('parent.medical.noChildTitle')} desc={t('parent.medical.noChildDesc')} />
         ) : (
           <>
             <View style={local.profileCard}>
@@ -211,9 +213,9 @@ export default function ParentMedicalScreen({ navigation }) {
               <View style={local.profileTextWrap}>
                 <Text style={local.childName}>{getChildName(selectedChild)}</Text>
                 <Text style={local.className}>{getClassName(selectedChild)} ⭐</Text>
-                <Text style={local.updatedText}>📅 Son güncelleme: {formatUpdatedAt(medical?.updatedAt)}</Text>
+                <Text style={local.updatedText}>📅 {t('parent.medical.lastUpdate')}: {formatUpdatedAt(medical?.updatedAt, t)}</Text>
               </View>
-              <View style={[local.statusPill, hasAllergy ? local.warnPill : local.okPill]}><Text style={[local.statusPillText, hasAllergy ? local.warnText : local.okText]}>{hasAllergy ? 'Dikkat' : 'Güncel'}</Text></View>
+              <View style={[local.statusPill, hasAllergy ? local.warnPill : local.okPill]}><Text style={[local.statusPillText, hasAllergy ? local.warnText : local.okText]}>{hasAllergy ? t('parent.medical.statusWarning') : t('parent.medical.statusOk')}</Text></View>
             </View>
 
             <SegmentedTabs
@@ -221,54 +223,56 @@ export default function ParentMedicalScreen({ navigation }) {
               activeKey={activeTab}
               onChange={setActiveTab}
               tabs={[
-                { key: 'alerjiler', icon: '⚠️', label: 'Alerjiler' },
-                { key: 'surekliIlaclar', icon: '💊', label: 'Sürekli İlaçlar', badge: medicineItems.length || null },
-                { key: 'ilacTakip', icon: '📋', label: 'İlaç Takip', badge: medicationForms.length || null },
+                { key: 'alerjiler', icon: '⚠️', label: t('parent.medical.tabAllergies') },
+                { key: 'surekliIlaclar', icon: '💊', label: t('parent.medical.tabContinuousMeds'), badge: medicineItems.length || null },
+                { key: 'ilacTakip', icon: '📋', label: t('parent.medical.tabTracking'), badge: medicationForms.length || null },
               ]}
             />
 
             {activeTab === 'alerjiler' ? (
               <>
-                <MedicalCard icon="⚠️" title="Alerjiler" badge={hasAllergy ? 'Dikkat' : 'Yok'} warning={hasAllergy}>
+                <MedicalCard icon="⚠️" title={t('parent.medical.allergiesTitle')} badge={hasAllergy ? t('parent.medical.statusWarning') : t('parent.medical.allergiesBadgeNone')} warning={hasAllergy}>
                   <AllergyBoxEditor
                     value={draft.alerjiler}
                     onChange={(text) => setDraft((p) => ({ ...p, alerjiler: text }))}
                     accentColor="#EA4D32"
+                    placeholder={t('parent.medical.allergyPlaceholder')}
+                    addLabel={t('parent.medical.addAllergy')}
                   />
                 </MedicalCard>
 
-                <MedicalCard icon="📎" title="Notlar">
-                  <View style={local.noteBox}><TextInput style={local.noteInput} value={draft.notlar} onChangeText={(text) => setDraft((p) => ({ ...p, notlar: text }))} placeholder="Öğretmen ve yönetici için özel notlar..." placeholderTextColor="#7D7199" multiline /></View>
+                <MedicalCard icon="📎" title={t('parent.medical.notesTitle')}>
+                  <View style={local.noteBox}><TextInput style={local.noteInput} value={draft.notlar} onChangeText={(text) => setDraft((p) => ({ ...p, notlar: text }))} placeholder={t('parent.medical.notesPlaceholder')} placeholderTextColor="#7D7199" multiline /></View>
                 </MedicalCard>
 
                 {medical?.ogretmenNotu ? (
-                  <MedicalCard icon="🙂" title="Öğretmen Gözlem Notu">
+                  <MedicalCard icon="🙂" title={t('parent.medical.teacherNoteTitle')}>
                     <View style={local.teacherNoteReadonlyBox}>
                       <Text style={local.teacherNoteReadonlyText}>{medical.ogretmenNotu}</Text>
                     </View>
-                    <Text style={local.teacherNoteHint}>Bu not öğretmen tarafından yazılır, sadece görüntüleyebilirsin.</Text>
+                    <Text style={local.teacherNoteHint}>{t('parent.medical.teacherNoteHint')}</Text>
                   </MedicalCard>
                 ) : null}
 
                 <TouchableOpacity style={[local.saveButton, saving && { opacity: 0.65 }]} onPress={saveMedical} disabled={saving} activeOpacity={0.85}>
-                  <Text style={local.saveButtonText}>{saving ? 'Kaydediliyor...' : '💾 Kaydet'}</Text>
+                  <Text style={local.saveButtonText}>{saving ? t('parent.medical.saving') : t('parent.medical.save')}</Text>
                 </TouchableOpacity>
               </>
             ) : activeTab === 'surekliIlaclar' ? (
               <>
-                <MedicalCard icon="💊" title="Sürekli İlaçlar">
-                  {medicineItems.length > 0 ? <View style={local.medicineList}>{medicineItems.map((item, index) => <View key={`${item}-${index}`} style={local.medicineRow}><Text style={local.medicineIcon}>{getMedicineIcon(item)}</Text><View style={{ flex: 1 }}><Text style={local.medicineName}>{item}</Text><Text style={local.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View><Text style={local.medicineBadge}>Kayıtlı</Text></View>)}</View> : <Text style={local.emptyText}>Kayıtlı bilgi yok.</Text>}
-                  <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder="Örn: Şurup - Sabah/Akşam" placeholderTextColor="#A2A5B6" multiline />
+                <MedicalCard icon="💊" title={t('parent.medical.continuousMedsTitle')}>
+                  {medicineItems.length > 0 ? <View style={local.medicineList}>{medicineItems.map((item, index) => <View key={`${item}-${index}`} style={local.medicineRow}><Text style={local.medicineIcon}>{getMedicineIcon(item)}</Text><View style={{ flex: 1 }}><Text style={local.medicineName}>{item}</Text><Text style={local.medicineMeta}>{t('parent.medical.continuousMedsUsageInfo')}</Text></View><Text style={local.medicineBadge}>{t('parent.medical.continuousMedsRegistered')}</Text></View>)}</View> : <Text style={local.emptyText}>{t('parent.medical.continuousMedsEmpty')}</Text>}
+                  <TextInput style={local.editInput} value={draft.ilaclar} onChangeText={(text) => setDraft((p) => ({ ...p, ilaclar: text }))} placeholder={t('parent.medical.continuousMedsPlaceholder')} placeholderTextColor="#A2A5B6" multiline />
                 </MedicalCard>
 
                 <TouchableOpacity style={[local.saveButton, saving && { opacity: 0.65 }]} onPress={saveMedical} disabled={saving} activeOpacity={0.85}>
-                  <Text style={local.saveButtonText}>{saving ? 'Kaydediliyor...' : '💾 Kaydet'}</Text>
+                  <Text style={local.saveButtonText}>{saving ? t('parent.medical.saving') : t('parent.medical.save')}</Text>
                 </TouchableOpacity>
               </>
             ) : (
-              <MedicalCard icon="📋" title="İlaç Takip" badge={medicationForms.length > 0 ? `${medicationForms.length}` : null}>
+              <MedicalCard icon="📋" title={t('parent.medical.trackingTitle')} badge={medicationForms.length > 0 ? `${medicationForms.length}` : null}>
                 {medicationForms.length === 0 && editingFormId !== 'new' ? (
-                  <Text style={local.emptyText}>Henüz bir ilaç takip formu yok.</Text>
+                  <Text style={local.emptyText}>{t('parent.medical.trackingEmpty')}</Text>
                 ) : (
                   <View style={local.medicineList}>
                     {medicationForms.map((form) => {
@@ -281,6 +285,7 @@ export default function ParentMedicalScreen({ navigation }) {
                             saving={formSaving}
                             onSave={saveMedicationForm}
                             onCancel={cancelFormEdit}
+                            t={t}
                           />
                         );
                       }
@@ -290,17 +295,17 @@ export default function ParentMedicalScreen({ navigation }) {
                           <View style={local.trackHeaderRow}>
                             <Text style={local.medicineName}>{form.ilacAdi || 'İlaç'}</Text>
                             <Text style={[local.trackBadge, verildiBugun ? local.trackBadgeOk : local.trackBadgeWait]}>
-                              {verildiBugun ? '✓ Bugün verildi' : 'Bugün henüz verilmedi'}
+                              {verildiBugun ? t('parent.medical.trackingGivenToday') : t('parent.medical.trackingNotGivenYet')}
                             </Text>
                           </View>
-                          {form.doz ? <Text style={local.medicineMeta}>Doz: {form.doz}</Text> : null}
+                          {form.doz ? <Text style={local.medicineMeta}>{t('parent.medical.trackingDose')}: {form.doz}</Text> : null}
                           {form.uygulamaSekli ? <Text style={local.medicineMeta}>{form.uygulamaSekli}</Text> : null}
-                          {form.hatirlaticiSaat ? <Text style={local.medicineMeta}>⏰ Hatırlatma: {form.hatirlaticiSaat}</Text> : null}
+                          {form.hatirlaticiSaat ? <Text style={local.medicineMeta}>{t('parent.medical.trackingReminder')}: {form.hatirlaticiSaat}</Text> : null}
                           <Text style={local.medicineMeta}>
                             {formatDateTr(form.baslangicTarihi)}{form.bitisTarihi ? ` – ${formatDateTr(form.bitisTarihi)}` : ''}
                           </Text>
                           <TouchableOpacity style={local.editFormButton} onPress={() => startEditForm(form)} activeOpacity={0.85}>
-                            <Text style={local.editFormButtonText}>✏️ Düzenle</Text>
+                            <Text style={local.editFormButtonText}>{t('parent.medical.trackingEdit')}</Text>
                           </TouchableOpacity>
                         </View>
                       );
@@ -313,6 +318,7 @@ export default function ParentMedicalScreen({ navigation }) {
                         saving={formSaving}
                         onSave={saveMedicationForm}
                         onCancel={cancelFormEdit}
+                        t={t}
                       />
                     ) : null}
                   </View>
@@ -320,7 +326,7 @@ export default function ParentMedicalScreen({ navigation }) {
 
                 {editingFormId === null ? (
                   <TouchableOpacity style={local.addFormButton} onPress={startNewForm} activeOpacity={0.85}>
-                    <Text style={local.addFormButtonText}>➕ Yeni İlaç Takip Formu Ekle</Text>
+                    <Text style={local.addFormButtonText}>{t('parent.medical.trackingAddNew')}</Text>
                   </TouchableOpacity>
                 ) : null}
               </MedicalCard>
@@ -336,29 +342,29 @@ function MedicalCard({ icon, title, badge, warning, children }) {
   return <View style={local.medicalCard}><View style={local.cardHeader}><View style={local.cardIconCircle}><Text style={local.cardIcon}>{icon}</Text></View><Text style={local.sectionTitle}>{title}</Text>{badge ? <Text style={[local.cardBadge, warning ? local.cardBadgeWarning : local.cardBadgeOk]}>{badge}</Text> : null}</View>{children}</View>;
 }
 
-function MedicationFormEditor({ draft, setDraft, saving, onSave, onCancel }) {
+function MedicationFormEditor({ draft, setDraft, saving, onSave, onCancel, t }) {
   if (!draft) return null;
   const setField = (field) => (text) => setDraft((prev) => ({ ...prev, [field]: text }));
   return (
     <View style={local.editorBox}>
-      <TextInput style={local.formInput} value={draft.ilacAdi} onChangeText={setField('ilacAdi')} placeholder="İlaç adı *" placeholderTextColor="#A2A5B6" />
-      <TextInput style={local.formInput} value={draft.doz} onChangeText={setField('doz')} placeholder="Doz (Örn: 5 ml)" placeholderTextColor="#A2A5B6" />
-      <TextInput style={local.formInput} value={draft.uygulamaSekli} onChangeText={setField('uygulamaSekli')} placeholder="Uygulama şekli (Örn: Sabah/Akşam)" placeholderTextColor="#A2A5B6" />
+      <TextInput style={local.formInput} value={draft.ilacAdi} onChangeText={setField('ilacAdi')} placeholder={t('parent.medical.formNamePlaceholder')} placeholderTextColor="#A2A5B6" />
+      <TextInput style={local.formInput} value={draft.doz} onChangeText={setField('doz')} placeholder={t('parent.medical.formDosePlaceholder')} placeholderTextColor="#A2A5B6" />
+      <TextInput style={local.formInput} value={draft.uygulamaSekli} onChangeText={setField('uygulamaSekli')} placeholder={t('parent.medical.formUsagePlaceholder')} placeholderTextColor="#A2A5B6" />
       <View style={local.formRow}>
-        <TextInput style={[local.formInput, { flex: 1 }]} value={draft.baslangicTarihi} onChangeText={setField('baslangicTarihi')} placeholder="Başlangıç (GG.AA.YYYY) *" placeholderTextColor="#A2A5B6" />
-        <TextInput style={[local.formInput, { flex: 1 }]} value={draft.bitisTarihi} onChangeText={setField('bitisTarihi')} placeholder="Bitiş (GG.AA.YYYY) *" placeholderTextColor="#A2A5B6" />
+        <TextInput style={[local.formInput, { flex: 1 }]} value={draft.baslangicTarihi} onChangeText={setField('baslangicTarihi')} placeholder={t('parent.medical.formStartDatePlaceholder')} placeholderTextColor="#A2A5B6" />
+        <TextInput style={[local.formInput, { flex: 1 }]} value={draft.bitisTarihi} onChangeText={setField('bitisTarihi')} placeholder={t('parent.medical.formEndDatePlaceholder')} placeholderTextColor="#A2A5B6" />
       </View>
-      <TextInput style={local.formInput} value={draft.hatirlaticiSaat} onChangeText={setField('hatirlaticiSaat')} placeholder="Hatırlatma saati (opsiyonel, örn: 14:30)" placeholderTextColor="#A2A5B6" />
+      <TextInput style={local.formInput} value={draft.hatirlaticiSaat} onChangeText={setField('hatirlaticiSaat')} placeholder={t('parent.medical.formReminderPlaceholder')} placeholderTextColor="#A2A5B6" />
       <View style={local.formRow}>
-        <Text style={local.formSwitchLabel}>Veli onayı</Text>
+        <Text style={local.formSwitchLabel}>{t('parent.medical.formParentApproval')}</Text>
         <Switch value={!!draft.veliOnayi} onValueChange={(value) => setDraft((prev) => ({ ...prev, veliOnayi: value }))} />
       </View>
       <View style={local.formRow}>
         <TouchableOpacity style={[local.formButton, local.formButtonCancel]} onPress={onCancel} disabled={saving} activeOpacity={0.85}>
-          <Text style={local.formButtonCancelText}>Vazgeç</Text>
+          <Text style={local.formButtonCancelText}>{t('parent.medical.formCancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[local.formButton, local.formButtonSave, saving && { opacity: 0.65 }]} onPress={onSave} disabled={saving} activeOpacity={0.85}>
-          <Text style={local.formButtonSaveText}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Text>
+          <Text style={local.formButtonSaveText}>{saving ? t('parent.medical.formSaving') : t('parent.medical.formSave')}</Text>
         </TouchableOpacity>
       </View>
     </View>
