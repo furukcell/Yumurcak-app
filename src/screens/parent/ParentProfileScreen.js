@@ -13,6 +13,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ref as dbRef, update } from 'firebase/database';
@@ -30,7 +31,14 @@ export default function ParentProfileScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [changingLang, setChangingLang] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
+
+  const LANGUAGES = [
+    { code: 'tr', flag: '🇹🇷', label: 'Türkçe' },
+    { code: 'en', flag: '🇬🇧', label: 'English' },
+    { code: 'ru', flag: '🇷🇺', label: 'Русский' },
+  ];
 
   useEffect(() => {
     setPhotoUrl(parentPhotoUrl || '');
@@ -43,6 +51,7 @@ export default function ParentProfileScreen({ navigation }) {
   };
 
   const changeLanguage = async (lng) => {
+    setLangMenuOpen(false);
     if (lng === i18n.language || changingLang) return;
     setChangingLang(true);
     try {
@@ -194,24 +203,62 @@ export default function ParentProfileScreen({ navigation }) {
           <Text style={styles.cardTitle}>🌐 {t('parent.profile.languageTitle')}</Text>
           <Text style={styles.cardText}>{t('parent.profile.languageDesc')}</Text>
 
-          <View style={local.langRow}>
+          <TouchableOpacity
+            style={local.langDropdownTrigger}
+            onPress={() => setLangMenuOpen(true)}
+            disabled={changingLang}
+            activeOpacity={0.85}
+          >
+            <Text style={local.langDropdownTriggerText}>
+              {LANGUAGES.find((l) => l.code === i18n.language)?.flag || '🌐'}{'  '}
+              {LANGUAGES.find((l) => l.code === i18n.language)?.label || i18n.language}
+            </Text>
+            {changingLang ? (
+              <ActivityIndicator size="small" color={THEME.primary} />
+            ) : (
+              <Text style={local.langDropdownChevron}>▾</Text>
+            )}
+          </TouchableOpacity>
+
+          <Modal
+            visible={langMenuOpen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setLangMenuOpen(false)}
+          >
             <TouchableOpacity
-              style={[local.langButton, i18n.language === 'tr' && local.langButtonActive]}
-              onPress={() => changeLanguage('tr')}
-              disabled={changingLang}
-              activeOpacity={0.85}
+              style={local.langModalOverlay}
+              activeOpacity={1}
+              onPress={() => setLangMenuOpen(false)}
             >
-              <Text style={[local.langButtonText, i18n.language === 'tr' && local.langButtonTextActive]}>Türkçe</Text>
+              <View style={local.langModalSheet}>
+                {LANGUAGES.map((lang) => (
+                  <TouchableOpacity
+                    key={lang.code}
+                    style={[
+                      local.langModalItem,
+                      i18n.language === lang.code && local.langModalItemActive,
+                    ]}
+                    onPress={() => changeLanguage(lang.code)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={local.langModalItemFlag}>{lang.flag}</Text>
+                    <Text
+                      style={[
+                        local.langModalItemText,
+                        i18n.language === lang.code && local.langModalItemTextActive,
+                      ]}
+                    >
+                      {lang.label}
+                    </Text>
+                    {i18n.language === lang.code && (
+                      <Text style={local.langModalItemCheck}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[local.langButton, i18n.language === 'en' && local.langButtonActive]}
-              onPress={() => changeLanguage('en')}
-              disabled={changingLang}
-              activeOpacity={0.85}
-            >
-              <Text style={[local.langButtonText, i18n.language === 'en' && local.langButtonTextActive]}>English</Text>
-            </TouchableOpacity>
-          </View>
+          </Modal>
         </View>
 
         <View style={styles.card}>
@@ -273,9 +320,44 @@ const local = {
   },
   removeButtonText: { color: '#FF4D6D', fontWeight: '900' },
   supportButton: { marginTop: 10 },
-  langRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  langButton: { flex: 1, backgroundColor: THEME.primarySoft, borderRadius: 14, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
-  langButtonActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  langButtonText: { color: THEME.primary, fontWeight: '900' },
-  langButtonTextActive: { color: '#FFF' },
+  langDropdownTrigger: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.primarySoft,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  langDropdownTriggerText: { color: THEME.primary, fontWeight: '900', fontSize: 15 },
+  langDropdownChevron: { color: THEME.primary, fontWeight: '900', fontSize: 16 },
+  langModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(25,26,35,0.4)',
+    justifyContent: 'flex-end',
+  },
+  langModalSheet: {
+    backgroundColor: THEME.card,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    paddingBottom: 28,
+  },
+  langModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginVertical: 3,
+  },
+  langModalItemActive: { backgroundColor: THEME.primarySoft },
+  langModalItemFlag: { fontSize: 20, marginRight: 12 },
+  langModalItemText: { flex: 1, color: THEME.text, fontWeight: '700', fontSize: 15 },
+  langModalItemTextActive: { color: THEME.primary, fontWeight: '900' },
+  langModalItemCheck: { color: THEME.primary, fontWeight: '900', fontSize: 16 },
 };
