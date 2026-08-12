@@ -343,6 +343,8 @@
       "todaysProgramDesc": "Собрано из расписания занятий и записей об активности.",
       "noProgramToday": "На сегодня не внесено расписание или активность.",
       "program": "Программа",
+      "scheduleDone": "Завершено",
+      "scheduleCurrent": "Идёт сейчас",
       "otherSummariesTitle": "Другие сводки",
       "otherSummariesAction": "Смотреть все",
       "dailyReport": "Дневной отчёт",
