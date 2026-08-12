@@ -27,6 +27,7 @@ const TABS = [
   { key: 'ogretmen', label: 'Öğretmenler' },
   { key: 'cocuk', label: 'Çocuklar' },
   { key: 'risk', label: 'Riskler' },
+  { key: 'aktivite', label: 'Aktivite' },
 ];
 
 const NODE_KEYS = [
@@ -40,7 +41,33 @@ const NODE_KEYS = [
   'kurumZili',
   'etkinlikler',
   'yemekListeleri',
+  'duyurular',
+  'ilacTakipFormlari',
+  'medikalBilgiler',
 ];
+
+// Yönetici Aktivite Geçmişi — hangi öğretmenin hangi bilgiyi hangi saatte
+// girdiğini gösteren log. Her düğüm için: kaydı giren kullanıcının id'sini
+// bulan fonksiyon + kısa açıklama üreten fonksiyon.
+const ACTIVITY_NODE_CONFIG = [
+  { key: 'yoklamalar', icon: '📅', label: 'Yoklama', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için yoklama girildi` },
+  { key: 'gunlukRaporlar', icon: '📝', label: 'Günlük Rapor', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için günlük rapor girildi` },
+  { key: 'etkinlikler', icon: '🎨', label: 'Etkinlik', describe: (item) => item.baslik ? `"${item.baslik}" etkinliği girildi` : 'Etkinlik girildi' },
+  { key: 'yemekListeleri', icon: '🍽️', label: 'Yemek Listesi', describe: () => 'Yemek listesi girildi' },
+  { key: 'duyurular', icon: '📢', label: 'Duyuru', describe: (item) => item.baslik ? `"${item.baslik}" duyurusu girildi` : 'Duyuru girildi' },
+  { key: 'ilacTakipFormlari', icon: '💊', label: 'İlaç Takip', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için "${item.ilacAdi || 'ilaç'}" takip formu girildi` },
+  { key: 'medikalBilgiler', icon: '🩺', label: 'Medikal Bilgi', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için medikal bilgi güncellendi` },
+];
+
+function getEntererId(item) {
+  return item.ogretmenId || item.teacherId || item.guncelleyenOgretmenId || item.olusturanId || item.createdBy || null;
+}
+
+function getEntererTime(item) {
+  const value = item.updatedAt || item.createdAt;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
 
 // FAZ 5 FIX — Bu düğümlerin Firebase kuralı, filtresiz tam okumayı reddedip
 // sadece orderByChild('kresId').equalTo(...) SORGUSUNA izin veriyor.
@@ -48,7 +75,7 @@ const NODE_KEYS = [
 // hata callback'i (aşağıda) sessizce boş dizi basıyordu — "kullanicilar" gibi
 // kuralı gevşek (auth != null) olan node'lar görünürken, bunlar hep boş
 // kalıyordu (ör. "çocuklar" istatistik sekmesi hep boş çıkıyordu).
-const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri']);
+const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler']);
 
 export default function AdminStatisticsScreen() {
   const { kullanici } = useAuth();
@@ -125,6 +152,7 @@ export default function AdminStatisticsScreen() {
             {activeTab === 'ogretmen' && <TeacherTab teachers={stats.teacherStats} />}
             {activeTab === 'cocuk' && <ChildrenTab children={stats.childStats} />}
             {activeTab === 'risk' && <RiskTab riskGroups={stats.riskGroups} />}
+            {activeTab === 'aktivite' && <ActivityTab entries={stats.activityLog} />}
           </>
         )}
       </ScrollView>
@@ -285,6 +313,7 @@ function buildStatistics(raw, kresId) {
   const childStats = children.map((child) => buildChildStats(child, { classes, reports, attendance: monthAttendance, events, monthKey }));
   const teacherStats = buildTeacherStats(users, classes, children, reports, monthAttendance, events);
   const riskGroups = buildRiskGroups(childStats);
+  const activityLog = buildActivityLog(raw, users, children, kresId);
 
   return {
     totalChildren: children.length,
@@ -307,7 +336,39 @@ function buildStatistics(raw, kresId) {
     childStats,
     teacherStats,
     riskGroups,
+    activityLog,
   };
+}
+
+function buildActivityLog(raw, users, children, kresId) {
+  const childName = (childId) => {
+    const child = children.find((item) => item.id === childId);
+    if (!child) return 'Çocuk';
+    return getName(child, child.adSoyad || child.ad || 'Çocuk');
+  };
+  const ctx = { childName };
+
+  const entries = [];
+  ACTIVITY_NODE_CONFIG.forEach((config) => {
+    const list = filterByKres(raw[config.key], kresId);
+    list.forEach((item) => {
+      const entererId = getEntererId(item);
+      const time = getEntererTime(item);
+      if (!entererId || !time) return;
+      const teacher = users.find((user) => user.id === entererId && getRole(user) === 'ogretmen');
+      if (!teacher) return;
+      entries.push({
+        id: `${config.key}-${item.id}`,
+        icon: config.icon,
+        nodeLabel: config.label,
+        teacherName: getName(teacher, 'İsimsiz öğretmen'),
+        detail: config.describe(item, ctx),
+        time,
+      });
+    });
+  });
+
+  return entries.sort((a, b) => b.time - a.time).slice(0, 80);
 }
 
 function buildChildStats(child, context) {
@@ -454,6 +515,28 @@ function StatCard({ icon, value, label, color }) {
   );
 }
 
+function ActivityTab({ entries }) {
+  if (!entries.length) return <EmptyBlock icon="🕓" title="Aktivite kaydı yok" desc="Öğretmenler bilgi girdikçe burada kim, ne zaman, ne girdi görünecek." />;
+
+  return (
+    <>
+      <Text style={styles.sectionTitle}>Öğretmen Giriş Kayıtları</Text>
+      <Text style={[styles.cardText, { marginBottom: 12 }]}>Hangi öğretmenin hangi bilgiyi hangi saatte girdiğini gösterir (son {entries.length} kayıt).</Text>
+      <View style={styles.card}>
+        {entries.map((entry, index) => (
+          <View key={entry.id} style={[styles.activityRow, index === entries.length - 1 && { borderBottomWidth: 0 }]}>
+            <Text style={styles.activityIcon}>{entry.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.activityDetail}>{entry.detail}</Text>
+              <Text style={styles.activityMeta}>{entry.teacherName} · {entry.nodeLabel} · {formatDateTimeTr(entry.time)}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
 function ProgressLine({ label, percent: value, color }) {
   const safePercent = Math.max(0, Math.min(100, Number(value) || 0));
   return (
@@ -588,6 +671,12 @@ function readableMood(value) {
   return value || 'Kayıt yok';
 }
 
+function formatDateTimeTr(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 function formatTL(value) {
   const number = Number(value || 0);
   return `${Math.round(number).toLocaleString('tr-TR')} TL`;
@@ -631,6 +720,10 @@ const styles = StyleSheet.create({
   riskRow: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: THEME.border },
   riskName: { color: THEME.text, fontWeight: '900' },
   riskDesc: { color: THEME.muted, fontWeight: '700', marginTop: 3 },
+  activityRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border },
+  activityIcon: { fontSize: 20, marginRight: 10, marginTop: 1 },
+  activityDetail: { color: THEME.text, fontWeight: '800', fontSize: 14, lineHeight: 19 },
+  activityMeta: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 3 },
   emptyCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 26, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   emptyIcon: { fontSize: 38 },
   emptyTitle: { color: THEME.text, fontSize: 17, fontWeight: '900', marginTop: 10 },
