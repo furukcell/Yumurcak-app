@@ -124,13 +124,13 @@ export default function ChildReportScreen() {
             <View style={styles.metricItem}>
               <Text style={styles.metricIcon}>💤</Text>
               <Text style={styles.metricLabel}>{t('parent.childReport.sleep')}</Text>
-              <Text style={styles.metricValue}>{item.uyku?.sure ? t('parent.childReport.hoursValue', { count: item.uyku.sure }) : '-'}</Text>
+              <Text style={styles.metricValue}>{item.uyku?.sure !== undefined && item.uyku?.sure !== null ? t('parent.childReport.hoursValue', { count: item.uyku.sure }) : '-'}</Text>
             </View>
 
             <View style={[styles.metricItem, { borderRightWidth: 0 }]}>
               <Text style={styles.metricIcon}>🚽</Text>
               <Text style={styles.metricLabel}>{t('parent.childReport.toilet')}</Text>
-              <Text style={styles.metricValue}>{item.tuvalet?.sayi ? t('parent.childReport.timesValue', { count: item.tuvalet.sayi }) : '-'}</Text>
+              <Text style={styles.metricValue}>{item.tuvalet?.sayi !== undefined && item.tuvalet?.sayi !== null ? t('parent.childReport.timesValue', { count: item.tuvalet.sayi }) : '-'}</Text>
             </View>
           </View>
 
