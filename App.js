@@ -3,7 +3,7 @@
 // SafeAreaProvider + StatusBar + Push token + Android navigation bar + Notification deep links
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Linking, Platform } from 'react-native';
+import { AppState, Linking, Platform, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
@@ -39,16 +39,34 @@ async function openNotificationUrl(data, role) {
 export default function App() {
   useEffect(() => {
     const checkForUpdates = async () => {
+      if (__DEV__) return;
+
       try {
         const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          await Updates.fetchUpdateAsync();
-          await Updates.reloadAsync();
-        }
+
+        if (!update.isAvailable) return;
+
+        await Updates.fetchUpdateAsync();
+
+        Alert.alert(
+          '🧸 Yumurcak Güncellemesi',
+          'Yeni bir güncelleme hazır. Uygulamayı şimdi güncellemek ister misiniz?',
+          [
+            {
+              text: 'Daha Sonra',
+              style: 'cancel',
+            },
+            {
+              text: 'Güncelle',
+              onPress: () => Updates.reloadAsync(),
+            },
+          ],
+        );
       } catch (error) {
         console.warn('OTA güncelleme hatası:', error);
       }
     };
+
     checkForUpdates();
   }, []);
 
