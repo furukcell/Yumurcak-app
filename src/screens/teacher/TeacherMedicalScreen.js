@@ -94,7 +94,6 @@ export default function TeacherMedicalScreen() {
       const data = snap.val() || {};
       const list = Object.entries(data)
         .map(([id, value]) => ({ id, ...value }))
-        .filter((item) => item.aktif !== false)
         .sort((a, b) => String(b.baslangicTarihi || '').localeCompare(String(a.baslangicTarihi || '')));
       setMedicationForms(list);
       setLoadingForms(false);
@@ -113,6 +112,14 @@ export default function TeacherMedicalScreen() {
   const childForms = useMemo(
     () => medicationForms.filter((f) => f.cocukId === selectedChildId),
     [medicationForms, selectedChildId]
+  );
+  const pendingChildForms = useMemo(
+    () => childForms.filter((f) => f.aktif === false && f.onayDurumu === 'bekliyor'),
+    [childForms]
+  );
+  const activeChildForms = useMemo(
+    () => childForms.filter((f) => f.aktif !== false),
+    [childForms]
   );
 
   const setDraftValue = (key, value) => {
@@ -324,22 +331,34 @@ export default function TeacherMedicalScreen() {
                   ) : childForms.length === 0 ? (
                     <EmptyState icon="💊" title="Aktif ilaç takip formu yok" desc="Bu çocuk için ilaç kürü başladığında buradan form oluşturabilirsin." />
                   ) : (
-                    childForms.map((form) => (
-                      <TouchableOpacity
-                        key={form.id}
-                        style={styles.formCard}
-                        onPress={() => navigation.navigate('TeacherMedicationFormDetail', { formId: form.id })}
-                        activeOpacity={0.85}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.formCardTitle}>{getMedicineIcon(form.ilacAdi)} {form.ilacAdi}</Text>
-                          <Text style={styles.formCardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
-                          {form.hatirlaticiSaat ? <Text style={styles.formCardMeta}>⏰ Hatırlatma: {form.hatirlaticiSaat}</Text> : null}
-                          <Text style={styles.formCardApproval}>{form.veliOnayi ? '✅ Veli onayı alındı' : '⏳ Veli onayı bekleniyor'}</Text>
+                    <>
+                      {pendingChildForms.map((form) => (
+                        <View key={form.id} style={styles.formCardPending}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.formCardTitle}>{getMedicineIcon(form.ilacAdi)} {form.ilacAdi}</Text>
+                            <Text style={styles.formCardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
+                            <Text style={styles.formCardPendingBadge}>⏳ Onay Bekliyor — veliye onay isteği gönderildi</Text>
+                          </View>
                         </View>
-                        <Text style={styles.formCardArrow}>›</Text>
-                      </TouchableOpacity>
-                    ))
+                      ))}
+
+                      {activeChildForms.map((form) => (
+                        <TouchableOpacity
+                          key={form.id}
+                          style={styles.formCard}
+                          onPress={() => navigation.navigate('TeacherMedicationFormDetail', { formId: form.id })}
+                          activeOpacity={0.85}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.formCardTitle}>{getMedicineIcon(form.ilacAdi)} {form.ilacAdi}</Text>
+                            <Text style={styles.formCardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
+                            {form.hatirlaticiSaat ? <Text style={styles.formCardMeta}>⏰ Hatırlatma: {form.hatirlaticiSaat}</Text> : null}
+                            <Text style={styles.formCardApproval}>✅ Veli onayı alındı</Text>
+                          </View>
+                          <Text style={styles.formCardArrow}>›</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </>
                   )}
                 </>
               )}
@@ -399,6 +418,8 @@ const styles = StyleSheet.create({
   newFormButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 14 },
   newFormButtonText: { color: '#fff', fontWeight: '900', fontSize: 15 },
   formCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.card, borderRadius: 18, borderWidth: 1, borderColor: THEME.border, padding: 14, marginBottom: 10 },
+  formCardPending: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF8E6', borderRadius: 18, borderWidth: 1, borderColor: '#F3DFA0', padding: 14, marginBottom: 10 },
+  formCardPendingBadge: { fontSize: 11, fontWeight: '800', color: '#B08600', marginTop: 5 },
   formCardTitle: { fontSize: 14, fontWeight: '900', color: THEME.text },
   formCardMeta: { fontSize: 12, fontWeight: '700', color: THEME.muted, marginTop: 3 },
   formCardApproval: { fontSize: 11, fontWeight: '700', color: THEME.primary, marginTop: 3 },
