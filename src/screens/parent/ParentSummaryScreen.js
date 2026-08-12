@@ -60,6 +60,30 @@ function scheduleHasContent(item) {
   return list.some((entry) => String(entry?.etkinlik || '').trim());
 }
 
+// Bugünkü program: "09:30" ya da "09:30 - 10:30" gibi metinlerden başlangıç
+// dakikasını çıkarır. Parse edilemezse null döner (canlı durum hesaplanamaz).
+function parseTimeToMinutes(value) {
+  const match = /^(\d{1,2}):(\d{2})/.exec(String(value || '').trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+// Bir dersin/etkinliğin "şu an" a göre durumu: geçti / şu an sürüyor / henüz
+// gelmedi. Başlangıç saati okunamıyorsa null döner (nötr gösterim yapılır).
+function getLiveStatus(startValue, endValue, nowMinutes) {
+  const start = parseTimeToMinutes(startValue);
+  if (start === null) return null;
+  const end = parseTimeToMinutes(endValue);
+  if (nowMinutes < start) return 'upcoming';
+  if (end !== null && nowMinutes >= end) return 'done';
+  if (end !== null) return 'current';
+  // Bitiş saati girilmemişse sadece başlangıca göre kabaca "geçti" say.
+  return 'done';
+}
+
 function getMealStatusLabel(status, t) {
   if (status === 'yemedi') return t('parent.summary.mealStatus.yemedi');
   if (status === 'az_yedi') return t('parent.summary.mealStatus.az_yedi');
@@ -224,14 +248,60 @@ export default function ParentSummaryScreen({ navigation }) {
       .map((entry, index) => ({
         id: `${best?.id || 'ders'}-${index}`,
         baslik: entry.etkinlik,
+        baslangicSaati: entry.baslangicSaati || '',
+        bitisSaati: entry.bitisSaati || '',
         saat: entry.baslangicSaati
           ? `${entry.baslangicSaati}${entry.bitisSaati ? ` - ${entry.bitisSaati}` : ''}`
           : '',
         kazanimlar: Array.isArray(entry.kazanimlar) ? entry.kazanimlar.filter((k) => String(k || '').trim()) : [],
       }))
-      .sort((a, b) => String(a.saat || '').localeCompare(String(b.saat || '')))
-      .slice(0, 6);
+      .sort((a, b) => String(a.saat || '').localeCompare(String(b.saat || '')));
   }, [schedules, kresId, sinifId, today]);
+
+  // Ekranda saatiyle sıralı, canlı durumu (geçti/şu an/gelecek) belli tek bir
+  // liste halinde göstermek için ders programı + etkinlikleri birleştiriyoruz.
+  // Artık sabit bir üst sınır (slice) yok — o gün ne kadar kayıt varsa hepsi
+  // gösterilir.
+  const todayTimeline = useMemo(() => {
+    return [...todaySchedules, ...todayEvents].sort((a, b) => {
+      const aStart = parseTimeToMinutes(a.baslangicSaati || a.saat);
+      const bStart = parseTimeToMinutes(b.baslangicSaati || b.saat);
+      if (aStart === null && bStart === null) return 0;
+      if (aStart === null) return 1;
+      if (bStart === null) return -1;
+      return aStart - bStart;
+    });
+  }, [todaySchedules, todayEvents]);
+
+  // Canlı durumun (şu an sürüyor / geçti) otomatik ilerlemesi için dakikada
+  // bir "şu an" bilgisini tazeliyoruz.
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setNowMinutes(now.getHours() * 60 + now.getMinutes());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // "Şu an sürüyor" göstergesi için harita pini gibi yumuşak bir pulse animasyonu.
+  const livePulseAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(livePulseAnim, { toValue: 1, duration: 900, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(livePulseAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [livePulseAnim]);
+  const livePulseScale = livePulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.9] });
+  const livePulseOpacity = livePulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] });
 
   const currentMonthKey = useMemo(() => getMonthKey(new Date()), []);
   const currentMonthLabel = useMemo(() => getMonthLabel(new Date()), []);
@@ -460,25 +530,58 @@ export default function ParentSummaryScreen({ navigation }) {
               <Text style={styles.cardDesc}>{t('parent.summary.todaysProgramDesc')}</Text>
             </View>
           </View>
-          <View style={styles.scheduleList}>
-            {[...todaySchedules, ...todayEvents].slice(0, 4).map((item, index) => (
-              <View key={`${item.id || index}`} style={styles.lessonLine}>
-                <View style={styles.lessonHeadRow}>
-                  <Text style={styles.lessonMain} numberOfLines={1}>{getProgramTitle(item, t)}</Text>
-                  <Text style={styles.lessonTime}>{item.saat || item.baslangicSaati || ''}</Text>
-                </View>
-                {Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0 ? (
-                  <View style={styles.lessonKazanimWrap}>
-                    {item.kazanimlar.map((kazanim, kIndex) => (
-                      <Text key={`${item.id || index}-k-${kIndex}`} style={styles.lessonKazanimChip} numberOfLines={1}>
-                        🎯 {kazanim}
-                      </Text>
-                    ))}
+          <View style={styles.timelineWrap}>
+            {todayTimeline.map((item, index) => {
+              const isLast = index === todayTimeline.length - 1;
+              const status = getLiveStatus(item.baslangicSaati || item.saat, item.bitisSaati, nowMinutes);
+              const statusColor =
+                status === 'done' ? theme.green :
+                status === 'current' ? theme.blue :
+                status === 'upcoming' ? theme.orange :
+                theme.border;
+              return (
+                <View key={`${item.id || index}`} style={styles.timelineItem}>
+                  <View style={styles.timelineRail}>
+                    {status === 'current' ? (
+                      <Animated.View
+                        pointerEvents="none"
+                        style={[
+                          styles.livePulseRing,
+                          { borderColor: theme.blue, opacity: livePulseOpacity, transform: [{ scale: livePulseScale }] },
+                        ]}
+                      />
+                    ) : null}
+                    <View style={[styles.timelineDot, { backgroundColor: status === 'upcoming' || status === null ? theme.card : statusColor, borderColor: statusColor }]} />
+                    {!isLast ? <View style={[styles.timelineLine, { backgroundColor: statusColor }]} /> : null}
                   </View>
-                ) : null}
-              </View>
-            ))}
-            {todaySchedules.length === 0 && todayEvents.length === 0 ? (
+                  <View style={[styles.lessonLine, styles.timelineCard, status === 'current' ? { borderColor: theme.blue, borderWidth: 1.5 } : null]}>
+                    <View style={styles.lessonHeadRow}>
+                      <Text style={[styles.lessonTime, status === 'done' && { color: theme.green }, status === 'current' && { color: theme.blue, fontWeight: '900' }, status === 'upcoming' && { color: theme.orange }]}>
+                        {item.saat || item.baslangicSaati || ''}
+                      </Text>
+                      {status === 'current' ? (
+                        <Text style={[styles.liveBadge, { color: theme.blue, backgroundColor: theme.blueSoft || theme.primarySoft }]}>
+                          📍 {t('parent.summary.scheduleCurrent')}
+                        </Text>
+                      ) : status === 'done' ? (
+                        <Text style={[styles.doneBadge, { color: theme.green }]}>✓ {t('parent.summary.scheduleDone')}</Text>
+                      ) : null}
+                    </View>
+                    <Text style={styles.lessonMain} numberOfLines={2}>{getProgramTitle(item, t)}</Text>
+                    {Array.isArray(item.kazanimlar) && item.kazanimlar.length > 0 ? (
+                      <View style={styles.lessonKazanimWrap}>
+                        {item.kazanimlar.map((kazanim, kIndex) => (
+                          <Text key={`${item.id || index}-k-${kIndex}`} style={styles.lessonKazanimChip} numberOfLines={1}>
+                            🎯 {kazanim}
+                          </Text>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+            {todayTimeline.length === 0 ? (
               <Text style={styles.emptyInline}>{t('parent.summary.noProgramToday')}</Text>
             ) : null}
           </View>
@@ -851,10 +954,20 @@ const createStyles = (theme) => StyleSheet.create({
   scheduleList: { marginTop: 10, gap: 8 },
   lessonLine: { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, borderRadius: 15, paddingHorizontal: 11, paddingVertical: 10 },
   lessonHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  lessonMain: { flex: 1, color: theme.text, fontSize: 12, fontWeight: '900' },
-  lessonTime: { color: theme.muted, fontSize: 10.5, fontWeight: '800', marginLeft: 8 },
+  lessonMain: { flex: 1, color: theme.text, fontSize: 12, fontWeight: '900', marginTop: 4 },
+  lessonTime: { color: theme.muted, fontSize: 10.5, fontWeight: '800' },
   lessonKazanimWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7 },
   lessonKazanimChip: { color: theme.primary, backgroundColor: theme.primarySoft, fontSize: 9.7, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden', maxWidth: '100%' },
+  // Bugünkü program: canlı (zamana göre renklenen) dikey zaman çizelgesi.
+  timelineWrap: { marginTop: 10 },
+  timelineItem: { flexDirection: 'row', alignItems: 'stretch' },
+  timelineRail: { width: 22, alignItems: 'center', position: 'relative' },
+  timelineDot: { width: 13, height: 13, borderRadius: 7, marginTop: 5, borderWidth: 2.5, zIndex: 2 },
+  timelineLine: { width: 2, flex: 1, marginTop: 2, marginBottom: -8, opacity: 0.45, borderRadius: 1 },
+  livePulseRing: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, borderWidth: 2 },
+  timelineCard: { flex: 1, marginLeft: 9, marginBottom: 10 },
+  liveBadge: { fontSize: 9.7, fontWeight: '900', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, overflow: 'hidden' },
+  doneBadge: { fontSize: 9.7, fontWeight: '900' },
   emptyInline: { color: theme.muted, fontWeight: '700', fontSize: 12, paddingVertical: 8 },
   twoGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   smallCard: { width: '48.7%', minHeight: 112, backgroundColor: theme.card, borderRadius: 19, padding: 13, borderWidth: 1, borderColor: theme.border },
