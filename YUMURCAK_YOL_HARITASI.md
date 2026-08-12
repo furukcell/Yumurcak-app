@@ -1,16 +1,18 @@
 # Yumurcak Güncel Yol Haritası
 
-Bu dosya Yumurcak Kreş uygulamasının güncel canlı öncesi durumunu özetler.
+Bu dosya Yumurcak Kreş uygulamasının güncel geliştirme ve canlıya hazırlık durumunu özetler.
 
-> Son güncelleme: 26 Haziran 2026
+> Son güncelleme: 12 Ağustos 2026
 
 ---
 
 ## 1. Güncel Genel Durum
 
-Yumurcak Kreş şu an **canlı öncesi hazır / son gerçek cihaz kontrolü** seviyesindedir. Yönetici, öğretmen ve veli tarafındaki ana modüller tamamlandı. Push notification sistemi Firebase Cloud Functions tarafına taşındı ve uygulamadaki ana olayların büyük çoğunluğu telefona push bildirim üretecek hale getirildi.
+Yumurcak Kreş ana ürün geliştirme açısından **canlı / pilot kullanıma hazır** seviyededir. Yönetici, öğretmen ve veli tarafındaki ana modüller tamamlanmıştır. Push notification sistemi Firebase Cloud Functions tarafında çalışmaktadır. RevenueCat / Google Play abonelik altyapısı ve OTA güncelleme sistemi de kuruludur.
 
-Yeni özellik geliştirme tarafında canlıyı engelleyen ana iş kalmamıştır. Kalan işler; gerçek cihaz son testleri, Firebase Rules son kontrolü, RevenueCat / Google Play satın alma doğrulaması ve Play Console kapalı test sürecidir.
+Şu anki geliştirme odağı; gerçek cihaz kontrolleri, canlı öncesi son doğrulamalar ve çoklu dil desteğinin genişletilmesidir.
+
+Dil desteğinde **İngilizce veli tarafı tamamlanmıştır.** Öğretmen ve yönetici ekranlarının İngilizceye uyarlanması sonraki aşamada yapılacaktır. Ardından yeni diller sırayla eklenecektir.
 
 ---
 
@@ -65,11 +67,48 @@ Yeni özellik geliştirme tarafında canlıyı engelleyen ana iş kalmamıştır
 ✅ Yasal metinler
 ✅ Başarı toast sistemi
 ✅ Android navigation bar ayarları
+✅ OTA güncelleme sistemi
 ```
 
 ---
 
-## 3. Push Bildirim Durumu
+## 3. Çoklu Dil Desteği
+
+Yumurcak çoklu dil altyapısı üzerine kurulmaktadır.
+
+### Güncel durum
+
+```txt
+Türkçe
+  └─ Ana dil                              ✅
+
+İngilizce
+  ├─ Veli tarafı                          ✅ TAMAMLANDI
+  ├─ Öğretmen tarafı                      ⏳ PLANLANDI
+  └─ Yönetici tarafı                      ⏳ PLANLANDI
+```
+
+İngilizce desteğinde ilk hedef **veli deneyimini tamamen tamamlamaktır**. Veli tarafındaki İngilizce dil desteği tamamlanmıştır.
+
+Öğretmen ve yönetici ekranlarının İngilizce desteği daha sonraki geliştirme aşamasında tamamlanacaktır.
+
+### Planlanan yeni diller
+
+İngilizce sonrası yeni diller şu sırayla eklenecektir:
+
+```txt
+1. 🇩🇪 Almanca
+2. 🇮🇹 İtalyanca
+3. 🇫🇷 Fransızca
+4. 🇷🇺 Rusça
+5. 🇸🇦 Arapça
+```
+
+Arapça son aşamada ele alınacaktır. Bunun temel nedeni sağdan sola (RTL) arayüz desteğinin ayrıca ele alınması gerekliliğidir.
+
+---
+
+## 4. Push Bildirim Durumu
 
 Push notification sistemi artık sadece uygulama açıkken değil, uygulama kapalıyken de telefona bildirim gönderecek backend mimarisine taşındı.
 
@@ -132,13 +171,13 @@ pushStatus: error
 pushStatus: skipped_empty_body
 ```
 
+Telefonda bildirime dokunulduğunda ilgili ekranı açan deep-link yapısı da bulunmaktadır.
+
 ---
 
-## 4. RevenueCat / Google Play Durumu
+## 5. RevenueCat / Google Play Durumu
 
-Abonelik altyapısı canlı güvenli akışa göre düzenlendi.
-
-Tamamlananlar:
+Abonelik altyapısı canlı güvenli akışa göre düzenlenmiştir.
 
 ```txt
 ✅ RevenueCat proje ayarı
@@ -148,35 +187,22 @@ Tamamlananlar:
 ✅ Google Play abonelik ürünleri
 ✅ RevenueCat package eşleşmeleri
 ✅ Admin abonelik ekranı
-✅ Paket okunamadığında manuel aktif etme kaldırıldı
-✅ PILOT1AY demo promosyon kodu bırakıldı
 ```
 
-Paketler:
+Kalan gerçek cihaz kontrolleri:
 
 ```txt
-Başlangıç: 0-30 öğrenci / 1.000 TL aylık / 10.000 TL yıllık
-Profesyonel: 31-50 öğrenci / 1.500 TL aylık / 15.000 TL yıllık
-Kurum: 51-100 öğrenci / 3.000 TL aylık / 30.000 TL yıllık
-100+: özel teklif
-```
-
-Kalan kontrol:
-
-```txt
-- Gerçek Android cihazda Google Play ödeme popup'ı
-- Başarılı satın alma sonrası entitlement kontrolü
-- Restore testi
-- Firebase abonelik kaydı kontrolü
+⏳ Google Play ödeme popup'ı
+⏳ Başarılı satın alma sonrası entitlement kontrolü
+⏳ Restore testi
+⏳ Firebase abonelik kaydı kontrolü
 ```
 
 ---
 
-## 5. Galeri Durumu
+## 6. Galeri Durumu
 
 Galeri modülü tamamlandı.
-
-Yapılanlar:
 
 ```txt
 ✅ Ortak GalleryScreenBase altyapısı
@@ -203,11 +229,9 @@ Opsiyonel sonraki iş:
 
 ---
 
-## 6. Uyum Modülü Durumu
+## 7. Uyum Modülü Durumu
 
 Uyum Modülü tamamlandı.
-
-Tamamlananlar:
 
 ```txt
 ✅ Admin çocuk formunda Mevcut öğrenci / Yeni başlayan seçimi
@@ -225,7 +249,7 @@ Tamamlananlar:
 
 ---
 
-## 7. Gelişim / Sınıf Ortalaması Durumu
+## 8. Gelişim / Sınıf Ortalaması Durumu
 
 Tamamlandı.
 
@@ -250,7 +274,7 @@ Ortalamanın altında
 
 ---
 
-## 8. Haftanın Yıldızı / Rozet Durumu
+## 9. Haftanın Yıldızı / Rozet Durumu
 
 Tamamlandı.
 
@@ -268,7 +292,7 @@ Tamamlandı.
 
 ---
 
-## 9. Tema Durumu
+## 10. Tema Durumu
 
 Tamamlandı / test edilecek.
 
@@ -284,13 +308,39 @@ Tamamlandı / test edilecek.
 Son kontrol:
 
 ```txt
-- Öğretmen / veli kullanıcı kayıtlarında sinifId doluysa sınıf teması doğru yayılıyor mu?
-- sinifId boş kullanıcılar için çocuk/sınıf ilişkisinden görünüm doğru mu?
+⏳ Öğretmen / veli kullanıcı kayıtlarında sinifId doluysa sınıf teması doğru yayılıyor mu?
+⏳ sinifId boş kullanıcılar için çocuk/sınıf ilişkisinden görünüm doğru mu?
 ```
 
 ---
 
-## 10. Canlı Öncesi Son Test Akışı
+## 11. OTA Güncelleme Sistemi
+
+Yumurcak uygulamasında JavaScript tarafındaki güncellemelerin yeni Android build alınmadan kullanıcılara ulaştırılması için Expo OTA sistemi kullanılmaktadır.
+
+```txt
+Kod değişikliği
+      ↓
+GitHub Actions
+      ↓
+Expo production OTA
+      ↓
+Kullanıcı uygulamayı açar
+      ↓
+Yeni güncelleme kontrol edilir
+      ↓
+Güncelleme bulunursa kullanıcıya bildirilir
+      ↓
+Kullanıcı güncellemeyi onaylar
+      ↓
+Uygulama yeni OTA ile yeniden başlar
+```
+
+Native Android / iOS değişiklikleri OTA kapsamında değildir ve gerektiğinde yeni build alınmalıdır.
+
+---
+
+## 12. Canlı Öncesi Son Test Akışı
 
 ```txt
 1. Admin giriş yapar
@@ -335,9 +385,9 @@ Son kontrol:
 
 ---
 
-## 11. Kalan İşler
+## 13. Kalan İşler
 
-Canlıya engel ana geliştirme işi kalmadı. Kalanlar son kontrol ve opsiyonel geliştirmelerdir.
+Canlıya engel ana ürün geliştirme işi kalmadı. Kalanlar son kontrol, dil genişletme ve sonraki ürün geliştirme aşamalarıdır.
 
 ### Zorunlu Son Kontroller
 
@@ -351,9 +401,30 @@ Canlıya engel ana geliştirme işi kalmadı. Kalanlar son kontrol ve opsiyonel 
 ⏳ Play Console kapalı test
 ```
 
-### Opsiyonel Sonraki Fazlar
+### Dil Desteği
 
 ```txt
+✅ İngilizce — Veli tarafı
+⏳ İngilizce — Öğretmen tarafı
+⏳ İngilizce — Yönetici tarafı
+
+⏳ Almanca
+⏳ İtalyanca
+⏳ Fransızca
+⏳ Rusça
+⏳ Arapça — son aşama
+```
+
+### Sonraki Fazlar
+
+```txt
+- İngilizce öğretmen ekranları
+- İngilizce yönetici ekranları
+- Almanca desteği
+- İtalyanca desteği
+- Fransızca desteği
+- Rusça desteği
+- Arapça ve RTL desteği
 - Abonelik bitiş uyarısı için zamanlı Cloud Function
 - Doğum günü bildirimi için zamanlı Cloud Function
 - Galeri Storage otomatik temizlik Function'ı
@@ -364,9 +435,9 @@ Canlıya engel ana geliştirme işi kalmadı. Kalanlar son kontrol ve opsiyonel 
 
 ---
 
-## 12. Canlıya Hazırlık Notu
+## 14. Canlıya Hazırlık Notu
 
-Yumurcak şu an ürün kapsamı olarak canlı pilot / kapalı test için hazır kabul edilebilir. Bundan sonraki asıl iş yeni özellik eklemek değil; gerçek cihazda uçtan uca test, kapalı test kullanıcıları, Firebase rules güvenliği ve ilk pilot kreş kullanım sürecidir.
+Yumurcak ürün kapsamı olarak canlı pilot / kapalı test için hazırdır. Bundan sonraki ana geliştirme süreci; gerçek cihaz doğrulamaları, kapalı test kullanıcıları, Firebase rules güvenliği, ilk pilot kreş kullanımı ve çoklu dil desteğinin genişletilmesi olacaktır.
 
 Özet:
 
@@ -374,6 +445,9 @@ Yumurcak şu an ürün kapsamı olarak canlı pilot / kapalı test için hazır 
 Kod tarafı: Ana modüller tamamlandı
 Bildirim tarafı: Cloud Functions ile tamamlandı
 Abonelik tarafı: Kuruldu, gerçek cihaz testi kaldı
-Play tarafı: Kapalı test hazırlığı kaldı
+OTA tarafı: Aktif
+Dil tarafı: İngilizce veli tamamlandı
+Sonraki dil: Almanca
+Play tarafı: Kapalı test hazırlığı / doğrulamalar
 Canlı engeli: Kritik özellik eksiği yok
 ```
