@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, THEME } from './parentShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { formatDisplayDate } from '../../utils/dateFormat';
+import { translateMood } from '../../utils/moodLabel';
 
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
@@ -67,7 +68,8 @@ export default function ParentReportsScreen({ navigation }) {
 }
 
 function ReportCard({ item, isToday, localStyles, t }) {
-  const mood = item?.mood || item?.ruhHali || item?.durum || '-';
+  const rawMood = item?.mood || item?.ruhHali || item?.durum;
+  const mood = rawMood ? translateMood(rawMood, t) : '-';
   const sleep = item?.uyku?.sure ? t('parent.reports.sleepHours', { count: item.uyku.sure }) : (item?.uykuDurumu || '-');
   const toilet = item?.tuvalet?.sayi ? t('parent.reports.toiletCount', { count: item.tuvalet.sayi }) : (item?.tuvaletDurumu || '-');
   const note = item?.not || item?.ogretmenNotu || item?.notlar || t('parent.reports.noTeacherNote');
@@ -194,14 +196,17 @@ function buildMonthlyReports(reports, t) {
   return Object.entries(groups)
     .filter(([monthKey]) => monthKey !== 'unknown')
     .sort(([a], [b]) => String(b).localeCompare(String(a)))
-    .map(([monthKey, list]) => ({
-      monthKey,
-      label: getMonthTitle(monthKey, t),
-      count: list.length,
-      topMood: mostCommon(list.map((item) => item?.mood || item?.ruhHali || item?.durum).filter(Boolean)) || '-',
-      avgSleep: averageSleep(list),
-      mealSummary: mealSummary(list, t),
-    }));
+    .map(([monthKey, list]) => {
+      const rawTopMood = mostCommon(list.map((item) => item?.mood || item?.ruhHali || item?.durum).filter(Boolean));
+      return {
+        monthKey,
+        label: getMonthTitle(monthKey, t),
+        count: list.length,
+        topMood: rawTopMood ? translateMood(rawTopMood, t) : '-',
+        avgSleep: averageSleep(list),
+        mealSummary: mealSummary(list, t),
+      };
+    });
 }
 
 function getMonthTitle(monthKey, t) {
