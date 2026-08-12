@@ -76,9 +76,13 @@ function buildDailyComment({ childFirstName, mood, mealsSummary, yesterdayMealsS
   };
 
   // 1) Ruh hali — çocuğun adıyla açılış cümlesi
-  if (mood && mood !== 'Bekleniyor') {
-    const emoji = getMoodEmoji(mood);
-    pushSentence(t('parent.dailyComment.moodBody', { emoji: emoji ? `${emoji} ` : '', mood: mood.toLowerCase() }));
+  // Not: mood bazen string olmayan/beklenmedik bir değer olarak gelebiliyor
+  // (eski kayıt formatı, farklı bir alan eşleşmesi vb.) — String() ile
+  // güvenceye alıyoruz, yoksa .toLowerCase() burada patlar.
+  const moodText = mood ? String(mood) : '';
+  if (moodText && moodText !== 'Bekleniyor' && moodText !== t('parent.summary.waiting')) {
+    const emoji = getMoodEmoji(moodText);
+    pushSentence(t('parent.dailyComment.moodBody', { emoji: emoji ? `${emoji} ` : '', mood: moodText.toLowerCase() }));
   }
 
   // 2) Öğünler — önce iyi geçenler, sonra iştahsız olanlar; her biri kendi
