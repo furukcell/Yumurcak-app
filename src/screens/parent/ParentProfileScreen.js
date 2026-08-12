@@ -177,14 +177,25 @@ export default function ParentProfileScreen({ navigation }) {
           ) : null}
         </View>
 
-        {!selectedChild ? (
-          <EmptyState icon="👧" title={t('parent.profile.noChildTitle')} desc={t('parent.profile.noChildDesc')} />
-        ) : (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>👧 {childName}</Text>
-            <Text style={styles.cardText}>{selectedChild?.yas || selectedChild?.dogumTarihi || t('parent.profile.studentFallback')}</Text>
-          </View>
-        )}
+            {!selectedChild ? (
+       <EmptyState
+         icon="👧"
+         title={t('parent.profile.noChildTitle')}
+         desc={t('parent.profile.noChildDesc')}
+       />
+     ) : (
+       <View style={styles.card}>
+         <Text style={styles.cardTitle}>👧 {childName}</Text>
+         <Text style={styles.cardText}>
+           {selectedChild?.dogumTarihi
+             ? (() => {
+                 const [year, month, day] = selectedChild.dogumTarihi.split('-');
+                 return `${day}.${month}.${year}`;
+               })()
+             : t('parent.profile.studentFallback')}
+         </Text>
+       </View>
+     )}
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('parent.profile.parentInfoTitle')}</Text>
