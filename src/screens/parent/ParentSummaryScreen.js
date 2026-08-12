@@ -302,7 +302,20 @@ export default function ParentSummaryScreen({ navigation }) {
   const mood = rawMood || t('parent.summary.waiting');
   const moodEmoji = getMoodEmoji(mood);
   const moodDisplay = rawMood ? translateMood(rawMood, t) : mood;
-  const sleep = todayReport?.uyku?.sure ? `${todayReport.uyku.sure} ${t('parent.summary.hours')}` : (todayReport?.uykuDurumu || todayReport?.uyku || t('parent.summary.waiting'));
+  // Not: uyku süresi 0 olabilir ("hiç uyumadı") — 0 JS'te falsy olduğu için
+  // eski kod bu durumda yanlışlıkla `todayReport.uyku` OBJESİNİN kendisini
+  // (örn. {sure:0, not:''}) sleep'e atıyordu; bu obje daha sonra <Text>
+  // içine yazılmaya çalışılınca React Native çöküyordu. sure değerini
+  // undefined/null kontrolüyle (0 dahil geçerli sayı) ayırıyoruz ve
+  // fallback'te sadece STRING tipindeki alanları kabul ediyoruz.
+  const sleepSure = todayReport?.uyku?.sure;
+  const sleepFallback =
+    (typeof todayReport?.uykuDurumu === 'string' && todayReport.uykuDurumu) ||
+    (typeof todayReport?.uyku === 'string' && todayReport.uyku) ||
+    t('parent.summary.waiting');
+  const sleep = (sleepSure !== undefined && sleepSure !== null)
+    ? `${sleepSure} ${t('parent.summary.hours')}`
+    : sleepFallback;
   const attendanceDisplay = getAttendanceDisplay(styles, todayAttendance, t);
   const attendanceLabel = todayAttendance ? (todayAttendance.durum || todayAttendance.status || t('parent.summary.atDaycare')) : t('parent.summary.waiting');
   const note = todayReport?.not || todayReport?.ogretmenNotu || todayReport?.aciklama || t('parent.summary.noTeacherNoteYet');
