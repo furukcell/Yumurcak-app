@@ -343,6 +343,8 @@
       "todaysProgramDesc": "Ders programı ve etkinlik kayıtlarından çekilir.",
       "noProgramToday": "Bugün için program veya etkinlik girilmedi.",
       "program": "Program",
+      "scheduleDone": "Tamamlandı",
+      "scheduleCurrent": "Şimdi sürüyor",
       "otherSummariesTitle": "Diğer Özetler",
       "otherSummariesAction": "Tümünü gör",
       "dailyReport": "Günlük rapor",
