@@ -343,6 +343,8 @@
       "todaysProgramDesc": "Pulled from the lesson schedule and activity records.",
       "noProgramToday": "No schedule or activity has been entered for today.",
       "program": "Program",
+      "scheduleDone": "Completed",
+      "scheduleCurrent": "Happening now",
       "otherSummariesTitle": "Other Summaries",
       "otherSummariesAction": "See all",
       "dailyReport": "Daily report",
