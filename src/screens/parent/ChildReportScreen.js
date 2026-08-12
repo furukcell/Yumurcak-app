@@ -8,6 +8,7 @@ import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { translateMood } from '../../utils/moodLabel';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -79,6 +80,7 @@ export default function ChildReportScreen() {
 
   const renderItem = ({ item, index }) => {
     const isFirst = index === 0;
+    const moodText = translateMood(item.mood, t, t('parent.childReport.moodFallback'));
 
     return (
       <View style={styles.timelineRow}>
@@ -96,7 +98,7 @@ export default function ChildReportScreen() {
 
             <View style={styles.moodBadge}>
               <Text style={styles.moodIcon}>{getMoodIcon(item.mood)}</Text>
-              <Text style={styles.moodLabel}>{item.mood || t('parent.childReport.moodFallback')}</Text>
+              <Text style={styles.moodLabel}>{moodText}</Text>
             </View>
           </View>
 
