@@ -69,14 +69,15 @@ export default function ParentMedicalScreen({ navigation }) {
     return () => unsub();
   }, [selectedChild?.id]);
 
-  const [medicationForms, setMedicationForms] = useState([]);
+  const [allMedicationForms, setAllMedicationForms] = useState([]);
   const [editingFormId, setEditingFormId] = useState(null); // null | 'new' | formId
   const [formDraft, setFormDraft] = useState(null);
   const [formSaving, setFormSaving] = useState(false);
+  const [approvingId, setApprovingId] = useState(null);
 
   useEffect(() => {
     if (!kresId) {
-      setMedicationForms([]);
+      setAllMedicationForms([]);
       return undefined;
     }
     const q = query(ref(database, 'ilacTakipFormlari'), orderByChild('kresId'), equalTo(kresId));
@@ -84,12 +85,76 @@ export default function ParentMedicalScreen({ navigation }) {
       const data = snap.val() || {};
       const list = Object.entries(data)
         .map(([id, value]) => ({ id, ...value }))
-        .filter((item) => item.aktif !== false && item.cocukId === selectedChild?.id)
+        .filter((item) => item.cocukId === selectedChild?.id)
         .sort((a, b) => String(b.baslangicTarihi || '').localeCompare(String(a.baslangicTarihi || '')));
-      setMedicationForms(list);
-    }, () => setMedicationForms([]));
+      setAllMedicationForms(list);
+    }, () => setAllMedicationForms([]));
     return () => unsub();
   }, [kresId, selectedChild?.id]);
+
+  const medicationForms = useMemo(
+    () => allMedicationForms.filter((item) => item.aktif !== false),
+    [allMedicationForms]
+  );
+  const pendingForms = useMemo(
+    () => allMedicationForms.filter((item) => item.aktif === false && item.onayDurumu === 'bekliyor'),
+    [allMedicationForms]
+  );
+
+  async function approveMedicationForm(form) {
+    setApprovingId(form.id);
+    try {
+      await update(ref(database, `ilacTakipFormlari/${form.id}`), {
+        aktif: true,
+        veliOnayi: true,
+        onayDurumu: 'onaylandi',
+        onaylayanVeliId: parentId || '',
+        onaylanmaTarihi: Date.now(),
+        updatedAt: Date.now(),
+      });
+      if (form.olusturanId) {
+        createNotification({
+          kresId,
+          hedefUserIds: [form.olusturanId],
+          baslik: '✅ Veli ilaç takip formunu onayladı',
+          mesaj: `${getChildName(selectedChild)} için "${form.ilacAdi || 'İlaç'}" ilaç takip formu onaylandı.`,
+          tip: 'ilac_takip',
+          routeName: 'TeacherMedicationFormDetail',
+          routeParams: { formId: form.id },
+          createdBy: parentId || '',
+        }).catch((error) => console.log('Öğretmen bildirimi gönderilemedi:', error));
+      }
+    } catch (error) {
+      Alert.alert(t('parent.medical.errorTitle'), t('parent.medical.alertSaveErrorForm'));
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  async function rejectMedicationForm(form) {
+    setApprovingId(form.id);
+    try {
+      await update(ref(database, `ilacTakipFormlari/${form.id}`), {
+        onayDurumu: 'reddedildi',
+        reddedilmeTarihi: Date.now(),
+        updatedAt: Date.now(),
+      });
+      if (form.olusturanId) {
+        createNotification({
+          kresId,
+          hedefUserIds: [form.olusturanId],
+          baslik: '❌ Veli ilaç takip formunu reddetti',
+          mesaj: `${getChildName(selectedChild)} için "${form.ilacAdi || 'İlaç'}" ilaç takip formu talebi reddedildi.`,
+          tip: 'ilac_takip',
+          createdBy: parentId || '',
+        }).catch((error) => console.log('Öğretmen bildirimi gönderilemedi:', error));
+      }
+    } catch (error) {
+      Alert.alert(t('parent.medical.errorTitle'), t('parent.medical.alertSaveErrorForm'));
+    } finally {
+      setApprovingId(null);
+    }
+  }
 
   function startNewForm() {
     setFormDraft({ ilacAdi: '', doz: '', uygulamaSekli: '', baslangicTarihi: '', bitisTarihi: '', hatirlaticiSaat: '', veliOnayi: true });
@@ -225,7 +290,7 @@ export default function ParentMedicalScreen({ navigation }) {
               tabs={[
                 { key: 'alerjiler', icon: '⚠️', label: t('parent.medical.tabAllergies') },
                 { key: 'surekliIlaclar', icon: '💊', label: t('parent.medical.tabContinuousMeds'), badge: medicineItems.length || null },
-                { key: 'ilacTakip', icon: '📋', label: t('parent.medical.tabTracking'), badge: medicationForms.length || null },
+                { key: 'ilacTakip', icon: '📋', label: t('parent.medical.tabTracking'), badge: (medicationForms.length + pendingForms.length) || null },
               ]}
             />
 
@@ -271,7 +336,43 @@ export default function ParentMedicalScreen({ navigation }) {
               </>
             ) : (
               <MedicalCard icon="📋" title={t('parent.medical.trackingTitle')} badge={medicationForms.length > 0 ? `${medicationForms.length}` : null}>
-                {medicationForms.length === 0 && editingFormId !== 'new' ? (
+                {pendingForms.length > 0 ? (
+                  <View style={{ gap: 10, marginBottom: 14 }}>
+                    {pendingForms.map((form) => (
+                      <View key={form.id} style={local.pendingRow}>
+                        <View style={local.trackHeaderRow}>
+                          <Text style={local.medicineName}>{form.ilacAdi || 'İlaç'}</Text>
+                          <Text style={[local.trackBadge, local.trackBadgeWait]}>{t('parent.medical.trackingPendingApproval')}</Text>
+                        </View>
+                        {form.doz ? <Text style={local.medicineMeta}>{t('parent.medical.trackingDose')}: {form.doz}</Text> : null}
+                        {form.uygulamaSekli ? <Text style={local.medicineMeta}>{form.uygulamaSekli}</Text> : null}
+                        <Text style={local.medicineMeta}>
+                          {formatDateTr(form.baslangicTarihi)}{form.bitisTarihi ? ` – ${formatDateTr(form.bitisTarihi)}` : ''}
+                        </Text>
+                        <View style={[local.formRow, { marginTop: 8 }]}>
+                          <TouchableOpacity
+                            style={[local.formButton, local.formButtonCancel]}
+                            onPress={() => rejectMedicationForm(form)}
+                            disabled={approvingId === form.id}
+                            activeOpacity={0.85}
+                          >
+                            <Text style={local.formButtonCancelText}>{t('parent.medical.trackingReject')}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[local.formButton, local.formButtonSave, approvingId === form.id && { opacity: 0.65 }]}
+                            onPress={() => approveMedicationForm(form)}
+                            disabled={approvingId === form.id}
+                            activeOpacity={0.85}
+                          >
+                            <Text style={local.formButtonSaveText}>{approvingId === form.id ? t('parent.medical.trackingApproving') : t('parent.medical.trackingApprove')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                {medicationForms.length === 0 && editingFormId !== 'new' && pendingForms.length === 0 ? (
                   <Text style={local.emptyText}>{t('parent.medical.trackingEmpty')}</Text>
                 ) : (
                   <View style={local.medicineList}>
@@ -402,6 +503,7 @@ const local = StyleSheet.create({
   medicineMeta: { color: '#31527D', fontWeight: '700', fontSize: 11, marginTop: 4 },
   medicineBadge: { color: '#1976D2', borderWidth: 1, borderColor: '#A9D7FF', backgroundColor: '#F7FCFF', borderRadius: 99, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 6, fontWeight: '900', fontSize: 10, marginLeft: 8 },
   trackRow: { backgroundColor: '#F5FBFF', borderWidth: 1, borderColor: '#CDEBFF', borderRadius: 16, padding: 10, gap: 4 },
+  pendingRow: { backgroundColor: '#FFF8E6', borderWidth: 1, borderColor: '#F3DFA0', borderRadius: 16, padding: 10, gap: 4 },
   trackHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   trackBadge: { fontSize: 10, fontWeight: '900', borderRadius: 99, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1 },
   trackBadgeOk: { color: '#17843B', backgroundColor: '#EEFBEF', borderColor: '#CDEFD3' },
