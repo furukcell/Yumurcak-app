@@ -25,6 +25,7 @@ import { getMealPhoto } from '../../components/MealTodayCard';
 import DailyCommentCard from '../../components/DailyCommentCard';
 import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
 import { MOOD_LISTESI } from '../../constants';
+import { translateMood } from '../../utils/moodLabel';
 
 // Not: öğün isimleri (Kahvaltı/Öğle/Ara Öğün) için ayrı bir sabit tutmuyoruz,
 // MealTodayCard.js'de zaten tanımlı olan "parent.mealCard.mealName.<key>"
@@ -297,8 +298,10 @@ export default function ParentSummaryScreen({ navigation }) {
 
   const mealsSummary = buildMealSummary(todayReport, todayMeal, t);
   const yesterdayMealsSummary = buildMealSummary(yesterdayReport, null, t);
-  const mood = todayReport?.mood || todayReport?.ruhHali || todayReport?.durum || t('parent.summary.waiting');
+  const rawMood = todayReport?.mood || todayReport?.ruhHali || todayReport?.durum;
+  const mood = rawMood || t('parent.summary.waiting');
   const moodEmoji = getMoodEmoji(mood);
+  const moodDisplay = rawMood ? translateMood(rawMood, t) : mood;
   const sleep = todayReport?.uyku?.sure ? `${todayReport.uyku.sure} ${t('parent.summary.hours')}` : (todayReport?.uykuDurumu || todayReport?.uyku || t('parent.summary.waiting'));
   const attendanceDisplay = getAttendanceDisplay(styles, todayAttendance, t);
   const attendanceLabel = todayAttendance ? (todayAttendance.durum || todayAttendance.status || t('parent.summary.atDaycare')) : t('parent.summary.waiting');
@@ -339,7 +342,7 @@ export default function ParentSummaryScreen({ navigation }) {
             <Text style={styles.childSub}>{isBirthday ? t('parent.summary.birthdaySpecialDay', { childName }) : t('parent.summary.greeting', { parentName })}</Text>
             <View style={styles.pillRow}>
               <Text style={[styles.pill, styles.pillGreen]}>✅ {attendanceLabel}</Text>
-              <Text style={styles.pill}>{moodEmoji} {mood}</Text>
+              <Text style={styles.pill}>{moodEmoji} {moodDisplay}</Text>
               <Text style={[styles.pill, styles.pillOrange]}>🍽️ {getMainMealStatus(mealsSummary, t)}</Text>
             </View>
           </View>
@@ -383,7 +386,7 @@ export default function ParentSummaryScreen({ navigation }) {
         />
 
         <View style={styles.miniGrid}>
-          <MiniCard styles={styles} icon={moodEmoji} value={mood} label={t('parent.summary.mood')} />
+          <MiniCard styles={styles} icon={moodEmoji} value={moodDisplay} label={t('parent.summary.mood')} />
           <MiniCard styles={styles} icon={attendanceDisplay.icon} value={attendanceDisplay.value} label={t('parent.summary.attendance')} valueStyle={attendanceDisplay.color} />
           <MiniCard styles={styles} icon="😴" value={sleep} label={t('parent.summary.sleep')} />
           <MiniCard styles={styles} icon="🎨" value={`${todayEvents.length}/3`} label={t('parent.summary.activity')} />
