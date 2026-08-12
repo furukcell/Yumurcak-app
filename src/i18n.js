@@ -11,14 +11,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import tr from './locales/tr.json';
 import en from './locales/en.json';
+import ru from './locales/ru.json';
 
 export const LANGUAGE_STORAGE_KEY = '@yumurcak_language';
-export const SUPPORTED_LANGUAGES = ['tr', 'en'];
+export const SUPPORTED_LANGUAGES = ['tr', 'en', 'ru'];
 export const DEFAULT_LANGUAGE = 'tr';
 
 const resources = {
   tr: { translation: tr },
   en: { translation: en },
+  ru: { translation: ru },
 };
 
 // Senkron init: uygulama hiçbir ekranı beklemeden, doğrudan Türkçe
