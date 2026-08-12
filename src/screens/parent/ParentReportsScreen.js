@@ -70,8 +70,18 @@ export default function ParentReportsScreen({ navigation }) {
 function ReportCard({ item, isToday, localStyles, t }) {
   const rawMood = item?.mood || item?.ruhHali || item?.durum;
   const mood = rawMood ? translateMood(rawMood, t) : '-';
-  const sleep = item?.uyku?.sure ? t('parent.reports.sleepHours', { count: item.uyku.sure }) : (item?.uykuDurumu || '-');
-  const toilet = item?.tuvalet?.sayi ? t('parent.reports.toiletCount', { count: item.tuvalet.sayi }) : (item?.tuvaletDurumu || '-');
+  // Not: sure/sayi 0 olabilir (hiç uyumadı / hiç tuvalete gitmedi) — 0 JS'te
+  // falsy olduğu için eski `?.sure ?` kontrolü bu durumda yanlış dala düşüp
+  // string olmayan bir değeri (obje veya boş) gösterebiliyordu. undefined/
+  // null kontrolüyle 0'ı geçerli bir değer olarak kabul ediyoruz.
+  const sleepSure = item?.uyku?.sure;
+  const sleep = (sleepSure !== undefined && sleepSure !== null)
+    ? t('parent.reports.sleepHours', { count: sleepSure })
+    : (typeof item?.uykuDurumu === 'string' && item.uykuDurumu) || '-';
+  const toiletSayi = item?.tuvalet?.sayi;
+  const toilet = (toiletSayi !== undefined && toiletSayi !== null)
+    ? t('parent.reports.toiletCount', { count: toiletSayi })
+    : (typeof item?.tuvaletDurumu === 'string' && item.tuvaletDurumu) || '-';
   const note = item?.not || item?.ogretmenNotu || item?.notlar || t('parent.reports.noTeacherNote');
   const reportDate = item.tarih || item.date || t('parent.reports.title');
   const displayReportDate = formatDisplayDate(reportDate);
