@@ -38,6 +38,8 @@ export default function ParentProfileScreen({ navigation }) {
     { code: 'tr', flag: '🇹🇷', label: 'Türkçe' },
     { code: 'en', flag: '🇬🇧', label: 'English' },
     { code: 'ru', flag: '🇷🇺', label: 'Русский' },
+    { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
+    { code: 'fr', flag: '🇫🇷', label: 'Français' },
   ];
 
   useEffect(() => {
