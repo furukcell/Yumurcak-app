@@ -3,22 +3,57 @@
 // FAZ 4 — Veli tarafında ders programı ekranı yoktu, bu ekran onu ekliyor.
 // Admin/öğretmen tarafında yayınlanan aylık ders programını, çocuğun
 // sınıfına göre (forClass) salt okunur gösterir + PDF indirme/paylaşma.
+//
+// FAZ — Takvimli Görünüm: Veli artık üstteki ay takviminden istediği güne
+// dokunup o günün programını saatli, dikey bir zaman çizelgesinde
+// görebiliyor. Programı olan günler takvimde noktayla işaretli. Aylık
+// PDF indirme/paylaşma özelliği aynen korunuyor (görüntülenen aya göre).
 // ============================================================
-import React, { useMemo } from 'react';
-import { View, Text } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME } from './parentShared';
-import { formatDisplayDate } from '../../utils/dateFormat';
+import { ScreenShell, EmptyState, LoadingScreen, useNodeList, useParentBase, styles, THEME, toDateKey, getMonthKey } from './parentShared';
+import { ETKINLIK_KATEGORILERI } from '../../constants';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 
 const NODE_PATH = 'dersProgramlari';
 const KAYNAK = 'admin_aylik';
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function getCurrentMonthKey() {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${date.getFullYear()}-${month}`;
+// Kategoriye göre sabit bir renk ataması. Tüm temalarda ortak bulunan
+// token'lar kullanılıyor (primary/secondary/orange/green/blue/muted),
+// böylece hangi kreş teması seçili olursa olsun kırılmadan çalışır.
+const CATEGORY_COLOR_KEY = {
+  sanat: 'secondary',
+  drama: 'secondary',
+  muzik: 'blue',
+  matematik: 'blue',
+  hareket: 'green',
+  fen: 'orange',
+  dil: 'primary',
+  diger: 'muted',
+};
+
+function getCategoryMeta(kategori) {
+  const found = ETKINLIK_KATEGORILERI.find((item) => item.key === kategori);
+  const colorKey = CATEGORY_COLOR_KEY[kategori] || 'primary';
+  return {
+    label: found?.label || kategori || '',
+    emoji: found?.emoji || '📌',
+    color: THEME[colorKey] || THEME.primary,
+  };
+}
+
+// "09:30" ya da "09:30 - 10:30" gibi metinlerden başlangıç dakikasını
+// çıkarır; sıralama için kullanılıyor. Parse edilemezse null döner.
+function parseTimeToMinutes(value) {
+  const match = /^(\d{1,2}):(\d{2})/.exec(String(value || '').trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
 }
 
 function formatMonthLabel(monthKey, t) {
@@ -29,21 +64,100 @@ function formatMonthLabel(monthKey, t) {
   return `${monthName} ${year || ''}`.trim();
 }
 
+function shiftMonthKey(monthKey, delta) {
+  const [yearStr, monthStr] = String(monthKey || '').split('-');
+  const date = new Date(Number(yearStr), Number(monthStr) - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatSelectedDateLabel(dateKey, isToday, t) {
+  const [year, month, day] = String(dateKey || '').split('-');
+  const base = year && month && day ? `${day}.${month}.${year}` : dateKey;
+  return isToday ? `${t('common.today')} · ${base}` : base;
+}
+
+// Pazartesi başlangıçlı 6 haftalık (42 hücre) takvim ızgarası üretir; ayın
+// dışındaki günler de (önceki/sonraki ay) soluk dolgu olarak eklenir.
+function buildCalendarCells(monthKey) {
+  const [yearStr, monthStr] = String(monthKey || '').split('-');
+  const year = Number(yearStr);
+  const monthIndex = Number(monthStr) - 1;
+  const firstOfMonth = new Date(year, monthIndex, 1);
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // 0=Pazartesi ... 6=Pazar
+
+  const cells = [];
+  for (let i = firstWeekday - 1; i >= 0; i -= 1) {
+    cells.push({ date: new Date(year, monthIndex, -i), inMonth: false });
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push({ date: new Date(year, monthIndex, day), inMonth: true });
+  }
+  while (cells.length < 42) {
+    const last = cells[cells.length - 1].date;
+    cells.push({ date: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1), inMonth: false });
+  }
+  return cells;
+}
+
 export default function ParentScheduleScreen({ navigation }) {
   const { t } = useTranslation();
   const { loading, selectedChild, kresId, sinifId } = useParentBase();
   const records = useNodeList(NODE_PATH, kresId);
 
-  const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
+  const [displayMonthKey, setDisplayMonthKey] = useState(() => getMonthKey(new Date()));
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
 
-  const monthlySchedule = useMemo(() => {
-    return records
-      .filter((item) => item.aktif !== false)
-      .filter((item) => item.kaynak === KAYNAK)
-      .filter((item) => item.ayKey === currentMonthKey)
-      .filter((item) => !item.sinifId || item.sinifId === sinifId)
-      .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
-  }, [records, currentMonthKey, sinifId]);
+  // Program girilmiş günleri işaretlemek için tüm tarihleri (görüntülenen
+  // ayla sınırlamadan) bir sette topluyoruz — takvim önceki/sonraki ayın
+  // taşan hücrelerini de kapsıyor.
+  const scheduledDateSet = useMemo(() => {
+    const set = new Set();
+    records.forEach((item) => {
+      if (item.aktif === false) return;
+      if (item.kaynak !== KAYNAK) return;
+      if (item.sinifId && item.sinifId !== sinifId) return;
+      const entries = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
+      const hasContent = entries.some((entry) => String(entry?.etkinlik || '').trim());
+      if (hasContent && item.tarih) set.add(item.tarih);
+    });
+    return set;
+  }, [records, sinifId]);
+
+  const selectedDayEntries = useMemo(() => {
+    const match = records.find((item) =>
+      item.aktif !== false &&
+      item.kaynak === KAYNAK &&
+      (!item.sinifId || item.sinifId === sinifId) &&
+      item.tarih === selectedDateKey
+    );
+    const list = Array.isArray(match?.etkinlikler) ? match.etkinlikler : [];
+    return list
+      .filter((entry) => String(entry?.etkinlik || '').trim())
+      .map((entry, index) => ({
+        id: `${match?.id || 'ders'}-${index}`,
+        baslik: entry.etkinlik,
+        kategori: entry.kategori || '',
+        tema: entry.tema || '',
+        aciklama: entry.aciklama || '',
+        baslangicSaati: entry.baslangicSaati || '',
+        bitisSaati: entry.bitisSaati || '',
+        saat: entry.baslangicSaati
+          ? `${entry.baslangicSaati}${entry.bitisSaati ? ` - ${entry.bitisSaati}` : ''}`
+          : '',
+      }))
+      .sort((a, b) => {
+        const aStart = parseTimeToMinutes(a.baslangicSaati);
+        const bStart = parseTimeToMinutes(b.baslangicSaati);
+        if (aStart === null && bStart === null) return 0;
+        if (aStart === null) return 1;
+        if (bStart === null) return -1;
+        return aStart - bStart;
+      });
+  }, [records, sinifId, selectedDateKey]);
+
+  const calendarCells = useMemo(() => buildCalendarCells(displayMonthKey), [displayMonthKey]);
 
   if (loading) return <LoadingScreen text={t('parent.schedule.loading')} />;
 
@@ -53,9 +167,64 @@ export default function ParentScheduleScreen({ navigation }) {
         <EmptyState icon="👧" title={t('parent.schedule.noChildTitle')} desc={t('parent.schedule.noChildDesc')} />
       ) : (
         <>
-          <View style={localStyles.monthInfoCard}>
-            <Text style={localStyles.monthInfoTitle}>📘 {t('parent.schedule.monthlyProgramTitle', { month: formatMonthLabel(currentMonthKey, t) })}</Text>
-            <Text style={localStyles.monthInfoText}>{t('parent.schedule.monthlyProgramDesc')}</Text>
+          <View style={localStyles.calCard}>
+            <View style={localStyles.calHead}>
+              <TouchableOpacity
+                style={localStyles.calNavBtn}
+                onPress={() => setDisplayMonthKey((prev) => shiftMonthKey(prev, -1))}
+                activeOpacity={0.7}
+              >
+                <Text style={localStyles.calNavText}>‹</Text>
+              </TouchableOpacity>
+              <Text style={localStyles.calMonthLabel}>{formatMonthLabel(displayMonthKey, t)}</Text>
+              <TouchableOpacity
+                style={localStyles.calNavBtn}
+                onPress={() => setDisplayMonthKey((prev) => shiftMonthKey(prev, 1))}
+                activeOpacity={0.7}
+              >
+                <Text style={localStyles.calNavText}>›</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={localStyles.calDowRow}>
+              {WEEKDAY_KEYS.map((key) => (
+                <Text key={key} style={localStyles.calDow}>{t(`common.weekdaysShort.${key}`)}</Text>
+              ))}
+            </View>
+
+            <View style={localStyles.calGrid}>
+              {calendarCells.map(({ date, inMonth }, index) => {
+                const dateKey = toDateKey(date);
+                const isSelected = dateKey === selectedDateKey;
+                const isToday = dateKey === todayKey;
+                const hasSchedule = scheduledDateSet.has(dateKey);
+                return (
+                  <TouchableOpacity
+                    key={`${dateKey}-${index}`}
+                    style={[
+                      localStyles.calDayCell,
+                      isSelected ? { backgroundColor: THEME.primary } : null,
+                      !isSelected && isToday ? { borderWidth: 1.5, borderColor: THEME.primary } : null,
+                    ]}
+                    onPress={() => setSelectedDateKey(dateKey)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        localStyles.calDayText,
+                        !inMonth ? { color: THEME.border } : null,
+                        isSelected ? { color: '#FFFFFF' } : null,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                    {hasSchedule ? (
+                      <View style={[localStyles.calDot, { backgroundColor: isSelected ? '#FFFFFF' : THEME.primary }]} />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           <MonthlyDocumentPdfBar
@@ -63,15 +232,45 @@ export default function ParentScheduleScreen({ navigation }) {
             nodePath={NODE_PATH}
             kaynak={KAYNAK}
             docType="ders"
-            monthKey={currentMonthKey}
-            monthLabel={formatMonthLabel(currentMonthKey, t)}
+            monthKey={displayMonthKey}
+            monthLabel={formatMonthLabel(displayMonthKey, t)}
             theme={THEME}
           />
 
-          {monthlySchedule.length === 0 ? (
-            <EmptyState icon="📘" title={t('parent.schedule.emptyTitle')} desc={t('parent.schedule.emptyDesc', { month: formatMonthLabel(currentMonthKey, t) })} />
+          <View style={localStyles.selectedDatePill}>
+            <Text style={localStyles.selectedDatePillText}>
+              📅 {formatSelectedDateLabel(selectedDateKey, selectedDateKey === todayKey, t)}
+            </Text>
+          </View>
+
+          {selectedDayEntries.length === 0 ? (
+            <EmptyState icon="📘" title={t('parent.schedule.emptyDayTitle')} desc={t('parent.schedule.emptyDayDesc')} />
           ) : (
-            monthlySchedule.map((item) => <ScheduleCard key={item.id} item={item} t={t} />)
+            <View style={localStyles.timeline}>
+              {selectedDayEntries.map((entry, index) => {
+                const isLast = index === selectedDayEntries.length - 1;
+                const meta = getCategoryMeta(entry.kategori);
+                return (
+                  <View key={entry.id} style={localStyles.timelineItem}>
+                    <View style={localStyles.timelineRail}>
+                      <View style={[localStyles.timelineDot, { backgroundColor: meta.color, borderColor: meta.color }]} />
+                      {!isLast ? <View style={[localStyles.timelineLine, { backgroundColor: THEME.border }]} /> : null}
+                    </View>
+                    <View style={[styles.card, localStyles.timelineCard]}>
+                      <View style={localStyles.timelineCardHead}>
+                        <Text style={[localStyles.categoryBadge, { color: meta.color, backgroundColor: THEME.primarySoft }]}>
+                          {meta.emoji} {meta.label}
+                        </Text>
+                        {entry.saat ? <Text style={localStyles.timelineTime}>{entry.saat}</Text> : null}
+                      </View>
+                      <Text style={[styles.cardTitle, { marginTop: 7, fontSize: 14.5 }]}>{entry.baslik}</Text>
+                      {entry.tema ? <Text style={[styles.cardText, { marginTop: 3 }]}>🎨 {t('parent.schedule.theme')}: {entry.tema}</Text> : null}
+                      {entry.aciklama ? <Text style={[styles.cardText, { marginTop: 3 }]}>{entry.aciklama}</Text> : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           )}
         </>
       )}
@@ -79,48 +278,42 @@ export default function ParentScheduleScreen({ navigation }) {
   );
 }
 
-function ScheduleCard({ item, t }) {
-  // FAZ — Çoklu Etkinlik Girişi: gün artık `etkinlikler` dizisi tutuyor.
-  const etkinlikler = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardText}>📅 {formatDisplayDate(item.tarih)}</Text>
-      {etkinlikler.length === 0 ? (
-        <Text style={[styles.cardTitle, { marginTop: 8 }]}>{t('parent.schedule.title')}</Text>
-      ) : (
-        etkinlikler.map((it, index) => (
-          <View key={index} style={index > 0 ? { marginTop: 12 } : { marginTop: 8 }}>
-            <Text style={[styles.badge, { backgroundColor: THEME.primarySoft, color: THEME.primary }]}>
-              {it.kategori || t('parent.schedule.defaultCategory')}
-            </Text>
-            <Text style={[styles.cardTitle, { marginTop: 8 }]}>{it.etkinlik || t('parent.schedule.title')}</Text>
-            {it.tema ? <Text style={styles.cardText}>🎨 {t('parent.schedule.theme')}: {it.tema}</Text> : null}
-            {it.aciklama ? <Text style={styles.cardText}>{it.aciklama}</Text> : null}
-          </View>
-        ))
-      )}
-    </View>
-  );
-}
-
 const localStyles = {
-  monthInfoCard: {
-    backgroundColor: THEME.primarySoft,
-    borderRadius: 18,
+  calCard: {
+    backgroundColor: THEME.card,
+    borderRadius: 20,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: THEME.border,
   },
-  monthInfoTitle: {
-    color: THEME.primary,
-    fontWeight: '900',
-    fontSize: 15,
-  },
-  monthInfoText: {
-    color: THEME.muted,
-    fontWeight: '700',
-    fontSize: 12,
+  calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  calNavBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.primarySoft },
+  calNavText: { color: THEME.primary, fontWeight: '900', fontSize: 17, marginTop: -2 },
+  calMonthLabel: { color: THEME.text, fontWeight: '900', fontSize: 14.5 },
+  calDowRow: { flexDirection: 'row', marginBottom: 4 },
+  calDow: { flex: 1, textAlign: 'center', color: THEME.muted, fontWeight: '800', fontSize: 10.5, paddingBottom: 4 },
+  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calDayCell: { width: `${100 / 7}%`, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, marginVertical: 1 },
+  calDayText: { color: THEME.text, fontWeight: '800', fontSize: 12.5 },
+  calDot: { width: 4, height: 4, borderRadius: 2, marginTop: 3 },
+  selectedDatePill: {
+    alignSelf: 'flex-start',
+    backgroundColor: THEME.primarySoft,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 12,
     marginTop: 4,
   },
+  selectedDatePillText: { color: THEME.primary, fontWeight: '800', fontSize: 12 },
+  timeline: { marginTop: 2 },
+  timelineItem: { flexDirection: 'row', alignItems: 'stretch' },
+  timelineRail: { width: 22, alignItems: 'center' },
+  timelineDot: { width: 13, height: 13, borderRadius: 7, marginTop: 5, borderWidth: 2.5 },
+  timelineLine: { width: 2, flex: 1, marginTop: 2, marginBottom: -8, opacity: 0.5, borderRadius: 1 },
+  timelineCard: { flex: 1, marginLeft: 9, marginBottom: 10 },
+  timelineCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  categoryBadge: { fontSize: 10, fontWeight: '900', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 99, overflow: 'hidden' },
+  timelineTime: { color: THEME.muted, fontSize: 11, fontWeight: '800' },
 };
