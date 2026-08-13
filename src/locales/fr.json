@@ -17,6 +17,15 @@
       "oct": "Octobre",
       "nov": "Novembre",
       "dec": "Décembre"
+    },
+    "weekdaysShort": {
+      "mon": "Lu",
+      "tue": "Ma",
+      "wed": "Me",
+      "thu": "Je",
+      "fri": "Ve",
+      "sat": "Sa",
+      "sun": "Di"
     }
   },
   "nav": {
@@ -262,6 +271,8 @@
       "monthlyProgramDesc": "Le programme mensuel publié par l'enseignant/administrateur.",
       "emptyTitle": "Aucun emploi du temps",
       "emptyDesc": "Aucun emploi du temps n'a encore été publié pour {{month}}.",
+      "emptyDayTitle": "Aucun programme pour ce jour",
+      "emptyDayDesc": "Aucun emploi du temps n'a encore été saisi pour le jour sélectionné.",
       "defaultCategory": "Cours",
       "theme": "Thème",
       "monthFallback": "Mois"
@@ -343,6 +354,8 @@
       "todaysProgramDesc": "Extrait de l'emploi du temps et des enregistrements d'activités.",
       "noProgramToday": "Aucun emploi du temps ni activité n'a été saisi pour aujourd'hui.",
       "program": "Programme",
+      "scheduleDone": "Terminé",
+      "scheduleCurrent": "En cours",
       "otherSummariesTitle": "Autres résumés",
       "otherSummariesAction": "Voir tout",
       "dailyReport": "Rapport quotidien",
