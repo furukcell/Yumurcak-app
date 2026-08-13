@@ -17,6 +17,15 @@
       "oct": "October",
       "nov": "November",
       "dec": "December"
+    },
+    "weekdaysShort": {
+      "mon": "Mo",
+      "tue": "Tu",
+      "wed": "We",
+      "thu": "Th",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "Su"
     }
   },
   "nav": {
@@ -262,6 +271,8 @@
       "monthlyProgramDesc": "The monthly schedule published by the teacher/admin.",
       "emptyTitle": "No lesson schedule",
       "emptyDesc": "No lesson schedule has been published for {{month}} yet.",
+      "emptyDayTitle": "No schedule for this day",
+      "emptyDayDesc": "No lesson schedule has been entered for the selected day yet.",
       "defaultCategory": "Lesson",
       "theme": "Theme",
       "monthFallback": "Month"
@@ -343,6 +354,8 @@
       "todaysProgramDesc": "Pulled from the lesson schedule and activity records.",
       "noProgramToday": "No schedule or activity has been entered for today.",
       "program": "Program",
+      "scheduleDone": "Completed",
+      "scheduleCurrent": "Happening now",
       "otherSummariesTitle": "Other Summaries",
       "otherSummariesAction": "See all",
       "dailyReport": "Daily report",
