@@ -17,6 +17,15 @@
       "oct": "Oktober",
       "nov": "November",
       "dec": "Dezember"
+    },
+    "weekdaysShort": {
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "So"
     }
   },
   "nav": {
@@ -262,6 +271,8 @@
       "monthlyProgramDesc": "Der von Lehrkraft/Administrator veröffentlichte Monatsplan.",
       "emptyTitle": "Kein Stundenplan",
       "emptyDesc": "Für {{month}} wurde noch kein Stundenplan veröffentlicht.",
+      "emptyDayTitle": "Für diesen Tag gibt es keinen Plan",
+      "emptyDayDesc": "Für den ausgewählten Tag wurde noch kein Stundenplan eingetragen.",
       "defaultCategory": "Stunde",
       "theme": "Thema",
       "monthFallback": "Monat"
@@ -343,6 +354,8 @@
       "todaysProgramDesc": "Aus Stundenplan und Aktivitätseinträgen zusammengestellt.",
       "noProgramToday": "Für heute wurde kein Ablauf oder keine Aktivität eingetragen.",
       "program": "Programm",
+      "scheduleDone": "Abgeschlossen",
+      "scheduleCurrent": "Läuft gerade",
       "otherSummariesTitle": "Weitere Übersichten",
       "otherSummariesAction": "Alle ansehen",
       "dailyReport": "Tagesbericht",
