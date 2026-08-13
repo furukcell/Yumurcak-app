@@ -17,6 +17,15 @@
       "oct": "Ekim",
       "nov": "Kasım",
       "dec": "Aralık"
+    },
+    "weekdaysShort": {
+      "mon": "Pt",
+      "tue": "Sa",
+      "wed": "Ça",
+      "thu": "Pe",
+      "fri": "Cu",
+      "sat": "Ct",
+      "sun": "Pz"
     }
   },
   "nav": {
@@ -262,6 +271,8 @@
       "monthlyProgramDesc": "Öğretmen/yönetici tarafından yayınlanan aylık program.",
       "emptyTitle": "Ders programı yok",
       "emptyDesc": "{{month}} için henüz bir ders programı yayınlanmadı.",
+      "emptyDayTitle": "Bu gün için program yok",
+      "emptyDayDesc": "Seçili gün için henüz bir ders programı girilmedi.",
       "defaultCategory": "Ders",
       "theme": "Tema",
       "monthFallback": "Ay"
@@ -343,6 +354,8 @@
       "todaysProgramDesc": "Ders programı ve etkinlik kayıtlarından çekilir.",
       "noProgramToday": "Bugün için program veya etkinlik girilmedi.",
       "program": "Program",
+      "scheduleDone": "Tamamlandı",
+      "scheduleCurrent": "Şimdi sürüyor",
       "otherSummariesTitle": "Diğer Özetler",
       "otherSummariesAction": "Tümünü gör",
       "dailyReport": "Günlük rapor",
