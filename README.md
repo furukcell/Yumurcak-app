@@ -532,9 +532,9 @@ Altyapı:
 
 | Paket       | Öğrenci |    Aylık |    Yıllık |
 | ----------- | ------: | -------: | --------: |
-| Başlangıç   |    0–30 | 1.250 TL | 12.500 TL |
-| Profesyonel |   31–50 | 1.750 TL | 17.500 TL |
-| Kurum       |  51–100 | 2.750 TL | 27.500 TL |
+| Başlangıç   |    0–30 | 1.000 TL | 10.000 TL |
+| Profesyonel |   31–50 | 1.500 TL | 15.000 TL |
+| Kurum       |  51–100 | 3.000 TL | 30.0000 TL |
 | Kurumsal    |    100+ |     Özel |      Özel |
 
 > Pilot kurumlara özel başlangıç fiyatları ayrıca uygulanabilir.
@@ -653,6 +653,9 @@ Mevcut altyapı:
 ```txt
 Türkçe   ✅
 İngilizce kaynaklar  ✅
+Rusça kaynaklar  ✅
+Almanca kaynaklar  ✅
+Fransızca kaynaklar  ✅
 i18next  ✅
 LanguageContext  ✅
 Dil tercihi saklama  ✅
@@ -678,13 +681,8 @@ Ana ürün geliştirmesi tamamlanmıştır.
 
 Şu anda odak:
 
-### 1. Dil desteği
 
-```txt
-🟡 DEVAM EDİYOR
-```
-
-### 2. Gerçek cihaz testleri
+### 1. Gerçek cihaz testleri
 
 ```txt
 🟡 SON KONTROLLER
@@ -713,7 +711,7 @@ Kontrol edilecek temel akışlar:
 * Geçen ayı kopyalama
 * Arşiv
 
-### 3. Abonelik testi
+### 2. Abonelik testi
 
 ```txt
 🟡 SON KONTROL
@@ -724,13 +722,13 @@ Kontrol edilecek temel akışlar:
 * Restore
 * Firebase abonelik kaydı
 
-### 4. Firebase güvenlik kontrolü
+### 3. Firebase güvenlik kontrolü
 
 ```txt
 🟡 SON AUDIT
 ```
 
-### 5. Pilot kurumlar
+### 4. Pilot kurumlar
 
 ```txt
 🟡 HAZIRLANIYOR
@@ -830,8 +828,6 @@ Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
 
 ## Faz 9 — Çoklu Dil
 
-**🟡 DEVAM EDİYOR**
-
 * i18n altyapısı
 * Türkçe kaynaklar
 * İngilizce kaynaklar
@@ -840,9 +836,11 @@ Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
 * Dil seçici
 * Uçtan uca dil testi
 
-## Faz 10 — Pilot & Ölçekleme
+  **TAMAMLANDI ✅**
 
-**🟡 SIRADAKİ ANA AŞAMA**
+## Faz 10 — Pilot & Ölçekleme **🟡 DEVAM EDİYOR**
+
+**🟡 SIRADAKİ  AŞAMA**
 
 ```txt
 Pilot kreşler
@@ -871,23 +869,22 @@ Ana hedef:
 Öncelik sırası:
 
 ```txt
-1. Dil desteğini tamamla
+
+1. Gerçek cihaz testlerini bitir
         ↓
-2. Gerçek cihaz testlerini bitir
+2. Firebase Rules son kontrol
         ↓
-3. Firebase Rules son kontrol
+3. RevenueCat / Google Play gerçek satın alma testi
         ↓
-4. RevenueCat / Google Play gerçek satın alma testi
+4. Pilot kreşleri sisteme al
         ↓
-5. Pilot kreşleri sisteme al
+5. Gerçek kullanım verisi topla
         ↓
-6. Gerçek kullanım verisi topla
+6. Hataları ve UX sorunlarını düzelt
         ↓
-7. Hataları ve UX sorunlarını düzelt
+7. İlk düzenli abonelikleri başlat
         ↓
-8. İlk düzenli abonelikleri başlat
-        ↓
-9. Satış ve büyüme
+8. Satış ve büyüme
 ```
 
 ---
@@ -942,7 +939,7 @@ Amaç; kreşin günlük operasyonundan veli iletişimine, doküman üretiminden 
 🟢 PDF / Döküman
 🟢 RevenueCat
 🟢 AI günlük özet
-🟡 Dil desteği
+🟢 Dil desteği
 🟡 Son gerçek cihaz testleri
 🟡 Pilot kurumlar
 ```
