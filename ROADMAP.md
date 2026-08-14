@@ -103,10 +103,10 @@
 
 1. 🇹🇷 Türkçe — Tamamlandı
 2. 🇬🇧 İngilizce — Veli tarafı tamamlandı
-3. 🇩🇪 Almanca
-4. 🇮🇹 İtalyanca
-5. 🇫🇷 Fransızca
-6. 🇷🇺 Rusça
+3. 🇩🇪 Almanca   - Veli tarafı tamamlandı
+4. 🇮🇹 İtalyanca  
+5. 🇫🇷 Fransızca  -Veli tarafı tamamlandı
+6. 🇷🇺 Rusça      -Veli tarafı tamamlandı
 7. 🇸🇦 Arapça
 
 ---
@@ -384,16 +384,19 @@ Yumurcak'ın farklı ülkelerde kullanılabilmesi için dil altyapısı kademeli
 🟡 Öğretmen + yönetici tarafı planlandı
 
 **3. Almanca**  
-⚪ Planlandı
+🟢 Veli tarafı tamamlandı  
+🟡 Öğretmen + yönetici tarafı planlandı
 
 **4. İtalyanca**  
 ⚪ Planlandı
 
 **5. Fransızca**  
-⚪ Planlandı
+🟢 Veli tarafı tamamlandı  
+🟡 Öğretmen + yönetici tarafı planlandı
 
 **6. Rusça**  
-⚪ Planlandı
+🟢 Veli tarafı tamamlandı  
+🟡 Öğretmen + yönetici tarafı planlandı
 
 **7. Arapça**  
 ⚪ Son aşama
@@ -438,10 +441,10 @@ Yumurcak'ın farklı ülkelerde kullanılabilmesi için dil altyapısı kademeli
 | İngilizce — Veli | 🟢 Tamamlandı |
 | İngilizce — Öğretmen | ⚪ Planlandı |
 | İngilizce — Yönetici | ⚪ Planlandı |
-| Almanca | ⚪ Planlandı |
-| İtalyanca | ⚪ Planlandı |
+| Almanca |  Veli | 🟢 Tamamlandı |⚪ Planlandı |
+| İtalyanca |  Veli | 🟢 Tamamlandı | ⚪ Planlandı |
 | Fransızca | ⚪ Planlandı |
-| Rusça | ⚪ Planlandı |
+| Rusça |  Veli | 🟢 Tamamlandı ⚪ Planlandı |
 | Arapça | ⚪ Planlandı |
 
 ---
