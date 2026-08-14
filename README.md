@@ -34,7 +34,7 @@ Duyuru / Anket             ✅
 Ödeme takibi               ✅
 Abonelik altyapısı         ✅
 AI günlük özet             ✅
-Dil desteği                🟡 DEVAM EDİYOR
+Dil desteği                ✅
 Pilot kurumlar             🟡 HAZIRLANIYOR
 Son gerçek cihaz testleri  🟡 DEVAM EDİYOR
 ```
