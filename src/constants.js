@@ -33,6 +33,7 @@ export const ROLLER = {
   YONETICI:   'yonetici',
   OGRETMEN:   'ogretmen',
   VELI:       'veli',
+  SERVISCI:   'servisci',
 };
 
 // ============================================================
