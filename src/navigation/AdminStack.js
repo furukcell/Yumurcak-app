@@ -30,6 +30,8 @@ import AdminMonthlyMealScreen from '../screens/admin/AdminMonthlyMealScreen';
 import AdminMonthlyStaffTasksScreen from '../screens/admin/AdminMonthlyStaffTasksScreen';
 import AdminMonthlyDutyRosterScreen from '../screens/admin/AdminMonthlyDutyRosterScreen';
 import AdminServiceScreen from '../screens/admin/AdminServiceScreen';
+import AdminVehicleListScreen from '../screens/admin/AdminVehicleListScreen';
+import AdminVehicleFormScreen from '../screens/admin/AdminVehicleFormScreen';
 import AdminBirthdayCalendarScreen from '../screens/admin/AdminBirthdayCalendarScreen';
 import AdminMonthlyScheduleScreen from '../screens/admin/AdminMonthlyScheduleScreen';
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
@@ -54,6 +56,8 @@ export default function AdminStack() {
     stackScreen('AdminMonthlyStaffTasks', AdminMonthlyStaffTasksScreen, { title: 'Personel Görev Listesi' }),
     stackScreen('AdminMonthlyDutyRoster', AdminMonthlyDutyRosterScreen, { title: 'Nöbet Çizelgesi' }),
     stackScreen('AdminService', AdminServiceScreen, { title: 'Servis Listesi' }),
+    stackScreen('AdminVehicleList', AdminVehicleListScreen, { headerShown: false }),
+    stackScreen('AdminVehicleForm', AdminVehicleFormScreen, { title: 'Servis Aracı Ekle/Düzenle' }),
     stackScreen('AdminBirthdayCalendar', AdminBirthdayCalendarScreen, { title: 'Doğum Günü Takvimi' }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
