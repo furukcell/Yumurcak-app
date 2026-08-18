@@ -43,10 +43,16 @@ export default function AdminServiceScreen({ navigation }) {
   const [children, setChildren] = useState([]);
   const [sinifMap, setSinifMap] = useState({});
   const [serviceMap, setServiceMap] = useState({});
+  const [vehicles, setVehicles] = useState([]);
   const [drafts, setDrafts] = useState({});
   const [savingId, setSavingId] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
+
+  const vehicleMap = useMemo(
+    () => Object.fromEntries(vehicles.map((v) => [v.id, v])),
+    [vehicles]
+  );
 
   // Çocuklar + sınıf adları
   useEffect(() => {
@@ -94,7 +100,19 @@ export default function AdminServiceScreen({ navigation }) {
       setServiceMap(snap.val() || {});
     });
 
-    return () => { unsub(); sinifUnsub(); serviceUnsub(); };
+    const vehiclesQuery = query(ref(database, 'servisler'), orderByChild('kresId'), equalTo(kresId));
+    const vehiclesUnsub = onValue(
+      vehiclesQuery,
+      (snap) => {
+        const data = snap.val() || {};
+        const list = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+        list.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
+        setVehicles(list);
+      },
+      () => setVehicles([])
+    );
+
+    return () => { unsub(); sinifUnsub(); serviceUnsub(); vehiclesUnsub(); };
   }, [kresId]);
 
   useEffect(() => {
@@ -103,6 +121,7 @@ export default function AdminServiceScreen({ navigation }) {
       const info = serviceMap[child.id] || {};
       next[child.id] = {
         servisKullaniyor: info.servisKullaniyor || false,
+        servisId: info.servisId || '',
         alisSaati: info.alisSaati || '',
         birakisSaati: info.birakisSaati || '',
         servisNotu: info.servisNotu || '',
@@ -123,6 +142,7 @@ export default function AdminServiceScreen({ navigation }) {
       await update(ref(database, `servisBilgileri/${childId}`), {
         kresId,
         servisKullaniyor: !!draft.servisKullaniyor,
+        servisId: draft.servisId || '',
         alisSaati: draft.alisSaati.trim(),
         birakisSaati: draft.birakisSaati.trim(),
         servisNotu: draft.servisNotu.trim(),
@@ -150,13 +170,17 @@ export default function AdminServiceScreen({ navigation }) {
     setExporting(true);
     try {
       const kres = await fetchInstitutionInfo(kresId);
-      const records = serviceChildren.map((child) => ({
-        ad: `${child.ad || ''} ${child.soyad || ''}`.trim(),
-        sinifAd: sinifMap[child.sinifId] || '',
-        alisSaati: drafts[child.id]?.alisSaati || '',
-        birakisSaati: drafts[child.id]?.birakisSaati || '',
-        servisNotu: drafts[child.id]?.servisNotu || '',
-      }));
+      const records = serviceChildren.map((child) => {
+        const vehicle = vehicleMap[drafts[child.id]?.servisId];
+        return {
+          ad: `${child.ad || ''} ${child.soyad || ''}`.trim(),
+          sinifAd: sinifMap[child.sinifId] || '',
+          servisAd: vehicle ? (vehicle.ad || vehicle.plaka || '') : '',
+          alisSaati: drafts[child.id]?.alisSaati || '',
+          birakisSaati: drafts[child.id]?.birakisSaati || '',
+          servisNotu: drafts[child.id]?.servisNotu || '',
+        };
+      });
       const html = buildServiceListHtml({ kres, records });
       if (mode === 'print') await printMonthlyDocument(html);
       else await shareMonthlyDocumentPdf(html, 'Servis Listesi');
@@ -203,7 +227,7 @@ export default function AdminServiceScreen({ navigation }) {
             <Text style={styles.emptyText}>Kayıtlı çocuk yok.</Text>
           ) : (
             children.map((child) => {
-              const draft = drafts[child.id] || { servisKullaniyor: false, alisSaati: '', birakisSaati: '', servisNotu: '' };
+              const draft = drafts[child.id] || { servisKullaniyor: false, servisId: '', alisSaati: '', birakisSaati: '', servisNotu: '' };
               return (
                 <View key={child.id} style={styles.card}>
                   <View style={styles.cardHeaderRow}>
@@ -220,6 +244,33 @@ export default function AdminServiceScreen({ navigation }) {
 
                   {draft.servisKullaniyor ? (
                     <>
+                      {vehicles.length === 0 ? (
+                        <TouchableOpacity
+                          style={styles.noVehicleBox}
+                          onPress={() => navigation.navigate('AdminVehicleList')}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.noVehicleText}>⚠️ Henüz servis aracı eklenmedi. Araç eklemek için dokun.</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.vehicleChipRow}>
+                          {vehicles.map((vehicle) => {
+                            const active = draft.servisId === vehicle.id;
+                            return (
+                              <TouchableOpacity
+                                key={vehicle.id}
+                                style={[styles.vehicleChip, active && styles.vehicleChipActive]}
+                                onPress={() => updateDraft(child.id, 'servisId', active ? '' : vehicle.id)}
+                                activeOpacity={0.85}
+                              >
+                                <Text style={[styles.vehicleChipText, active && styles.vehicleChipTextActive]}>
+                                  {vehicle.ad || vehicle.plaka}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
                       <View style={styles.inputRow}>
                         <TextInput
                           value={draft.alisSaati}
@@ -285,6 +336,13 @@ function createStyles(theme) {
     cardHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
     childName: { fontSize: 15, fontWeight: '900', color: theme.text },
     childClass: { fontSize: 12, fontWeight: '700', color: theme.muted, marginTop: 2 },
+    noVehicleBox: { backgroundColor: theme.primarySoft, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 10, marginBottom: 8 },
+    noVehicleText: { color: theme.primary, fontWeight: '700', fontSize: 12 },
+    vehicleChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+    vehicleChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.bg },
+    vehicleChipActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+    vehicleChipText: { color: theme.text, fontWeight: '700', fontSize: 12 },
+    vehicleChipTextActive: { color: '#fff' },
     inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
     inputFlex: { flex: 1 },
     input: { minHeight: 42, backgroundColor: theme.bg, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, color: theme.text, fontWeight: '700', marginBottom: 8 },
