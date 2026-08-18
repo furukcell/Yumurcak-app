@@ -655,7 +655,13 @@
       "statusValue": "Пользуется транспортом",
       "pickupTimeLabel": "Время посадки",
       "dropoffTimeLabel": "Время высадки",
-      "noteLabel": "Заметка"
+      "noteLabel": "Заметка",
+      "todayTitle": "Статус транспорта сегодня",
+      "pickedUpLabel": "Забрали",
+      "arrivedLabel": "Прибыл в учреждение",
+      "droppedOffLabel": "Доставлен домой",
+      "notYetLabel": "Пока не отмечено",
+      "vehicleLabel": "Транспортное средство"
     },
     "support": {
       "loading": "Готовим раздел поддержки...",
