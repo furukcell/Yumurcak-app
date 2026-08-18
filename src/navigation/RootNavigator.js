@@ -13,6 +13,7 @@ import AdminStack from './AdminStack';
 import TeacherStack from './TeacherStack';
 import ParentStack from './ParentStack';
 import SuperAdminStack from './SuperAdminStack';
+import ServisciStack from './ServisciStack';
 
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import SubscriptionBlockedScreen from '../screens/shared/SubscriptionBlockedScreen';
@@ -176,7 +177,7 @@ export default function RootNavigator() {
       return withTheme(<AdminSubscriptionScreen />);
     }
 
-    if (role === ROLLER.OGRETMEN || role === ROLLER.VELI) {
+    if (role === ROLLER.OGRETMEN || role === ROLLER.VELI || role === ROLLER.SERVISCI) {
       return withTheme(<SubscriptionBlockedScreen subscription={subscription} />);
     }
   }
@@ -188,6 +189,8 @@ export default function RootNavigator() {
       return withTheme(<TeacherStack />);
     case ROLLER.VELI:
       return withTheme(<ParentStack />);
+    case ROLLER.SERVISCI:
+      return withTheme(<ServisciStack />);
     default:
       return <AuthStack />;
   }
