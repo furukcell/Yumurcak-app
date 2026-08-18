@@ -410,6 +410,7 @@ export function buildServiceListHtml({ kres, records }) {
     <tr>
       <td>${escapeHtml(item.ad || '')}</td>
       <td>${escapeHtml(item.sinifAd || '')}</td>
+      <td>${escapeHtml(item.servisAd || '')}</td>
       <td>${escapeHtml(item.alisSaati || '')}</td>
       <td>${escapeHtml(item.birakisSaati || '')}</td>
       <td>${escapeHtml(item.servisNotu || '')}</td>
@@ -417,8 +418,8 @@ export function buildServiceListHtml({ kres, records }) {
 
   const bodyHtml = `
     <table>
-      <thead><tr><th>Çocuk</th><th>Sınıf</th><th>Alış Saati</th><th>Bırakış Saati</th><th>Not</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="5" class="empty">Servis kullanan çocuk kaydı yok.</td></tr>'}</tbody>
+      <thead><tr><th>Çocuk</th><th>Sınıf</th><th>Servis Aracı</th><th>Alış Saati</th><th>Bırakış Saati</th><th>Not</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" class="empty">Servis kullanan çocuk kaydı yok.</td></tr>'}</tbody>
     </table>
   `;
 
