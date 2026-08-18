@@ -655,7 +655,13 @@
       "statusValue": "Servis kullanıyor",
       "pickupTimeLabel": "Alış saati",
       "dropoffTimeLabel": "Bırakış saati",
-      "noteLabel": "Not"
+      "noteLabel": "Not",
+      "todayTitle": "Bugünkü Servis Durumu",
+      "pickedUpLabel": "Servise alındı",
+      "arrivedLabel": "Kuruma vardı",
+      "droppedOffLabel": "Evine bırakıldı",
+      "notYetLabel": "Henüz işaretlenmedi",
+      "vehicleLabel": "Servis Aracı"
     },
     "support": {
       "loading": "Destek hazırlanıyor...",
