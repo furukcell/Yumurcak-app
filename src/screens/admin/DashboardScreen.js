@@ -72,16 +72,26 @@ const MENU_CATEGORIES = [
   {
     key: 'program',
     title: 'Program & Takvim',
-    subtitle: 'Ders, etkinlik, yemek, servis, doğum günü',
+    subtitle: 'Ders, etkinlik, yemek, doğum günü',
     icon: '🗓️',
     iconBg: '#FFF4E0',
     items: [
       { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', color: THEME.purple },
       { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', color: '#E67E22' },
       { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', color: THEME.orange },
+      { title: 'Doğum Günü Takvimi', icon: '🎂', screen: 'AdminBirthdayCalendar', color: THEME.orange },
+    ],
+  },
+  {
+    key: 'servis',
+    title: 'Servis',
+    subtitle: 'Servis listesi, araçlar, günlük durum',
+    icon: '🚌',
+    iconBg: '#E8F0FF',
+    items: [
       { title: 'Servis Listesi', icon: '🚌', screen: 'AdminService', color: THEME.blue },
       { title: 'Servis Araçları', icon: '🚐', screen: 'AdminVehicleList', color: THEME.blue },
-      { title: 'Doğum Günü Takvimi', icon: '🎂', screen: 'AdminBirthdayCalendar', color: THEME.orange },
+      { title: 'Servis Durumu', icon: '📊', screen: 'AdminServiceStats', color: THEME.blue },
     ],
   },
   {
