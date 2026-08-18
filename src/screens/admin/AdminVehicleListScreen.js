@@ -5,7 +5,7 @@
 // AdminServiceScreen'de çocuklar bu araçlara atanır (FAZ sonraki adım).
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ref, onValue, get, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -139,7 +139,7 @@ export default function AdminVehicleListScreen({ navigation }) {
 
 function createStyles(theme) {
   return StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: 'transparent' },
+    safeArea: { flex: 1, backgroundColor: 'transparent', paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
     screen: { flex: 1, backgroundColor: 'transparent' },
     content: { padding: 16, paddingBottom: 36 },
     header: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 },
