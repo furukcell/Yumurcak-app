@@ -655,7 +655,13 @@
       "statusValue": "Utilise le transport",
       "pickupTimeLabel": "Heure de prise en charge",
       "dropoffTimeLabel": "Heure de dépose",
-      "noteLabel": "Note"
+      "noteLabel": "Note",
+      "todayTitle": "Statut du service aujourd'hui",
+      "pickedUpLabel": "Récupéré",
+      "arrivedLabel": "Arrivé à la crèche",
+      "droppedOffLabel": "Déposé à la maison",
+      "notYetLabel": "Pas encore marqué",
+      "vehicleLabel": "Véhicule de service"
     },
     "support": {
       "loading": "Préparation de l'assistance...",
