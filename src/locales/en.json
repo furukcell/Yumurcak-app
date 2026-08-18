@@ -655,7 +655,13 @@
       "statusValue": "Using service",
       "pickupTimeLabel": "Pickup time",
       "dropoffTimeLabel": "Drop-off time",
-      "noteLabel": "Note"
+      "noteLabel": "Note",
+      "todayTitle": "Today's Service Status",
+      "pickedUpLabel": "Picked up",
+      "arrivedLabel": "Arrived at institution",
+      "droppedOffLabel": "Dropped off home",
+      "notYetLabel": "Not marked yet",
+      "vehicleLabel": "Service Vehicle"
     },
     "support": {
       "loading": "Preparing support...",
