@@ -80,6 +80,7 @@ const MENU_CATEGORIES = [
       { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', color: '#E67E22' },
       { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', color: THEME.orange },
       { title: 'Servis Listesi', icon: '🚌', screen: 'AdminService', color: THEME.blue },
+      { title: 'Servis Araçları', icon: '🚐', screen: 'AdminVehicleList', color: THEME.blue },
       { title: 'Doğum Günü Takvimi', icon: '🎂', screen: 'AdminBirthdayCalendar', color: THEME.orange },
     ],
   },
