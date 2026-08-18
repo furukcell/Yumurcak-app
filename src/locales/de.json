@@ -655,7 +655,13 @@
       "statusValue": "Nutzt den Transport",
       "pickupTimeLabel": "Abholzeit",
       "dropoffTimeLabel": "Bringzeit",
-      "noteLabel": "Notiz"
+      "noteLabel": "Notiz",
+      "todayTitle": "Heutiger Fahrdienststatus",
+      "pickedUpLabel": "Abgeholt",
+      "arrivedLabel": "In der Einrichtung angekommen",
+      "droppedOffLabel": "Zuhause abgesetzt",
+      "notYetLabel": "Noch nicht markiert",
+      "vehicleLabel": "Fahrdienstfahrzeug"
     },
     "support": {
       "loading": "Support wird vorbereitet...",
