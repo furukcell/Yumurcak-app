@@ -92,6 +92,7 @@ const MENU_CATEGORIES = [
       { title: 'Servis Listesi', icon: '🚌', screen: 'AdminService', color: THEME.blue },
       { title: 'Servis Araçları', icon: '🚐', screen: 'AdminVehicleList', color: THEME.blue },
       { title: 'Servis Durumu', icon: '📊', screen: 'AdminServiceStats', color: THEME.blue },
+      { title: 'Aylık Servis İstatistikleri', icon: '📈', screen: 'AdminServiceMonthlyStats', color: THEME.blue },
     ],
   },
   {
