@@ -58,6 +58,14 @@
           "color": "#6C3DEB",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Yumurcak, servis rotasında sıradaki durağa olan mesafeyi göstermek için konumunuzu kullanır.",
+          "locationWhenInUsePermission": "Yumurcak, servis rotasında sıradaki durağa olan mesafeyi göstermek için konumunuzu kullanır.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ]
   }
