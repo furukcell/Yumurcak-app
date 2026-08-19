@@ -4,7 +4,7 @@
 // Kahvaltı / Öğle / Ara Öğün: yemedi, az_yedi, bitirdi
 // FAZ 3: Bugün için zaten rapor girilmişse uyarı banner'ı
 // ============================================================
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -23,8 +23,9 @@ import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { MOOD_LISTESI } from '../../constants';
-import { THEME, ScreenHeader, getChildName, todayString } from './teacherShared';
+import { THEME, ScreenHeader, getChildName, todayString, useTeacherData } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { computeTodayMenuItems } from '../../utils/todayMenu';
 
 const MEAL_OPTIONS = [
   { key: 'yemedi', label: 'Yemedi' },
@@ -44,6 +45,29 @@ export default function ChildReportScreen() {
   const { child } = route.params || {};
   const { kullanici } = useAuth();
   const teacherId = kullanici?.uid || kullanici?.id;
+  const { kresId, currentClass, meals } = useTeacherData();
+
+  // FAZ — Ürün Bazlı Yemek Takibi: bugünün menüsündeki her ürün için ayrı
+  // Yedi/Yemedi tıklaması. Menü boşsa hiçbir şey gösterilmiyor, genel
+  // Yemedi/Az yedi/Bitirdi seçimi tek başına çalışmaya devam ediyor.
+  const todayMenuItems = useMemo(
+    () => computeTodayMenuItems({ meals, kresId, currentClass }),
+    [meals, kresId, currentClass]
+  );
+  // Her öğün için { [ürünAdı]: true (yedi) | false (yemedi) } — üründe hiç
+  // giriş yoksa işaretlenmemiş sayılır, kaydete zorunlu değil.
+  const [itemStatus, setItemStatus] = useState({ kahvalti: {}, ogle: {}, araOgun: {} });
+
+  const cycleItemStatus = (mealKey, itemName) => {
+    setItemStatus((prev) => {
+      const current = prev[mealKey]?.[itemName];
+      const next = { ...(prev[mealKey] || {}) };
+      if (current === undefined) next[itemName] = true; // işaretsiz -> yedi
+      else if (current === true) next[itemName] = false; // yedi -> yemedi
+      else delete next[itemName]; // yemedi -> işaretsiz
+      return { ...prev, [mealKey]: next };
+    });
+  };
 
   const [mood, setMood] = useState('');
   const [yemek, setYemek] = useState({
@@ -119,6 +143,15 @@ export default function ChildReportScreen() {
       const childSnap = await get(childRef);
       const childData = childSnap.val() || child;
 
+      const finalYemek = MEALS.reduce((acc, meal) => {
+        const urunler = itemStatus[meal.key] || {};
+        acc[meal.key] = {
+          ...yemek[meal.key],
+          ...(Object.keys(urunler).length > 0 ? { urunler } : {}),
+        };
+        return acc;
+      }, {});
+
       await push(ref(database, 'gunlukRaporlar'), {
         kresId: childData.kresId || kullanici?.kresId || '',
         cocukId: child.id,
@@ -128,7 +161,7 @@ export default function ChildReportScreen() {
         tarih: todayString(),
         ruhHali: mood,
         mood,
-        yemek,
+        yemek: finalYemek,
         uyku: { sure: Number(sleepDuration), not: '' },
         tuvalet: { sayi: Number(toiletCount), not: '' },
         not: note,
@@ -223,6 +256,33 @@ export default function ChildReportScreen() {
                 );
               })}
             </View>
+
+            {todayMenuItems[meal.key]?.length > 0 ? (
+              <View style={styles.itemChipRow}>
+                {todayMenuItems[meal.key].map((itemName) => {
+                  const status = itemStatus[meal.key]?.[itemName];
+                  const chipStyle = status === true
+                    ? styles.itemChipYedi
+                    : status === false
+                      ? styles.itemChipYemedi
+                      : styles.itemChipNeutral;
+                  const chipTextStyle = status === undefined ? styles.itemChipTextNeutral : styles.itemChipTextActive;
+
+                  return (
+                    <TouchableOpacity
+                      key={itemName}
+                      style={[styles.itemChip, chipStyle]}
+                      onPress={() => cycleItemStatus(meal.key, itemName)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.itemChipText, chipTextStyle]}>
+                        {status === true ? '✓ ' : status === false ? '✗ ' : ''}{itemName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : null}
           </View>
         ))}
 
@@ -308,6 +368,14 @@ const styles = StyleSheet.create({
   mealOptionActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
   mealOptionText: { color: THEME.text, fontWeight: '900', fontSize: 12 },
   mealOptionTextActive: { color: '#FFF' },
+  itemChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  itemChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, borderWidth: 1 },
+  itemChipNeutral: { backgroundColor: THEME.bg, borderColor: THEME.border },
+  itemChipYedi: { backgroundColor: '#E4F9EE', borderColor: '#00B894' },
+  itemChipYemedi: { backgroundColor: '#FFE9E9', borderColor: '#FF4444' },
+  itemChipText: { fontSize: 12, fontWeight: '800' },
+  itemChipTextNeutral: { color: THEME.subtext || THEME.text },
+  itemChipTextActive: { color: THEME.text },
   input: {
     backgroundColor: THEME.card,
     padding: 13,
