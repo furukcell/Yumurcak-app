@@ -30,6 +30,7 @@ export default function ChildFormScreen() {
   const [ad, setAd] = useState('');
   const [dogumTarihi, setDogumTarihi] = useState('');
   const [sinifId, setSinifId] = useState('');
+  const [adres, setAdres] = useState('');
   const [seciliVeliIds, setSeciliVeliIds] = useState([]);
   const [siniflar, setSiniflar] = useState([]);
   const [veliler, setVeliler] = useState([]);
@@ -90,6 +91,7 @@ export default function ChildFormScreen() {
           setAd(`${data.ad || ''} ${data.soyad || ''}`.trim() || data.ad || '');
           setDogumTarihi(formatChildBirthDate(getChildBirthDate(data)) === 'Belirtilmemiş' ? '' : formatChildBirthDate(getChildBirthDate(data)));
           setSinifId(data.sinifId || '');
+          setAdres(data.adres || '');
           setSeciliVeliIds(data.veliIds || []);
           setYeniBaslayan(data.yeniBaslayan === true || data.uyumTakibiAktif === true || data.uyumDurumu === 'aktif');
           setUyumBaslangicTarihi(data.uyumBaslangicTarihi || bugunKey());
@@ -136,6 +138,8 @@ export default function ChildFormScreen() {
         dogumTarihi: normalizedBirthDate,
         sinifId,
         kresId,
+        adres: adres.trim(),
+        adresKonum: adres.trim() !== (existing?.adres || '') ? null : (existing?.adresKonum || null),
         veliIds: seciliVeliIds,
         yeniBaslayan,
         uyumTakibiAktif: uyumAktif,
@@ -220,6 +224,18 @@ export default function ChildFormScreen() {
                 {childId ? <View style={styles.segmentRowSmall}><TouchableOpacity style={[styles.statusBtn, uyumDurumu !== 'tamamlandi' && styles.statusBtnOn]} onPress={() => setUyumDurumu('aktif')}><Text style={[styles.statusText, uyumDurumu !== 'tamamlandi' && styles.statusTextOn]}>Aktif</Text></TouchableOpacity><TouchableOpacity style={[styles.statusBtn, uyumDurumu === 'tamamlandi' && styles.statusBtnDone]} onPress={() => setUyumDurumu('tamamlandi')}><Text style={[styles.statusText, uyumDurumu === 'tamamlandi' && styles.statusTextOn]}>Tamamlandı</Text></TouchableOpacity></View> : null}
               </View>
             ) : null}
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Servis / Ev Adresi</Text>
+            <TextInput
+              style={[styles.input, { minHeight: 70, textAlignVertical: 'top' }]}
+              value={adres}
+              onChangeText={setAdres}
+              placeholder="Örn: Muğla Mah. Deniz Sok. No:5 Bodrum"
+              placeholderTextColor="#999"
+              multiline
+            />
+            <Text style={styles.hint}>Servis kullanıyorsa buraya girilen adres, servisçinin rota ekranında konum/yol tarifi için kullanılır.</Text>
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>Veli Bağla (opsiyonel)</Text>
