@@ -17,8 +17,9 @@
 // "alındı" işaretlenmiş TÜM çocukların velilerine ayrı ayrı +
 // yöneticiye tek bir özet bildirim gönderir.
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, BackHandler, Linking, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ref, onValue, get, update } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -54,10 +55,29 @@ function getChildParentIds(child) {
 }
 
 export default function ServisciDashboardScreen({ navigation }) {
-  const { kullanici, cikisYap } = useAuth();
+  const { kullanici, kres, cikisYap } = useAuth();
   const userId = kullanici?.uid || kullanici?.id;
   const kresId = kullanici?.kresId;
   const dateKey = useMemo(() => todayKey(), []);
+
+  // Android donanım geri tuşu — direkt uygulamadan çıkmasın, önce sorsun
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          'Çıkmak istiyor musunuz?',
+          'Uygulamadan çıkmak üzeresiniz.',
+          [
+            { text: 'Vazgeç', style: 'cancel' },
+            { text: 'Çık', style: 'destructive', onPress: () => BackHandler.exitApp() },
+          ]
+        );
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState([]);
@@ -107,7 +127,24 @@ export default function ServisciDashboardScreen({ navigation }) {
       }
 
       const results = await Promise.all(
-        childIds.map((id) => get(ref(database, `cocuklar/${id}`)).then((s) => (s.exists() ? { id, ...s.val() } : null)))
+        childIds.map(async (id) => {
+          const snap = await get(ref(database, `cocuklar/${id}`));
+          if (!snap.exists()) return null;
+          const childData = { id, ...snap.val() };
+          const parentIds = getChildParentIds(childData);
+          if (parentIds.length > 0) {
+            try {
+              const veliSnap = await get(ref(database, `kullanicilar/${parentIds[0]}`));
+              if (veliSnap.exists()) {
+                childData.veliTelefon = veliSnap.val().telefon || '';
+                childData.veliAdi = veliSnap.val().ad || '';
+              }
+            } catch (error) {
+              console.log('Veli bilgisi çekilemedi:', error);
+            }
+          }
+          return childData;
+        })
       );
       const list = results.filter(Boolean).sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
       setChildren(list);
@@ -255,13 +292,26 @@ export default function ServisciDashboardScreen({ navigation }) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Servis Görevlisi</Text>
-            <Text style={styles.subtitle}>{kullanici?.ad || ''}</Text>
+            <Text style={styles.title}>{kres?.ad || 'Servis Görevlisi'}</Text>
+            <Text style={styles.subtitle}>
+              {kullanici?.ad || ''}
+              {vehicles.find((v) => v.id === selectedVehicleId)?.plaka
+                ? ` · 🚐 ${vehicles.find((v) => v.id === selectedVehicleId).plaka}`
+                : ''}
+            </Text>
           </View>
           <TouchableOpacity style={styles.logoutIconButton} onPress={cikisYap} activeOpacity={0.8}>
             <Text style={styles.logoutIconText}>Çıkış</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.routeButton}
+          onPress={() => navigation.navigate('ServisciRoute', { vehicleId: selectedVehicleId })}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.routeButtonText}>📍 Günlük Rota — Sıradaki Durağı Göster</Text>
+        </TouchableOpacity>
 
         {vehicles.length > 1 ? (
           <View style={styles.vehicleTabRow}>
@@ -303,6 +353,27 @@ export default function ServisciDashboardScreen({ navigation }) {
             return (
               <View key={child.id} style={styles.card}>
                 <Text style={styles.childName}>{child.ad} {child.soyad}</Text>
+
+                {child.veliTelefon ? (
+                  <TouchableOpacity
+                    style={styles.contactRow}
+                    onPress={() => Linking.openURL(`tel:${child.veliTelefon}`)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.contactText}>📞 {child.veliTelefon}</Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {child.adres ? (
+                  <TouchableOpacity
+                    style={styles.contactRow}
+                    onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(child.adres)}`)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.contactText} numberOfLines={2}>🗺️ {child.adres}</Text>
+                  </TouchableOpacity>
+                ) : null}
+
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
                     disabled={busy}
@@ -343,6 +414,8 @@ const styles = StyleSheet.create({
   subtitle: { color: THEME.muted, fontSize: 13, fontWeight: '700', marginTop: 2 },
   logoutIconButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: THEME.border },
   logoutIconText: { color: THEME.primary, fontWeight: '800', fontSize: 13 },
+  routeButton: { backgroundColor: THEME.primaryDark, borderRadius: 14, paddingVertical: 13, alignItems: 'center', marginBottom: 14 },
+  routeButtonText: { color: '#fff', fontWeight: '900', fontSize: 13 },
   vehicleTabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   vehicleTab: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, backgroundColor: '#fff' },
   vehicleTabActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
@@ -353,8 +426,10 @@ const styles = StyleSheet.create({
   varmaButtonText: { color: '#fff', fontWeight: '900', fontSize: 15 },
   emptyListText: { color: THEME.muted, textAlign: 'center', marginTop: 30, fontWeight: '700' },
   card: { backgroundColor: THEME.card, borderRadius: 18, borderWidth: 1, borderColor: THEME.border, padding: 14, marginBottom: 12 },
-  childName: { fontSize: 15, fontWeight: '900', color: THEME.text, marginBottom: 10 },
-  buttonRow: { flexDirection: 'row', gap: 10 },
+  childName: { fontSize: 15, fontWeight: '900', color: THEME.text, marginBottom: 8 },
+  contactRow: { marginBottom: 6 },
+  contactText: { color: THEME.primaryDark, fontWeight: '700', fontSize: 12 },
+  buttonRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   actionButton: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: THEME.primarySoft, borderWidth: 1, borderColor: THEME.border },
   actionButtonDone: { backgroundColor: THEME.greenSoft, borderColor: THEME.green },
   actionButtonDisabled: { opacity: 0.45 },
