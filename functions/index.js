@@ -1361,14 +1361,32 @@ function pickEventsForChild(list, child) {
 }
 
 const MEAL_DURUM_LABELS = { bitirdi: 'iyi yedi', az_yedi: 'az yedi', yemedi: 'yemedi' };
+const MEAL_LABELS = { kahvalti: 'Kahvaltı', ogle: 'Öğle', araOgun: 'Ara öğün' };
+
+// FAZ — Ürün Bazlı Yemek Takibi: genel durumun (bitirdi/az_yedi/yemedi)
+// yanına, öğretmenin işaretlediği ürün bazlı yedi/yemedi bilgisini de
+// ekliyoruz (varsa). İşaretlenmemiş ürünler prompt'a hiç girmiyor.
+function formatMealItemsForPrompt(urunler) {
+  if (!urunler || typeof urunler !== 'object') return null;
+  const yedi = Object.entries(urunler).filter(([, val]) => val === true).map(([name]) => name);
+  const yemedi = Object.entries(urunler).filter(([, val]) => val === false).map(([name]) => name);
+  const parts = [];
+  if (yedi.length) parts.push(`${yedi.join(', ')} yedi`);
+  if (yemedi.length) parts.push(`${yemedi.join(', ')} yemedi`);
+  return parts.length ? parts.join(', ') : null;
+}
 
 function formatMealsForPrompt(yemek = {}) {
   const parts = ['kahvalti', 'ogle', 'araOgun']
     .map((key) => {
-      const durum = yemek?.[key]?.durum;
-      if (!durum) return null;
-      const label = { kahvalti: 'Kahvaltı', ogle: 'Öğle', araOgun: 'Ara öğün' }[key];
-      return `${label}: ${MEAL_DURUM_LABELS[durum] || durum}`;
+      const meal = yemek?.[key];
+      const durum = meal?.durum;
+      const itemDetail = formatMealItemsForPrompt(meal?.urunler);
+      if (!durum && !itemDetail) return null;
+      const label = MEAL_LABELS[key];
+      const durumText = durum ? (MEAL_DURUM_LABELS[durum] || durum) : null;
+      const combined = [durumText, itemDetail].filter(Boolean).join(' — ');
+      return `${label}: ${combined}`;
     })
     .filter(Boolean);
   return parts.length ? parts.join(', ') : null;
