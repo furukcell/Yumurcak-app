@@ -64,6 +64,37 @@ export default function ChildReportScreen() {
     return () => unsubscribe();
   }, [child.id, child?.kresId]);
 
+  const MEAL_ITEM_SECTIONS = [
+    { key: 'kahvalti', icon: '🥐' },
+    { key: 'ogle', icon: '🍲' },
+    { key: 'araOgun', icon: '🍎' },
+  ];
+
+  const renderMealItemsSection = (item) => {
+    const sections = MEAL_ITEM_SECTIONS
+      .map((meal) => ({ ...meal, urunler: item.yemek?.[meal.key]?.urunler }))
+      .filter((meal) => meal.urunler && Object.keys(meal.urunler).length > 0);
+
+    if (sections.length === 0) return null;
+
+    return (
+      <View style={styles.mealItemsBox}>
+        {sections.map((meal) => (
+          <View key={meal.key} style={styles.mealItemsRow}>
+            <Text style={styles.mealItemsIcon}>{meal.icon}</Text>
+            <View style={styles.mealItemsChips}>
+              {Object.entries(meal.urunler).map(([name, yedi]) => (
+                <View key={name} style={[styles.mealItemChip, yedi ? styles.mealItemChipYedi : styles.mealItemChipYemedi]}>
+                  <Text style={styles.mealItemChipText}>{yedi ? '✓' : '✗'} {name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const getMoodIcon = (mood) => {
     const map = {
       'Mutlu': '😊',
@@ -133,6 +164,8 @@ export default function ChildReportScreen() {
               <Text style={styles.metricValue}>{item.tuvalet?.sayi !== undefined && item.tuvalet?.sayi !== null ? t('parent.childReport.timesValue', { count: item.tuvalet.sayi }) : '-'}</Text>
             </View>
           </View>
+
+          {renderMealItemsSection(item)}
 
           {item.not ? (
             <View style={styles.noteBox}>
@@ -250,6 +283,14 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 9, color: THEME.muted, fontWeight: '800', marginBottom: 3 },
   metricValue: { fontSize: 11, color: THEME.text, fontWeight: '900' },
 
+  mealItemsBox: { marginTop: 4, marginBottom: 4 },
+  mealItemsRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+  mealItemsIcon: { fontSize: 14, marginRight: 6, marginTop: 3 },
+  mealItemsChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  mealItemChip: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 99, borderWidth: 1 },
+  mealItemChipYedi: { backgroundColor: '#E4F9EE', borderColor: '#20B45B' },
+  mealItemChipYemedi: { backgroundColor: '#FFE9E9', borderColor: '#FF4444' },
+  mealItemChipText: { fontSize: 11, fontWeight: '800', color: THEME.text },
   noteBox: { flexDirection: 'row', alignItems: 'flex-start' },
   noteAvatar: { fontSize: 26, marginRight: 9 },
   noteTitle: { fontSize: 11, color: THEME.muted, fontWeight: '900', marginBottom: 3 },
