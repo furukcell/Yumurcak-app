@@ -114,5 +114,5 @@ client-side, mobil app bundle'ında da açık duruyor, gizli değil).
 
 ## Şu Anki Durum
 
-Henüz hiçbir kod yazılmadı — bu dosya sadece plan. Bir sonraki adım
+faz 0-1 tamamlandı.Bir sonraki adım faz 2
 **Faz 0**'dan başlamak.
