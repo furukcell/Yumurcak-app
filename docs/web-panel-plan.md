@@ -43,7 +43,7 @@ client-side, mobil app bundle'ında da açık duruyor, gizli değil).
 
 ## Fazlar
 
-### Faz 0 — Proje İskeleti (henüz başlanmadı)
+### Faz 0 — Proje İskeleti 
 - [x] Yeni repo: `yumurcak-web-panel` (GitHub'da furukcell altında)
 - [x] `npm create vite@latest` ile React + JS (TS değil, mobildeki gibi JS kalsın — tutarlılık)
 - [x] `firebase`, `antd`, `react-router-dom` paketleri kurulur
