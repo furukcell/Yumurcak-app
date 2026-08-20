@@ -51,13 +51,13 @@ client-side, mobil app bundle'ında da açık duruyor, gizli değil).
 - [x] Firebase Hosting init (`firebase.json`, `.firebaserc`) — `public: dist`
 - [x] GitHub Actions workflow (`.github/workflows/deploy.yml`) — `main`'e push'ta `npm run build` + Firebase Hosting deploy
 - [x] Giriş ekranı (email/şifre, `firebase/auth` `signInWithEmailAndPassword`)
-- [x] Giriş sonrası `kullanicilar/{uid}` okunup `rol === 'admin'` kontrolü — değilse erişim reddedilir
+- [x] Giriş sonrası `kullanicilar/{uid}` okunup `rol === 'yonetici'` kontrolü — değilse erişim reddedilir *(not: ilk teslimde `'admin'` yazılmıştı, gerçek değer `'yonetici'` olduğu için düzeltildi)*
 - [x] Panel iskeleti: sol menü (Ant Design `Layout` + `Menu`) + üst bar (kreş adı, çıkış butonu)
 - [x] Boş Dashboard sayfası (sadece "Hoş geldin" — asıl içerik Faz 1'de)
 
 ### Faz 1 — Dashboard + İstatistik
-- [ ] Dashboard: özet kartlar (toplam çocuk, öğretmen, bugünkü rapor sayısı vb.) — mobildeki `DashboardScreen.js`'deki `kresOzetleri` node'undan besleniyor
-- [ ] İstatistik sayfası — mobildeki `AdminStatisticsScreen.js` mantığının web karşılığı (grafik için `recharts` veya `antd`'nin kendi chart bileşeni eklenebilir)
+- [x] Dashboard: özet kartlar (toplam çocuk, öğretmen, bugünkü rapor sayısı vb.) — mobildeki `DashboardScreen.js`'deki `kresOzetleri` node'undan besleniyor
+- [x] İstatistik sayfası — mobildeki `AdminStatisticsScreen.js` mantığının web karşılığı (5 sekme: Genel/Öğretmenler/Çocuklar/Riskler/Aktivite, `antd` bileşenleriyle)
 
 ### Faz 2 — Çekirdek Yönetim (CRUD)
 - [ ] Çocuklar (liste + ekle/düzenle) — mobil: `ChildListScreen.js`, `ChildFormScreen.js`, `ChildDetailScreen.js`
