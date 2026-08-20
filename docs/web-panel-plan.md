@@ -44,16 +44,16 @@ client-side, mobil app bundle'ında da açık duruyor, gizli değil).
 ## Fazlar
 
 ### Faz 0 — Proje İskeleti (henüz başlanmadı)
-- [ ] Yeni repo: `yumurcak-web-panel` (GitHub'da furukcell altında)
-- [ ] `npm create vite@latest` ile React + JS (TS değil, mobildeki gibi JS kalsın — tutarlılık)
-- [ ] `firebase`, `antd`, `react-router-dom` paketleri kurulur
-- [ ] `src/config/firebase.js` — mobildeki config'in birebir kopyası
-- [ ] Firebase Hosting init (`firebase.json`, `.firebaserc`) — `public: dist`
-- [ ] GitHub Actions workflow (`.github/workflows/deploy.yml`) — `main`'e push'ta `npm run build` + Firebase Hosting deploy
-- [ ] Giriş ekranı (email/şifre, `firebase/auth` `signInWithEmailAndPassword`)
-- [ ] Giriş sonrası `kullanicilar/{uid}` okunup `rol === 'admin'` kontrolü — değilse erişim reddedilir
-- [ ] Panel iskeleti: sol menü (Ant Design `Layout` + `Menu`) + üst bar (kreş adı, çıkış butonu)
-- [ ] Boş Dashboard sayfası (sadece "Hoş geldin" — asıl içerik Faz 1'de)
+- [x] Yeni repo: `yumurcak-web-panel` (GitHub'da furukcell altında)
+- [x] `npm create vite@latest` ile React + JS (TS değil, mobildeki gibi JS kalsın — tutarlılık)
+- [x] `firebase`, `antd`, `react-router-dom` paketleri kurulur
+- [x] `src/config/firebase.js` — mobildeki config'in birebir kopyası
+- [x] Firebase Hosting init (`firebase.json`, `.firebaserc`) — `public: dist`
+- [x] GitHub Actions workflow (`.github/workflows/deploy.yml`) — `main`'e push'ta `npm run build` + Firebase Hosting deploy
+- [x] Giriş ekranı (email/şifre, `firebase/auth` `signInWithEmailAndPassword`)
+- [x] Giriş sonrası `kullanicilar/{uid}` okunup `rol === 'admin'` kontrolü — değilse erişim reddedilir
+- [x] Panel iskeleti: sol menü (Ant Design `Layout` + `Menu`) + üst bar (kreş adı, çıkış butonu)
+- [x] Boş Dashboard sayfası (sadece "Hoş geldin" — asıl içerik Faz 1'de)
 
 ### Faz 1 — Dashboard + İstatistik
 - [ ] Dashboard: özet kartlar (toplam çocuk, öğretmen, bugünkü rapor sayısı vb.) — mobildeki `DashboardScreen.js`'deki `kresOzetleri` node'undan besleniyor
