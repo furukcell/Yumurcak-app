@@ -654,6 +654,10 @@ Realtime Database, aynı Storage) kullanır — yani veri tek yerde, mobil
 ve web aynı veriyi okuyup yazar. Masaüstünden tablo/filtre/toplu işlem
 gibi ihtiyaçlar için ayrı bir arayüz olarak kurgulandı.
 
+**Canlı adres:** [https://yumurcak-app.web.app](https://yumurcak-app.web.app)
+— giriş, mobil uygulamadaki admin (yönetici) hesabının email/şifresiyle
+yapılır; `rol: 'yonetici'` olmayan hesaplar panele giremez.
+
 **Teknoloji:** React + Vite, Ant Design, Firebase JS SDK (web), Firebase
 Hosting, GitHub Actions ile otomatik deploy. Detaylı mimari kararları
 ve faz planı için bkz. [`docs/web-panel-plan.md`](docs/web-panel-plan.md).
