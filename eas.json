@@ -19,11 +19,17 @@
         "buildType": "app-bundle"
       },
       "ios": {
-        "distribution": "internal"
+        "distribution": "store"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "kurtulusfaruk94@gmail.com",
+        "ascAppId": "6804193733",
+        "appleTeamId": "AFPS3YND5F"
+      }
+    }
   }
 }
