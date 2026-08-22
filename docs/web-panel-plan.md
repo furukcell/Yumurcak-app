@@ -60,35 +60,36 @@ client-side, mobil app bundle'ında da açık duruyor, gizli değil).
 - [x] İstatistik sayfası — mobildeki `AdminStatisticsScreen.js` mantığının web karşılığı (5 sekme: Genel/Öğretmenler/Çocuklar/Riskler/Aktivite, `antd` bileşenleriyle)
 
 ### Faz 2 — Çekirdek Yönetim (CRUD)
-- [ ] Çocuklar (liste + ekle/düzenle) — mobil: `ChildListScreen.js`, `ChildFormScreen.js`, `ChildDetailScreen.js`
-- [ ] Öğretmenler — mobil: `TeacherListScreen.js`, `TeacherFormScreen.js`
-- [ ] Veliler — mobil: `VeliListScreen.js`, `VeliFormScreen.js`
-- [ ] Sınıflar — mobil: `ClassListScreen.js`, `ClassFormScreen.js`
+- [x] Çocuklar (liste + ekle/düzenle) — mobil: `ChildListScreen.js`, `ChildFormScreen.js`, `ChildDetailScreen.js`
+- [x] Öğretmenler — mobil: `TeacherListScreen.js`, `TeacherFormScreen.js`
+- [x] Veliler — mobil: `VeliListScreen.js`, `VeliFormScreen.js`
+- [x] Sınıflar — mobil: `ClassListScreen.js`, `ClassFormScreen.js`
 
 ### Faz 3 — İletişim
-- [ ] Duyurular — mobil: `AnnouncementListScreen.js`, `AnnouncementFormScreen.js`
-- [ ] Etkinlikler — mobil: `EventListScreen.js`, `EventFormScreen.js`
-- [ ] Anket Yönetimi — mobil: `PollManagementScreen.js`
-- [ ] Mesajlar — mobil: `AdminMessagesScreen.js`, `MessageDetailScreen.js`
+- [x] Duyurular — mobil: `AnnouncementListScreen.js`, `AnnouncementFormScreen.js`
+- [x] Etkinlikler — mobil: `EventListScreen.js`, `EventFormScreen.js`
+- [x] Anket Yönetimi — mobil: `PollManagementScreen.js`
+- [x] Mesajlar — mobil: `AdminMessagesScreen.js`, `MessageDetailScreen.js`
 
 ### Faz 4 — Operasyonel
-- [ ] Aylık Yemek Listesi — mobil: `AdminMonthlyMealScreen.js`
-- [ ] Ders Programı — mobil: `LessonScheduleListScreen.js`, `AdminMonthlyScheduleScreen.js`
-- [ ] Nöbet Çizelgesi — mobil: `AdminMonthlyDutyRosterScreen.js`
-- [ ] Personel Görev Listesi — mobil: `AdminMonthlyStaffTasksScreen.js`
-- [ ] Servis — mobil: `AdminServiceScreen.js`, `AdminVehicleListScreen.js`, `AdminVehicleFormScreen.js`, `AdminServiceStatsScreen.js`, `AdminServiceMonthlyStatsScreen.js`
-- [ ] Doğum Günü Takvimi — mobil: `AdminBirthdayCalendarScreen.js`
+- [x] Aylık Yemek Listesi — mobil: `AdminMonthlyMealScreen.js`
+- [x] Ders Programı — mobil: `LessonScheduleListScreen.js`, `AdminMonthlyScheduleScreen.js`
+- [x] Nöbet Çizelgesi — mobil: `AdminMonthlyDutyRosterScreen.js`
+- [x] Personel Görev Listesi — mobil: `AdminMonthlyStaffTasksScreen.js`
+- [x] Servis — mobil: `AdminServiceScreen.js`, `AdminVehicleListScreen.js`, `AdminVehicleFormScreen.js`, `AdminServiceStatsScreen.js` *(not: `AdminServiceMonthlyStatsScreen.js` — aylık istatistik sekmesi kapsam dışı bırakıldı, ihtiyaç olursa ayrı ele alınabilir)*
+- [x] Doğum Günü Takvimi — mobil: `AdminBirthdayCalendarScreen.js`
+- [x] Yazdır/PDF — mobildeki `expo-print` yerine tarayıcının `window.print()`'i kullanıldı (`src/services/documentPdf.js`), Yemek/Ders/Nöbet/Personel/Servis/Doğum Günü ekranlarına eklendi
 
 ### Faz 5 — Finans
-- [ ] Ödemeler — mobil: `PaymentListScreen.js`, `PaymentFormScreen.js`
+- [x] Ödemeler — mobil: `PaymentListScreen.js`, `PaymentFormScreen.js`
 - [ ] (İleride) Muhasebe modülü — ayrı bir konuşmada planlandı: Gider Takibi, İzin Yönetimi, Personel Hakediş Takibi, Yıllık Maliyet Özeti. Bordro Hesaplama kapsam dışı bırakıldı (gerçek bordro muhasebeciye/harici yazılıma bırakılacak).
 
 ### Faz 6 — Ayarlar
-- [ ] Kurum Bilgileri — mobil: `AdminInstitutionSettingsScreen.js`
-- [ ] Tema Ayarları — mobil: `AdminThemeScreen.js`
-- [ ] Abonelik / Ödeme — mobil: `AdminSubscriptionScreen.js`
-- [ ] Kurum Zili — mobil: `AdminBellScreen.js`
-- [ ] Yasal Belgeler — mobil: `LegalDocumentsScreen.js`
+- [x] Kurum Bilgileri — mobil: `AdminInstitutionSettingsScreen.js`
+- [x] Tema Ayarları — mobil: `AdminThemeScreen.js`
+- [x] Abonelik / Ödeme — mobil: `AdminSubscriptionScreen.js` *(not: gerçek satın alma RevenueCat/App Store/Play Store'a bağlı olduğu için mobil-özeldir, web tarafında sadece durum görüntüleme + demo/promosyon kodu var, ücretli plan satın alma mobilden yapılmalı)*
+- [x] Kurum Zili — mobil: `AdminBellScreen.js`
+- [x] Yasal Belgeler — mobil: `LegalDocumentsScreen.js`
 
 ## Genel Notlar / Dikkat Edilecekler
 
@@ -114,5 +115,15 @@ client-side, mobil app bundle'ında da açık duruyor, gizli değil).
 
 ## Şu Anki Durum
 
-faz 0-1 tamamlandı.Bir sonraki adım 
-**Faz 2**'dan başlamak.
+**Faz 0 - 6 tamamlandı.** Tüm ana kapsam (Dashboard, İstatistik, Çekirdek
+Yönetim, İletişim, Operasyonel + Yazdır/PDF, Finans, Ayarlar) web
+panelinde birebir karşılığıyla mevcut, `npm run build` temiz geçiyor.
+
+Bilinen kapsam dışı / mobil-özel kalan noktalar:
+- Servis "Aylık İstatistik" sekmesi (`AdminServiceMonthlyStatsScreen.js`) eklenmedi.
+- Abonelik sayfasında gerçek satın alma yok (RevenueCat/App Store/Play Store mobil-özel).
+- Faz 5'teki "İleride" notlu Muhasebe modülü hiç başlanmadı.
+
+Sıradaki adım: GitHub'a toplu yükleyip gerçek ortamda uçtan uca test
+etmek (özellikle Auth hesabı oluşturan Öğretmen/Veli/Servisci ekleme
+akışları ve Storage'a logo yükleme).
