@@ -644,6 +644,44 @@ React Native / Expo
 
 ---
 
+# 🖥️ Web Yönetim Paneli
+
+Mobil uygulamaya ek olarak, kreş yöneticileri için **ayrı bir web admin
+paneli** geliştirilmektedir: [`yumurcak-web-panel`](https://github.com/furukcell/yumurcak-web-panel).
+
+Panel, mobil koda dokunmadan aynı Firebase projesini (aynı Auth, aynı
+Realtime Database, aynı Storage) kullanır — yani veri tek yerde, mobil
+ve web aynı veriyi okuyup yazar. Masaüstünden tablo/filtre/toplu işlem
+gibi ihtiyaçlar için ayrı bir arayüz olarak kurgulandı.
+
+**Teknoloji:** React + Vite, Ant Design, Firebase JS SDK (web), Firebase
+Hosting, GitHub Actions ile otomatik deploy. Detaylı mimari kararları
+ve faz planı için bkz. [`docs/web-panel-plan.md`](docs/web-panel-plan.md).
+
+**Durum: Faz 0 – Faz 6 tamamlandı** ✅
+
+```txt
+Faz 0 — Proje İskeleti (giriş, rol kontrolü, panel iskeleti)   ✅
+Faz 1 — Dashboard + İstatistik                                 ✅
+Faz 2 — Çekirdek Yönetim (Çocuk/Öğretmen/Veli/Sınıf CRUD)       ✅
+Faz 3 — İletişim (Duyuru/Etkinlik/Anket/Mesajlar)               ✅
+Faz 4 — Operasyonel (Yemek/Ders/Nöbet/Personel/Servis + PDF)    ✅
+Faz 5 — Finans (Ödemeler)                                       ✅
+Faz 6 — Ayarlar (Kurum/Tema/Abonelik/Kurum Zili/Yasal Belgeler) ✅
+```
+
+Bilinen kapsam dışı noktalar: Servis aylık istatistik sekmesi, gerçek
+abonelik satın alma (RevenueCat/App Store/Play Store mobil-özel
+olduğu için web'de sadece durum görüntüleme + demo/promosyon var),
+ve ayrıca planlanan Muhasebe modülü (Gider Takibi, İzin Yönetimi vb.)
+henüz başlanmadı.
+
+Sıradaki adım: GitHub'a toplu yükleme sonrası uçtan uca canlı test
+(özellikle Firebase Auth hesabı oluşturan Öğretmen/Veli/Servisci
+ekleme akışları ve Storage'a kurum logosu yükleme).
+
+---
+
 # 🌍 Dil Desteği
 
 Dil desteği şu anda aktif geliştirme aşamasındadır.
