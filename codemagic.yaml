@@ -52,6 +52,9 @@ workflows:
       - name: Build iOS with EAS
         script: |
           eas build --platform ios --profile production --non-interactive --clear-cache
+      - name: Submit to App Store Connect
+        script: |
+          eas submit --platform ios --profile production --non-interactive --latest
     artifacts:
       - "*.ipa"
       - "**/*.ipa"
