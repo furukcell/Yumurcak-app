@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { onValue, ref, update } from 'firebase/database';
+import { onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ScreenShell, EmptyState, LoadingScreen, THEME, useParentBase } from './parentShared';
 import { safeUnread } from '../../utils/messageHelpers';
@@ -37,12 +37,14 @@ export default function ParentMessagesScreen({ navigation }) {
   const [showInfo, setShowInfo] = useState(true);
 
   useEffect(() => {
-    const unsub = onValue(ref(database, 'mesajKonusmalari'), (snap) => {
+    if (!kresId) return;
+    const target = query(ref(database, 'mesajKonusmalari'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(target, (snap) => {
       setConversations(snap.val() || {});
     });
 
     return () => unsub();
-  }, []);
+  }, [kresId]);
 
   const teacherId = useMemo(() => {
     if (selectedChild?.ogretmenId) return selectedChild.ogretmenId;
