@@ -441,8 +441,10 @@
       }
     },
     "mesajKonusmalari": {
-      ".read": "auth != null",
+      ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || (query.orderByChild == 'kresId' && query.equalTo == root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val()))",
+      ".indexOn": ["kresId"],
       "$id": {
+        ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('kresId').val() === data.child('kresId').val())",
         ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== '')"
       }
     },
