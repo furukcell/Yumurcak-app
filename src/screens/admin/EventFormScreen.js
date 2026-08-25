@@ -8,6 +8,7 @@ import {
   TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, Switch, Platform,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { ref, onValue, push, set, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -27,6 +28,7 @@ const THEME = {
 };
 
 export default function EventFormScreen() {
+  const headerHeight = useHeaderHeight();
   const route = useRoute();
   const navigation = useNavigation();
   const { kullanici } = useAuth();
@@ -198,7 +200,7 @@ export default function EventFormScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
 
