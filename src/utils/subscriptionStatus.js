@@ -66,14 +66,32 @@ export function getSubscriptionStatus(subscription = {}) {
   const isDemo = durum.includes('demo') || plan.includes('demo');
   const isActive = durum.includes('aktif') || durum.includes('active');
 
+  // Süre bittiğinde sistem hemen kapatmaz — sınırsız "ödeme bekleniyor" (grace)
+  // moduna geçer, kurum kullanmaya devam edebilir ve bildirimlerle uyarılır.
+  // Erişimi kesmenin TEK yolu superadminin elle işaretlediği erisimKisitli flag'i.
   if (remainingDays !== null && remainingDays < 0) {
+    const daysOverdue = Math.abs(remainingDays);
+
+    if (subscription.erisimKisitli) {
+      return {
+        key: 'blocked_manual',
+        aktif: false,
+        blocked: true,
+        label: 'Erişim Kısıtlandı',
+        message: 'Ödeme yapılmadığı için erişiminiz kısıtlandı. Devam etmek için ekibimizle iletişime geçin.',
+        remainingDays,
+        daysOverdue,
+      };
+    }
+
     return {
-      key: 'expired',
-      aktif: false,
-      blocked: true,
-      label: 'Abonelik Bitti',
-      message: 'Kurum aboneliği sona erdi. Kullanıma devam etmek için aboneliğin yenilenmesi gerekir.',
+      key: 'grace_period',
+      aktif: true,
+      blocked: false,
+      label: 'Ödeme Bekleniyor',
+      message: `Aboneliğinizin süresi ${daysOverdue} gün önce doldu. Kullanıma devam edebilirsiniz, ancak lütfen ödemeyi tamamlayın.`,
       remainingDays,
+      daysOverdue,
     };
   }
 
