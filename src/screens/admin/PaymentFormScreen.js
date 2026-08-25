@@ -8,6 +8,7 @@ import {
   TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Platform,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { ref, onValue, set, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -69,6 +70,7 @@ function dueDateForMonth(yil, ay) {
 }
 
 export default function PaymentFormScreen() {
+  const headerHeight = useHeaderHeight();
   const navigation = useNavigation();
   const route = useRoute();
   const { kullanici } = useAuth();
@@ -253,7 +255,7 @@ export default function PaymentFormScreen() {
          <KeyboardAvoidingView
            style={{ flex: 1 }}
            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+           keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
          >
          <ScrollView
            style={s.screen}
