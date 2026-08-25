@@ -40,6 +40,7 @@ export default function AnnouncementFormScreen() {
   const [classes, setClasses] = useState([]);
 
   const [loading, setLoading] = useState(false);
+  const [existingMeta, setExistingMeta] = useState(null);
   const [fetching, setFetching] = useState(!!announcementId);
   const [successToast, setSuccessToast] = useState(false);
 
@@ -86,7 +87,11 @@ export default function AnnouncementFormScreen() {
             setSelectedClassId(data.sinifId);
           }
         }
-
+            setExistingMeta({
+            senderName: data.senderName || '',
+            senderId: data.senderId || '',
+            createdAt: data.createdAt || null,
+          });
         setFetching(false);
       });
     }
@@ -129,7 +134,8 @@ export default function AnnouncementFormScreen() {
 
     setLoading(true);
 
-    try {
+       try {
+      const senderName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
       const data = {
         title: title.trim(),
         baslik: title.trim(),
@@ -137,10 +143,12 @@ export default function AnnouncementFormScreen() {
         icerik: message.trim(),
         kresId,
         sentBy: 'admin',
+        senderName: existingMeta?.senderName || senderName,
+        senderId: existingMeta?.senderId || (kullanici?.uid || kullanici?.id || ''),
         priority: isUrgent ? 'urgent' : 'normal',
         targetRole,
         sinifId: targetRole === 'sinif' ? selectedClassId : '',
-        createdAt: Date.now(),
+        createdAt: existingMeta?.createdAt || Date.now(),
         updatedAt: Date.now(),
       };
 
