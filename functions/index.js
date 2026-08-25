@@ -1083,6 +1083,91 @@ exports.checkBirthdaysDaily = functions
   });
 
 // ============================================================
+// Manuel/Grace-Period Abonelik — Gecikme Bildirimleri
+// subscriptionStatus.js'deki mantıkla birebir uyumlu: süre bitince
+// erişim hemen kesilmez (grace_period), sadece süperadminin elle
+// bastığı erisimKisitli=true erişimi keser. Bu fonksiyon süresi geçmiş
+// ama henüz kısıtlanmamış kurumlara kademeli hatırlatma gönderir:
+// 0. gün, 3. gün, 7. gün ve sonrasında her 7 günde bir. 7. günde ayrıca
+// süperadmine "incele" bildirimi düşer. Aynı gün için tekrar tekrar
+// bildirim gitmesin diye abonelikler/{kresId}/sonBildirimGunu ile
+// hangi eşiğin en son bildirildiği kaydedilir.
+// ============================================================
+function parseSubEndDateForCheck(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 23, 59, 59, 999);
+  const tr = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (tr) return new Date(Number(tr[3]), Number(tr[2]) - 1, Number(tr[1]), 23, 59, 59, 999);
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+exports.checkOverdueSubscriptionsDaily = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every day 09:00')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const [subsSnap, kreslerSnap] = await Promise.all([
+      admin.database().ref('abonelikler').once('value'),
+      admin.database().ref('kresler').once('value'),
+    ]);
+    const subs = subsSnap.val() || {};
+    const kresler = kreslerSnap.val() || {};
+
+    const tasks = Object.entries(subs).map(async ([kresId, sub = {}]) => {
+      // Zaten süperadmin tarafından kısıtlanmış — tekrar bildirimle rahatsız etme.
+      if (sub.erisimKisitli) return;
+
+      const endDate = parseSubEndDateForCheck(sub.bitisTarihi || sub.demoBitisTarihi);
+      if (!endDate) return;
+
+      const daysOverdue = Math.floor((Date.now() - endDate.getTime()) / 86400000);
+      if (daysOverdue < 0) return; // henüz süresi bitmemiş
+
+      const isMilestone = daysOverdue === 0 || daysOverdue === 3 || (daysOverdue >= 7 && daysOverdue % 7 === 0);
+      const lastNotified = Number(sub.sonBildirimGunu ?? -1);
+      if (!isMilestone || daysOverdue === lastNotified) return;
+
+      await createNotificationRecord({
+        kresId,
+        hedefRoller: ['yonetici'],
+        baslik: '⚠️ Abonelik Ödemesi Bekleniyor',
+        mesaj:
+          daysOverdue === 0
+            ? 'Aboneliğinizin süresi bugün doldu. Kullanıma devam edebilirsiniz, lütfen ödemeyi tamamlayın.'
+            : `Aboneliğinizin süresi ${daysOverdue} gündür geçti. Erişiminizin kesilmemesi için lütfen ödemeyi tamamlayın.`,
+        tip: 'abonelik_gecikme',
+        routeName: 'AdminSubscription',
+        source: 'abonelik-gecikme',
+        sourceId: kresId,
+        createdBy: 'cloud-function',
+      });
+
+      if (daysOverdue === 7) {
+        const kresAdi = kresler[kresId]?.ad || kresler[kresId]?.kresAdi || kresId;
+        await createNotificationRecord({
+          hedefRoller: ['superadmin'],
+          baslik: '🔴 Kurum 7 Gündür Ödeme Yapmadı',
+          mesaj: `${kresAdi} aboneliği 7 gündür geçmiş durumda. İncelemek ister misin?`,
+          tip: 'abonelik_gecikme_superadmin',
+          routeName: 'SuperAdminSubscriptions',
+          source: 'abonelik-gecikme-superadmin',
+          sourceId: kresId,
+          createdBy: 'cloud-function',
+        });
+      }
+
+      await admin.database().ref(`abonelikler/${kresId}`).update({ sonBildirimGunu: daysOverdue });
+    });
+
+    await Promise.all(tasks);
+    return null;
+  });
+
+// ============================================================
 // FAZ 8.1 — İlaç Takip Formu "Hatırlatma Saati"
 // Formda opsiyonel bir saat girilebiliyor (ör: "14:30"). Bu zamanlanmış
 // fonksiyon her dakika çalışır, o anki İstanbul saatine eşleşen aktif
