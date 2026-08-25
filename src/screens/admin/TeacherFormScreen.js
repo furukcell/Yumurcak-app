@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { ref, get, update, query, orderByChild, equalTo } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
@@ -16,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherFormScreen() {
+  const headerHeight = useHeaderHeight();
   const route = useRoute();
   const { kullanici } = useAuth();
   const navigation = useNavigation();
@@ -179,7 +181,7 @@ export default function TeacherFormScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
       <ScrollView style={styles.container}>
         <View style={styles.form}>
