@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { get, onValue, ref, set, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -112,6 +113,7 @@ function getPlanLabel(subscription) {
 }
 
 export default function AdminSubscriptionScreen() {
+  const headerHeight = useHeaderHeight();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
   const userId = kullanici?.uid || kullanici?.id || '';
@@ -432,7 +434,7 @@ export default function AdminSubscriptionScreen() {
     <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
