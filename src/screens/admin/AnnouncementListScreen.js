@@ -54,7 +54,10 @@ export default function AnnouncementListScreen() {
     >
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.msg} numberOfLines={2}>{item.message}</Text>
-      <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('tr-TR')}</Text>
+      <Text style={styles.date}>
+        {item.senderName ? `${item.senderName} · ` : ''}
+        {new Date(item.createdAt).toLocaleDateString('tr-TR')}
+      </Text>
     </TouchableOpacity>
   );
 
