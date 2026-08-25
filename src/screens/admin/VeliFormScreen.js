@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { ref, get, update } from 'firebase/database';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
@@ -16,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function VeliFormScreen() {
+  const headerHeight = useHeaderHeight();
   const route = useRoute();
   const { kullanici } = useAuth();
   const navigation = useNavigation();
@@ -140,7 +142,7 @@ export default function VeliFormScreen() {
   return (
     <View style={s.screen}>
       <AppSuccessToast visible={successToast} message={veliId ? 'Veli güncellendi' : 'Veli kaydedildi'} onHide={() => setSuccessToast(false)} />
-       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView style={s.container}>
         <View style={s.form}>
           <View style={s.field}><Text style={s.label}>Kullanıcı Adı *</Text><TextInput style={s.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder="Örn: veli1" placeholderTextColor="#999" autoCapitalize="none" /></View>
