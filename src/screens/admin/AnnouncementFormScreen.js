@@ -83,15 +83,16 @@ export default function AnnouncementFormScreen() {
             setTargetRole(data.targetRole);
           }
 
-          if (data.sinifId) {
+                    if (data.sinifId) {
             setSelectedClassId(data.sinifId);
           }
-        }
-            setExistingMeta({
+
+          setExistingMeta({
             senderName: data.senderName || '',
             senderId: data.senderId || '',
             createdAt: data.createdAt || null,
           });
+        }
         setFetching(false);
       });
     }
