@@ -219,7 +219,7 @@ export default function SuperAdminSupportScreen({ navigation }) {
         message={successToast.message}
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
       <FlatList
         data={filteredMessages}
         keyExtractor={(item) => item.id}
