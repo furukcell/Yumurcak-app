@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -446,10 +446,16 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   const insets = useSafeAreaInsets();
   const canGoBack = !!navigation?.canGoBack?.();
   const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);
+  // Header yüksekliği sabit bir sayı yerine gerçek render edilen yüksekliğe
+  // göre ölçülüyor; iOS'ta klavye offset'i buna göre hesaplanıyor.
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => {
+    setHeaderHeight(e.nativeEvent.layout.height);
+  }, []);
 
   return (
     <SafeAreaView style={themedStyles.safeArea}>
-      <View style={themedStyles.header}>
+      <View style={themedStyles.header} onLayout={onHeaderLayout}>
         {navigation && canGoBack ? (
           <TouchableOpacity style={themedStyles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
             <Text style={themedStyles.backArrow}>‹</Text>
@@ -467,7 +473,7 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
       <ScrollView
         style={themedStyles.screen}
