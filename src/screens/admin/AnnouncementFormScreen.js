@@ -83,7 +83,7 @@ export default function AnnouncementFormScreen() {
             setTargetRole(data.targetRole);
           }
 
-                    if (data.sinifId) {
+          if (data.sinifId) {
             setSelectedClassId(data.sinifId);
           }
 
