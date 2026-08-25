@@ -22,7 +22,7 @@ Admin paneli               ✅
 Öğretmen paneli            ✅
 Veli paneli                ✅
 Firebase backend           ✅
-Günlük takip               ✅
+Günlük takip                ✅
 Bildirim sistemi           ✅
 Galeri                     ✅
 Döküman / PDF sistemi      ✅
@@ -32,11 +32,14 @@ Rozet sistemi              ✅
 Mesajlaşma                 ✅
 Duyuru / Anket             ✅
 Ödeme takibi               ✅
-Abonelik altyapısı         ✅
-AI günlük özet             ✅
-Dil desteği                ✅
-Pilot kurumlar             🟡 HAZIRLANIYOR
-Son gerçek cihaz testleri  🟡 DEVAM EDİYOR
+Abonelik altyapısı (Android) ✅
+Abonelik altyapısı (iOS)   🟡 KURULUYOR
+AI günlük özet              ✅
+Dil desteği                 ✅
+Android (Google Play)       🟡 YAYINDA / PİLOT AŞAMASI
+iOS (App Store)             🟡 İLK SÜRÜM REVIEW'DA
+Pilot kurumlar              🟡 HAZIRLANIYOR
+Son gerçek cihaz testleri   🟡 DEVAM EDİYOR
 ```
 
 Yumurcak artık yeni özelliklerin sürekli eklendiği erken aşama bir prototip değil; **gerçek kreşlerde kullanılmak üzere hazırlanmış, ticari kullanıma yönelik bir SaaS ürünüdür.**
@@ -510,7 +513,7 @@ Doğal günlük özet
 
 Amaç; klasik:
 
-> “Bugün yemeğini yedi. Uykusunu uyudu.”
+> "Bugün yemeğini yedi. Uykusunu uyudu."
 
 gibi mekanik metinler yerine daha doğal ve bağlamlı bir veli iletişimi sağlamaktır.
 
@@ -523,7 +526,8 @@ Yumurcak ticari SaaS modeliyle çalışacak şekilde tasarlanmıştır.
 Altyapı:
 
 * RevenueCat
-* Google Play Billing
+* Google Play Billing (aktif)
+* Apple In-App Purchase / StoreKit (kuruluyor — bkz. App Store bölümü)
 * YUMURCAK Pro entitlement
 * Google Play ürünleri
 * Offering / Package sistemi
@@ -538,6 +542,30 @@ Altyapı:
 | Kurumsal    |    100+ |     Özel |      Özel |
 
 > Pilot kurumlara özel başlangıç fiyatları ayrıca uygulanabilir.
+
+---
+
+# 🍎 App Store (iOS) Durumu
+
+Yumurcak, Google Play'e ek olarak Apple App Store'a da hazırlanıyor. iOS tarafı ayrı bir süreç olduğu için burada takip ediliyor.
+
+```txt
+App Store Connect kaydı              ✅
+Bundle ID / SKU tanımlandı           ✅
+13-inch iPad screenshot'ları         ✅
+Primary Category (Business)          ✅
+1.0 build submit edildi              ✅ (Ready for Review)
+Version Release ayarı                Automatic (onay sonrası otomatik yayın)
+Paid Apps Agreement (Business →
+Agreements, Tax and Banking)         🟡 BEKLİYOR (2FA SMS kodu gelmiyor)
+Apple Subscriptions (RevenueCat
+entegrasyonu, Product ID eşleştirme) 🟡 YAPILACAK — bir sonraki version ile
+                                          birlikte submit edilecek
+```
+
+**Not:** İlk in-app purchase / subscription, App Store Connect kuralı gereği yeni bir app version ile birlikte submit edilmek zorunda. 1.0 zaten review'a gönderildiği için abonelik ürünleri **1.0.1 (veya sonraki) sürüm** ile birlikte eklenecek.
+
+**Bilinen engel:** Apple hesabına 2FA SMS kodu gelmiyor — Paid Apps Agreement onaylanamadığı için Apple ödemeleri (abonelikler) iOS tarafında henüz aktif değil. Çözülene kadar iOS sürümü ücretsiz özelliklerle yayında kalabilir, ödeme/abonelik ekranı yalnızca Android'de aktif tutulabilir.
 
 ---
 
@@ -622,6 +650,7 @@ React Native / Expo
 
 * RevenueCat
 * Google Play Billing
+* Apple In-App Purchase (kuruluyor)
 
 ### Documents
 
@@ -641,6 +670,11 @@ React Native / Expo
 * GitHub Actions
 * EAS Build
 * Codemagic
+
+### Store Deployment
+
+* Google Play Console
+* App Store Connect
 
 ---
 
@@ -763,6 +797,7 @@ Kontrol edilecek temel akışlar:
 * RevenueCat entitlement
 * Restore
 * Firebase abonelik kaydı
+* Apple In-App Purchase satın alma (iOS tarafı — Paid Apps Agreement onaylanınca)
 
 ### 3. Firebase güvenlik kontrolü
 
@@ -770,13 +805,34 @@ Kontrol edilecek temel akışlar:
 🟡 SON AUDIT
 ```
 
-### 4. Pilot kurumlar
+### 4. App Store (iOS) yayını
+
+```txt
+🟡 1.0 REVIEW'DA — bkz. "App Store (iOS) Durumu" bölümü
+```
+
+### 5. Pilot kurumlar
 
 ```txt
 🟡 HAZIRLANIYOR
 ```
 
 Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
+
+---
+
+# ✅ Yapılacaklar (Kısa Vadeli)
+
+```txt
+[ ] Apple 2FA SMS sorunu çözülecek (Apple destek / call-me / trusted device)
+[ ] Business → Agreements, Tax and Banking onaylanacak
+[ ] Apple Subscriptions (Subscription Group + Product ID'ler) oluşturulacak
+[ ] RevenueCat'te Apple Product ID eşleştirmesi yapılacak
+[ ] iOS 1.0 App Store review sonucu takip edilecek (Automatic release açık)
+[ ] Bir sonraki version ile Apple abonelik ürünleri submit edilecek
+[ ] Gerçek cihaz testleri tamamlanacak (Android + iOS)
+[ ] Pilot kurumlar sisteme alınacak
+```
 
 ---
 
@@ -855,12 +911,13 @@ Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
 
 ## Faz 7 — Ticari Sistem
 
-**TAMAMLANDI ✅**
+**TAMAMLANDI ✅ (Android) / 🟡 DEVAM EDİYOR (iOS)**
 
 * RevenueCat
 * Google Play abonelik
 * Pro entitlement
 * Paket sistemi
+* Apple In-App Purchase (kuruluyor)
 
 ## Faz 8 — AI
 
@@ -880,11 +937,14 @@ Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
 
   **TAMAMLANDI ✅**
 
-## Faz 10 — Pilot & Ölçekleme **🟡 DEVAM EDİYOR**
+## Faz 10 — Store Yayını & Pilot **🟡 DEVAM EDİYOR**
 
-**🟡 SIRADAKİ  AŞAMA**
+**🟡 SIRADAKİ AŞAMA**
 
 ```txt
+Google Play yayını (Android)     ✅
+App Store submission (iOS)       🟡 review'da
+Apple abonelik altyapısı         🟡 kuruluyor
 Pilot kreşler
      ↓
 Gerçek kullanım
@@ -918,22 +978,26 @@ Ana hedef:
         ↓
 3. RevenueCat / Google Play gerçek satın alma testi
         ↓
-4. Pilot kreşleri sisteme al
+4. Apple 2FA / Paid Apps Agreement sorununu çöz
         ↓
-5. Gerçek kullanım verisi topla
+5. iOS abonelik altyapısını kur ve submit et
         ↓
-6. Hataları ve UX sorunlarını düzelt
+6. Pilot kreşleri sisteme al
         ↓
-7. İlk düzenli abonelikleri başlat
+7. Gerçek kullanım verisi topla
         ↓
-8. Satış ve büyüme
+8. Hataları ve UX sorunlarını düzelt
+        ↓
+9. İlk düzenli abonelikleri başlat
+        ↓
+10. Satış ve büyüme
 ```
 
 ---
 
 # 📊 Ürün Vizyonu
 
-Yumurcak yalnızca bir “kreş takip uygulaması” olarak konumlandırılmamaktadır.
+Yumurcak yalnızca bir "kreş takip uygulaması" olarak konumlandırılmamaktadır.
 
 Uzun vadeli hedef:
 
@@ -982,6 +1046,9 @@ Amaç; kreşin günlük operasyonundan veli iletişimine, doküman üretiminden 
 🟢 RevenueCat
 🟢 AI günlük özet
 🟢 Dil desteği
+🟢 Google Play yayını
+🟡 App Store (iOS) — review'da
+🟡 Apple abonelik altyapısı
 🟡 Son gerçek cihaz testleri
 🟡 Pilot kurumlar
 ```
