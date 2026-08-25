@@ -4,7 +4,7 @@
 // Kahvaltı / Öğle / Ara Öğün: yemedi, az_yedi, bitirdi
 // FAZ 3: Bugün için zaten rapor girilmişse uyarı banner'ı
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -40,6 +40,8 @@ const MEALS = [
 ];
 
 export default function ChildReportScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const route = useRoute();
   const navigation = useNavigation();
   const { child } = route.params || {};
@@ -200,12 +202,14 @@ export default function ChildReportScreen() {
         onHide={() => setSuccessToast(false)}
       />
 
-      <ScreenHeader navigation={navigation} title="Günlük Rapor" subtitle={getChildName(child)} />
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Günlük Rapor" subtitle={getChildName(child)} />
+      </View>
 
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         <ScrollView
           style={styles.screen}

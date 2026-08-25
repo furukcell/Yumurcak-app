@@ -5,7 +5,7 @@
 // listeleniyor. Yazdır/Paylaş, veli onayı + personel imzası için fiziksel
 // çıktı üretir (documentPdf.js -> buildIlacTakipHtml).
 // ============================================================
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, update } from 'firebase/database';
@@ -40,6 +40,8 @@ function nowTimeStr() {
 }
 
 export default function TeacherMedicationFormDetailScreen({ navigation }) {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const route = useRoute();
   const formId = route.params?.formId;
   const { kullanici, teacherId, kresId, classChildren } = useTeacherData();
@@ -144,8 +146,10 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message="Bugünkü doz kaydedildi" onHide={() => setSuccessToast(false)} />
-      <ScreenHeader navigation={navigation} title={record.ilacAdi} subtitle={record.cocukAdi} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title={record.ilacAdi} subtitle={record.cocukAdi} />
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.infoCard}>
           <InfoRow label="Doz" value={record.doz} />

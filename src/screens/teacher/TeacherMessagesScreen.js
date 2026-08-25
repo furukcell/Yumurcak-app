@@ -4,7 +4,7 @@
 // FAZ 18: Artık tüm 'mesajKonusmalari' node'u çekilmiyor, sadece
 // bu öğretmeni ilgilendiren (deterministik id'li) konuşmalar tek tek dinleniyor.
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, TouchableOpacity, View, Text, SafeAreaView, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { onValue, ref, update } from 'firebase/database';
@@ -32,6 +32,8 @@ function normalizeText(value) {
 }
 
 export default function TeacherMessagesScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, teacherId, kresId, kurum, currentClass, classChildren, users } = useTeacherData();
   const [conversations, setConversations] = useState({});
@@ -242,8 +244,10 @@ export default function TeacherMessagesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader navigation={navigation} title="Mesajlar" subtitle={currentClass?.ad || 'Sınıfım'} rightText="✎ Yeni" onRightPress={() => setNewMessageOpen(true)} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Mesajlar" subtitle={currentClass?.ad || 'Sınıfım'} rightText="✎ Yeni" onRightPress={() => setNewMessageOpen(true)} />
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>⌕</Text>

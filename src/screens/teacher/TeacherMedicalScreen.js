@@ -7,7 +7,7 @@
 //      yerini burada aldı; formu oluşturma/detay için hâlâ
 //      TeacherMedicationFormEdit / TeacherMedicationFormDetail kullanılıyor)
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   SafeAreaView,
@@ -51,6 +51,8 @@ function formatDateTr(dateKey) {
 }
 
 export default function TeacherMedicalScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { kullanici, teacherId, loading, classChildren, medicalMap, currentClass, kresId } = useTeacherData();
 
@@ -164,8 +166,10 @@ export default function TeacherMedicalScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={successMessage} onHide={() => setSuccessToast(false)} />
-      <ScreenHeader navigation={navigation} title="Medikal" subtitle="Alerji, ilaç ve ilaç takip formları" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Medikal" subtitle="Alerji, ilaç ve ilaç takip formları" />
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
         {classChildren.length === 0 ? (
           <EmptyState icon="🩺" title="Çocuk yok" desc="Sınıfa çocuk bağlanınca medikal bilgiler görünür." />
         ) : (

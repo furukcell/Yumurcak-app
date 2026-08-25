@@ -2,7 +2,7 @@
 // YUMURCAK — TeacherAnnouncementsScreen.js
 // Öğretmen duyuru yönetimi - modern kartlı görünüm
 // ============================================================
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -53,6 +53,8 @@ function timeTextOf(item) {
 }
 
 export default function TeacherAnnouncementsScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, announcements } = useTeacherData();
 
@@ -211,14 +213,16 @@ export default function TeacherAnnouncementsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={successMessage} onHide={() => setSuccessToast(false)} />
-      <ScreenHeader
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader
         navigation={navigation}
         title="Duyurular"
         subtitle={currentClass?.ad || 'Sınıfım'}
         rightText={showForm ? 'Kapat' : '+ Ekle'}
         onRightPress={showForm ? () => { setShowForm(false); resetForm(); } : openCreateForm}
       />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.filterRow}>
           <FilterChip active={filter === 'all'} label="📣 Tümü" onPress={() => setFilter('all')} />

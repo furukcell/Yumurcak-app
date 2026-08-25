@@ -6,7 +6,7 @@
 // role bakmaksızın bu node'un tamamını okuyor, ekstra bir değişiklik
 // gerekmiyor.
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -53,6 +53,8 @@ function formatDate(value) {
 }
 
 export default function TeacherSupportScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, kullanici, teacherId, kresId, kresAdi, currentClass } = useTeacherData();
   const [topic, setTopic] = useState('istek');
@@ -184,8 +186,10 @@ export default function TeacherSupportScreen() {
         message={successToast.message}
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
-      <ScreenHeader navigation={navigation} title="Bize Yazın" subtitle="Süper Admin'e istek / şikayet / görüş" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Bize Yazın" subtitle="Süper Admin'e istek / şikayet / görüş" />
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.infoBanner}>
             <View style={styles.bannerIconBox}><Text style={styles.bannerIcon}>💬</Text></View>

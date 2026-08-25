@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -31,6 +31,8 @@ function toList(data) {
 }
 
 export default function TeacherWeeklyStarScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, classChildren } = useTeacherData();
   const [records, setRecords] = useState([]);
@@ -154,8 +156,10 @@ export default function TeacherWeeklyStarScreen() {
 
   return (
     <SafeAreaView style={local.safeArea}>
-      <ScreenHeader navigation={navigation} title="Haftanın Yıldızı" subtitle={weekRange.label} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Haftanın Yıldızı" subtitle={weekRange.label} />
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={local.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
           <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Rozet vermek için öğretmen hesabı bir sınıfa bağlı olmalı." />

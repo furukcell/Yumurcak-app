@@ -2,7 +2,7 @@
 // YUMURCAK — TeacherEventsScreen.js
 // FAZ 3: Öğretmen sadece kendi sınıfına etkinlik oluşturur
 // ============================================================
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push } from 'firebase/database';
@@ -13,6 +13,8 @@ import { parseChildBirthDate, normalizeChildBirthDate, formatChildBirthDate } fr
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherEventsScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, events } = useTeacherData();
   const [showForm, setShowForm] = useState(false);
@@ -84,14 +86,16 @@ export default function TeacherEventsScreen() {
         onHide={() => setSuccessToast(false)}
       />
 
-      <ScreenHeader
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader
         navigation={navigation}
         title="Etkinlikler"
         subtitle={currentClass?.ad || 'Sınıfım'}
         rightText={showForm ? 'Kapat' : '+ Ekle'}
         onRightPress={() => setShowForm((v) => !v)}
       />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {showForm ? (
           <View style={styles.formCard}>

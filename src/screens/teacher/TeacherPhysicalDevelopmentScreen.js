@@ -3,7 +3,7 @@
 // Öğretmen kendi sınıfındaki çocuklara fiziksel gelişim kaydı girer
 // + Sınıf geçmişi tabı
 // ============================================================
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -38,6 +38,8 @@ function formatDate(value) {
 }
 
 export default function TeacherPhysicalDevelopmentScreen() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, classChildren } = useTeacherData();
 
@@ -141,12 +143,14 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
 
   return (
     <SafeAreaView style={localStyles.safeArea}>
-      <ScreenHeader navigation={navigation} title="Fiziksel Gelişim" subtitle={currentClass?.ad || 'Sınıfım'} />
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Fiziksel Gelişim" subtitle={currentClass?.ad || 'Sınıfım'} />
+      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         <ScrollView contentContainerStyle={localStyles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (

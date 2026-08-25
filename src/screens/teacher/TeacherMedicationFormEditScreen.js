@@ -5,7 +5,7 @@
 // TeacherMedicationFormDetailScreen'de tutulur, burada sadece kür bilgisi
 // oluşturuluyor.
 // ============================================================
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useRoute } from '@react-navigation/native';
@@ -23,6 +23,8 @@ function getChildParentIds(child) {
 }
 
 export default function TeacherMedicationFormEditScreen({ navigation }) {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const route = useRoute();
   const { kullanici, teacherId, currentClass, kresId, classChildren } = useTeacherData();
 
@@ -109,8 +111,10 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message="İlaç takip formu oluşturuldu" onHide={() => setSuccessToast(false)} />
-      <ScreenHeader navigation={navigation} title="Yeni İlaç Takip Formu" subtitle={currentClass?.ad || 'Sınıfım'} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View onLayout={onHeaderLayout}>
+        <ScreenHeader navigation={navigation} title="Yeni İlaç Takip Formu" subtitle={currentClass?.ad || 'Sınıfım'} />
+      </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
           <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Bu özellik için yönetici tarafından bir sınıfa atanman gerekir." />
