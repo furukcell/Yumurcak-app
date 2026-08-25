@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Modal,
   Platform,
   SafeAreaView,
@@ -22,9 +23,13 @@ import { useAuth } from '../../context/AuthContext';
 import {
   PACKAGE_TIERS,
   activateManualSubscription,
+  approveManualRequest,
   formatPrice,
   getTierById,
+  rejectManualRequest,
+  setManualAccessRestriction,
   subscribeAllSubscriptions,
+  subscribeManualRequests,
 } from '../../services/subscriptionService';
 import { getSubscriptionStatus } from '../../utils/subscriptionStatus';
 
@@ -47,17 +52,46 @@ const THEME = {
 const TABS = {
   GOOGLE: 'google',
   MANUAL: 'manual',
+  REQUESTS: 'requests',
 };
 
 export default function SuperAdminSubscriptionsScreen() {
   const { kullanici } = useAuth();
-  const [activeTab, setActiveTab] = useState(TABS.MANUAL);
+  const [activeTab, setActiveTab] = useState(TABS.REQUESTS);
   const [loading, setLoading] = useState(true);
   const [allSubs, setAllSubs] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedKres, setSelectedKres] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [manualRequests, setManualRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [processingRequestId, setProcessingRequestId] = useState('');
+
+  useEffect(() => {
+    const unsub = subscribeAllSubscriptions((list) => {
+      setAllSubs(list);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribeManualRequests((list) => {
+      setManualRequests(list);
+      setRequestsLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  const pendingRequests = useMemo(
+    () => manualRequests.filter((r) => r.durum === 'bekliyor'),
+    [manualRequests]
+  );
+  const pastRequests = useMemo(
+    () => manualRequests.filter((r) => r.durum !== 'bekliyor'),
+    [manualRequests]
+  );
 
   useEffect(() => {
     const unsub = subscribeAllSubscriptions((list) => {
@@ -88,7 +122,120 @@ export default function SuperAdminSubscriptionsScreen() {
     setModalVisible(true);
   };
 
+  const handleApproveRequest = (req) => {
+    Alert.alert(
+      'Talebi Onayla',
+      `${req.kresAdi || req.kresId} — ${req.ogrenciSayisi} öğrenci × ${formatPrice(req.birimFiyat)} = ${formatPrice(req.hesaplananTutar)} / ${req.period === 'yillik' ? 'yıl' : 'ay'}\n\nDekontu kontrol ettin mi? Onaylarsan abonelik hemen aktif olur.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Onayla',
+          onPress: async () => {
+            setProcessingRequestId(req.talepId);
+            try {
+              const kresRecord = allSubs.find((s) => s.kresId === req.kresId);
+              await approveManualRequest({
+                kresId: req.kresId,
+                talepId: req.talepId,
+                tanimlayanUid: kullanici?.uid || kullanici?.id || '',
+                existingSubscription: kresRecord?.subscription || null,
+              });
+              Alert.alert('Başarılı', 'Abonelik aktif edildi.');
+            } catch (err) {
+              console.error(err);
+              Alert.alert('Hata', err?.message || 'Talep onaylanamadı.');
+            } finally {
+              setProcessingRequestId('');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectRequest = (req) => {
+    Alert.prompt
+      ? Alert.prompt(
+          'Talebi Reddet',
+          'Kısa bir ret notu yaz (yönetici görecek):',
+          [
+            { text: 'Vazgeç', style: 'cancel' },
+            {
+              text: 'Reddet',
+              style: 'destructive',
+              onPress: async (redNotu) => {
+                setProcessingRequestId(req.talepId);
+                try {
+                  await rejectManualRequest({
+                    kresId: req.kresId,
+                    talepId: req.talepId,
+                    redNotu: redNotu || '',
+                    tanimlayanUid: kullanici?.uid || kullanici?.id || '',
+                  });
+                } catch (err) {
+                  console.error(err);
+                  Alert.alert('Hata', 'Talep reddedilemedi.');
+                } finally {
+                  setProcessingRequestId('');
+                }
+              },
+            },
+          ],
+          'plain-text'
+        )
+      : Alert.alert('Talebi Reddet', 'Emin misin?', [
+          { text: 'Vazgeç', style: 'cancel' },
+          {
+            text: 'Reddet',
+            style: 'destructive',
+            onPress: async () => {
+              setProcessingRequestId(req.talepId);
+              try {
+                await rejectManualRequest({
+                  kresId: req.kresId,
+                  talepId: req.talepId,
+                  tanimlayanUid: kullanici?.uid || kullanici?.id || '',
+                });
+              } catch (err) {
+                console.error(err);
+                Alert.alert('Hata', 'Talep reddedilemedi.');
+              } finally {
+                setProcessingRequestId('');
+              }
+            },
+          },
+        ]);
+  };
+
   const currentList = activeTab === TABS.GOOGLE ? googleList : manualList;
+
+  const handleToggleRestriction = (item, restrict) => {
+    Alert.alert(
+      restrict ? 'Erişimi Kısıtla' : 'Kısıtlamayı Kaldır',
+      restrict
+        ? `${item.ad} için erişimi kısıtlamak istediğine emin misin? Kurum ödeme yapana kadar uygulamayı kullanamaz.`
+        : `${item.ad} için erişim kısıtlamasını kaldırmak istediğine emin misin?`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: restrict ? 'Kısıtla' : 'Kaldır',
+          style: restrict ? 'destructive' : 'default',
+          onPress: async () => {
+            try {
+              await setManualAccessRestriction({
+                kresId: item.kresId,
+                restricted: restrict,
+                tanimlayanUid: kullanici?.uid || kullanici?.id || '',
+              });
+            } catch (err) {
+              console.error(err);
+              Alert.alert('Hata', 'İşlem gerçekleştirilemedi.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -99,6 +246,15 @@ export default function SuperAdminSubscriptionsScreen() {
       </View>
 
       <View style={styles.tabRow}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === TABS.REQUESTS && styles.tabButtonActive]}
+          onPress={() => setActiveTab(TABS.REQUESTS)}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.tabText, activeTab === TABS.REQUESTS && styles.tabTextActive]}>
+            Bekleyen Talepler ({pendingRequests.length})
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === TABS.GOOGLE && styles.tabButtonActive]}
           onPress={() => setActiveTab(TABS.GOOGLE)}
@@ -131,7 +287,28 @@ export default function SuperAdminSubscriptionsScreen() {
         </View>
       ) : null}
 
-      {loading ? (
+      {activeTab === TABS.REQUESTS ? (
+        requestsLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={THEME.primary} />
+          </View>
+        ) : (
+          <FlatList
+            data={[...pendingRequests, ...pastRequests]}
+            keyExtractor={(item) => item.talepId}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={<Text style={styles.emptyText}>Henüz öğrenci-bazlı abonelik talebi yok.</Text>}
+            renderItem={({ item }) => (
+              <RequestRow
+                item={item}
+                processing={processingRequestId === item.talepId}
+                onApprove={() => handleApproveRequest(item)}
+                onReject={() => handleRejectRequest(item)}
+              />
+            )}
+          />
+        )
+      ) : loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={THEME.primary} />
         </View>
@@ -150,6 +327,7 @@ export default function SuperAdminSubscriptionsScreen() {
               item={item}
               onPress={() => activeTab === TABS.MANUAL && openManualForm(item)}
               actionable={activeTab === TABS.MANUAL}
+              onToggleRestriction={(restrict) => handleToggleRestriction(item, restrict)}
             />
           )}
         />
@@ -189,7 +367,7 @@ export default function SuperAdminSubscriptionsScreen() {
   );
 }
 
-function KresRow({ item, onPress, actionable }) {
+function KresRow({ item, onPress, actionable, onToggleRestriction }) {
   const status = getSubscriptionStatus(item.subscription || {});
   const badgeColor = status.blocked
     ? THEME.red
@@ -199,6 +377,7 @@ function KresRow({ item, onPress, actionable }) {
         ? THEME.orange
         : THEME.green;
   const badgeBg = status.blocked || status.severity === 'critical' ? THEME.redSoft : status.severity === 'warning' ? '#FFF4D8' : '#E8FBEA';
+  const showRestrictionControls = status.key === 'grace_period' || status.key === 'blocked_manual';
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={actionable ? 0.75 : 1} disabled={!actionable}>
@@ -212,9 +391,65 @@ function KresRow({ item, onPress, actionable }) {
         {item.subscription?.odemeReferansi ? (
           <Text style={styles.rowRef}>Ref: {item.subscription.odemeReferansi}</Text>
         ) : null}
+        {status.key === 'grace_period' ? (
+          <Text style={styles.graceText}>{status.daysOverdue} gündür ödenmedi</Text>
+        ) : null}
+        {showRestrictionControls ? (
+          <TouchableOpacity
+            style={status.key === 'blocked_manual' ? styles.unrestrictButton : styles.restrictButton}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onToggleRestriction?.(status.key !== 'blocked_manual');
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={status.key === 'blocked_manual' ? styles.unrestrictButtonText : styles.restrictButtonText}>
+              {status.key === 'blocked_manual' ? 'Kısıtlamayı Kaldır' : 'Erişimi Kısıtla'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
       <Text style={[styles.rowBadge, { color: badgeColor, backgroundColor: badgeBg }]}>{status.label}</Text>
     </TouchableOpacity>
+  );
+}
+
+function RequestRow({ item, processing, onApprove, onReject }) {
+  const isPending = item.durum === 'bekliyor';
+  const badgeColor = item.durum === 'onaylandi' ? THEME.green : item.durum === 'reddedildi' ? THEME.red : THEME.orange;
+  const badgeBg = item.durum === 'onaylandi' ? '#E8FBEA' : item.durum === 'reddedildi' ? THEME.redSoft : '#FFF4D8';
+  const badgeLabel = item.durum === 'onaylandi' ? 'Onaylandı' : item.durum === 'reddedildi' ? 'Reddedildi' : 'Bekliyor';
+
+  return (
+    <View style={styles.requestCard}>
+      <View style={styles.requestTop}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>{item.kresAdi || item.kresId}</Text>
+          <Text style={styles.rowSub}>
+            {item.ogrenciSayisi} öğrenci × {formatPrice(item.birimFiyat)} = {formatPrice(item.hesaplananTutar)} / {item.period === 'yillik' ? 'yıl' : 'ay'}
+          </Text>
+          <Text style={styles.rowRef}>{item.olusturmaTarihi}</Text>
+        </View>
+        <Text style={[styles.rowBadge, { color: badgeColor, backgroundColor: badgeBg }]}>{badgeLabel}</Text>
+      </View>
+
+      {item.dekontUrl ? <Image source={{ uri: item.dekontUrl }} style={styles.requestDekont} resizeMode="cover" /> : null}
+
+      {item.durum === 'reddedildi' && item.redNotu ? (
+        <Text style={styles.requestRedNot}>Ret notu: {item.redNotu}</Text>
+      ) : null}
+
+      {isPending ? (
+        <View style={styles.requestActionRow}>
+          <TouchableOpacity style={styles.rejectButton} onPress={onReject} disabled={processing} activeOpacity={0.85}>
+            <Text style={styles.rejectButtonText}>Reddet</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.approveButton} onPress={onApprove} disabled={processing} activeOpacity={0.85}>
+            {processing ? <ActivityIndicator color="#fff" /> : <Text style={styles.approveButtonText}>Onayla ve Aktif Et</Text>}
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -373,7 +608,21 @@ const styles = StyleSheet.create({
   rowTitle: { color: THEME.text, fontSize: 15, fontWeight: '900' },
   rowSub: { color: THEME.muted, fontWeight: '700', marginTop: 3, fontSize: 12 },
   rowRef: { color: THEME.muted, fontWeight: '600', marginTop: 2, fontSize: 11, fontStyle: 'italic' },
+  graceText: { color: THEME.red, fontWeight: '800', fontSize: 11, marginTop: 4 },
+  restrictButton: { alignSelf: 'flex-start', backgroundColor: THEME.redSoft, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 },
+  restrictButtonText: { color: THEME.red, fontWeight: '900', fontSize: 11 },
+  unrestrictButton: { alignSelf: 'flex-start', backgroundColor: '#E8FBEA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 },
+  unrestrictButtonText: { color: THEME.green, fontWeight: '900', fontSize: 11 },
   rowBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, fontWeight: '900', fontSize: 11, overflow: 'hidden' },
+  requestCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 10 },
+  requestTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  requestDekont: { width: '100%', height: 160, borderRadius: 14, marginTop: 10, backgroundColor: THEME.bg },
+  requestRedNot: { color: THEME.red, fontWeight: '700', fontSize: 12, marginTop: 8 },
+  requestActionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  rejectButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 14, backgroundColor: THEME.redSoft },
+  rejectButtonText: { color: THEME.red, fontWeight: '900' },
+  approveButton: { flex: 2, paddingVertical: 12, alignItems: 'center', borderRadius: 14, backgroundColor: THEME.green },
+  approveButtonText: { color: '#fff', fontWeight: '900' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: '#fff', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, maxHeight: '90%' },
   modalTitle: { color: THEME.text, fontSize: 19, fontWeight: '900' },
