@@ -118,6 +118,7 @@ export default function ParentAnnouncementsScreen({ navigation }) {
                     <View style={{ flex: 1 }}>
                       <Text style={local.dateText}>{dateText || t('parent.announcements.noDate')}</Text>
                       {timeText ? <Text style={local.timeText}>{timeText}</Text> : null}
+                      {item.senderName ? <Text style={local.timeText}>{item.senderName}</Text> : null}
                     </View>
                     <View style={[local.detailButton, isClass ? local.detailButtonBlue : local.detailButtonGreen]}>
                       <Text style={[local.detailButtonText, isClass ? local.detailTextBlue : local.detailTextGreen]}>{expanded ? t('parent.announcements.close') : t('parent.announcements.seeDetails')}</Text>
