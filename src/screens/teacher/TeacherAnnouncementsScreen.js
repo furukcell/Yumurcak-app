@@ -284,6 +284,7 @@ export default function TeacherAnnouncementsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.dateText}>{dateText || 'Tarih yok'}</Text>
                     {timeText ? <Text style={styles.timeText}>{timeText}</Text> : null}
+                    {item.senderName ? <Text style={styles.timeText}>{item.senderName}</Text> : null}
                   </View>
                   <TouchableOpacity style={styles.actionButtonSoft} onPress={() => setExpandedId(expanded ? null : item.id)} activeOpacity={0.85}>
                     <Text style={styles.actionButtonSoftText}>{expanded ? 'Kapat' : 'Görüntüle'}</Text>
