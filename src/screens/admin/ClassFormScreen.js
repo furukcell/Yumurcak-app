@@ -10,6 +10,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Platform
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { ref, get, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
@@ -27,6 +28,7 @@ function asArray(value) {
 }
 
 export default function ClassFormScreen() {
+  const headerHeight = useHeaderHeight();
   const route = useRoute();
   const navigation = useNavigation();
   const { kullanici } = useAuth();
@@ -183,7 +185,7 @@ export default function ClassFormScreen() {
     <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
       <ScrollView style={styles.container}>
         <View style={styles.form}>
