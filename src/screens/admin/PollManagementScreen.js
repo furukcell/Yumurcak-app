@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { ref, onValue, push, update, remove } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -98,6 +99,7 @@ function makeOptionId() {
 }
 
 export default function PollManagementScreen() {
+  const headerHeight = useHeaderHeight();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || kullanici?.kurumId || null;
 
@@ -279,7 +281,7 @@ export default function PollManagementScreen() {
      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
