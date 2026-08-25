@@ -14,6 +14,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
@@ -51,6 +52,7 @@ function hasBulletinContent(baslik, bolumler) {
 }
 
 export default function AdminMonthlyStaffTasksScreen({ navigation }) {
+  const headerHeight = useHeaderHeight();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -246,7 +248,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
          <KeyboardAvoidingView
           style={{ flex: 1 }}
            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
    >
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
