@@ -4,7 +4,7 @@
 // AdminSubscriptionScreen.js (tenant, Google Play satın alma) VE
 // SuperAdminSubscriptionsScreen.js (manuel/IBAN tanımlama) buradan kullanır.
 // ============================================================
-import { get, onValue, push, ref, set } from 'firebase/database';
+import { get, onValue, push, ref, set, update } from 'firebase/database';
 import { database } from '../config/firebase';
 import { REVENUECAT_ENTITLEMENT_ID } from './revenueCat';
 
@@ -51,6 +51,41 @@ export const PACKAGE_TIERS = [
 // Manuel/IBAN abonelikler için ayrı kaynak değeri.
 // database.rules.json içinde bu değer sadece superadmin tarafından yazılabilir.
 export const MANUAL_SOURCE = 'manuel_iban';
+
+// ------------------------------------------------------------
+// Öğrenci başına fiyatlama (kurumsal/özel talepler için).
+// PACKAGE_TIERS'ın yerine geçmiyor — kurum 100+ öğrenci gibi
+// paketlerin dışına taştığında ya da özel fiyat istendiğinde
+// superadmin bu birim fiyat üzerinden onay verir.
+// ------------------------------------------------------------
+export const PER_STUDENT_PRICE = 48; // TL / öğrenci / ay
+export const PER_STUDENT_TIER_ID = 'per_student';
+
+// period: 'aylik' | 'yillik'. Yıllıkta paket sisteminin geri kalanıyla
+// tutarlı olsun diye 10 aylık fiyat alınır (2 ay ücretsiz muadili).
+export function computePerStudentPrice(studentCount, period = 'aylik') {
+  const count = Math.max(0, Number(studentCount) || 0);
+  const monthly = count * PER_STUDENT_PRICE;
+  return period === 'yillik' ? monthly * 10 : monthly;
+}
+
+// activateManualSubscription'ın beklediği "tier" şekline uydurmak için
+// öğrenci sayısına göre sanal bir tier objesi üretir.
+function buildPerStudentTier(studentCount) {
+  const count = Math.max(0, Number(studentCount) || 0);
+  return {
+    id: PER_STUDENT_TIER_ID,
+    title: `${count} Öğrenci (Özel Fiyat)`,
+    range: `${count} öğrenci`,
+    minStudent: 0,
+    maxStudent: count,
+    monthly: computePerStudentPrice(count, 'aylik'),
+    yearly: computePerStudentPrice(count, 'yillik'),
+    desc: 'Öğrenci sayısına göre hesaplanan özel abonelik.',
+    badge: 'Özel',
+    color: '#6C3DEB',
+  };
+}
 
 export function getTierById(id) {
   return PACKAGE_TIERS.find((tier) => tier.id === id) || PACKAGE_TIERS[0];
@@ -285,4 +320,157 @@ export async function getRevenueSummary({ startDate = null, endDate = null } = {
     grandTotal: googleTotal + manualTotal,
     entries: entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
   };
+}
+
+/**
+ * Süperadmin, süresi geçmiş (grace_period) bir kurumun erişimini elle kısıtlar
+ * ya da kısıtlamayı kaldırır. Otomatik hiçbir yerde çağrılmaz — sadece
+ * SuperAdminSubscriptionsScreen'deki elle basılan buton bunu tetikler.
+ */
+export async function setManualAccessRestriction({ kresId, restricted, tanimlayanUid = '' }) {
+  if (!kresId) throw new Error('kresId zorunludur.');
+  await update(ref(database, `abonelikler/${kresId}`), {
+    erisimKisitli: !!restricted,
+    erisimKisitlayanUid: tanimlayanUid,
+    erisimKisitTarihi: toDateStr(new Date()),
+    updatedAt: Date.now(),
+  });
+}
+
+// ============================================================
+// Manuel Abonelik Talebi (Yönetici → Superadmin onayı)
+// Yol: abonelikTalepleri/{kresId}/{talepId}
+// durum: 'bekliyor' | 'onaylandi' | 'reddedildi'
+// Not: abonelikler/{kresId} yazma yetkisi database.rules.json'da
+// kaynak==='manuel_iban' için sadece superadmin'e açık — bu yüzden
+// talep oluşturma ile gerçek aktivasyon (approveManualRequest)
+// ayrı adımlardır, yönetici asla doğrudan abonelikler'e yazmaz.
+// ============================================================
+
+/**
+ * Yönetici tarafında: öğrenci sayısı + yüklenen dekont ile talep oluşturur.
+ * dekontUrl, Firebase Storage'a yüklendikten sonraki download URL'idir
+ * (bkz. AdminInstitutionSettingsScreen.js'deki logo yükleme örneği).
+ */
+export async function createManualRequest({
+  kresId,
+  kresAdi = '',
+  ogrenciSayisi,
+  period = 'aylik',
+  dekontUrl = '',
+  olusturanUid = '',
+}) {
+  if (!kresId) throw new Error('kresId zorunludur.');
+  if (!ogrenciSayisi || Number(ogrenciSayisi) <= 0) throw new Error('Öğrenci sayısı zorunludur.');
+  if (!dekontUrl) throw new Error('Dekont yüklenmeden talep oluşturulamaz.');
+
+  const hesaplananTutar = computePerStudentPrice(ogrenciSayisi, period);
+
+  const newRef = push(ref(database, `abonelikTalepleri/${kresId}`));
+  await set(newRef, {
+    kresId,
+    kresAdi,
+    ogrenciSayisi: Number(ogrenciSayisi),
+    birimFiyat: PER_STUDENT_PRICE,
+    period,
+    hesaplananTutar,
+    dekontUrl,
+    durum: 'bekliyor',
+    olusturanUid,
+    olusturmaTarihi: toDateStr(new Date()),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  return newRef.key;
+}
+
+/**
+ * Superadmin tarafında: tüm kreşlerin bekleyen (+ geçmiş) taleplerini
+ * gerçek zamanlı dinler. callback'e düz bir liste (en yeni üstte) döner.
+ */
+export function subscribeManualRequests(callback) {
+  const talepRef = ref(database, 'abonelikTalepleri');
+  const unsub = onValue(talepRef, (snap) => {
+    const data = snap.val() || {};
+    const list = [];
+    Object.entries(data).forEach(([kresId, talepler]) => {
+      Object.entries(talepler || {}).forEach(([talepId, talep]) => {
+        list.push({ kresId, talepId, ...talep });
+      });
+    });
+    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    callback(list);
+  });
+  return unsub;
+}
+
+/**
+ * Superadmin bir talebi onaylar: hem abonelikler/{kresId} kaydını
+ * (writeSubscriptionRecord üzerinden, per-student sanal tier ile) yazar,
+ * hem de talebin durumunu 'onaylandi' yapar.
+ */
+export async function approveManualRequest({ kresId, talepId, tanimlayanUid = '', existingSubscription = null }) {
+  if (!kresId || !talepId) throw new Error('kresId ve talepId zorunludur.');
+
+  const talepSnap = await get(ref(database, `abonelikTalepleri/${kresId}/${talepId}`));
+  const talep = talepSnap.val();
+  if (!talep) throw new Error('Talep bulunamadı.');
+  if (talep.durum === 'onaylandi') throw new Error('Bu talep zaten onaylanmış.');
+
+  const tier = buildPerStudentTier(talep.ogrenciSayisi);
+  const endDate = computeEndDate(talep.period);
+
+  await writeSubscriptionRecord({
+    kresId,
+    tier,
+    selectedPeriod: talep.period,
+    durum: 'aktif',
+    source: MANUAL_SOURCE,
+    endDate,
+    price: talep.hesaplananTutar,
+    existingSubscription,
+    manuelNot: `Öğrenci sayısına göre onaylandı (${talep.ogrenciSayisi} öğrenci × ${PER_STUDENT_PRICE} TL).`,
+    odemeReferansi: talep.dekontUrl,
+    tanimlayanUid,
+  });
+
+  await update(ref(database, `abonelikTalepleri/${kresId}/${talepId}`), {
+    durum: 'onaylandi',
+    onaylayanUid: tanimlayanUid,
+    onayTarihi: toDateStr(new Date()),
+    updatedAt: Date.now(),
+  });
+}
+
+/**
+ * Superadmin bir talebi reddeder — dekont/kayıt silinmez, sadece durum güncellenir
+ * ki yönetici neden reddedildiğini görebilsin.
+ */
+export async function rejectManualRequest({ kresId, talepId, redNotu = '', tanimlayanUid = '' }) {
+  if (!kresId || !talepId) throw new Error('kresId ve talepId zorunludur.');
+  await update(ref(database, `abonelikTalepleri/${kresId}/${talepId}`), {
+    durum: 'reddedildi',
+    redNotu,
+    onaylayanUid: tanimlayanUid,
+    onayTarihi: toDateStr(new Date()),
+    updatedAt: Date.now(),
+  });
+}
+
+/**
+ * Yönetici tarafında: kendi kreşinin talep geçmişini dinler
+ * (bekliyor/onaylandı/reddedildi hepsi, en yeni üstte).
+ */
+export function subscribeKresManualRequests(kresId, callback) {
+  if (!kresId) return () => {};
+  const talepRef = ref(database, `abonelikTalepleri/${kresId}`);
+  const unsub = onValue(talepRef, (snap) => {
+    const data = snap.val() || {};
+    const list = Object.entries(data)
+      .map(([talepId, talep]) => ({ kresId, talepId, ...talep }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    callback(list);
+  });
+  return unsub;
 }
