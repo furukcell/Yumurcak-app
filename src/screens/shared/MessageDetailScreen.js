@@ -203,6 +203,7 @@ export default function MessageDetailScreen() {
 
     try {
       const now = Date.now();
+      const senderName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Kullanıcı';
       const mergedMeta = normalizeConversationMeta({ ...conversationMeta, ...conversation });
       const participants = getParticipantIds(mergedMeta).filter(Boolean);
       if (!participants.includes(currentUserId)) participants.push(currentUserId);
@@ -210,6 +211,7 @@ export default function MessageDetailScreen() {
       await push(ref(database, `mesajlar/${conversationId}`), {
         gonderenId: currentUserId,
         gonderenRol: currentRole,
+        gonderenAdi: senderName,
         metin: clean,
         createdAt: now,
         okunduBy: {
@@ -232,6 +234,7 @@ export default function MessageDetailScreen() {
         sonMesaj: clean,
         sonMesajAt: now,
         sonGonderenId: currentUserId,
+        sonGonderenAdi: senderName,
         aktif: true,
         updatedAt: now,
         [`sonOkuma/${currentUserId}`]: now,
@@ -259,7 +262,6 @@ export default function MessageDetailScreen() {
       );
 
       if (receiverIds.length > 0) {
-        const senderName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yumurcak Kreş';
         try {
           await createUserNotification({
             kresId: kullanici?.kresId || mergedMeta.kresId || '',
@@ -355,6 +357,17 @@ export default function MessageDetailScreen() {
                   return (
                     <View style={[styles.messageRow, mine ? styles.messageRowMine : styles.messageRowOther]}>
                       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
+                        {item.gonderenRol === 'yonetici' && item.gonderenAdi ? (
+                          <Text
+                            style={[
+                              styles.timeText,
+                              mine ? styles.timeTextMine : styles.timeTextOther,
+                              { marginBottom: 2, fontWeight: '700' },
+                            ]}
+                          >
+                            {item.gonderenAdi}
+                          </Text>
+                        ) : null}
                         <Text
                           style={[
                             styles.messageText,
