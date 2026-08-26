@@ -1764,6 +1764,20 @@ exports.deleteKullanici = functions
       updates[`veliCocuklari/${targetId}`] = null;
     } else if (rol === 'yonetici') {
       updates[`kresKullanicilari/${kresId}/yoneticiler/${targetId}`] = null;
+    } else if (rol === 'servisci') {
+      updates[`kresKullanicilari/${kresId}/servisciler/${targetId}`] = null;
+
+      // Bu servisçi bir araca (servisler/{id}) atanmışsa, aracın
+      // servisciId alanını da temizliyoruz — yoksa araç, silinmiş bir
+      // kullanıcıya referans vermeye devam eder (AdminVehicleListScreen
+      // ve ParentServiceScreen'de kopuk kayıt görünür).
+      const servislerSnap = await db.ref('servisler').orderByChild('kresId').equalTo(kresId).once('value');
+      servislerSnap.forEach((child) => {
+        const vehicle = child.val() || {};
+        if (String(vehicle.servisciId) === String(targetId)) {
+          updates[`servisler/${child.key}/servisciId`] = null;
+        }
+      });
     }
 
     await db.ref().update(updates);
