@@ -140,6 +140,7 @@ const MENU_CATEGORIES = [
     iconBg: '#F3E9FF',
     items: [
       { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', color: THEME.primaryDark },
+      { title: 'Hesabım / Şifre', icon: '🔑', screen: 'AdminProfile', color: THEME.primary },
       { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', color: THEME.purple },
       { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', color: THEME.red },
     ],
