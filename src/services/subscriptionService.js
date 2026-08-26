@@ -337,6 +337,51 @@ export async function setManualAccessRestriction({ kresId, restricted, tanimlaya
   });
 }
 
+/**
+ * Süperadmin: manuel/IBAN abonelik için "Ödeme Geldi" işaretlemesi.
+ * Süre dolup "Ödeme Bekleniyor" (grace_period) durumuna düşmüş bir aboneliği
+ * bir sonraki döneme (aylık +1 ay / yıllık +1 yıl) uzatır, varsa erişim
+ * kısıtlamasını kaldırır ve ödeme geçmişine kayıt düşer.
+ */
+export async function confirmManualPayment({ kresId, subscription, tanimlayanUid = '' }) {
+  if (!kresId) throw new Error('kresId zorunludur.');
+  if (!subscription) throw new Error('Abonelik kaydı bulunamadı.');
+
+  const period = subscription.planPeriod === 'yillik' ? 'yillik' : 'aylik';
+  const tier = getTierById(subscription.planTier);
+  const now = new Date();
+  const currentEnd = subscription.bitisTarihi ? new Date(subscription.bitisTarihi) : null;
+  // Süre hâlâ gelecekteyse (erken ödeme), o tarihten; geçmişse bugünden uzat.
+  const base = currentEnd && !Number.isNaN(currentEnd.getTime()) && currentEnd > now ? currentEnd : now;
+  const months = period === 'yillik' ? 12 : 1;
+  const newEndDate = toDateStr(addMonths(base, months));
+  const price = subscription.fiyat != null && subscription.fiyat !== '' ? Number(subscription.fiyat) : (period === 'yillik' ? tier.yearly : tier.monthly);
+
+  await update(ref(database, `abonelikler/${kresId}`), {
+    durum: 'aktif',
+    bitisTarihi: newEndDate,
+    erisimKisitli: false,
+    sonOdemeTarihi: toDateStr(now),
+    sonOdemeIsaretleyenUid: tanimlayanUid || '',
+    updatedAt: Date.now(),
+  });
+
+  await push(ref(database, `odemeGecmisi/${kresId}`), {
+    kresId,
+    kaynak: subscription.kaynak || MANUAL_SOURCE,
+    tierId: tier.id,
+    tierTitle: tier.title,
+    period,
+    fiyat: price,
+    paraBirimi: 'TRY',
+    odemeReferansi: subscription.odemeReferansi || '',
+    manuelNot: '"Ödeme Geldi" tikiyle süre uzatıldı',
+    tanimlayanUid: tanimlayanUid || '',
+    tarih: toDateStr(now),
+    createdAt: Date.now(),
+  });
+}
+
 // ============================================================
 // Manuel Abonelik Talebi (Yönetici → Superadmin onayı)
 // Yol: abonelikTalepleri/{kresId}/{talepId}
