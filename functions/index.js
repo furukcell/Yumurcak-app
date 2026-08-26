@@ -1677,3 +1677,106 @@ exports.generateDailyAiComments = functions
     await Promise.all(tasks);
     return null;
   });
+
+// ============================================================
+// Kullanıcı Silme (Öğretmen/Veli/Yönetici) — Admin SDK gerektirdiği
+// için callable Cloud Function olarak yazıldı.
+// ============================================================
+
+function normalizeUsernameSimple(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+exports.deleteKullanici = functions
+  .region('europe-west1')
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Giriş yapmalısınız.');
+    }
+
+    const targetId = data && data.id;
+    if (!targetId) {
+      throw new functions.https.HttpsError('invalid-argument', 'id parametresi gerekli.');
+    }
+
+    const db = admin.database();
+    const callerAuthUid = context.auth.uid;
+    const SUPERADMIN_UID = 'K966myrwH1arMN0Wfl5FXJhc4T03';
+
+    const callerIdSnap = await db.ref(`authKullaniciIndex/${callerAuthUid}`).once('value');
+    const callerId = callerIdSnap.val();
+    const callerSnap = callerId ? await db.ref(`kullanicilar/${callerId}`).once('value') : null;
+    const caller = callerSnap && callerSnap.exists() ? callerSnap.val() : null;
+
+    const isSuperadmin = callerAuthUid === SUPERADMIN_UID || (caller && caller.rol === 'superadmin');
+    const isYonetici = caller && caller.rol === 'yonetici';
+
+    if (!isSuperadmin && !isYonetici) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu işlem için yetkiniz yok.');
+    }
+
+    if (targetId === callerId) {
+      throw new functions.https.HttpsError('failed-precondition', 'Kendi hesabınızı bu ekrandan silemezsiniz.');
+    }
+
+    const targetSnap = await db.ref(`kullanicilar/${targetId}`).once('value');
+    if (!targetSnap.exists()) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const target = targetSnap.val();
+
+    if (!isSuperadmin && caller.kresId !== target.kresId) {
+      throw new functions.https.HttpsError('permission-denied', 'Farklı bir kreşin kullanıcısını silemezsiniz.');
+    }
+
+    const rol = target.rol;
+    const kresId = target.kresId;
+    const updates = {};
+
+    updates[`kullanicilar/${targetId}`] = null;
+    updates[`kullaniciKresleri/${targetId}`] = null;
+    if (target.authUid) updates[`authKullaniciIndex/${target.authUid}`] = null;
+    if (target.kullaniciAdi) updates[`kullaniciAdiIndex/${normalizeUsernameSimple(target.kullaniciAdi)}`] = null;
+
+    if (rol === 'ogretmen') {
+      updates[`kresKullanicilari/${kresId}/ogretmenler/${targetId}`] = null;
+      updates[`ogretmenSiniflari/${targetId}`] = null;
+
+      const siniflarSnap = await db.ref('siniflar').orderByChild('kresId').equalTo(kresId).once('value');
+      siniflarSnap.forEach((child) => {
+        const ids = arr(child.val() && child.val().ogretmenIds);
+        if (ids.includes(String(targetId))) {
+          updates[`siniflar/${child.key}/ogretmenIds`] = ids.filter((tid) => tid !== String(targetId));
+        }
+      });
+    } else if (rol === 'veli') {
+      updates[`kresKullanicilari/${kresId}/veliler/${targetId}`] = null;
+
+      const cocukIdsSnap = await db.ref(`veliCocuklari/${targetId}`).once('value');
+      const cocukIds = cocukIdsSnap.exists() ? Object.keys(cocukIdsSnap.val() || {}) : [];
+      await Promise.all(
+        cocukIds.map(async (cocukId) => {
+          const veliIdsSnap = await db.ref(`cocuklar/${cocukId}/veliIds`).once('value');
+          const kalanVeliIds = arr(veliIdsSnap.val()).filter((vid) => vid !== String(targetId));
+          updates[`cocuklar/${cocukId}/veliIds`] = kalanVeliIds;
+        })
+      );
+      updates[`veliCocuklari/${targetId}`] = null;
+    } else if (rol === 'yonetici') {
+      updates[`kresKullanicilari/${kresId}/yoneticiler/${targetId}`] = null;
+    }
+
+    await db.ref().update(updates);
+
+    if (target.authUid) {
+      try {
+        await admin.auth().deleteUser(target.authUid);
+      } catch (err) {
+        if (err.code !== 'auth/user-not-found') {
+          console.warn('deleteKullanici — Auth hesabı silinemedi:', err.message);
+        }
+      }
+    }
+
+    return { success: true };
+  });
