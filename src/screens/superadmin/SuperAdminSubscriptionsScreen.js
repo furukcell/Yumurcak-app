@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useAuth } from '../../context/AuthContext';
+import { createRoleNotification } from '../../services/notificationCenter';
 import {
   PACKAGE_TIERS,
   activateManualSubscription,
@@ -68,6 +69,10 @@ export default function SuperAdminSubscriptionsScreen({ navigation }) {
   const [manualRequests, setManualRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [processingRequestId, setProcessingRequestId] = useState('');
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageTarget, setMessageTarget] = useState(null);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeAllSubscriptions((list) => {
@@ -264,6 +269,45 @@ export default function SuperAdminSubscriptionsScreen({ navigation }) {
     );
   };
 
+  const sendMessageToKres = async (item, mesaj) => {
+    const text = (mesaj || '').trim();
+    if (!text) return;
+    try {
+      await createRoleNotification({
+        kresId: item.kresId,
+        role: 'yonetici',
+        baslik: 'Abonelik / Ödeme Bilgilendirmesi',
+        mesaj: text,
+        tip: 'abonelik',
+        routeName: 'Subscription',
+        createdBy: kullanici?.uid || kullanici?.id || '',
+      });
+      Alert.alert('Gönderildi', `${item.ad} yöneticisine mesaj gönderildi.`);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Hata', 'Mesaj gönderilemedi.');
+    }
+  };
+
+  const handleSendMessage = (item) => {
+    if (Alert.prompt) {
+      Alert.prompt(
+        'Kuruma Mesaj Gönder',
+        `${item.ad} yöneticisine gönderilecek mesajı yaz (bildirim olarak düşecek):`,
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Gönder', onPress: (text) => sendMessageToKres(item, text) },
+        ],
+        'plain-text'
+      );
+    } else {
+      // iOS dışı platformlarda Alert.prompt yok — basit metin girişi ile modal açılabilir.
+      setMessageTarget(item);
+      setMessageDraft('');
+      setMessageModalVisible(true);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.hero}>
@@ -359,6 +403,7 @@ export default function SuperAdminSubscriptionsScreen({ navigation }) {
               actionable={activeTab === TABS.MANUAL}
               onToggleRestriction={(restrict) => handleToggleRestriction(item, restrict)}
               onConfirmPayment={() => handleConfirmPayment(item)}
+              onSendMessage={() => handleSendMessage(item)}
             />
           )}
         />
@@ -394,11 +439,31 @@ export default function SuperAdminSubscriptionsScreen({ navigation }) {
           }
         }}
       />
+
+      <MessageModal
+        visible={messageModalVisible}
+        kresItem={messageTarget}
+        draft={messageDraft}
+        onChangeDraft={setMessageDraft}
+        sending={sendingMessage}
+        onClose={() => setMessageModalVisible(false)}
+        onSend={async () => {
+          if (!messageTarget) return;
+          setSendingMessage(true);
+          try {
+            await sendMessageToKres(messageTarget, messageDraft);
+            setMessageModalVisible(false);
+            setMessageDraft('');
+          } finally {
+            setSendingMessage(false);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function KresRow({ item, onPress, actionable, onToggleRestriction, onConfirmPayment }) {
+function KresRow({ item, onPress, actionable, onToggleRestriction, onConfirmPayment, onSendMessage }) {
   const status = getSubscriptionStatus(item.subscription || {});
   const badgeColor = status.blocked
     ? THEME.red
@@ -455,6 +520,16 @@ function KresRow({ item, onPress, actionable, onToggleRestriction, onConfirmPaym
               </Text>
             </TouchableOpacity>
           ) : null}
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onSendMessage?.();
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.messageButtonText}>💬 Mesaj Gönder</Text>
+          </TouchableOpacity>
         </View>
       </View>
       <Text style={[styles.rowBadge, { color: badgeColor, backgroundColor: badgeBg }]}>{status.label}</Text>
@@ -636,6 +711,42 @@ function ManualSubscriptionModal({ visible, kresItem, saving, onClose, onSave })
   );
 }
 
+function MessageModal({ visible, kresItem, draft, onChangeDraft, sending, onClose, onSend }) {
+  if (!kresItem) return null;
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalCard}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Text style={styles.modalTitle}>{kresItem.ad}</Text>
+          <Text style={styles.modalSub}>Yöneticiye bildirim olarak gidecek mesajı yaz</Text>
+
+          <TextInput
+            style={[styles.input, { minHeight: 90 }]}
+            value={draft}
+            onChangeText={onChangeDraft}
+            placeholder="Örn: Merhaba, geçtiğimiz ay için ödeme bilgisini iletir misiniz?"
+            placeholderTextColor="#999"
+            multiline
+          />
+
+          <View style={styles.modalButtonRow}>
+            <TouchableOpacity style={styles.modalCancel} onPress={onClose} disabled={sending}>
+              <Text style={styles.modalCancelText}>Vazgeç</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalSave} onPress={onSend} disabled={sending || !draft.trim()} activeOpacity={0.85}>
+              {sending ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSaveText}>Gönder</Text>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -665,6 +776,8 @@ const styles = StyleSheet.create({
   unrestrictButtonText: { color: THEME.green, fontWeight: '900', fontSize: 11 },
   confirmPaymentButton: { alignSelf: 'flex-start', backgroundColor: '#E8FBEA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 },
   confirmPaymentButtonText: { color: THEME.green, fontWeight: '900', fontSize: 11 },
+  messageButton: { alignSelf: 'flex-start', backgroundColor: THEME.primarySoft, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 },
+  messageButtonText: { color: THEME.primary, fontWeight: '900', fontSize: 11 },
   rowBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, fontWeight: '900', fontSize: 11, overflow: 'hidden' },
   requestCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 10 },
   requestTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
