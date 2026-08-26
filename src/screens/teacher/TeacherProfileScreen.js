@@ -15,6 +15,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { database, storage } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, InfoRow, getUserName } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import ChangePasswordCard from '../../components/ChangePasswordCard';
 
 export default function TeacherProfileScreen() {
   const navigation = useNavigation();
@@ -148,6 +149,8 @@ export default function TeacherProfileScreen() {
           <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon || '-'} />
           <InfoRow icon="👤" label="Kullanıcı Adı" value={kullanici?.kullaniciAdi || '-'} />
         </View>
+
+        <ChangePasswordCard userId={teacherId} primaryColor={THEME.primary} />
 
         <View style={styles.legalCard}>
           <View style={styles.legalHeader}>
