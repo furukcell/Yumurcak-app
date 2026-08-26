@@ -279,7 +279,10 @@ export default function ServisciDashboardScreen({ navigation }) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyText}>Size henüz bir servis aracı atanmamış. Yöneticinizle iletişime geçin.</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={cikisYap} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.logoutButton} onPress={() => navigation.navigate('ServisciProfile')} activeOpacity={0.85}>
+            <Text style={styles.logoutButtonText}>👤 Profilim</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.logoutButton, { marginTop: 10 }]} onPress={cikisYap} activeOpacity={0.85}>
             <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
           </TouchableOpacity>
         </View>
@@ -300,6 +303,9 @@ export default function ServisciDashboardScreen({ navigation }) {
                 : ''}
             </Text>
           </View>
+          <TouchableOpacity style={styles.logoutIconButton} onPress={() => navigation.navigate('ServisciProfile')} activeOpacity={0.8}>
+            <Text style={styles.logoutIconText}>👤 Profilim</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.logoutIconButton} onPress={cikisYap} activeOpacity={0.8}>
             <Text style={styles.logoutIconText}>Çıkış</Text>
           </TouchableOpacity>
