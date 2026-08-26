@@ -19,6 +19,7 @@ import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { ROLLER } from '../../constants';
+import { deleteKullaniciHesabi } from '../../utils/userDelete';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function AdminVehicleFormScreen() {
@@ -37,6 +38,7 @@ export default function AdminVehicleFormScreen() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [successToast, setSuccessToast] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [oldVehicle, setOldVehicle] = useState(null);
   const [oldServisci, setOldServisci] = useState(null);
@@ -162,6 +164,41 @@ export default function AdminVehicleFormScreen() {
     }
   };
 
+  // Bir "servis" hem bir araç kaydı (servisler/{id}) hem de ona bağlı bir
+  // "servisci" kullanıcı hesabıdır. İkisini birlikte siliyoruz: hesap
+  // functions/index.js -> deleteKullanici üzerinden (Auth + DB index'leri
+  // dahil), araç kaydı ise doğrudan client'tan (yönetici zaten servisler/
+  // $id üzerinde yazma yetkisine sahip).
+  const handleDelete = () => {
+    if (!vehicleId) return;
+    Alert.alert(
+      'Servis Aracını Sil',
+      `${ad || 'Bu servis'} (${plaka || 'plaka yok'}) kalıcı olarak silinecek. Bu işlem geri alınamaz: araç kaydı ve varsa bağlı servis görevlisi hesabı tamamen silinir.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              if (oldServisciId) {
+                await deleteKullaniciHesabi(oldServisciId);
+              }
+              await update(ref(database), { [`servisler/${vehicleId}`]: null });
+              navigation.goBack();
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Hata', `Servis aracı silinemedi.\n\n${error?.message || ''}`);
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (fetching) return <View style={styles.center}><ActivityIndicator size="large" color="#633806" /></View>;
 
   return (
@@ -206,6 +243,11 @@ export default function AdminVehicleFormScreen() {
           <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{vehicleId ? 'Güncelle' : 'Oluştur'}</Text>}
           </TouchableOpacity>
+          {vehicleId && (
+            <TouchableOpacity style={[styles.deleteButton, deleting && styles.saveButtonDisabled]} onPress={handleDelete} disabled={deleting}>
+              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={styles.deleteButtonText}>Servis Aracını Sil</Text>}
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
      </KeyboardAvoidingView>
@@ -238,4 +280,6 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: '#633806', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 10 },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  deleteButton: { backgroundColor: '#FFE8EC', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: '#FFC7D1' },
+  deleteButtonText: { color: '#D6394F', fontSize: 16, fontWeight: '700' },
 });
