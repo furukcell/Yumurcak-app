@@ -12,6 +12,7 @@ import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
+import { deleteKullaniciHesabi } from '../../utils/userDelete';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -33,6 +34,7 @@ export default function TeacherFormScreen() {
   const [fetching, setFetching] = useState(true);
   const [successToast, setSuccessToast] = useState(false);
   const [oldKullaniciAdi, setOldKullaniciAdi] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const yukle = async () => {
@@ -173,6 +175,36 @@ export default function TeacherFormScreen() {
     }
   };
 
+  // Web paneldeki AdministratorsPage.jsx / TeachersPage.jsx ile aynı desen:
+  // functions/index.js -> deleteKullanici callable'ını çağırır, hem DB
+  // kaydını/index'lerini hem de gerçek Firebase Auth hesabını siler.
+  const handleDelete = () => {
+    if (!teacherId) return;
+    Alert.alert(
+      'Öğretmeni Sil',
+      `${ad || 'Bu öğretmen'} kalıcı olarak silinecek. Bu işlem geri alınamaz: hesap ve Firebase Auth girişi tamamen silinir.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteKullaniciHesabi(teacherId);
+              navigation.goBack();
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Hata', `Öğretmen silinemedi.\n\n${error?.message || ''}`);
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (fetching) return <View style={styles.center}><ActivityIndicator size="large" color="#633806" /></View>;
 
   return (
@@ -212,6 +244,11 @@ export default function TeacherFormScreen() {
           <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{teacherId ? 'Güncelle' : 'Oluştur'}</Text>}
           </TouchableOpacity>
+          {teacherId && (
+            <TouchableOpacity style={[styles.deleteButton, deleting && styles.saveButtonDisabled]} onPress={handleDelete} disabled={deleting}>
+              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={styles.deleteButtonText}>Öğretmeni Sil</Text>}
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
      </KeyboardAvoidingView>
@@ -247,4 +284,6 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: '#633806', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 10 },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  deleteButton: { backgroundColor: '#FFE8EC', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: '#FFC7D1' },
+  deleteButtonText: { color: '#D6394F', fontSize: 16, fontWeight: '700' },
 });
