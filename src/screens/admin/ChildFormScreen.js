@@ -42,9 +42,6 @@ export default function ChildFormScreen() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [successToast, setSuccessToast] = useState(false);
-  // Abonelik öğrenci limiti kontrolü (sadece YENİ çocuk eklerken devreye girer).
-  const [ogrenciLimiti, setOgrenciLimiti] = useState(null);
-  const [mevcutOgrenciSayisi, setMevcutOgrenciSayisi] = useState(0);
 
   useEffect(() => {
     const yukle = async () => {
@@ -78,16 +75,6 @@ export default function ChildFormScreen() {
             setVeliler(veliResults.filter(Boolean));
           } else {
             setVeliler([]);
-          }
-          // ── Abonelik limiti (sadece yeni kayıt eklerken kontrol edilir) ─
-          if (!childId) {
-            const [abonelikSnap, cocukIndexSnap] = await Promise.all([
-              get(ref(database, `abonelikler/${kresId}`)),
-              get(ref(database, `kresCocuklari/${kresId}`)),
-            ]);
-            const abonelik = abonelikSnap.val();
-            setOgrenciLimiti(abonelik?.ogrenciLimiti ? Number(abonelik.ogrenciLimiti) : null);
-            setMevcutOgrenciSayisi(cocukIndexSnap.exists() ? Object.keys(cocukIndexSnap.val()).length : 0);
           }
         } else {
           setSiniflar([]);
@@ -136,16 +123,6 @@ export default function ChildFormScreen() {
 
     if (yeniBaslayan && !/^\d{4}-\d{2}-\d{2}$/.test(uyumBaslangicTarihi)) {
       Alert.alert('Hata', 'Uyum başlangıç tarihini 2026-06-26 formatında gir.');
-      return;
-    }
-
-    // Yeni çocuk eklerken abonelik öğrenci limiti aşılıyorsa engelle.
-    // Düzenleme (childId var) bu kontrolden muaf — mevcut kaydı güncellemek limiti artırmıyor.
-    if (!childId && ogrenciLimiti != null && mevcutOgrenciSayisi >= ogrenciLimiti) {
-      Alert.alert(
-        'Öğrenci Limiti Doldu',
-        `Aboneliğinizin öğrenci limiti ${ogrenciLimiti}. Şu an ${mevcutOgrenciSayisi} öğrenci kayıtlı — yeni öğrenci eklemek için abonelik / paket yükseltme talebi göndermeniz gerekiyor.`
-      );
       return;
     }
 
@@ -204,6 +181,48 @@ export default function ChildFormScreen() {
     }
   };
 
+  // Çocuk kaydının Firebase Auth hesabı YOK (cocuklar/{id} sadece bir DB
+  // kaydı), o yüzden Cloud Function'a gerek yok — yönetici zaten
+  // database.rules.json'da cocuklar/$cocukId üzerinde doğrudan yazma
+  // yetkisine sahip. Silerken kres/sınıf/veli index'lerini de temizliyoruz.
+  const handleDelete = () => {
+    if (!childId) return;
+    Alert.alert(
+      'Çocuğu Sil',
+      `${ad || 'Bu çocuk'} kalıcı olarak silinecek. Bu işlem geri alınamaz: tüm rapor, yoklama ve galeri bağlantıları koparılır.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const existingSnap = await get(ref(database, `cocuklar/${childId}`));
+              const existing = existingSnap.exists() ? existingSnap.val() : {};
+              const kresId = existing?.kresId || kullanici?.kresId || '';
+              const sinifIdEski = existing?.sinifId || '';
+              const veliIdler = [...asArray(existing?.veliIds), existing?.veliId, existing?.parentId].filter(Boolean);
+
+              const updates = { [`cocuklar/${childId}`]: null };
+              if (kresId) updates[`kresCocuklari/${kresId}/${childId}`] = null;
+              if (sinifIdEski) updates[`sinifCocuklari/${sinifIdEski}/${childId}`] = null;
+              veliIdler.forEach((veliId) => { updates[`veliCocuklari/${veliId}/${childId}`] = null; });
+
+              await update(ref(database), updates);
+              navigation.goBack();
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Hata', `Çocuk silinemedi.\n\n${error?.message || ''}`);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (fetching) {
     return <View style={styles.center}><ActivityIndicator size="large" color="#712B13" /></View>;
   }
@@ -217,13 +236,6 @@ export default function ChildFormScreen() {
       <AppSuccessToast visible={successToast} message={childId ? 'Çocuk bilgileri güncellendi' : 'Çocuk kaydedildi'} onHide={() => setSuccessToast(false)} />
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
-          {!childId && ogrenciLimiti != null && mevcutOgrenciSayisi >= ogrenciLimiti ? (
-            <View style={styles.limitWarning}>
-              <Text style={styles.limitWarningText}>
-                ⚠️ Öğrenci limitiniz doldu ({mevcutOgrenciSayisi}/{ogrenciLimiti}). Yeni öğrenci eklemeden önce abonelik / paket yükseltme talebi göndermeniz gerekiyor.
-              </Text>
-            </View>
-          ) : null}
           <View style={styles.field}>
             <Text style={styles.label}>Çocuk Adı *</Text>
             <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder="Örn: Ali Yılmaz" placeholderTextColor="#999" />
@@ -277,13 +289,14 @@ export default function ChildFormScreen() {
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity
-            style={[styles.saveButton, (loading || (!childId && ogrenciLimiti != null && mevcutOgrenciSayisi >= ogrenciLimiti)) && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={loading || (!childId && ogrenciLimiti != null && mevcutOgrenciSayisi >= ogrenciLimiti)}
-          >
+          <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{childId ? 'Güncelle' : 'Oluştur'}</Text>}
           </TouchableOpacity>
+          {childId && (
+            <TouchableOpacity style={[styles.deleteButton, loading && styles.saveButtonDisabled]} onPress={handleDelete} disabled={loading}>
+              <Text style={styles.deleteButtonText}>Çocuğu Sil</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -300,8 +313,6 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#fff', borderRadius: 8, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#ddd' },
   hint: { color: '#777', fontSize: 12, marginTop: 6, lineHeight: 17 },
   bilgi: { color: '#999', fontStyle: 'italic' },
-  limitWarning: { backgroundColor: '#FFE8EE', borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FFC2D1' },
-  limitWarningText: { color: '#B3123A', fontWeight: '700', fontSize: 13, lineHeight: 18 },
   seciBtn: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', marginBottom: 8, backgroundColor: '#fff' },
   seciBtnAktif: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
   seciBtnYazi: { fontSize: 15, color: '#333' },
@@ -325,4 +336,6 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: '#712B13', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  deleteButton: { backgroundColor: '#FFE8EC', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: '#FFC7D1' },
+  deleteButtonText: { color: '#D6394F', fontSize: 16, fontWeight: '700' },
 });
