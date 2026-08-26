@@ -6,6 +6,7 @@ import {
 } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const firebaseConfig = {
@@ -38,5 +39,10 @@ const database = getDatabase(app);
 // Firebase Storage
 const storage = getStorage(app);
 
-export { app, auth, database, storage };
+// Cloud Functions — functions/index.js'deki callable fonksiyonlar
+// (örn. deleteKullanici) 'europe-west1' bölgesinde deploy edildiği için
+// bölge burada da eşleşmeli, yoksa "function not found" hatası alınır.
+const functions = getFunctions(app, 'europe-west1');
+
+export { app, auth, database, storage, functions };
 export default app;
