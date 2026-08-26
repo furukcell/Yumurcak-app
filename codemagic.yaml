@@ -17,9 +17,9 @@ workflows:
         script: |
           npm install -g eas-cli
           eas whoami || true
-      - name: Build Android AAB with EAS
+      - name: Build Android AAB with EAS (Local)
         script: |
-          eas build --platform android --profile production --non-interactive --clear-cache
+          eas build --platform android --profile production --non-interactive --local
     artifacts:
       - "*.aab"
       - "**/*.aab"
@@ -42,9 +42,9 @@ workflows:
         script: |
           npm install -g eas-cli
           eas whoami || true
-      - name: Build Android APK with EAS
+      - name: Build Android APK with EAS (Local)
         script: |
-          eas build --platform android --profile preview --non-interactive --clear-cache
+          eas build --platform android --profile preview --non-interactive --local
     artifacts:
       - "*.apk"
       - "**/*.apk"
@@ -74,9 +74,9 @@ workflows:
         script: |
           echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > $CM_BUILD_DIR/AuthKey.p8
           echo "EXPO_ASC_API_KEY_PATH=$CM_BUILD_DIR/AuthKey.p8" >> $CM_ENV
-      - name: Build iOS with EAS
+      - name: Build iOS with EAS (Local)
         script: |
-          eas build --platform ios --profile production --non-interactive --clear-cache
+          eas build --platform ios --profile production --non-interactive --local
       - name: Submit to App Store Connect
         script: |
           eas submit --platform ios --profile production --non-interactive --latest
