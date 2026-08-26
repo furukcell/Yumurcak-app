@@ -21,6 +21,7 @@ import LessonScheduleListScreen from '../screens/admin/LessonScheduleListScreen'
 import EventListScreen from '../screens/admin/EventListScreen';
 import EventFormScreen from '../screens/admin/EventFormScreen';
 import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSettingsScreen';
+import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
 import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
@@ -65,6 +66,7 @@ export default function AdminStack() {
     stackScreen('AdminBirthdayCalendar', AdminBirthdayCalendarScreen, { title: 'Doğum Günü Takvimi' }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
+    stackScreen('AdminProfile', AdminProfileScreen, { headerShown: false }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
     stackScreen('Subscription', AdminSubscriptionScreen, { title: 'Abonelik / Ödeme' }),
     stackScreen('AdminMessages', AdminMessagesScreen, { title: 'Mesajlar' }),
