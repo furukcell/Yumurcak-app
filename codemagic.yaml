@@ -92,6 +92,9 @@ workflows:
         EXPO_ASC_KEY_ID: $ASC_KEY_ID
         EXPO_ASC_ISSUER_ID: $ASC_ISSUER_ID
     scripts:
+      - name: Install dependencies
+        script: |
+          npm install --legacy-peer-deps
       - name: Setup EAS CLI
         script: |
           npm install -g eas-cli
