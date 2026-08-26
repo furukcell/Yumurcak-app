@@ -30,5 +30,4 @@ jobs:
       - name: Publish OTA update (preview)
         run: eas update --branch preview --message "${{ github.event.head_commit.message }}" --non-interactive
 
-      - name: Publish OTA update (production)
-        run: eas update --branch production --message "${{ github.event.head_commit.message }}" --non-interactive
+      
