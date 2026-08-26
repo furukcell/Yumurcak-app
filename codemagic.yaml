@@ -24,6 +24,31 @@ workflows:
       - "*.aab"
       - "**/*.aab"
 
+  yumurcak-android-apk:
+    name: Yumurcak Android APK
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+    environment:
+      groups:
+        - yumurcak
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install --legacy-peer-deps
+      - name: Check Expo SDK dependencies
+        script: |
+          npx expo install --fix
+      - name: Setup EAS
+        script: |
+          npm install -g eas-cli
+          eas whoami || true
+      - name: Build Android APK with EAS
+        script: |
+          eas build --platform android --profile preview --non-interactive --clear-cache
+    artifacts:
+      - "*.apk"
+      - "**/*.apk"
+
   yumurcak-ios-build:
     name: Yumurcak iOS Build
     instance_type: mac_mini_m1
