@@ -14,6 +14,7 @@ import { generateId } from '../../utils/id';
 import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { deleteKullaniciHesabi } from '../../utils/userDelete';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function VeliFormScreen() {
@@ -31,6 +32,7 @@ export default function VeliFormScreen() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!veliId);
   const [successToast, setSuccessToast] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!veliId) return;
@@ -137,6 +139,36 @@ export default function VeliFormScreen() {
     }
   };
 
+  // functions/index.js -> deleteKullanici callable'ını çağırır. Veli
+  // silindiğinde bağlı çocukların veliIds listesi de fonksiyon tarafında
+  // otomatik temizlenir.
+  const handleDelete = () => {
+    if (!veliId) return;
+    Alert.alert(
+      'Veliyi Sil',
+      `${ad || 'Bu veli'} kalıcı olarak silinecek. Bu işlem geri alınamaz: hesap, Firebase Auth girişi ve çocuk bağlantıları tamamen silinir.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteKullaniciHesabi(veliId);
+              navigation.goBack();
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Hata', `Veli silinemedi.\n\n${error?.message || ''}`);
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (fetching) return <View style={s.center}><ActivityIndicator size="large" color="#3C3489" /></View>;
 
   return (
@@ -159,6 +191,11 @@ export default function VeliFormScreen() {
           <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleSave} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnYazi}>{veliId ? 'Güncelle' : 'Oluştur'}</Text>}
           </TouchableOpacity>
+          {veliId && (
+            <TouchableOpacity style={[s.deleteBtn, deleting && s.btnDisabled]} onPress={handleDelete} disabled={deleting}>
+              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={s.deleteBtnYazi}>Veliyi Sil</Text>}
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
      </KeyboardAvoidingView>
@@ -189,4 +226,6 @@ const s = StyleSheet.create({
   btn: { backgroundColor: '#3C3489', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 10 },
   btnDisabled: { opacity: 0.6 },
   btnYazi: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  deleteBtn: { backgroundColor: '#FFE8EC', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: '#FFC7D1' },
+  deleteBtnYazi: { color: '#D6394F', fontSize: 16, fontWeight: '700' },
 });
