@@ -23,6 +23,7 @@ import { database, storage } from '../../config/firebase';
 import { setAppLanguage } from '../../i18n';
 import { ScreenShell, InfoRow, EmptyState, LoadingScreen, useParentBase, styles, THEME } from './parentShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import ChangePasswordCard from '../../components/ChangePasswordCard';
 
 export default function ParentProfileScreen({ navigation }) {
   const { t, i18n } = useTranslation();
@@ -205,6 +206,8 @@ export default function ParentProfileScreen({ navigation }) {
           <InfoRow icon="☎️" label={t('parent.profile.phoneLabel')} value={kullanici?.telefon} />
           <InfoRow icon="✉️" label={t('parent.profile.usernameLabel')} value={kullanici?.kullaniciAdi} />
         </View>
+
+        <ChangePasswordCard userId={parentId} primaryColor={THEME.primary} />
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('parent.profile.institutionInfoTitle')}</Text>
