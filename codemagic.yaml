@@ -23,7 +23,6 @@ workflows:
     artifacts:
       - "*.aab"
       - "**/*.aab"
-
   yumurcak-android-apk:
     name: Yumurcak Android APK
     instance_type: mac_mini_m1
@@ -48,7 +47,6 @@ workflows:
     artifacts:
       - "*.apk"
       - "**/*.apk"
-
   yumurcak-ios-build:
     name: Yumurcak iOS Build
     instance_type: mac_mini_m1
@@ -83,3 +81,24 @@ workflows:
     artifacts:
       - "*.ipa"
       - "**/*.ipa"
+  yumurcak-ios-submit-only:
+    name: Yumurcak iOS Submit Only
+    instance_type: mac_mini_m1
+    max_build_duration: 30
+    environment:
+      groups:
+        - yumurcak
+      vars:
+        EXPO_ASC_KEY_ID: $ASC_KEY_ID
+        EXPO_ASC_ISSUER_ID: $ASC_ISSUER_ID
+    scripts:
+      - name: Setup EAS CLI
+        script: |
+          npm install -g eas-cli
+      - name: Write ASC API Key file
+        script: |
+          echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > $CM_BUILD_DIR/AuthKey.p8
+          echo "EXPO_ASC_API_KEY_PATH=$CM_BUILD_DIR/AuthKey.p8" >> $CM_ENV
+      - name: Submit latest EAS build to App Store Connect
+        script: |
+          eas submit --platform ios --profile production --non-interactive --latest
