@@ -24,6 +24,7 @@ import {
   PACKAGE_TIERS,
   activateManualSubscription,
   approveManualRequest,
+  confirmManualPayment,
   formatPrice,
   getTierById,
   rejectManualRequest,
@@ -55,7 +56,7 @@ const TABS = {
   REQUESTS: 'requests',
 };
 
-export default function SuperAdminSubscriptionsScreen() {
+export default function SuperAdminSubscriptionsScreen({ navigation }) {
   const { kullanici } = useAuth();
   const [activeTab, setActiveTab] = useState(TABS.REQUESTS);
   const [loading, setLoading] = useState(true);
@@ -237,9 +238,38 @@ export default function SuperAdminSubscriptionsScreen() {
     );
   };
 
+  const handleConfirmPayment = (item) => {
+    const period = item.subscription?.planPeriod === 'yillik' ? 'yıl' : 'ay';
+    Alert.alert(
+      'Ödeme Geldi',
+      `${item.ad} için ödemenin geldiğini onaylıyor musun? Onaylarsan abonelik süresi 1 ${period} uzatılır ve varsa erişim kısıtlaması kaldırılır.`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Onayla',
+          onPress: async () => {
+            try {
+              await confirmManualPayment({
+                kresId: item.kresId,
+                subscription: item.subscription,
+                tanimlayanUid: kullanici?.uid || kullanici?.id || '',
+              });
+            } catch (err) {
+              console.error(err);
+              Alert.alert('Hata', 'İşlem gerçekleştirilemedi.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.hero}>
+        <TouchableOpacity style={styles.heroBack} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <Text style={styles.heroBackText}>‹ Geri</Text>
+        </TouchableOpacity>
         <Text style={styles.heroIcon}>💎</Text>
         <Text style={styles.heroTitle}>Abonelik Yönetimi</Text>
         <Text style={styles.heroDesc}>Tüm kreşlerin abonelik durumu — Google Play ve Manuel/IBAN</Text>
@@ -328,6 +358,7 @@ export default function SuperAdminSubscriptionsScreen() {
               onPress={() => activeTab === TABS.MANUAL && openManualForm(item)}
               actionable={activeTab === TABS.MANUAL}
               onToggleRestriction={(restrict) => handleToggleRestriction(item, restrict)}
+              onConfirmPayment={() => handleConfirmPayment(item)}
             />
           )}
         />
@@ -367,7 +398,7 @@ export default function SuperAdminSubscriptionsScreen() {
   );
 }
 
-function KresRow({ item, onPress, actionable, onToggleRestriction }) {
+function KresRow({ item, onPress, actionable, onToggleRestriction, onConfirmPayment }) {
   const status = getSubscriptionStatus(item.subscription || {});
   const badgeColor = status.blocked
     ? THEME.red
@@ -378,6 +409,9 @@ function KresRow({ item, onPress, actionable, onToggleRestriction }) {
         : THEME.green;
   const badgeBg = status.blocked || status.severity === 'critical' ? THEME.redSoft : status.severity === 'warning' ? '#FFF4D8' : '#E8FBEA';
   const showRestrictionControls = status.key === 'grace_period' || status.key === 'blocked_manual';
+  // "Ödeme Geldi" tiki sadece manuel/IBAN abonelikte ve süre geçtiğinde/kısıtlandığında görünür.
+  const isManual = item.subscription?.kaynak === 'manuel_iban';
+  const showConfirmPayment = isManual && (status.key === 'grace_period' || status.key === 'blocked_manual');
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={actionable ? 0.75 : 1} disabled={!actionable}>
@@ -394,20 +428,34 @@ function KresRow({ item, onPress, actionable, onToggleRestriction }) {
         {status.key === 'grace_period' ? (
           <Text style={styles.graceText}>{status.daysOverdue} gündür ödenmedi</Text>
         ) : null}
-        {showRestrictionControls ? (
-          <TouchableOpacity
-            style={status.key === 'blocked_manual' ? styles.unrestrictButton : styles.restrictButton}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onToggleRestriction?.(status.key !== 'blocked_manual');
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={status.key === 'blocked_manual' ? styles.unrestrictButtonText : styles.restrictButtonText}>
-              {status.key === 'blocked_manual' ? 'Kısıtlamayı Kaldır' : 'Erişimi Kısıtla'}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {showConfirmPayment ? (
+            <TouchableOpacity
+              style={styles.confirmPaymentButton}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onConfirmPayment?.();
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.confirmPaymentButtonText}>✅ Ödeme Geldi</Text>
+            </TouchableOpacity>
+          ) : null}
+          {showRestrictionControls ? (
+            <TouchableOpacity
+              style={status.key === 'blocked_manual' ? styles.unrestrictButton : styles.restrictButton}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onToggleRestriction?.(status.key !== 'blocked_manual');
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={status.key === 'blocked_manual' ? styles.unrestrictButtonText : styles.restrictButtonText}>
+                {status.key === 'blocked_manual' ? 'Kısıtlamayı Kaldır' : 'Erişimi Kısıtla'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
       <Text style={[styles.rowBadge, { color: badgeColor, backgroundColor: badgeBg }]}>{status.label}</Text>
     </TouchableOpacity>
@@ -592,6 +640,8 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   hero: { backgroundColor: THEME.primary, borderRadius: 26, padding: 20, margin: 16, marginBottom: 10 },
+  heroBack: { alignSelf: 'flex-start', marginBottom: 10 },
+  heroBackText: { color: '#fff', fontWeight: '900', fontSize: 15 },
   heroIcon: { fontSize: 30 },
   heroTitle: { color: '#fff', fontSize: 22, fontWeight: '900', marginTop: 6 },
   heroDesc: { color: 'rgba(255,255,255,0.82)', fontWeight: '700', marginTop: 4, lineHeight: 18 },
@@ -613,6 +663,8 @@ const styles = StyleSheet.create({
   restrictButtonText: { color: THEME.red, fontWeight: '900', fontSize: 11 },
   unrestrictButton: { alignSelf: 'flex-start', backgroundColor: '#E8FBEA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 },
   unrestrictButtonText: { color: THEME.green, fontWeight: '900', fontSize: 11 },
+  confirmPaymentButton: { alignSelf: 'flex-start', backgroundColor: '#E8FBEA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 },
+  confirmPaymentButtonText: { color: THEME.green, fontWeight: '900', fontSize: 11 },
   rowBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, fontWeight: '900', fontSize: 11, overflow: 'hidden' },
   requestCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 10 },
   requestTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
@@ -640,4 +692,3 @@ const styles = StyleSheet.create({
   modalSave: { flex: 2, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: THEME.primary },
   modalSaveText: { color: '#fff', fontWeight: '900' },
 });
-    
