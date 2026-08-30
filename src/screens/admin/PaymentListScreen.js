@@ -165,7 +165,9 @@ export default function PaymentListScreen() {
     }
 
     const odemelerUnsub = onValue(
-      ref(database, 'odemeler'),
+      kresId
+        ? query(ref(database, 'odemeler'), orderByChild('kresId'), equalTo(kresId))
+        : ref(database, 'odemeler'),
       (snap) => {
         odemelerData = safeObject(snap.val());
         odemelerLoaded = true;
