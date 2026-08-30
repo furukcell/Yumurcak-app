@@ -40,11 +40,13 @@ export default function ClassListScreen() {
   const kresId = kres?.id || kullanici?.kresId;
 
   const [classes, setClasses] = useState([]);
+  const [childCounts, setChildCounts] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!kresId) {
       setClasses([]);
+      setChildCounts({});
       setLoading(false);
       return;
     }
@@ -56,6 +58,7 @@ export default function ClassListScreen() {
 
       if (!idsData) {
         setClasses([]);
+        setChildCounts({});
         setLoading(false);
         return;
       }
@@ -75,6 +78,23 @@ export default function ClassListScreen() {
 
         setClasses(classesArray);
         setLoading(false);
+
+        // Sınıf listesindeki çocuk sayısı, siniflar/{id} üzerindeki
+        // (hiç güncellenmeyen) ogrenciSayisi/cocukSayisi alanları yerine,
+        // ClassFormScreen'in de kullandığı gerçek sinifCocuklari/{id}
+        // index'inden sayılıyor — 0 gösterme hatasının kök nedeni buydu.
+        Promise.all(
+          classesArray.map((c) =>
+            get(ref(database, `sinifCocuklari/${c.id}`)).then((s) => [
+              c.id,
+              s.exists() ? Object.keys(s.val()).length : 0,
+            ])
+          )
+        ).then((entries) => {
+          setChildCounts(Object.fromEntries(entries));
+        }).catch((error) => {
+          console.warn('Sınıf çocuk sayısı çekme hatası:', error);
+        });
       }).catch((error) => {
         console.warn('Sınıf listesi çekme hatası:', error);
         setClasses([]);
@@ -91,7 +111,7 @@ export default function ClassListScreen() {
 
   const renderItem = ({ item }) => {
     const teacherCount = item.ogretmenIds?.length || 0;
-    const studentCount = item.ogrenciSayisi || item.cocukSayisi || item.studentCount || 0;
+    const studentCount = childCounts[item.id] ?? 0;
 
     return (
       <TouchableOpacity
