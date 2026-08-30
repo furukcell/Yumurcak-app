@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -88,15 +88,17 @@ export default function AdminBellScreen() {
   const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
+    if (!kresId) {
+      setBildirimler([]);
+      setLoading(false);
+      return undefined;
+    }
+
     setLoading(true);
     const unsub = onValue(
-      ref(database, 'kurumZili'),
+      query(ref(database, 'kurumZili'), orderByChild('kresId'), equalTo(kresId)),
       (snap) => {
         const liste = toList(snap.val())
-          .filter((item) => {
-            if (!kresId) return true;
-            return !item.kresId || item.kresId === kresId || item.kurumId === kresId;
-          })
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0));
 
         setBildirimler(liste);
