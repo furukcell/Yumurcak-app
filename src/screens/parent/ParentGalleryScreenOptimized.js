@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { onValue, ref } from 'firebase/database';
+import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -147,7 +147,12 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
 
     const startFallback = () => {
       if (fallbackUnsub) return;
-      fallbackUnsub = onValue(ref(database, 'cocuklar'), (snap) => {
+      const authKresId = kullanici?.kresId;
+      if (!authKresId) {
+        setLoading(false);
+        return;
+      }
+      fallbackUnsub = onValue(query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(authKresId)), (snap) => {
         const filtered = toList(snap.val()).filter((child) => includesId(child.veliIds, userId) || child.veliId === userId || child.parentId === userId);
         setChildren(filtered);
         setLoading(false);
@@ -188,8 +193,8 @@ export default function ParentGalleryScreenOptimized({ navigation }) {
 
     const startFallback = () => {
       if (fallbackUnsub) return;
-      fallbackUnsub = onValue(ref(database, 'galeri'), (snap) => {
-        const list = toList(snap.val()).filter((item) => !item.kresId || item.kresId === kresId).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0)).slice(0, 250);
+      fallbackUnsub = onValue(query(ref(database, 'galeri'), orderByChild('kresId'), equalTo(kresId)), (snap) => {
+        const list = toList(snap.val()).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0)).slice(0, 250);
         setGallery(list);
       }, () => setGallery([]));
     };
