@@ -5,10 +5,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -43,6 +45,9 @@ export default function AdminMessagesScreen() {
   const [kres, setKres] = useState(null);
   const [conversations, setConversations] = useState({});
   const [tab, setTab] = useState('all');
+  const [newMessageOpen, setNewMessageOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState('all');
+  const [drawerQuery, setDrawerQuery] = useState('');
 
   useEffect(() => {
     const unsubs = [];
@@ -69,8 +74,8 @@ export default function AdminMessagesScreen() {
     return () => unsubs.forEach((unsub) => unsub && unsub());
   }, [kresId]);
 
-  const contacts = useMemo(() => {
-    const list = Object.entries(users)
+  const allContacts = useMemo(() => {
+    return Object.entries(users)
       .map(([id, user]) => ({ id, ...user }))
       .filter((user) => user.aktif !== false)
       .filter((user) => user.id !== adminId)
@@ -92,12 +97,19 @@ export default function AdminMessagesScreen() {
           meta,
         };
       })
-      .filter((user) => tab === 'all' || user.role === tab)
-      .sort((a, b) => Number(b.sonMesajAt || 0) - Number(a.sonMesajAt || 0) || getUserName(a).localeCompare(getUserName(b), 'tr'))
-      .slice(0, 20);
+      .sort((a, b) => Number(b.sonMesajAt || 0) - Number(a.sonMesajAt || 0) || getUserName(a).localeCompare(getUserName(b), 'tr'));
+  }, [users, children, classes, conversations, adminId, kresId]);
 
-    return list;
-  }, [users, children, classes, conversations, adminId, kresId, tab]);
+  const contacts = useMemo(() => {
+    return allContacts.filter((user) => tab === 'all' || user.role === tab).slice(0, 20);
+  }, [allContacts, tab]);
+
+  const drawerContacts = useMemo(() => {
+    const q = drawerQuery.trim().toLocaleLowerCase('tr-TR');
+    return allContacts
+      .filter((user) => drawerTab === 'all' || user.role === drawerTab)
+      .filter((user) => !q || getUserName(user).toLocaleLowerCase('tr-TR').includes(q) || (user.childInfo || '').toLocaleLowerCase('tr-TR').includes(q));
+  }, [allContacts, drawerTab, drawerQuery]);
 
   const openChat = async (contact) => {
     const now = Date.now();
@@ -122,14 +134,19 @@ export default function AdminMessagesScreen() {
       aktif: true,
     };
 
-    await update(ref(database, `mesajKonusmalari/${contact.conversationId}`), conversationMeta);
-
+    setNewMessageOpen(false);
     navigation.navigate('MessageDetail', {
       conversationId: contact.conversationId,
       conversationMeta,
       title: getUserName(contact),
       subtitle: contact.role === 'veli' ? `Veli · ${contact.childInfo || kres?.ad || ''}` : `Öğretmen · ${contact.childInfo || kres?.ad || ''}`,
     });
+
+    try {
+      await update(ref(database, `mesajKonusmalari/${contact.conversationId}`), conversationMeta);
+    } catch (error) {
+      console.warn('Konuşma meta verisi güncellenemedi:', error?.message || error);
+    }
   };
 
   if (loading) {
@@ -148,6 +165,9 @@ export default function AdminMessagesScreen() {
           <Text style={styles.heroIcon}>💬</Text>
           <Text style={styles.heroTitle}>Mesajlar</Text>
           <Text style={styles.heroDesc}>{kres?.ad || 'Kurum'} son 20 görüşme</Text>
+          <TouchableOpacity style={styles.newMessageButton} onPress={() => setNewMessageOpen(true)} activeOpacity={0.85}>
+            <Text style={styles.newMessageButtonText}>✎ Yeni Mesaj</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.tabs}>
@@ -185,6 +205,64 @@ export default function AdminMessagesScreen() {
           ))
         )}
       </ScrollView>
+
+      <Modal visible={newMessageOpen} transparent animationType="slide" onRequestClose={() => setNewMessageOpen(false)}>
+        <View style={styles.drawerOverlay}>
+          <TouchableOpacity style={styles.drawerBackdrop} activeOpacity={1} onPress={() => setNewMessageOpen(false)} />
+          <View style={styles.drawerSheet}>
+            <View style={styles.drawerHandle} />
+            <View style={styles.drawerHeader}>
+              <View>
+                <Text style={styles.drawerTitle}>Yeni Mesaj Başlat</Text>
+                <Text style={styles.drawerSubtitle}>Veli veya öğretmen seç, sohbete direkt başla</Text>
+              </View>
+              <TouchableOpacity style={styles.drawerCloseButton} onPress={() => setNewMessageOpen(false)} activeOpacity={0.85}>
+                <Text style={styles.drawerCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.drawerSearchBox}>
+              <Text style={styles.drawerSearchIcon}>⌕</Text>
+              <TextInput
+                style={styles.drawerSearchInput}
+                value={drawerQuery}
+                onChangeText={setDrawerQuery}
+                placeholder="Kişi ara..."
+                placeholderTextColor="#8A8EA3"
+              />
+            </View>
+
+            <View style={styles.tabs}>
+              <TabButton label="Tümü" active={drawerTab === 'all'} onPress={() => setDrawerTab('all')} />
+              <TabButton label="Veliler" active={drawerTab === 'veli'} onPress={() => setDrawerTab('veli')} />
+              <TabButton label="Öğretmenler" active={drawerTab === 'ogretmen'} onPress={() => setDrawerTab('ogretmen')} />
+            </View>
+
+            <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false}>
+              {drawerContacts.length === 0 ? (
+                <View style={styles.drawerEmpty}>
+                  <Text style={styles.drawerEmptyIcon}>📭</Text>
+                  <Text style={styles.drawerEmptyTitle}>Kişi bulunamadı</Text>
+                </View>
+              ) : (
+                drawerContacts.map((contact) => (
+                  <TouchableOpacity key={`${contact.role}_${contact.id}_drawer`} style={styles.drawerContactRow} onPress={() => openChat(contact)} activeOpacity={0.85}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{contact.role === 'veli' ? '👨‍👩‍👧' : '👩‍🏫'}</Text>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.drawerContactTitle} numberOfLines={1}>{getUserName(contact)}</Text>
+                      <Text style={styles.drawerContactSub} numberOfLines={1}>{contact.childInfo || 'Kurum kullanıcısı'}</Text>
+                    </View>
+                    {contact.unread > 0 ? <Text style={styles.drawerUnread}>{contact.unread > 99 ? '99+' : contact.unread}</Text> : null}
+                    <Text style={styles.arrow}>›</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -231,6 +309,28 @@ const styles = StyleSheet.create({
   heroIcon: { fontSize: 42, marginBottom: 8 },
   heroTitle: { color: '#FFF', fontSize: 23, fontWeight: '900' },
   heroDesc: { color: 'rgba(255,255,255,0.82)', marginTop: 5, fontWeight: '700', textAlign: 'center' },
+  newMessageButton: { marginTop: 14, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
+  newMessageButtonText: { color: '#FFF', fontWeight: '900' },
+  drawerOverlay: { flex: 1, justifyContent: 'flex-end' },
+  drawerBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,8,20,0.45)' },
+  drawerSheet: { backgroundColor: THEME.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 28, maxHeight: '82%' },
+  drawerHandle: { width: 44, height: 5, borderRadius: 3, backgroundColor: THEME.border, alignSelf: 'center', marginBottom: 14 },
+  drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  drawerTitle: { fontSize: 19, fontWeight: '900', color: THEME.text },
+  drawerSubtitle: { color: THEME.muted, fontWeight: '700', marginTop: 3, fontSize: 12 },
+  drawerCloseButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: THEME.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
+  drawerCloseText: { fontSize: 18, color: THEME.muted, fontWeight: '900', lineHeight: 18 },
+  drawerSearchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.card, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 12, marginBottom: 12 },
+  drawerSearchIcon: { color: THEME.muted, marginRight: 8, fontSize: 16 },
+  drawerSearchInput: { flex: 1, paddingVertical: 10, color: THEME.text, fontWeight: '700' },
+  drawerList: { marginTop: 4 },
+  drawerContactRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.card, borderRadius: 16, padding: 12, marginBottom: 9, borderWidth: 1, borderColor: THEME.border },
+  drawerContactTitle: { color: THEME.text, fontWeight: '900', fontSize: 15 },
+  drawerContactSub: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 2 },
+  drawerUnread: { backgroundColor: '#FF4D6D', color: '#FFF', fontWeight: '900', fontSize: 11, minWidth: 20, height: 20, borderRadius: 10, textAlign: 'center', textAlignVertical: 'center', marginRight: 6, overflow: 'hidden' },
+  drawerEmpty: { alignItems: 'center', paddingVertical: 30 },
+  drawerEmptyIcon: { fontSize: 36, marginBottom: 8 },
+  drawerEmptyTitle: { color: THEME.muted, fontWeight: '800' },
   tabs: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tabButton: { flex: 1, backgroundColor: THEME.card, borderRadius: 14, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: THEME.border },
   tabButtonActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
