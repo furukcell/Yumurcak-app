@@ -66,9 +66,11 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
   }, [kresId]);
 
   useEffect(() => {
-    const unsub = onValue(ref(database, 'servisBilgileri'), (snap) => setServiceMap(snap.val() || {}));
+    if (!kresId) return undefined;
+    const q = query(ref(database, 'servisBilgileri'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => setServiceMap(snap.val() || {}));
     return () => unsub();
-  }, []);
+  }, [kresId]);
 
   useEffect(() => {
     let cancelled = false;
