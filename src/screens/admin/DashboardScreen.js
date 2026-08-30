@@ -6,7 +6,7 @@
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert, LayoutAnimation, UIManager } from 'react-native';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -210,12 +210,10 @@ export default function DashboardScreen() {
   // Okunmamış ve henüz tamamlanmamış kayıtlar rozet sayısını oluşturur.
   useEffect(() => {
     if (!kresId) return undefined;
-    const off = onValue(ref(database, 'kurumZili'), (snap) => {
+    const off = onValue(query(ref(database, 'kurumZili'), orderByChild('kresId'), equalTo(kresId)), (snap) => {
       const data = snap.val() || {};
       const count = Object.values(data).filter((item) => {
         if (!item || typeof item !== 'object') return false;
-        const sameKres = !item.kresId || item.kresId === kresId || item.kurumId === kresId;
-        if (!sameKres) return false;
         const okundu = !!(item.okundu || item.read);
         const tamamlandi = !!(item.tamamlandi || item.tamamlandı);
         return !okundu && !tamamlandi;
