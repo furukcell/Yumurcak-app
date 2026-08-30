@@ -15,7 +15,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Linking, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
-import { ref, onValue, get, update } from 'firebase/database';
+import { ref, onValue, get, update, query, orderByChild, equalTo } from 'firebase/database';
 import * as Location from 'expo-location';
 
 import { database } from '../../config/firebase';
@@ -130,13 +130,14 @@ export default function ServisciRouteScreen({ navigation }) {
 
   // Çocuklar (+ veli telefon) + adresKonum yoksa geocode edip cache'le
   useEffect(() => {
-    if (!vehicleId) {
+    if (!vehicleId || !kresId) {
       setChildren([]);
       setLoading(false);
       return undefined;
     }
 
-    const unsub = onValue(ref(database, 'servisBilgileri'), async (snap) => {
+    const serviceQuery = query(ref(database, 'servisBilgileri'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(serviceQuery, async (snap) => {
       const data = snap.val() || {};
       const childIds = Object.entries(data)
         .filter(([, v]) => v?.servisKullaniyor && v?.servisId === vehicleId)
@@ -189,7 +190,7 @@ export default function ServisciRouteScreen({ navigation }) {
     }, () => setLoading(false));
 
     return () => unsub();
-  }, [vehicleId]);
+  }, [vehicleId, kresId]);
 
   // Günlük durum
   useEffect(() => {
