@@ -75,7 +75,7 @@ function getEntererTime(item) {
 // hata callback'i (aşağıda) sessizce boş dizi basıyordu — "kullanicilar" gibi
 // kuralı gevşek (auth != null) olan node'lar görünürken, bunlar hep boş
 // kalıyordu (ör. "çocuklar" istatistik sekmesi hep boş çıkıyordu).
-const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler']);
+const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler', 'anketler', 'kullanicilar', 'odemeler', 'kurumZili']);
 
 export default function AdminStatisticsScreen() {
   const { kullanici } = useAuth();
