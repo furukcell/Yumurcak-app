@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { onValue, ref, update } from 'firebase/database';
+import { onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -52,11 +52,18 @@ export default function AdminMessagesScreen() {
   useEffect(() => {
     const unsubs = [];
     const listen = (path, setter) => {
-      const r = ref(database, path);
-      const unsub = onValue(r, (snap) => {
-        setter(snap.val() || {});
-        setLoading(false);
-      });
+      const r = query(ref(database, path), orderByChild('kresId'), equalTo(kresId));
+      const unsub = onValue(
+        r,
+        (snap) => {
+          setter(snap.val() || {});
+          setLoading(false);
+        },
+        () => {
+          setter({});
+          setLoading(false);
+        }
+      );
       unsubs.push(unsub);
     };
 
