@@ -469,6 +469,12 @@
         ".write": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() !== '')"
       }
     },
+    "hataLoglari": {
+      ".read": "auth != null && (auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03' || root.child('kullanicilar').child(root.child('authKullaniciIndex').child(auth.uid).val()).child('rol').val() === 'superadmin')",
+      "$id": {
+        ".write": "auth != null"
+      }
+    },
     "odemeGecmisi": {
       ".read": "auth != null && auth.uid === 'K966myrwH1arMN0Wfl5FXJhc4T03'",
       "$kresId": {
