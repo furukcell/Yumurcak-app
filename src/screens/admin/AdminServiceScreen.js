@@ -95,10 +95,8 @@ export default function AdminServiceScreen({ navigation }) {
       () => setSinifMap({})
     );
 
-    // NOT: servisBilgileri top-level ".read" kuralı kresId filtresi
-    // istemiyor (bkz. database.rules.json) — tüm node okunup burada
-    // client tarafında bu kreşin çocuklarına göre filtreleniyor.
-    const serviceUnsub = onValue(ref(database, 'servisBilgileri'), (snap) => {
+    const serviceQuery = query(ref(database, 'servisBilgileri'), orderByChild('kresId'), equalTo(kresId));
+    const serviceUnsub = onValue(serviceQuery, (snap) => {
       setServiceMap(snap.val() || {});
     });
 
