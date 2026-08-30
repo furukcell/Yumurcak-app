@@ -70,11 +70,13 @@ export default function AdminServiceStatsScreen({ navigation }) {
 
   // Servis kullanan çocuklar (mevcut atama)
   useEffect(() => {
-    const unsub = onValue(ref(database, 'servisBilgileri'), (snap) => {
+    if (!kresId) return undefined;
+    const q = query(ref(database, 'servisBilgileri'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(q, (snap) => {
       setServiceMap(snap.val() || {});
     });
     return () => unsub();
-  }, []);
+  }, [kresId]);
 
   // Seçili günün durum kaydı
   useEffect(() => {
