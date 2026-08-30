@@ -6,7 +6,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -19,9 +18,7 @@ import {
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { get, onValue, ref, set, update, query, orderByChild, equalTo } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { database, storage } from '../../config/firebase';
-import * as ImagePicker from 'expo-image-picker';
+import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import {
   REVENUECAT_ENTITLEMENT_ID,
@@ -34,13 +31,9 @@ import {
 } from '../../services/revenueCat';
 import {
   PACKAGE_TIERS,
-  PER_STUDENT_PRICE,
-  computePerStudentPrice,
-  createManualRequest,
   formatPrice,
   getSuggestedTier,
   getTierById,
-  subscribeKresManualRequests,
 } from '../../services/subscriptionService';
 import { getSubscriptionEndDate, getSubscriptionStatus } from '../../utils/subscriptionStatus';
 
@@ -73,18 +66,6 @@ function getPlanLabel(subscription) {
   return `${tier.title} / ${period === 'yillik' ? 'Yıllık' : 'Aylık'}`;
 }
 
-function requestStatusLabel(durum) {
-  if (durum === 'onaylandi') return 'Onaylandı';
-  if (durum === 'reddedildi') return 'Reddedildi';
-  return 'Bekliyor';
-}
-
-function requestBadgeStyle(durum) {
-  if (durum === 'onaylandi') return { backgroundColor: '#E4F8EC', color: THEME.green };
-  if (durum === 'reddedildi') return { backgroundColor: '#FFE7EB', color: THEME.red };
-  return { backgroundColor: '#FFF3D9', color: THEME.orange };
-}
-
 export default function AdminSubscriptionScreen() {
   const headerHeight = useHeaderHeight();
   const { kullanici } = useAuth();
@@ -102,11 +83,6 @@ export default function AdminSubscriptionScreen() {
   const [children, setChildren] = useState([]);
   const [promoCode, setPromoCode] = useState('');
   const [period, setPeriod] = useState('aylik');
-  const [manualRequests, setManualRequests] = useState([]);
-  const [reqStudentCount, setReqStudentCount] = useState('');
-  const [reqDekontUrl, setReqDekontUrl] = useState('');
-  const [reqUploading, setReqUploading] = useState(false);
-  const [reqSubmitting, setReqSubmitting] = useState(false);
 
   useEffect(() => {
     const kresUnsub = onValue(ref(database, `kresler/${kresId}`), (snap) => {
@@ -136,11 +112,6 @@ export default function AdminSubscriptionScreen() {
       subUnsub();
       childUnsub();
     };
-  }, [kresId]);
-
-  useEffect(() => {
-    const unsub = subscribeKresManualRequests(kresId, setManualRequests);
-    return () => unsub && unsub();
   }, [kresId]);
 
   useEffect(() => {
@@ -403,71 +374,6 @@ export default function AdminSubscriptionScreen() {
     }
   };
 
-  const pickAndUploadDekont = async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Dekont fotoğrafı seçmek için galeri izni vermen gerekiyor.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.75,
-      });
-
-      if (result.canceled || !result.assets?.[0]?.uri) return;
-
-      const uri = result.assets[0].uri;
-      setReqUploading(true);
-
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
-      const fileRef = storageRef(storage, `abonelikDekontlari/${kresId}/${Date.now()}.jpg`);
-      await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
-      const downloadUrl = await getDownloadURL(fileRef);
-
-      setReqDekontUrl(downloadUrl);
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Hata', 'Dekont yüklenemedi. Tekrar dener misin?');
-    } finally {
-      setReqUploading(false);
-    }
-  };
-
-  const submitManualRequest = async () => {
-    const count = Number(reqStudentCount);
-    if (!count || count <= 0) {
-      return Alert.alert('Eksik Bilgi', 'Geçerli bir öğrenci sayısı gir.');
-    }
-    if (!reqDekontUrl) {
-      return Alert.alert('Eksik Bilgi', 'Talep göndermeden önce dekont/makbuz yükle.');
-    }
-
-    setReqSubmitting(true);
-    try {
-      await createManualRequest({
-        kresId,
-        kresAdi: kres?.ad || '',
-        ogrenciSayisi: count,
-        period,
-        dekontUrl: reqDekontUrl,
-        olusturanUid: userId,
-      });
-      setReqStudentCount('');
-      setReqDekontUrl('');
-      Alert.alert('Talep Gönderildi', 'Abonelik talebiniz ekibimize iletildi. Onaylandığında abonelik otomatik aktif olur.');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Hata', err?.message || 'Talep gönderilemedi.');
-    } finally {
-      setReqSubmitting(false);
-    }
-  };
-
   if (loading) {
     return (
       <View style={styles.center}>
@@ -564,65 +470,6 @@ export default function AdminSubscriptionScreen() {
         <View style={styles.specialCard}>
           <Text style={styles.specialTitle}>100+ öğrenci</Text>
           <Text style={styles.specialText}>Büyük kurumlar için özel teklif ile ilerlenir. Bu paket manuel satış veya özel kurumsal plan olarak yönetilebilir.</Text>
-        </View>
-
-        <View style={styles.manualCard}>
-          <Text style={styles.sectionTitle}>Öğrenci Sayısına Göre Özel Fiyat</Text>
-          <Text style={styles.manualHint}>
-            Sabit paketler yerine öğrenci başına {formatPrice(PER_STUDENT_PRICE)}/ay üzerinden özel fiyat talep edebilirsiniz.
-            Dekont/makbuz yükleyip talebi gönderdiğinizde ekibimiz onaylar, onaylanınca abonelik otomatik aktif olur.
-          </Text>
-
-          <Text style={styles.fieldLabel}>Öğrenci Sayısı</Text>
-          <TextInput
-            style={styles.input}
-            value={reqStudentCount}
-            onChangeText={setReqStudentCount}
-            keyboardType="numeric"
-            placeholder={String(studentCount || '')}
-            placeholderTextColor="#999"
-          />
-
-          <Text style={styles.manualPriceText}>
-            Hesaplanan tutar: {formatPrice(computePerStudentPrice(reqStudentCount || 0, period))} / {period === 'yillik' ? 'yıl' : 'ay'}
-          </Text>
-
-          <TouchableOpacity style={styles.dekontButton} onPress={pickAndUploadDekont} disabled={reqUploading} activeOpacity={0.85}>
-            {reqUploading ? (
-              <ActivityIndicator color={THEME.primary} />
-            ) : (
-              <Text style={styles.dekontButtonText}>{reqDekontUrl ? '✅ Dekont Yüklendi — Değiştirmek İçin Dokun' : '📎 Dekont / Makbuz Yükle'}</Text>
-            )}
-          </TouchableOpacity>
-
-          {reqDekontUrl ? <Image source={{ uri: reqDekontUrl }} style={styles.dekontPreview} /> : null}
-
-          <TouchableOpacity
-            style={[styles.manualSubmitButton, (!reqDekontUrl || reqSubmitting) && { opacity: 0.6 }]}
-            onPress={submitManualRequest}
-            disabled={!reqDekontUrl || reqSubmitting}
-            activeOpacity={0.85}
-          >
-            {reqSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.manualSubmitText}>Abonelik Talebi Gönder</Text>}
-          </TouchableOpacity>
-
-          {manualRequests.length > 0 ? (
-            <View style={{ marginTop: 16 }}>
-              <Text style={styles.fieldLabel}>Taleplerim</Text>
-              {manualRequests.map((r) => (
-                <View key={r.talepId} style={styles.requestRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.requestTitle}>
-                      {r.ogrenciSayisi} öğrenci — {formatPrice(r.hesaplananTutar)} / {r.period === 'yillik' ? 'yıl' : 'ay'}
-                    </Text>
-                    <Text style={styles.requestDate}>{r.olusturmaTarihi}</Text>
-                    {r.durum === 'reddedildi' && r.redNotu ? <Text style={styles.requestRedNot}>Not: {r.redNotu}</Text> : null}
-                  </View>
-                  <Text style={[styles.requestBadge, requestBadgeStyle(r.durum)]}>{requestStatusLabel(r.durum)}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
         </View>
 
         <TouchableOpacity style={[styles.restoreButton, saving && { opacity: 0.6 }]} onPress={restorePurchases} disabled={saving} activeOpacity={0.85}>
@@ -779,18 +626,4 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 13, paddingVertical: 12, color: THEME.text, fontWeight: '800', marginBottom: 10 },
   applyButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   applyText: { color: '#fff', fontWeight: '900' },
-  manualCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
-  manualHint: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: -4, marginBottom: 14 },
-  fieldLabel: { color: THEME.text, fontWeight: '900', fontSize: 13, marginBottom: 6 },
-  manualPriceText: { color: THEME.primary, fontWeight: '900', fontSize: 15, marginBottom: 14 },
-  dekontButton: { backgroundColor: THEME.primarySoft, borderRadius: 14, paddingVertical: 13, alignItems: 'center', marginBottom: 10 },
-  dekontButtonText: { color: THEME.primary, fontWeight: '900' },
-  dekontPreview: { width: '100%', height: 140, borderRadius: 14, marginBottom: 12, backgroundColor: THEME.bg },
-  manualSubmitButton: { backgroundColor: THEME.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  manualSubmitText: { color: '#fff', fontWeight: '900' },
-  requestRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: THEME.border },
-  requestTitle: { color: THEME.text, fontWeight: '800', fontSize: 13 },
-  requestDate: { color: THEME.muted, fontWeight: '700', fontSize: 11, marginTop: 2 },
-  requestRedNot: { color: THEME.red, fontWeight: '700', fontSize: 11, marginTop: 2 },
-  requestBadge: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6, fontWeight: '900', fontSize: 11, overflow: 'hidden' },
 });
