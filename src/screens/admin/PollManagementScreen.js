@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { ref, onValue, push, update, remove } from 'firebase/database';
+import { ref, onValue, push, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -118,15 +118,18 @@ export default function PollManagementScreen() {
   ]);
 
   useEffect(() => {
+    if (!kresId) {
+      setPolls([]);
+      setErrorText('');
+      setLoading(false);
+      return undefined;
+    }
+
     setLoading(true);
     const unsub = onValue(
-      ref(database, 'anketler'),
+      query(ref(database, 'anketler'), orderByChild('kresId'), equalTo(kresId)),
       (snap) => {
         const list = toList(snap.val())
-          .filter((item) => {
-            if (!kresId) return true;
-            return !item.kresId || item.kresId === kresId || item.kurumId === kresId;
-          })
           .map((item) => ({
             ...item,
             baslik: item.baslik || item.title || 'Anket',
