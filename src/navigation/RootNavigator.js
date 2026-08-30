@@ -23,6 +23,7 @@ export default function RootNavigator() {
 
   const [subLoading, setSubLoading] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const [subscriptionKresId, setSubscriptionKresId] = useState(undefined);
   const [resolvedSinifId, setResolvedSinifId] = useState(null);
 
   const role = kullanici?.rol;
@@ -34,6 +35,7 @@ export default function RootNavigator() {
   useEffect(() => {
     if (!kullanici || role === ROLLER.SUPERADMIN || !kresId) {
       setSubscription(null);
+      setSubscriptionKresId(kresId ?? null);
       setSubLoading(false);
       return undefined;
     }
@@ -44,16 +46,29 @@ export default function RootNavigator() {
       ref(database, 'abonelikler/' + kresId),
       (snap) => {
         setSubscription(snap.val() || null);
+        setSubscriptionKresId(kresId);
         setSubLoading(false);
       },
       () => {
         setSubscription(null);
+        setSubscriptionKresId(kresId);
         setSubLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [kullanici, role, kresId]);
+
+  // Giriş yapılır yapılmaz kullanici state'i güncelleniyor ama bu effect
+  // henüz çalışmadan önceki tek bir render karesinde subscription hâlâ
+  // eski/null değerinde kalıyordu — bu da "blocked" sanılıp YONETICI için
+  // AdminSubscriptionScreen'in veri gelmeden bir anlığına mount olmasına
+  // (ve nadiren hata ekranına) yol açıyordu. subscriptionKresId, elimizdeki
+  // subscription verisinin hangi kreşe ait olduğunu tutar; kresId ile
+  // eşleşmiyorsa (henüz bu kullanıcı için hiç veri gelmediyse) durum
+  // hesaplanmadan yükleme ekranında bekleniyor.
+  const subscriptionReady =
+    !kullanici || role === ROLLER.SUPERADMIN || !kresId || subscriptionKresId === kresId;
 
   useEffect(() => {
     setResolvedSinifId(null);
@@ -138,7 +153,7 @@ export default function RootNavigator() {
     </ThemeProvider>
   );
 
-    if (yukleniyor || subLoading) {
+    if (yukleniyor || subLoading || !subscriptionReady) {
     return (
       <View style={s.yuklemeEkrani}>
         <View style={s.cloudLeft} />
