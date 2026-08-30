@@ -11,6 +11,8 @@
 // ============================================================
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { push, ref, serverTimestamp } from 'firebase/database';
+import { database } from '../config/firebase';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -27,6 +29,20 @@ export default class ErrorBoundary extends React.Component {
     // burası tam yer. Şimdilik en azından konsola düşüyor, tamamen
     // sessiz bir çökme olmuyor.
     console.warn('ErrorBoundary yakaladı:', error?.message || error, errorInfo?.componentStack);
+
+    // Production build'de console.warn hiçbir yerde görünmüyor, bu yüzden
+    // hatayı en azından Firebase'e de yazıyoruz ki bir dahaki sefere tam
+    // mesaj ve component stack elimizde olsun.
+    try {
+      push(ref(database, 'hataLoglari'), {
+        mesaj: String(error?.message || error || 'Bilinmeyen hata'),
+        stack: String(error?.stack || ''),
+        componentStack: String(errorInfo?.componentStack || ''),
+        zaman: serverTimestamp(),
+      });
+    } catch (logError) {
+      console.warn('Hata loglanamadı:', logError);
+    }
   }
 
   handleRetry = () => {
