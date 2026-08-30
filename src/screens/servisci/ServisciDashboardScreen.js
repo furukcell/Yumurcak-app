@@ -20,7 +20,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Linking, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ref, onValue, get, update } from 'firebase/database';
+import { ref, onValue, get, update, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -110,12 +110,13 @@ export default function ServisciDashboardScreen({ navigation }) {
 
   // Seçili araca atanmış, servis kullanan çocuklar
   useEffect(() => {
-    if (!selectedVehicleId) {
+    if (!selectedVehicleId || !kresId) {
       setChildren([]);
       return undefined;
     }
 
-    const unsub = onValue(ref(database, 'servisBilgileri'), async (snap) => {
+    const serviceQuery = query(ref(database, 'servisBilgileri'), orderByChild('kresId'), equalTo(kresId));
+    const unsub = onValue(serviceQuery, async (snap) => {
       const data = snap.val() || {};
       const childIds = Object.entries(data)
         .filter(([, v]) => v?.servisKullaniyor && v?.servisId === selectedVehicleId)
@@ -151,7 +152,7 @@ export default function ServisciDashboardScreen({ navigation }) {
     });
 
     return () => unsub();
-  }, [selectedVehicleId]);
+  }, [selectedVehicleId, kresId]);
 
   // Günlük durum (o araç + bugün)
   useEffect(() => {
