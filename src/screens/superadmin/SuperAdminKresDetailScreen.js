@@ -268,6 +268,14 @@ export default function SuperAdminKresDetailScreen({ navigation, route }) {
           <HealthRow label="Sınıf" ok={stats.classCount > 0} good="Sınıf var" bad="Sınıf yok" />
         </View>
 
+        <TouchableOpacity
+          style={styles.bulkOnboardingButton}
+          onPress={() => navigation.navigate('SuperAdminKresBulkOnboarding', { kresId: kres.id, kresAdi: kres.ad })}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.bulkOnboardingButtonText}>+ Sınıf / Öğretmen / Veli / Öğrenci Toplu Ekle</Text>
+        </TouchableOpacity>
+
         <UserSection title="Yöneticiler" users={groupedUsers.managers} empty="Bu kreşe bağlı yönetici yok." badge="Yönetici" badgeColor={THEME.blue} />
         <UserSection title="Öğretmenler" users={groupedUsers.teachers} empty="Bu kreşe bağlı öğretmen yok." badge="Öğretmen" badgeColor={THEME.purple} />
         <UserSection title="Veliler" users={groupedUsers.parents} empty="Bu kreşe bağlı veli yok." badge="Veli" badgeColor={THEME.orange} limit={12} />
@@ -741,6 +749,18 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 70,
+  },
+  bulkOnboardingButton: {
+    backgroundColor: THEME.green,
+    borderRadius: 16,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  bulkOnboardingButtonText: {
+    color: '#FFF',
+    fontWeight: '900',
+    fontSize: 14,
   },
   backText: {
     color: THEME.blue,
