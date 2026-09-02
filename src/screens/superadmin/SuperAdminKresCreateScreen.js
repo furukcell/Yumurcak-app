@@ -180,8 +180,13 @@ export default function SuperAdminKresCreateScreen({ navigation }) {
         `Kreş: ${form.ad.trim()}\nKullanıcı adı: ${cleanUsername}\nŞifre: ${adminPassword}\nAuth hesabı oluşturuldu.\nDemo: ${demoDays} gün`,
         [
           {
-            text: 'Tamam',
+            text: 'Kreş Detayı',
             onPress: () => navigation.navigate('SuperAdminKresDetail', { kresId, kres: kresRecord }),
+          },
+          {
+            text: 'Sınıf/Öğretmen/Veli/Öğrenci Ekle',
+            onPress: () =>
+              navigation.navigate('SuperAdminKresBulkOnboarding', { kresId, kresAdi: form.ad.trim() }),
           },
         ]
       );
