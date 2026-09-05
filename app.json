@@ -23,7 +23,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.furukcell.yumurcakapp"
+      "bundleIdentifier": "com.furukcell.yumurcakapp",
+      "buildNumber": "10"
     },
     "android": {
       "package": "com.furukcell.yumurcakapp",
