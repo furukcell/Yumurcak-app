@@ -24,7 +24,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.furukcell.yumurcakapp"
-      
     },
     "android": {
       "package": "com.furukcell.yumurcakapp",
