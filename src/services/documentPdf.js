@@ -204,7 +204,7 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
       td { padding: 8px; border: 1px solid #EEEAF8; vertical-align: top; }
       .weekday { font-size: 9px; color: #707386; }
       .ders-aciklama { font-size: 9px; color: #707386; }
-      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: space-between; }
+      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: flex-end; }
       .signature { margin-top: 40px; font-size: 11px; text-align: right; }
       .empty { text-align: center; color: #707386; padding: 18px; }
     </style>
@@ -225,7 +225,6 @@ export function buildMonthlyDocumentHtml({ docType, kres, monthLabel, sinifAd, r
     </table>
     ${yonetici ? `<div class="signature">Onaylayan: ${yonetici}</div>` : ''}
     <div class="footer">
-      <span>Yumurcak</span>
       <span>${escapeHtml(new Date().toLocaleDateString('tr-TR'))} tarihinde oluşturuldu</span>
     </div>
   </body>
@@ -265,7 +264,7 @@ function buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLa
       p { font-size: 12px; line-height: 1.6; margin: 0; }
       .empty { text-align: center; color: #707386; padding: 18px; }
       .signature { margin-top: 40px; font-size: 11px; text-align: right; }
-      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: space-between; }
+      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: flex-end; }
     </style>
   </head>
   <body>
@@ -281,7 +280,6 @@ function buildBulletinHtml({ kurumAd, adres, telefon, yonetici, logoUrl, monthLa
     ${sectionsHtml || '<p class="empty">Bu ay için yayınlanmış içerik yok.</p>'}
     ${yonetici ? `<div class="signature">Onaylayan: ${yonetici}</div>` : ''}
     <div class="footer">
-      <span>Yumurcak</span>
       <span>${escapeHtml(new Date().toLocaleDateString('tr-TR'))} tarihinde oluşturuldu</span>
     </div>
   </body>
@@ -316,7 +314,7 @@ function wrapDocumentPage({ kurumAd, adres, telefon, yonetici, logoUrl, title, s
       .empty { text-align: center; color: #707386; padding: 18px; }
       .signature-row { display: flex; justify-content: space-between; margin-top: 44px; }
       .signature-box { width: 45%; border-top: 1px solid #191A23; padding-top: 6px; font-size: 11px; text-align: center; }
-      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: space-between; }
+      .footer { margin-top: 24px; font-size: 10px; color: #707386; display: flex; justify-content: flex-end; }
       ${extraStyles}
     </style>
   </head>
@@ -333,7 +331,6 @@ function wrapDocumentPage({ kurumAd, adres, telefon, yonetici, logoUrl, title, s
     ${bodyHtml}
     ${yonetici ? `<div class="signature-row"><div class="signature-box">Onaylayan: ${yonetici}</div><div class="signature-box">Veli İmza</div></div>` : ''}
     <div class="footer">
-      <span>Yumurcak</span>
       <span>${escapeHtml(new Date().toLocaleDateString('tr-TR'))} tarihinde oluşturuldu</span>
     </div>
   </body>
