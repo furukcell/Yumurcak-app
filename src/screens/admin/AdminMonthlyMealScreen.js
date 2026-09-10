@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
+import { onValue, ref, query, orderByChild, equalTo, get } from 'firebase/database';
 
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +24,14 @@ import {
   unpublishMonth,
   copyFromPreviousMonth,
   fetchActiveMonthValues,
+  forClass,
 } from '../../services/monthlyDocuments';
+
+// Öğretmenlerin kendi sınıfları için yayınladığı aylık yemek listesi
+// (kaynak: 'ogretmen_aylik') — bkz. TeacherMealsScreen.js üst kısmındaki not.
+// Admin bu kayıtları hiç düzenlemez, sadece OKUR: veri kaybı riskini
+// önlemek için admin_aylik ile birleştirilmiyor, ayrı sekmede gösteriliyor.
+const TEACHER_KAYNAK = 'ogretmen_aylik';
 
 const NODE_PATH = 'yemekListeleri';
 const KAYNAK = 'admin_aylik';
@@ -93,6 +100,66 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   const [publishedCount, setPublishedCount] = useState(0);
   const [successToast, setSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Sınıf Listeleri (öğretmenlerin girdiği, sadece görüntüleme) — bkz. TEACHER_KAYNAK notu.
+  const [classes, setClasses] = useState([]);
+  const [classValues, setClassValues] = useState({});
+  const [classListLoading, setClassListLoading] = useState(true);
+  const [selectedClassId, setSelectedClassId] = useState('');
+
+  useEffect(() => {
+    if (!kresId) {
+      setClasses([]);
+      setClassListLoading(false);
+      return undefined;
+    }
+    setClassListLoading(true);
+    const indexRef = ref(database, `kresSiniflari/${kresId}`);
+    const unsubscribe = onValue(indexRef, (snapshot) => {
+      const idsData = snapshot.val();
+      if (!idsData) {
+        setClasses([]);
+        setClassListLoading(false);
+        return;
+      }
+      const classIds = Object.keys(idsData);
+      Promise.all(
+        classIds.map((id) => get(ref(database, `siniflar/${id}`)).then((s) => (s.exists() ? { id, ...s.val() } : null)))
+      ).then((results) => {
+        setClasses(results.filter(Boolean).sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
+        setClassListLoading(false);
+      }).catch(() => setClassListLoading(false));
+    }, () => setClassListLoading(false));
+    return () => unsubscribe();
+  }, [kresId]);
+
+  useEffect(() => {
+    if (!kresId || classes.length === 0) {
+      setClassValues({});
+      return undefined;
+    }
+    let cancelled = false;
+    Promise.all(
+      classes.map((c) =>
+        fetchActiveMonthValues({
+          nodePath: NODE_PATH,
+          kresId,
+          monthKey,
+          kaynak: TEACHER_KAYNAK,
+          matchExtra: forClass(c.id),
+          valueMapper: (record) => ({
+            kahvalti: toMealArray(record.ogunler?.kahvalti),
+            ogle: toMealArray(record.ogunler?.ogle),
+            araOgun: toMealArray(record.ogunler?.araOgun),
+          }),
+        }).then((values) => [c.id, values])
+      )
+    ).then((entries) => {
+      if (cancelled) return;
+      setClassValues(Object.fromEntries(entries));
+    });
+    return () => { cancelled = true; };
+  }, [kresId, monthKey, classes]);
 
   useEffect(() => {
     if (!kresId) {
@@ -346,6 +413,32 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             />
           </View>
 
+          {classes.length > 0 ? (
+            <View style={styles.classSection}>
+              <Text style={styles.classSectionTitle}>👩‍🏫 Sınıf Listeleri</Text>
+              <Text style={styles.classSectionHint}>Öğretmenlerin kendi sınıfları için girdiği aylık liste — sadece görüntüleme.</Text>
+              {classes.map((c) => {
+                const dayCount = Object.values(classValues[c.id] || {}).filter(hasMealContent).length;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={styles.classRow}
+                    activeOpacity={0.85}
+                    onPress={() => setSelectedClassId(c.id)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.classRowTitle}>{c.ad || 'Sınıf'}</Text>
+                      <Text style={styles.classRowSubtitle}>
+                        {dayCount > 0 ? `${monthLabel} için ${dayCount} gün girilmiş` : `${monthLabel} için henüz giriş yok`}
+                      </Text>
+                    </View>
+                    <Text style={styles.classRowArrow}>›</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
+
           <MonthlyCalendarView
             days={daysWithContent}
             view={view}
@@ -425,6 +518,45 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             </ScrollView>
           </KeyboardAvoidingView>
         </Modal>
+
+        <Modal visible={!!selectedClassId} transparent animationType="slide" onRequestClose={() => setSelectedClassId('')}>
+          <View style={styles.modalBackdrop}>
+            <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{classes.find((c) => c.id === selectedClassId)?.ad || 'Sınıf'} — {monthLabel}</Text>
+                <TouchableOpacity onPress={() => setSelectedClassId('')} activeOpacity={0.8} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseCheck}>✓</Text>
+                </TouchableOpacity>
+              </View>
+
+              {(() => {
+                const dayValues = classValues[selectedClassId] || {};
+                const filledDays = days
+                  .map((day) => ({ day, value: dayValues[day.dateKey] }))
+                  .filter(({ value }) => hasMealContent(value));
+
+                if (filledDays.length === 0) {
+                  return <Text style={styles.classEmptyText}>Bu sınıfın öğretmeni {monthLabel} için henüz yemek girmemiş.</Text>;
+                }
+
+                return filledDays.map(({ day, value }) => (
+                  <View key={day.dateKey} style={styles.classDayCard}>
+                    <Text style={styles.classDayLabel}>{day.label}</Text>
+                    {toMealArray(value.kahvalti).length > 0 ? (
+                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>Kahvaltı: </Text>{toMealArray(value.kahvalti).join(', ')}</Text>
+                    ) : null}
+                    {toMealArray(value.ogle).length > 0 ? (
+                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>Öğle: </Text>{toMealArray(value.ogle).join(', ')}</Text>
+                    ) : null}
+                    {toMealArray(value.araOgun).length > 0 ? (
+                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>Ara Öğün: </Text>{toMealArray(value.araOgun).join(', ')}</Text>
+                    ) : null}
+                  </View>
+                ));
+              })()}
+            </ScrollView>
+          </View>
+        </Modal>
       </SafeAreaView>
     </ThemedBackground>
   );
@@ -472,5 +604,17 @@ function createStyles(theme) {
     modalLabel: { fontSize: 12, fontWeight: '900', color: theme.muted, marginBottom: 8, textTransform: 'uppercase' },
     modalClearButton: { alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,77,109,0.12)' },
     modalClearButtonText: { color: '#FF4D6D', fontWeight: '900' },
+    classSection: { backgroundColor: theme.card, borderRadius: 18, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: theme.border },
+    classSectionTitle: { color: theme.primary, fontWeight: '900', fontSize: 15 },
+    classSectionHint: { color: theme.muted, fontWeight: '700', fontSize: 11, marginTop: 3, marginBottom: 10, lineHeight: 15 },
+    classRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: theme.border },
+    classRowTitle: { color: theme.text, fontWeight: '900', fontSize: 14 },
+    classRowSubtitle: { color: theme.muted, fontWeight: '700', fontSize: 12, marginTop: 2 },
+    classRowArrow: { color: theme.primary, fontWeight: '900', fontSize: 20, marginLeft: 8 },
+    classEmptyText: { color: theme.muted, fontWeight: '700', fontSize: 13, textAlign: 'center', paddingVertical: 20 },
+    classDayCard: { backgroundColor: theme.bg, borderRadius: 14, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: theme.border },
+    classDayLabel: { color: theme.primary, fontWeight: '900', fontSize: 13, marginBottom: 4 },
+    classDayMeal: { color: theme.text, fontWeight: '700', fontSize: 13, marginTop: 2, lineHeight: 18 },
+    classDayMealTag: { color: theme.muted, fontWeight: '900' },
   });
 }
