@@ -864,8 +864,12 @@ export default function TeacherMealsScreen() {
       </KeyboardAvoidingView>
 
       <Modal visible={!!monthlySelectedDay} transparent animationType="slide" onRequestClose={() => setMonthlySelectedDateKey('')}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{monthlySelectedDay?.label || ''}</Text>
               <TouchableOpacity onPress={() => setMonthlySelectedDateKey('')} activeOpacity={0.8} style={styles.modalCloseButton}>
@@ -905,8 +909,8 @@ export default function TeacherMealsScreen() {
                 <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
               </TouchableOpacity>
             ) : null}
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -963,7 +967,8 @@ const styles = StyleSheet.create({
   previewText: { color: THEME.muted, fontWeight: '700', fontSize: 12, marginTop: 3 },
   previewEmpty: { color: '#C7C9D6', fontWeight: '700', fontSize: 12, marginTop: 3 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: THEME.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, paddingBottom: 30 },
+  modalSheet: { backgroundColor: THEME.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '88%' },
+  modalSheetContent: { padding: 18, paddingBottom: 30 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   modalTitle: { fontSize: 18, fontWeight: '900', color: THEME.text },
   modalClose: { color: THEME.primary, fontWeight: '900' },
