@@ -26,6 +26,15 @@ export default function RootNavigator() {
   const [subscriptionKresId, setSubscriptionKresId] = useState(undefined);
   const [resolvedSinifId, setResolvedSinifId] = useState(null);
 
+  // Kreşe özel splash ekranı, veri hızlı yüklendiğinde göz açıp kapayana kadar
+  // (birkaç yüz milisaniye) kaybolup fark edilmiyordu. Veri ne kadar hızlı
+  // gelirse gelsin splash'i en az 3 saniye ekranda tutmak için bu sayaç kullanılıyor.
+  const [minSplashSuresiDoldu, setMinSplashSuresiDoldu] = useState(false);
+  useEffect(() => {
+    const zamanlayici = setTimeout(() => setMinSplashSuresiDoldu(true), 3000);
+    return () => clearTimeout(zamanlayici);
+  }, []);
+
   const role = kullanici?.rol;
   const kresId = kullanici?.kresId;
   const userId = kullanici?.uid || kullanici?.id;
@@ -153,7 +162,7 @@ export default function RootNavigator() {
     </ThemeProvider>
   );
 
-    if (yukleniyor || subLoading || !subscriptionReady) {
+    if (yukleniyor || subLoading || !subscriptionReady || !minSplashSuresiDoldu) {
     if (role !== ROLLER.SUPERADMIN && kres?.splashUrl) {
       return (
         <View style={s.customSplash}>
