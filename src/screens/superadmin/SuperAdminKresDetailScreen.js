@@ -7,16 +7,18 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { get, ref } from 'firebase/database';
+import { get, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 
 const THEME = {
@@ -38,6 +40,7 @@ const THEME = {
 
 const MONTHLY_PRICE = 999;
 const YEARLY_PRICE = 9990;
+const EXTEND_OPTIONS = [7, 15, 30, 60, 90];
 
 export default function SuperAdminKresDetailScreen({ navigation, route }) {
   const kresId = route?.params?.kresId;
@@ -49,6 +52,10 @@ export default function SuperAdminKresDetailScreen({ navigation, route }) {
   const [children, setChildren] = useState([]);
   const [classes, setClasses] = useState([]);
   const [subscription, setSubscription] = useState({});
+  const [subExists, setSubExists] = useState(false);
+  const [extendVisible, setExtendVisible] = useState(false);
+  const [extending, setExtending] = useState(false);
+  const [customDays, setCustomDays] = useState('');
 
   const loadData = useCallback(async () => {
     if (!kresId) {
@@ -83,6 +90,7 @@ export default function SuperAdminKresDetailScreen({ navigation, route }) {
       setUsers(allUsers);
       setChildren(allChildren);
       setClasses(allClasses);
+      setSubExists(!!subSnap.val());
       setSubscription(normalizeSubscription(subSnap.val(), kresData));
     } catch (error) {
       console.error(error);
@@ -95,6 +103,64 @@ export default function SuperAdminKresDetailScreen({ navigation, route }) {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleExtendDemo = useCallback(
+    async (days) => {
+      const dayCount = Number(days);
+
+      if (!kresId || !dayCount || dayCount <= 0) {
+        Alert.alert('Hata', 'Geçerli bir gün sayısı girin.');
+        return;
+      }
+
+      if (extending) return;
+      setExtending(true);
+
+      try {
+        const now = Date.now();
+        const currentEndRaw = subscription.bitisTarihi || subscription.bitis || subscription.endDate || subscription.expiresAt;
+        const currentEndMs = currentEndRaw
+          ? (typeof currentEndRaw === 'number' ? currentEndRaw : new Date(String(currentEndRaw)).getTime())
+          : 0;
+        const base = Number.isFinite(currentEndMs) && currentEndMs > now ? currentEndMs : now;
+        const newEnd = base + dayCount * 86400000;
+
+        const updates = {};
+
+        if (subExists) {
+          updates[`abonelikler/${kresId}/bitisTarihi`] = newEnd;
+          updates[`abonelikler/${kresId}/updatedAt`] = now;
+        } else {
+          updates[`abonelikler/${kresId}`] = {
+            kresId,
+            plan: 'demo',
+            durum: 'demo',
+            baslangicTarihi: now,
+            bitisTarihi: newEnd,
+            demoGun: dayCount,
+            fiyat: 0,
+            paraBirimi: 'TRY',
+            not: 'Süper admin tarafından uzatılan demo abonelik.',
+            createdAt: now,
+            updatedAt: now,
+          };
+        }
+
+        await update(ref(database), updates);
+
+        setExtendVisible(false);
+        setCustomDays('');
+        await loadData();
+        Alert.alert('Başarılı', `Demo süresi ${dayCount} gün uzatıldı.`);
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Hata', 'Demo süresi uzatılırken bir sorun oluştu.');
+      } finally {
+        setExtending(false);
+      }
+    },
+    [kresId, subscription, subExists, extending, loadData]
+  );
 
   const groupedUsers = useMemo(() => {
     const managers = users.filter((u) => isManager(u));
@@ -244,6 +310,14 @@ export default function SuperAdminKresDetailScreen({ navigation, route }) {
           <InfoRow label="Tahmini Aylık Gelir" value={formatMoney(subInfo.revenue.monthly)} valueColor={THEME.green} />
           <InfoRow label="Son Ödeme" value={formatDate(subscription.sonOdemeTarihi || subscription.lastPaymentDate)} />
           <InfoRow label="Not" value={subscription.not || subscription.note || '-'} multiline />
+
+          <TouchableOpacity
+            style={styles.extendButton}
+            onPress={() => setExtendVisible(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.extendButtonText}>🕒 Demo Süresini Uzat</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
@@ -282,6 +356,69 @@ export default function SuperAdminKresDetailScreen({ navigation, route }) {
         <ClassSection classes={classes} />
         <ChildSection children={children} />
       </ScrollView>
+
+      <Modal
+        visible={extendVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => (!extending ? setExtendVisible(false) : null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Demo Süresini Uzat</Text>
+            <Text style={styles.modalSubtitle}>
+              {getKresName(kres)} için mevcut bitiş tarihi: {formatDate(subInfo.end)}
+            </Text>
+
+            <View style={styles.modalChips}>
+              {EXTEND_OPTIONS.map((days) => (
+                <TouchableOpacity
+                  key={days}
+                  style={styles.modalChip}
+                  onPress={() => handleExtendDemo(days)}
+                  activeOpacity={0.85}
+                  disabled={extending}
+                >
+                  <Text style={styles.modalChipText}>+{days} gün</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.modalLabel}>Özel gün sayısı</Text>
+            <View style={styles.modalCustomRow}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Örn: 45"
+                placeholderTextColor={THEME.muted}
+                keyboardType="number-pad"
+                value={customDays}
+                onChangeText={setCustomDays}
+                editable={!extending}
+              />
+              <TouchableOpacity
+                style={styles.modalCustomButton}
+                onPress={() => handleExtendDemo(customDays)}
+                activeOpacity={0.85}
+                disabled={extending}
+              >
+                {extending ? (
+                  <ActivityIndicator size="small" color={THEME.bg} />
+                ) : (
+                  <Text style={styles.modalCustomButtonText}>Uzat</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => (!extending ? setExtendVisible(false) : null)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalCancelText}>Vazgeç</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -761,6 +898,107 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '900',
     fontSize: 14,
+  },
+  extendButton: {
+    backgroundColor: THEME.blue,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  extendButtonText: {
+    color: '#0F172A',
+    fontWeight: '900',
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: THEME.panel,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  modalTitle: {
+    color: THEME.text,
+    fontWeight: '900',
+    fontSize: 18,
+  },
+  modalSubtitle: {
+    color: THEME.muted,
+    fontWeight: '700',
+    marginTop: 6,
+    marginBottom: 16,
+    lineHeight: 19,
+  },
+  modalChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  modalChip: {
+    backgroundColor: THEME.card,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  modalChipText: {
+    color: THEME.blue,
+    fontWeight: '900',
+    fontSize: 13,
+  },
+  modalLabel: {
+    color: THEME.muted,
+    fontWeight: '800',
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  modalCustomRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  modalInput: {
+    flex: 1,
+    backgroundColor: THEME.card,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: THEME.text,
+    fontWeight: '800',
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  modalCustomButton: {
+    backgroundColor: THEME.blue,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 76,
+  },
+  modalCustomButtonText: {
+    color: '#0F172A',
+    fontWeight: '900',
+  },
+  modalCancel: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  modalCancelText: {
+    color: THEME.muted,
+    fontWeight: '800',
   },
   backText: {
     color: THEME.blue,
