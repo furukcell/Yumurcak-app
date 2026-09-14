@@ -6,6 +6,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
+import { setAppIcon } from 'expo-dynamic-app-icon';
 import { auth, database } from '../config/firebase';
 import { getKresForUser, findUserIdByAuthUid, usernameToEmail } from '../utils/authHelpers';
 
@@ -36,6 +37,17 @@ export function AuthProvider({ children }) {
 
   const isSigningOutRef = useRef(false);
   const restoringAuthRef = useRef(false);
+
+  // Premium kreşler için özel açılış ikonu: kresler/{kresId}/appIconKey alanı
+  // app.json > expo-dynamic-app-icon plugin'indeki isimlerden biriyle (örn. "bilimcocuk")
+  // eşleşiyorsa cihazdaki ikon o kreşe özel görsele geçer; alan boşsa/eşleşmiyorsa
+  // varsayılan Yumurcak ikonuna döner. Sadece o cihazı/kullanıcıyı etkiler.
+  useEffect(() => {
+    const iconKey = kres?.appIconKey;
+    setAppIcon(iconKey || 'DEFAULT').catch((error) => {
+      console.warn('Uygulama ikonu değiştirilemedi:', error?.message || error);
+    });
+  }, [kres?.appIconKey]);
 
   const restoreFirebaseSession = async (user) => {
     if (auth.currentUser || restoringAuthRef.current || isSigningOutRef.current) return;
