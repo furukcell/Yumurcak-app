@@ -316,7 +316,6 @@ export default function DashboardScreen() {
                 )}
               </TouchableOpacity>
               <View style={styles.topTitleBlock}>
-                <Text style={styles.brandLabel} numberOfLines={1} ellipsizeMode="tail">YUMURCAK KREŞ</Text>
                 <View style={styles.brandNamePill}><Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">{kresAdi}</Text></View>
                 <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">Yönetim Paneli</Text>
               </View>
