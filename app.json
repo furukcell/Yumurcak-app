@@ -77,7 +77,8 @@
           }
         }
       ],
-      "./plugins/withJvmTargetFix.js"
+      "./plugins/withJvmTargetFix.js",
+      "./plugins/withAllowBackupFix.js"
     ]
   }
 }
