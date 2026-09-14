@@ -43,10 +43,19 @@ export function AuthProvider({ children }) {
   // eşleşiyorsa cihazdaki ikon o kreşe özel görsele geçer; alan boşsa/eşleşmiyorsa
   // varsayılan Yumurcak ikonuna döner. Sadece o cihazı/kullanıcıyı etkiler.
   useEffect(() => {
-    const iconKey = kres?.appIconKey;
-    setAppIcon(iconKey || 'DEFAULT').catch((error) => {
+    // NOT: setAppIcon Promise DEĞİL, senkron çalışır — hata olursa false,
+    // başarılıysa ikon adını döndürür. Bu yüzden .catch() KULLANILMAZ,
+    // .catch() çağrısı 'false.catch is not a function' hatasıyla
+    // uygulamayı açılışta çökertiyordu. try/catch ile sarmalıyoruz.
+    try {
+      const iconKey = kres?.appIconKey;
+      const result = setAppIcon(iconKey || 'DEFAULT');
+      if (result === false) {
+        console.warn('Uygulama ikonu değiştirilemedi');
+      }
+    } catch (error) {
       console.warn('Uygulama ikonu değiştirilemedi:', error?.message || error);
-    });
+    }
   }, [kres?.appIconKey]);
 
   const restoreFirebaseSession = async (user) => {
