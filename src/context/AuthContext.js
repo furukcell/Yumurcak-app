@@ -58,6 +58,26 @@ export function AuthProvider({ children }) {
     }
   }, [kres?.appIconKey]);
 
+  // Uygulama açılır açılmaz, gerçek oturum kontrolü (internet gerektirir)
+  // bitmeden ÖNCE, telefonun kendi hafızasındaki kreş bilgisini hemen okuyoruz.
+  // Böylece kreşe özel splash ekranı varsa, internet cevabı beklenmeden hemen
+  // gösterilir; sarı-bulutlu genel Yumurcak yükleme ekranı görünmez.
+  // (Bu sadece daha önce bu cihazda giriş yapılmış kullanıcılar için geçerlidir —
+  // ilk kurulumda önbellek olmadığı için o an genel ekran kaçınılmaz olarak görünür.)
+  useEffect(() => {
+    AsyncStorage.getItem(KRES_KEY)
+      .then((kayitliKresStr) => {
+        if (kayitliKresStr) {
+          try {
+            setKres(JSON.parse(kayitliKresStr));
+          } catch (error) {
+            // Bozuk önbellek verisi varsa sessizce yok say, normal akış devam eder
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const restoreFirebaseSession = async (user) => {
     if (auth.currentUser || restoringAuthRef.current || isSigningOutRef.current) return;
 
