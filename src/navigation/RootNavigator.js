@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../config/firebase';
@@ -19,7 +19,7 @@ import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import SubscriptionBlockedScreen from '../screens/shared/SubscriptionBlockedScreen';
 
 export default function RootNavigator() {
-  const { kullanici, yukleniyor } = useAuth();
+  const { kullanici, kres, yukleniyor } = useAuth();
 
   const [subLoading, setSubLoading] = useState(false);
   const [subscription, setSubscription] = useState(null);
@@ -164,8 +164,17 @@ export default function RootNavigator() {
         <Text style={s.starRight}>✨</Text>
 
         <View style={s.logoCard}>
-          <Text style={s.logo}>🌈</Text>
-          <Text style={s.logoYazi}>YUMURCAK</Text>
+          {role !== ROLLER.SUPERADMIN && kres?.logoUrl ? (
+            <>
+              <Image source={{ uri: kres.logoUrl }} style={s.kresLogoImage} resizeMode="cover" />
+              <Text style={[s.logoYazi, s.kresLogoYazi]}>{kres?.ad || 'YUMURCAK'}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={s.logo}>🌈</Text>
+              <Text style={s.logoYazi}>YUMURCAK</Text>
+            </>
+          )}
           <Text style={s.logoAltYazi}>Kreşin hazırlanıyor</Text>
         </View>
 
@@ -284,6 +293,19 @@ const s = StyleSheet.create({
   logo: {
     fontSize: 72,
     marginBottom: 6,
+  },
+
+  kresLogoImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    marginBottom: 6,
+  },
+
+  kresLogoYazi: {
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
 
   logoYazi: {
