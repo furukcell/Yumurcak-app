@@ -75,7 +75,8 @@
             "prerendered": true
           }
         }
-      ]
+      ],
+      "./plugins/withJvmTargetFix.js"
     ]
   }
 }
