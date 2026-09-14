@@ -1,6 +1,8 @@
 // ============================================================
 // YUMURCAK — AuthContext.js
 // FAZ 11 v2: Çıkış sonrası otomatik tekrar giriş hatası düzeltildi
+// FAZ 11 v3: Uygulama ikonu varsayılana dönmüyordu — 'DEFAULT' geçersiz
+// alias adıydı, boş string ile düzeltildi
 // ============================================================
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -42,6 +44,16 @@ export function AuthProvider({ children }) {
   // app.json > expo-dynamic-app-icon plugin'indeki isimlerden biriyle (örn. "bilimcocuk")
   // eşleşiyorsa cihazdaki ikon o kreşe özel görsele geçer; alan boşsa/eşleşmiyorsa
   // varsayılan Yumurcak ikonuna döner. Sadece o cihazı/kullanıcıyı etkiler.
+  //
+  // NOT: setAppIcon çağrısına 'DEFAULT' göndermek YANLIŞ — kütüphane bu ismi
+  // packageName + ".MainActivity" + "DEFAULT" component'ine çevirip enable
+  // etmeye çalışıyor, ama böyle bir alias app.json'daki plugin config'inde
+  // tanımlı değil (sadece "bilimcocuk" tanımlı). Var olmayan component
+  // enable edilemeyince native taraf sessizce false dönüyor ve ikon eski
+  // haliyle (örn. bilimcocuk) kalıyor — çıkış/kreş değişiminde logo geri
+  // dönmüyordu. Boş string ("") göndermek gerçek ana activity'yi
+  // (packageName + ".MainActivity", suffix'siz) hedefler ve bu her zaman
+  // var olduğu için başarıyla varsayılan ikona döner.
   useEffect(() => {
     // NOT: setAppIcon Promise DEĞİL, senkron çalışır — hata olursa false,
     // başarılıysa ikon adını döndürür. Bu yüzden .catch() KULLANILMAZ,
@@ -49,7 +61,7 @@ export function AuthProvider({ children }) {
     // uygulamayı açılışta çökertiyordu. try/catch ile sarmalıyoruz.
     try {
       const iconKey = kres?.appIconKey;
-      const result = setAppIcon(iconKey || 'DEFAULT');
+      const result = setAppIcon(iconKey || '');
       if (result === false) {
         console.warn('Uygulama ikonu değiştirilemedi');
       }
