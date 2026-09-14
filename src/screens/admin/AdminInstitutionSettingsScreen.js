@@ -49,6 +49,8 @@ export default function AdminInstitutionSettingsScreen() {
   const [successToast, setSuccessToast] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [splashUrl, setSplashUrl] = useState('');
+  const [uploadingSplash, setUploadingSplash] = useState(false);
 
   const [form, setForm] = useState({
     ad: '',
@@ -73,6 +75,7 @@ export default function AdminInstitutionSettingsScreen() {
         if (!mounted) return;
 
         setLogoUrl(data.logoUrl || '');
+        setSplashUrl(data.splashUrl || '');
         setForm({
           ad: data.ad || '',
           adres: data.adres || '',
@@ -200,6 +203,72 @@ export default function AdminInstitutionSettingsScreen() {
     ]);
   };
 
+  const pickAndUploadSplash = async () => {
+    if (!kresId) return Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('İzin Gerekli', 'Açılış ekranı görseli seçmek için galeri izni vermen gerekiyor.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [9, 16],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      const uri = result.assets[0].uri;
+      setUploadingSplash(true);
+
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const fileRef = storageRef(storage, `kurumSplash/${kresId}.jpg`);
+      await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
+
+      const downloadUrl = await getDownloadURL(fileRef);
+
+      await update(ref(database, `kresler/${kresId}`), {
+        splashUrl: downloadUrl,
+        splashUpdatedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      setSplashUrl(downloadUrl);
+      setSuccessToast(true);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Hata', 'Açılış ekranı görseli yüklenemedi. Storage ayarlarını kontrol et.');
+    } finally {
+      setUploadingSplash(false);
+    }
+  };
+
+  const removeSplash = () => {
+    if (!kresId) return;
+    Alert.alert('Açılış Ekranı Görseli', 'Görseli kaldırmak istiyor musun?', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Kaldır',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await update(ref(database, `kresler/${kresId}`), { splashUrl: '', updatedAt: Date.now() });
+            setSplashUrl('');
+          } catch (err) {
+            console.error(err);
+            Alert.alert('Hata', 'Görsel kaldırılamadı.');
+          }
+        },
+      },
+    ]);
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -239,6 +308,32 @@ export default function AdminInstitutionSettingsScreen() {
               {logoUrl ? (
                 <TouchableOpacity onPress={removeLogo} disabled={uploadingLogo}>
                   <Text style={[styles.logoActionText, styles.logoRemoveText]}>Kaldır</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.splashCard}>
+            <Text style={styles.legalTitle}>🌈 Açılış Ekranı Görseli</Text>
+            <Text style={styles.legalDesc}>Uygulama açılırken kendi kurumunuza özel tam ekran görsel gösterilsin. Eklenmezse varsayılan Yumurcak açılış ekranı kullanılır.</Text>
+
+            <TouchableOpacity style={styles.splashPreviewWrap} onPress={pickAndUploadSplash} activeOpacity={0.85} disabled={uploadingSplash}>
+              {uploadingSplash ? (
+                <ActivityIndicator color={THEME.primary} />
+              ) : splashUrl ? (
+                <Image source={{ uri: splashUrl }} style={styles.splashPreviewImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.splashPlaceholderText}>9:16 · Dokun ve seç</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.splashButtonsRow}>
+              <TouchableOpacity onPress={pickAndUploadSplash} disabled={uploadingSplash}>
+                <Text style={styles.splashActionText}>{splashUrl ? 'Görseli Değiştir' : 'Görsel Ekle'}</Text>
+              </TouchableOpacity>
+              {splashUrl ? (
+                <TouchableOpacity onPress={removeSplash} disabled={uploadingSplash}>
+                  <Text style={[styles.splashActionText, styles.splashRemoveText]}>Kaldır</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -314,6 +409,13 @@ const styles = StyleSheet.create({
   heroIcon: { fontSize: 36 },
   heroTitle: { color: '#FFF', fontWeight: '900', fontSize: 22 },
   heroDesc: { color: 'rgba(255,255,255,0.82)', marginTop: 5, fontWeight: '700', textAlign: 'center' },
+  splashCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, alignItems: 'center' },
+  splashPreviewWrap: { width: 130, height: 231, borderRadius: 16, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', marginTop: 6, overflow: 'hidden', borderWidth: 1, borderColor: THEME.border },
+  splashPreviewImage: { width: '100%', height: '100%' },
+  splashPlaceholderText: { color: THEME.muted, fontWeight: '700', fontSize: 12, textAlign: 'center', paddingHorizontal: 8 },
+  splashButtonsRow: { flexDirection: 'row', gap: 16, marginTop: 10 },
+  splashActionText: { color: THEME.primaryDark, fontWeight: '900', fontSize: 12.5, textDecorationLine: 'underline' },
+  splashRemoveText: { color: '#D8354F' },
   legalCard: { backgroundColor: THEME.card, borderRadius: 18, padding: 15, borderWidth: 1, borderColor: THEME.border, marginBottom: 16 },
   legalTitle: { color: THEME.text, fontWeight: '900', fontSize: 17 },
   legalDesc: { color: THEME.muted, fontWeight: '700', marginTop: 5, marginBottom: 10, lineHeight: 18 },
