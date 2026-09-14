@@ -1077,3 +1077,40 @@ Yasal dokümanlar:
 **FK Digital**
 
 Yumurcak Kreş, FK Digital tarafından geliştirilen bir ürünüdür.
+
+---
+
+## 🎨 Kreşe Özel Dinamik Uygulama İkonu
+
+Belirli kreşler (örn. sözleşmesinde özel marka/logo talep eden büyük müşteriler) için kullanıcı kendi kreşinin logosuyla eşleşen bir uygulama ikonu görebilir. Bu, ayrı bir uygulama/store kaydı **değil** — tek app, tek bundle id üzerinden `expo-dynamic-app-icon` paketiyle cihaz bazlı ikon değişimi ile sağlanıyor.
+
+### Nasıl çalışıyor
+
+1. Build'e önceden birkaç ikon seti gömülü olarak paketleniyor (`app.json` → `plugins` → `expo-dynamic-app-icon`).
+2. Kullanıcı login olduğunda, bağlı olduğu kreşin Firebase kaydındaki `appIconKey` alanına bakılıyor.
+3. `appIconKey` bir değere sahipse (örn. `"bilimcocuk"`), `setAppIcon('bilimcocuk')` çağrılıyor ve **o cihazdaki** ikon değişiyor.
+4. `appIconKey` boş/tanımsız olan kreşlerin kullanıcılarında hiçbir şey değişmiyor, ikon varsayılan (Yumurcak) olarak kalıyor.
+5. İkon tamamen cihaz + login durumuna bağlı: aynı telefonda farklı bir kreşin kullanıcısı giriş yaparsa ikon otomatik olarak o kullanıcının kreşine göre güncellenir (eşleşme yoksa `DEFAULT`'a döner).
+
+### Mevcut ikon setleri
+
+| Kreş | `appIconKey` | Dosya |
+|---|---|---|
+| Milas Bilim Çocuk Anaokulu | `bilimcocuk` | `assets/brand-icons/bilimcocuk.png` |
+
+### Yeni bir kreşe özel ikon eklemek için
+
+Bu adım **sadece kod/build tarafında** yapılır, Firebase'e yazmak tek başına yeterli değildir (ikonlar build zamanında pakete gömülüyor):
+
+1. `assets/brand-icons/{kresKey}.png` — kare, 1024x1024, sade/temiz logo (poster/splash görseli değil) ekle.
+2. `app.json` içindeki `expo-dynamic-app-icon` plugin bloğuna yeni bir entry ekle:
+   ```json
+   "{kresKey}": {
+     "image": "./assets/brand-icons/{kresKey}.png",
+     "prerendered": true
+   }
+   ```
+3. `eas build` al ve store'a gönder (bu adım tek seferlik — build'e gömüldükten sonra tekrar build almaya gerek kalmaz, önceki eklenen ikonlar da yeni build'de korunur).
+4. Firebase Realtime Database'de ilgili kreşin `kresler/{kresId}/appIconKey` alanına `"{kresKey}"` yaz (bu adım kod gerektirmez, konsoldan elle yapılabilir).
+
+> Not: Yeni ücretli kreş eklendikçe küçük bir güncelleme build'i atmak gerekecek, ama ayrı store kaydı / ayrı bundle id gerekmiyor — tek app olarak devam ediyor.
