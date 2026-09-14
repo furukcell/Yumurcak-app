@@ -154,6 +154,15 @@ export default function RootNavigator() {
   );
 
     if (yukleniyor || subLoading || !subscriptionReady) {
+    if (role !== ROLLER.SUPERADMIN && kres?.splashUrl) {
+      return (
+        <View style={s.customSplash}>
+          <Image source={{ uri: kres.splashUrl }} style={s.customSplashImage} resizeMode="cover" />
+          <ActivityIndicator color="#FFFFFF" size="large" style={s.customSplashSpinner} />
+        </View>
+      );
+    }
+
     return (
       <View style={s.yuklemeEkrani}>
         <View style={s.cloudLeft} />
@@ -293,6 +302,21 @@ const s = StyleSheet.create({
   logo: {
     fontSize: 72,
     marginBottom: 6,
+  },
+
+  customSplash: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+
+  customSplashImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+
+  customSplashSpinner: {
+    position: 'absolute',
+    bottom: 70,
+    alignSelf: 'center',
   },
 
   kresLogoImage: {
