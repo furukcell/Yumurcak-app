@@ -66,6 +66,15 @@
           "locationWhenInUsePermission": "Yumurcak, servis rotasında sıradaki durağa olan mesafeyi göstermek için konumunuzu kullanır.",
           "isAndroidBackgroundLocationEnabled": false
         }
+      ],
+      [
+        "expo-dynamic-app-icon",
+        {
+          "bilimcocuk": {
+            "image": "./assets/brand-icons/bilimcocuk.png",
+            "prerendered": true
+          }
+        }
       ]
     ]
   }
