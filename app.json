@@ -27,6 +27,7 @@
     },
     "android": {
       "package": "com.furukcell.yumurcakapp",
+      "allowBackup": false,
       "versionCode": 21,
       "googleServicesFile": "./google-services.json",
       "compileSdkVersion": 35,
