@@ -13,7 +13,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { startUsageTracking, stopUsageTracking, trackScreen } from './src/services/usageTracker';
@@ -44,23 +44,15 @@ export default function App() {
 
       try {
         const update = await Updates.checkForUpdateAsync();
-
         if (!update.isAvailable) return;
-
         await Updates.fetchUpdateAsync();
 
         Alert.alert(
           '🧸 Yumurcak Güncellemesi',
           'Yeni bir güncelleme hazır. Uygulamayı şimdi güncellemek ister misiniz?',
           [
-            {
-              text: 'Daha Sonra',
-              style: 'cancel',
-            },
-            {
-              text: 'Güncelle',
-              onPress: () => Updates.reloadAsync(),
-            },
+            { text: 'Daha Sonra', style: 'cancel' },
+            { text: 'Güncelle', onPress: () => Updates.reloadAsync() },
           ],
         );
       } catch (error) {
@@ -75,7 +67,6 @@ export default function App() {
     if (Platform.OS !== 'android') return;
 
     let hideTimeoutId = null;
-
     const hideAndroidNavigationBar = async () => {
       try {
         await NavigationBar.setVisibilityAsync('hidden');
@@ -92,9 +83,7 @@ export default function App() {
         hideTimeoutId = null;
       }
       if (visibility === 'visible') {
-        hideTimeoutId = setTimeout(() => {
-          hideAndroidNavigationBar();
-        }, 3000);
+        hideTimeoutId = setTimeout(() => hideAndroidNavigationBar(), 3000);
       }
     });
 
@@ -139,7 +128,7 @@ function getActiveRouteName(state) {
 
 function UsageTrackingBridge() {
   const { kullanici } = useAuth();
-  const navigationRef = useNavigationContainerRef();
+  const navigationState = useNavigationState((state) => state);
   const lastRouteRef = useRef('');
   const cleanupRef = useRef(null);
 
@@ -162,29 +151,19 @@ function UsageTrackingBridge() {
   }, [kullanici?.id, kullanici?.uid, kullanici?.kresId, kullanici?.rol]);
 
   useEffect(() => {
-    if (!kullanici?.id && !kullanici?.uid) return undefined;
+    if (!kullanici?.id && !kullanici?.uid) return;
 
-    const unsubscribe = navigationRef.addListener('state', () => {
-      const routeName = getActiveRouteName(navigationRef.getRootState());
-      if (!routeName || routeName === lastRouteRef.current) return;
-      lastRouteRef.current = routeName;
-      trackScreen(routeName);
-    });
+    const routeName = getActiveRouteName(navigationState);
+    if (!routeName || routeName === lastRouteRef.current) return;
 
-    const initialTimer = setTimeout(() => {
-      const routeName = getActiveRouteName(navigationRef.getRootState());
-      if (routeName) {
-        lastRouteRef.current = routeName;
-        trackScreen(routeName);
-      }
-    }, 300);
+    lastRouteRef.current = routeName;
+    trackScreen(routeName);
+  }, [navigationState, kullanici?.id, kullanici?.uid]);
 
-    return () => {
-      clearTimeout(initialTimer);
-      unsubscribe?.();
-      lastRouteRef.current = '';
-    };
-  }, [kullanici?.id, kullanici?.uid, navigationRef]);
+  useEffect(() => {
+    if (kullanici?.id || kullanici?.uid) return;
+    lastRouteRef.current = '';
+  }, [kullanici?.id, kullanici?.uid]);
 
   return null;
 }
@@ -266,7 +245,6 @@ function NotificationDeepLinkHandler() {
     };
 
     handleInitialResponse();
-
     const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
 
     return () => {
