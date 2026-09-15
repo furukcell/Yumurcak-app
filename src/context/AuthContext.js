@@ -11,6 +11,7 @@ import { get, ref } from 'firebase/database';
 import { setAppIcon } from 'expo-dynamic-app-icon';
 import { auth, database } from '../config/firebase';
 import { getKresForUser, findUserIdByAuthUid, usernameToEmail } from '../utils/authHelpers';
+import { setUsageUser, trackLogin, trackLogout } from '../services/usageTracker';
 
 const AuthContext = createContext(null);
 
@@ -40,25 +41,7 @@ export function AuthProvider({ children }) {
   const isSigningOutRef = useRef(false);
   const restoringAuthRef = useRef(false);
 
-  // Premium kreşler için özel açılış ikonu: kresler/{kresId}/appIconKey alanı
-  // app.json > expo-dynamic-app-icon plugin'indeki isimlerden biriyle (örn. "bilimcocuk")
-  // eşleşiyorsa cihazdaki ikon o kreşe özel görsele geçer; alan boşsa/eşleşmiyorsa
-  // varsayılan Yumurcak ikonuna döner. Sadece o cihazı/kullanıcıyı etkiler.
-  //
-  // NOT: setAppIcon çağrısına 'DEFAULT' göndermek YANLIŞ — kütüphane bu ismi
-  // packageName + ".MainActivity" + "DEFAULT" component'ine çevirip enable
-  // etmeye çalışıyor, ama böyle bir alias app.json'daki plugin config'inde
-  // tanımlı değil (sadece "bilimcocuk" tanımlı). Var olmayan component
-  // enable edilemeyince native taraf sessizce false dönüyor ve ikon eski
-  // haliyle (örn. bilimcocuk) kalıyor — çıkış/kreş değişiminde logo geri
-  // dönmüyordu. Boş string ("") göndermek gerçek ana activity'yi
-  // (packageName + ".MainActivity", suffix'siz) hedefler ve bu her zaman
-  // var olduğu için başarıyla varsayılan ikona döner.
   useEffect(() => {
-    // NOT: setAppIcon Promise DEĞİL, senkron çalışır — hata olursa false,
-    // başarılıysa ikon adını döndürür. Bu yüzden .catch() KULLANILMAZ,
-    // .catch() çağrısı 'false.catch is not a function' hatasıyla
-    // uygulamayı açılışta çökertiyordu. try/catch ile sarmalıyoruz.
     try {
       const iconKey = kres?.appIconKey;
       const result = setAppIcon(iconKey || '');
@@ -70,12 +53,6 @@ export function AuthProvider({ children }) {
     }
   }, [kres?.appIconKey]);
 
-  // Uygulama açılır açılmaz, gerçek oturum kontrolü (internet gerektirir)
-  // bitmeden ÖNCE, telefonun kendi hafızasındaki kreş bilgisini hemen okuyoruz.
-  // Böylece kreşe özel splash ekranı varsa, internet cevabı beklenmeden hemen
-  // gösterilir; sarı-bulutlu genel Yumurcak yükleme ekranı görünmez.
-  // (Bu sadece daha önce bu cihazda giriş yapılmış kullanıcılar için geçerlidir —
-  // ilk kurulumda önbellek olmadığı için o an genel ekran kaçınılmaz olarak görünür.)
   useEffect(() => {
     AsyncStorage.getItem(KRES_KEY)
       .then((kayitliKresStr) => {
@@ -113,6 +90,7 @@ export function AuthProvider({ children }) {
         if (isSigningOutRef.current) {
           setKullanici(null);
           setKres(null);
+          setUsageUser(null);
           setYukleniyor(false);
           return;
         }
@@ -136,6 +114,8 @@ export function AuthProvider({ children }) {
 
               setKullanici(userData);
               setKres(kresObj);
+              setUsageUser(userData);
+              trackLogin();
 
               await AsyncStorage.setItem(USER_KEY, JSON.stringify(userData));
               if (kresObj) await AsyncStorage.setItem(KRES_KEY, JSON.stringify(kresObj));
@@ -166,6 +146,7 @@ export function AuthProvider({ children }) {
       if (isSigningOutRef.current) {
         setKullanici(null);
         setKres(null);
+        setUsageUser(null);
         return;
       }
 
@@ -175,6 +156,7 @@ export function AuthProvider({ children }) {
       if (!kayitliKullanici) {
         setKullanici(null);
         setKres(null);
+        setUsageUser(null);
         return;
       }
 
@@ -185,6 +167,7 @@ export function AuthProvider({ children }) {
         await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
         setKullanici(null);
         setKres(null);
+        setUsageUser(null);
         return;
       }
 
@@ -196,16 +179,20 @@ export function AuthProvider({ children }) {
 
         setKullanici(freshUser);
         setKres(kresObj);
+        setUsageUser(freshUser);
+        trackLogin();
         restoreFirebaseSession(freshUser).catch((error) => console.warn('Otomatik auth yenileme hatası:', error?.message || error));
       } else {
         await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
         setKullanici(null);
         setKres(null);
+        setUsageUser(null);
       }
     } catch (error) {
       console.warn('Eski oturum kontrol hatası:', error);
       setKullanici(null);
       setKres(null);
+      setUsageUser(null);
     }
   };
 
@@ -228,14 +215,18 @@ export function AuthProvider({ children }) {
 
     setKullanici(normalizedUser);
     setKres(kresObj || null);
+    setUsageUser(normalizedUser);
+    trackLogin();
     restoreFirebaseSession(normalizedUser).catch((error) => console.warn('Giriş sonrası auth yenileme hatası:', error?.message || error));
   };
 
   const cikisYap = async () => {
+    trackLogout();
     isSigningOutRef.current = true;
 
     setKullanici(null);
     setKres(null);
+    setUsageUser(null);
 
     try {
       await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
