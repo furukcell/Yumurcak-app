@@ -13,9 +13,10 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { startUsageTracking, stopUsageTracking, trackScreen } from './src/services/usageTracker';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToDatabase,
@@ -77,10 +78,6 @@ export default function App() {
 
     const hideAndroidNavigationBar = async () => {
       try {
-        // Not: SDK 54'te edge-to-edge zorunlu olduğu için setBehaviorAsync,
-        // setBackgroundColorAsync ve setButtonStyleAsync artık etkisiz
-        // (Expo dokümantasyonu: "supported only when edge-to-edge is disabled").
-        // Bu yüzden gizliliği addVisibilityListener ile kendimiz koruyoruz.
         await NavigationBar.setVisibilityAsync('hidden');
       } catch (error) {
         console.warn('Android navigation bar gizlenemedi:', error);
@@ -94,9 +91,6 @@ export default function App() {
         clearTimeout(hideTimeoutId);
         hideTimeoutId = null;
       }
-      // Kullanıcı gezinme çubuğunu görünür kıldıysa (dokunma/kaydırma ile),
-      // 3 saniye sonra otomatik olarak tekrar gizle. Üst durum çubuğu
-      // (bildirim/saat alanı) bu mantığa dahil değil, o her zaman görünür kalır.
       if (visibility === 'visible') {
         hideTimeoutId = setTimeout(() => {
           hideAndroidNavigationBar();
@@ -118,6 +112,7 @@ export default function App() {
         <LanguageProvider>
           <AuthProvider>
             <NavigationContainer linking={YUMURCAK_LINKING}>
+              <UsageTrackingBridge />
               <PushTokenSync />
               <NotificationDeepLinkHandler />
               <StatusBar style="dark" backgroundColor="#F8F6FF" />
@@ -130,6 +125,68 @@ export default function App() {
       </SafeAreaProvider>
     </KeyboardProvider>
   );
+}
+
+function getActiveRouteName(state) {
+  let current = state;
+  while (current?.routes?.[current.index ?? 0]) {
+    const route = current.routes[current.index ?? 0];
+    if (!route.state) return route.name;
+    current = route.state;
+  }
+  return undefined;
+}
+
+function UsageTrackingBridge() {
+  const { kullanici } = useAuth();
+  const navigationRef = useNavigationContainerRef();
+  const lastRouteRef = useRef('');
+  const cleanupRef = useRef(null);
+
+  useEffect(() => {
+    if (!kullanici?.id && !kullanici?.uid) {
+      stopUsageTracking();
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      return undefined;
+    }
+
+    cleanupRef.current?.();
+    cleanupRef.current = startUsageTracking(kullanici);
+
+    return () => {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      stopUsageTracking();
+    };
+  }, [kullanici?.id, kullanici?.uid, kullanici?.kresId, kullanici?.rol]);
+
+  useEffect(() => {
+    if (!kullanici?.id && !kullanici?.uid) return undefined;
+
+    const unsubscribe = navigationRef.addListener('state', () => {
+      const routeName = getActiveRouteName(navigationRef.getRootState());
+      if (!routeName || routeName === lastRouteRef.current) return;
+      lastRouteRef.current = routeName;
+      trackScreen(routeName);
+    });
+
+    const initialTimer = setTimeout(() => {
+      const routeName = getActiveRouteName(navigationRef.getRootState());
+      if (routeName) {
+        lastRouteRef.current = routeName;
+        trackScreen(routeName);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(initialTimer);
+      unsubscribe?.();
+      lastRouteRef.current = '';
+    };
+  }, [kullanici?.id, kullanici?.uid, navigationRef]);
+
+  return null;
 }
 
 function PushTokenSync() {
