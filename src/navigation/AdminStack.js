@@ -40,6 +40,7 @@ import AdminMonthlyScheduleScreen from '../screens/admin/AdminMonthlyScheduleScr
 import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
+import AdminSupportScreen from '../screens/admin/AdminSupportScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -65,6 +66,7 @@ export default function AdminStack() {
     stackScreen('AdminServiceMonthlyStats', AdminServiceMonthlyStatsScreen, { headerShown: false }),
     stackScreen('AdminBirthdayCalendar', AdminBirthdayCalendarScreen, { title: 'Doğum Günü Takvimi' }),
     stackScreen('MessageDetail', MessageDetailScreen, { headerShown: false }),
+    stackScreen('Support', AdminSupportScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
     stackScreen('AdminProfile', AdminProfileScreen, { headerShown: false }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
