@@ -85,7 +85,7 @@ export function ParentChildProvider({ children: appChildren }) {
       cleanupFallback();
       cleanupScoped();
       const childMap = {};
-      let loaded = 0;
+      const loadedIds = new Set();
       const publish = () => {
         setChildren(ids.map((id) => childMap[id]).filter(Boolean));
         setLoading(false);
@@ -95,12 +95,12 @@ export function ParentChildProvider({ children: appChildren }) {
           const child = safeObject(childSnap.val());
           if (Object.keys(child).length) childMap[childId] = { id: childId, ...child };
           else delete childMap[childId];
-          loaded += 1;
-          if (loaded >= ids.length) publish(); else setChildren(Object.values(childMap));
+          loadedIds.add(childId);
+          if (loadedIds.size >= ids.length) publish(); else setChildren(Object.values(childMap));
         }, () => {
-          loaded += 1;
+          loadedIds.add(childId);
           delete childMap[childId];
-          if (loaded >= ids.length) publish();
+          if (loadedIds.size >= ids.length) publish();
         });
         scopedUnsubs.push(unsub);
       });
