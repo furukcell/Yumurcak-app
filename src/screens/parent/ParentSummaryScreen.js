@@ -21,7 +21,7 @@ import ThemePatternBackground from '../../components/ThemePatternBackground';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 import { getWeekKey } from '../../utils/weeklyBadges';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
-import { getMealPhoto } from '../../components/MealTodayCard';
+import { getMealText, getMealPhoto } from '../../components/MealTodayCard';
 import DailyCommentCard from '../../components/DailyCommentCard';
 import { getMonthKey, getMonthLabel } from '../../services/monthlyDocuments';
 import { MOOD_LISTESI } from '../../constants';
@@ -49,9 +49,9 @@ function pickFreshestRecord(list, hasContentFn) {
 function mealHasContent(item) {
   const menu = item?.ogunler || {};
   return !!(
-    getMealMenuText(menu.kahvalti) ||
-    getMealMenuText(menu.ogle) ||
-    getMealMenuText(menu.araOgun)
+    getMealText(menu.kahvalti) ||
+    getMealText(menu.ogle) ||
+    getMealText(menu.araOgun)
   );
 }
 
@@ -215,7 +215,7 @@ export default function ParentSummaryScreen({ navigation }) {
 
     const dailyOguns = dailyMeal?.ogunler || {};
     const monthlyOguns = monthlyMeal?.ogunler || {};
-    const hasMealValue = (value) => !!(getMealMenuText(value) || getMealPhoto(value));
+    const hasMealValue = (value) => !!(getMealText(value) || getMealPhoto(value));
 
     return {
       ...(monthlyMeal || dailyMeal),
@@ -429,8 +429,8 @@ function parseBirthDate(value) {
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 function isBirthdayToday(value) { const birth = parseBirthDate(value); if (!birth) return false; const todayDate = new Date(); return birth.getDate() === todayDate.getDate() && birth.getMonth() === todayDate.getMonth(); }
-function getMealMenuText(value) { if (!value) return ''; if (typeof value === 'string') return value; if (typeof value === 'object') return value.text || value.aciklama || ''; return String(value); }
-function buildMealSummary(report, mealList, t) { const reportMeal = report?.yemek || {}; const menu = mealList?.ogunler || {}; return ['kahvalti', 'ogle', 'araOgun'].map((key) => { const rawStatus = reportMeal?.[key]?.durum || (reportMeal?.[key] === true ? 'bitirdi' : '') || ''; return { key, label: t(`parent.mealCard.mealName.${key}`), menu: getMealMenuText(menu?.[key]), photo: getMealPhoto(menu?.[key]), status: rawStatus, statusLabel: getMealStatusLabel(rawStatus, t) }; }); }
+function getMealText(value) { if (!value) return ''; if (typeof value === 'string') return value; if (typeof value === 'object') return value.text || value.aciklama || ''; return String(value); }
+function buildMealSummary(report, mealList, t) { const reportMeal = report?.yemek || {}; const menu = mealList?.ogunler || {}; return ['kahvalti', 'ogle', 'araOgun'].map((key) => { const rawStatus = reportMeal?.[key]?.durum || (reportMeal?.[key] === true ? 'bitirdi' : '') || ''; return { key, label: t(`parent.mealCard.mealName.${key}`), menu: getMealText(menu?.[key]), photo: getMealPhoto(menu?.[key]), status: rawStatus, statusLabel: getMealStatusLabel(rawStatus, t) }; }); }
 function getMainMealStatus(items, t) { if (items.some((item) => item.status === 'yemedi')) return t('parent.summary.mealStatus.yemedi'); if (items.some((item) => item.status === 'az_yedi')) return t('parent.summary.mealStatus.az_yedi'); if (items.some((item) => item.status === 'bitirdi')) return t('parent.summary.mealStatus.bitirdi'); return t('parent.summary.mealStatus.waiting'); }
 function getMoodEmoji(moodLabel) { const found = MOOD_LISTESI.find((item) => item.label === moodLabel); return found ? found.emoji : '🙂'; }
 function getAttendanceDisplay(styles, attendance, t) { const durum = attendance?.durum || attendance?.status || ''; if (durum === 'geldi' || durum === 'gec') return { icon: '✅', value: durum === 'gec' ? t('parent.summary.arrivedLate') : t('parent.summary.arrived'), color: styles.attendanceGreen }; if (durum === 'gelmedi') return { icon: '❌', value: t('parent.summary.didNotArrive'), color: styles.attendanceRed }; return { icon: '⏳', value: t('parent.summary.waiting'), color: null }; }
