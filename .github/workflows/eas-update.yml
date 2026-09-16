@@ -27,5 +27,6 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      # Parent daily meal summary fix is included in this OTA.
       - name: Publish OTA update (preview)
         run: eas update --branch preview --message "${{ github.event.head_commit.message }}" --non-interactive
