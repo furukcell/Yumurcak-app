@@ -1,4 +1,4 @@
-name: Apply parent child selection integration v2
+name: Apply parent child selection integration v3
 
 on:
   push:
@@ -13,37 +13,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Patch parent shared
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
           p = Path('src/screens/parent/parentShared.js')
           s = p.read_text(encoding='utf-8')
-          old_import = "import { useAuth } from '../../context/AuthContext';\n"
-          if old_import in s and "ParentChildContext" not in s:
-              s = s.replace(old_import, old_import + "import { useParentChild } from '../../context/ParentChildContext';\n", 1)
-          s = s.replace("  const selectedChild = children[0] || null;\n", "  const { selectedChild } = useParentChild();\n", 1)
-          old_shell = "  const canGoBack = !!navigation?.canGoBack?.();\n  const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);"
-          new_shell = "  const canGoBack = !!navigation?.canGoBack?.();\n  const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);\n  const { children: parentChildren, selectedChild: shellSelectedChild, selectChild } = useParentChild();"
-          s = s.replace(old_shell, new_shell, 1)
-          old_header_end = "      </View>\n      <KeyboardAvoidingView"
-          new_header_end = """      </View>
+          marker = "import { useAuth } from '../../context/AuthContext';"
+          if "../../context/ParentChildContext" not in s:
+              s = s.replace(marker, marker + "\nimport { useParentChild } from '../../context/ParentChildContext';", 1)
+          s = s.replace("  const selectedChild = children[0] || null;", "  const { selectedChild } = useParentChild();", 1)
+          marker = "  const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);"
+          if "parentChildren" not in s:
+              s = s.replace(marker, marker + "\n  const { children: parentChildren, selectedChild: shellSelectedChild, selectChild } = useParentChild();", 1)
+          marker = "      </View>\n      <KeyboardAvoidingView"
+          selector = '''      </View>
       {parentChildren.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8 }}>
           {parentChildren.map((child) => {
             const isSelected = String(child.id) === String(shellSelectedChild?.id);
             const name = `${child.ad || child.adSoyad || child.isim || 'Çocuk'} ${child.soyad || ''}`.trim();
             return (
               <TouchableOpacity key={child.id} onPress={() => selectChild(child.id)} activeOpacity={0.8}
-                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: isSelected ? THEME.primary : THEME.border, backgroundColor: isSelected ? THEME.primarySoft : THEME.card }}>
+                style={{ marginRight: 8, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: isSelected ? THEME.primary : THEME.border, backgroundColor: isSelected ? THEME.primarySoft : THEME.card }}>
                 <Text style={{ fontSize: 13, fontWeight: '800', color: isSelected ? THEME.primary : THEME.text }}>{name}</Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
       ) : null}
-      <KeyboardAvoidingView"""
-          s = s.replace(old_header_end, new_header_end, 1)
+      <KeyboardAvoidingView'''
+          if "parentChildren.length > 1" not in s and marker in s:
+              s = s.replace(marker, selector, 1)
           p.write_text(s, encoding='utf-8')
+          PY
       - name: Commit changes and remove one-time workflow
         run: |
           git config user.name "github-actions[bot]"
