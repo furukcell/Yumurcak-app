@@ -32,6 +32,7 @@ import MessageDetailScreen from '../screens/shared/MessageDetailScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import { useAppTheme } from '../theme/ThemeProvider';
 import LegalDocumentsScreen from '../screens/legal/LegalDocumentsScreen';
+import { ParentChildProvider } from '../context/ParentChildContext';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -71,36 +72,38 @@ function ParentTabs() {
 
 export default function ParentStack() {
   return (
-    <View style={styles.root}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="ParentTabs" component={ParentTabs} />
-        <Stack.Screen name="Notifications" component={NotificationsScreen} />
-        <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
-        <Stack.Screen name="ChildReport" component={ChildReportScreen} />
-        <Stack.Screen name="ParentReports" component={ParentReportsScreen} />
-        <Stack.Screen name="ParentAnnouncements" component={ParentAnnouncementsScreen} />
-        <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
-        <Stack.Screen name="ParentAbout" component={ParentAboutScreen} />
-        <Stack.Screen name="ParentSupport" component={ParentSupportScreen} />
-        <Stack.Screen name="ParentMeals" component={ParentMealsScreen} />
-        <Stack.Screen name="ParentSchedule" component={ParentScheduleScreen} />
-        <Stack.Screen name="ParentEvents" component={ParentEventsScreen} />
-        <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
-        <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
-        <Stack.Screen name="ParentUyum" component={ParentUyumScreen} />
-        <Stack.Screen name="ParentBadges" component={ParentBadgesScreen} />
-        <Stack.Screen name="ParentMedical" component={ParentMedicalScreen} />
-        <Stack.Screen name="ParentContact" component={ParentContactScreen} />
-        <Stack.Screen name="ParentService" component={ParentServiceScreen} />
-        <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
-        <Stack.Screen name="ParentGallery" component={ParentGalleryScreen} />
-        <Stack.Screen name="ParentBell" component={ParentBellScreen} />
-        <Stack.Screen name="ParentPayments" component={ParentPaymentsScreen} />
-        <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
-        <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
-        <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
-      </Stack.Navigator>
-    </View>
+    <ParentChildProvider>
+      <View style={styles.root}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="ParentTabs" component={ParentTabs} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+          <Stack.Screen name="ChildReport" component={ChildReportScreen} />
+          <Stack.Screen name="ParentReports" component={ParentReportsScreen} />
+          <Stack.Screen name="ParentAnnouncements" component={ParentAnnouncementsScreen} />
+          <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
+          <Stack.Screen name="ParentAbout" component={ParentAboutScreen} />
+          <Stack.Screen name="ParentSupport" component={ParentSupportScreen} />
+          <Stack.Screen name="ParentMeals" component={ParentMealsScreen} />
+          <Stack.Screen name="ParentSchedule" component={ParentScheduleScreen} />
+          <Stack.Screen name="ParentEvents" component={ParentEventsScreen} />
+          <Stack.Screen name="ParentAttendance" component={ParentAttendanceScreen} />
+          <Stack.Screen name="ParentDevelopment" component={ParentDevelopmentScreen} />
+          <Stack.Screen name="ParentUyum" component={ParentUyumScreen} />
+          <Stack.Screen name="ParentBadges" component={ParentBadgesScreen} />
+          <Stack.Screen name="ParentMedical" component={ParentMedicalScreen} />
+          <Stack.Screen name="ParentContact" component={ParentContactScreen} />
+          <Stack.Screen name="ParentService" component={ParentServiceScreen} />
+          <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
+          <Stack.Screen name="ParentGallery" component={ParentGalleryScreen} />
+          <Stack.Screen name="ParentBell" component={ParentBellScreen} />
+          <Stack.Screen name="ParentPayments" component={ParentPaymentsScreen} />
+          <Stack.Screen name="ParentPolls" component={ParentPollsScreen} />
+          <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
+          <Stack.Screen name="LegalDocuments" component={LegalDocumentsScreen} />
+        </Stack.Navigator>
+      </View>
+    </ParentChildProvider>
   );
 }
 const styles = StyleSheet.create({ root: { flex: 1 } });
