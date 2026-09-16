@@ -188,9 +188,46 @@ export default function ParentSummaryScreen({ navigation }) {
   }, [attendance, selectedChild?.id, today]);
 
   const todayMeal = useMemo(() => {
-    const active = meals.filter((item) => item.aktif !== false).filter((item) => !kresId || !item.kresId || item.kresId === kresId).filter((item) => !item.sinifId || item.sinifId === sinifId).filter((item) => item.tarih === today);
-    const classMatches = active.filter((item) => item.sinifId === sinifId);
-    return pickFreshestRecord(classMatches, mealHasContent) || pickFreshestRecord(active, mealHasContent);
+    const active = meals
+      .filter((item) => item.aktif !== false)
+      .filter((item) => !kresId || !item.kresId || item.kresId === kresId)
+      .filter((item) => !item.sinifId || item.sinifId === sinifId);
+
+    // ParentMealsScreen ile aynı kaynak önceliği: günlük kayıt > sınıfa özel
+    // öğretmen aylık kaydı > kurum geneli yönetici aylık kaydı.
+    // Ayrıca günlük kayıt sadece dolu olduğu öğünlerde aylık menünün üzerine
+    // yazılır; böylece aylık menü özeti kaybolmaz.
+    const dailyMeal = pickFreshestRecord(
+      active.filter((item) => item.tarih === today && item.kaynak !== 'admin_aylik' && item.kaynak !== 'ogretmen_aylik'),
+      mealHasContent
+    );
+    const teacherMonthlyMeal = pickFreshestRecord(
+      active.filter((item) => item.tarih === today && item.kaynak === 'ogretmen_aylik' && item.sinifId === sinifId),
+      mealHasContent
+    );
+    const institutionMonthlyMeal = pickFreshestRecord(
+      active.filter((item) => item.tarih === today && item.kaynak === 'admin_aylik'),
+      mealHasContent
+    );
+    const monthlyMeal = teacherMonthlyMeal || institutionMonthlyMeal;
+
+    if (!dailyMeal && !monthlyMeal) return null;
+
+    const dailyOguns = dailyMeal?.ogunler || {};
+    const monthlyOguns = monthlyMeal?.ogunler || {};
+    const hasMealValue = (value) => !!(getMealMenuText(value) || getMealPhoto(value));
+
+    return {
+      ...(monthlyMeal || dailyMeal),
+      ...(dailyMeal || {}),
+      id: dailyMeal?.id || monthlyMeal?.id || '',
+      tarih: today,
+      ogunler: {
+        kahvalti: hasMealValue(dailyOguns.kahvalti) ? dailyOguns.kahvalti : monthlyOguns.kahvalti,
+        ogle: hasMealValue(dailyOguns.ogle) ? dailyOguns.ogle : monthlyOguns.ogle,
+        araOgun: hasMealValue(dailyOguns.araOgun) ? dailyOguns.araOgun : monthlyOguns.araOgun,
+      },
+    };
   }, [meals, kresId, sinifId, today]);
 
   const todayEvents = useMemo(() => {
