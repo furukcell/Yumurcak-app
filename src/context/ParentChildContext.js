@@ -23,6 +23,7 @@ export function ParentChildProvider({ children: appChildren }) {
   const [children, setChildren] = useState([]);
   const [selectedChildId, setSelectedChildId] = useState(null);
   const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
   const storageKey = parentId ? `@yumurcak/selected-parent-child/${parentId}` : null;
 
   useEffect(() => {
@@ -43,9 +44,11 @@ export function ParentChildProvider({ children: appChildren }) {
   useEffect(() => {
     if (!parentId) {
       setChildren([]);
+      setLoading(false);
       return undefined;
     }
 
+    setLoading(true);
     let fallbackUnsub = null;
     let scopedUnsubs = [];
     let usingFallback = false;
@@ -66,7 +69,11 @@ export function ParentChildProvider({ children: appChildren }) {
         }
         mine.sort((a, b) => `${a.ad || a.adSoyad || a.isim || ''}`.localeCompare(`${b.ad || b.adSoyad || b.isim || ''}`, 'tr'));
         setChildren(mine);
-      }, () => setChildren([]));
+        setLoading(false);
+      }, () => {
+        setChildren([]);
+        setLoading(false);
+      });
     };
 
     const indexUnsub = onValue(ref(database, `veliCocuklari/${parentId}`), (snap) => {
@@ -79,7 +86,10 @@ export function ParentChildProvider({ children: appChildren }) {
       cleanupScoped();
       const childMap = {};
       let loaded = 0;
-      const publish = () => setChildren(ids.map((id) => childMap[id]).filter(Boolean));
+      const publish = () => {
+        setChildren(ids.map((id) => childMap[id]).filter(Boolean));
+        setLoading(false);
+      };
       ids.forEach((childId) => {
         const unsub = onValue(ref(database, `cocuklar/${childId}`), (childSnap) => {
           const child = safeObject(childSnap.val());
@@ -94,7 +104,9 @@ export function ParentChildProvider({ children: appChildren }) {
         });
         scopedUnsubs.push(unsub);
       });
-    }, startFallback);
+    }, () => {
+      startFallback();
+    });
 
     return () => { indexUnsub && indexUnsub(); cleanupScoped(); cleanupFallback(); };
   }, [parentId]);
@@ -118,7 +130,10 @@ export function ParentChildProvider({ children: appChildren }) {
     if (storageKey) AsyncStorage.setItem(storageKey, id).catch(() => {});
   }, [storageKey]);
 
-  const value = useMemo(() => ({ children, selectedChild, selectedChildId: selectedChild?.id || null, selectChild }), [children, selectedChild, selectChild]);
+  const value = useMemo(
+    () => ({ children, selectedChild, selectedChildId: selectedChild?.id || null, selectChild, loading }),
+    [children, selectedChild, selectChild, loading]
+  );
   return <ParentChildContext.Provider value={value}>{appChildren}</ParentChildContext.Provider>;
 }
 
