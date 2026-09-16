@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+}import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -60,6 +60,18 @@ function createStyles(theme) {
     text: { fontSize: 14, color: t.text },
     muted: { fontSize: 13, color: t.muted },
     row: { flexDirection: 'row', alignItems: 'center' },
+    emptyStateCard: { backgroundColor: t.card, borderRadius: 22, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: t.border },
+    emptyIcon: { fontSize: 40, marginBottom: 8 },
+    emptyTitle: { fontSize: 17, fontWeight: '900', color: t.text, textAlign: 'center' },
+    emptyDesc: { fontSize: 13, color: t.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
+    infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.border },
+    infoIcon: { width: 26, fontSize: 17 },
+    infoLabel: { width: 116, color: t.muted, fontWeight: '800' },
+    infoValue: { flex: 1, color: t.text, fontWeight: '800' },
+    placeholderCard: { backgroundColor: t.card, borderRadius: 22, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: t.border },
+    placeholderIcon: { fontSize: 44, marginBottom: 10 },
+    placeholderTitle: { fontSize: 18, fontWeight: '900', color: t.text },
+    placeholderDesc: { color: t.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
   });
 }
 
@@ -543,5 +555,43 @@ export function LoadingScreen({ text = 'Hazırlanıyor...' }) {
       <ActivityIndicator size="large" color={THEME.primary} />
       <Text style={themedStyles.loadingText}>{text}</Text>
     </View>
+  );
+}
+
+export function EmptyState({ icon = 'ℹ️', title, desc }) {
+  const themedStyles = useParentSharedStyles();
+
+  return (
+    <View style={themedStyles.emptyStateCard}>
+      <Text style={themedStyles.emptyIcon}>{icon}</Text>
+      <Text style={themedStyles.emptyTitle}>{title}</Text>
+      {desc ? <Text style={themedStyles.emptyDesc}>{desc}</Text> : null}
+    </View>
+  );
+}
+
+export function InfoRow({ icon, label, value }) {
+  const themedStyles = useParentSharedStyles();
+
+  return (
+    <View style={themedStyles.infoRow}>
+      <Text style={themedStyles.infoIcon}>{icon}</Text>
+      <Text style={themedStyles.infoLabel}>{label}</Text>
+      <Text style={themedStyles.infoValue}>{value || '-'}</Text>
+    </View>
+  );
+}
+
+export function PlaceholderScreen({ navigation, icon, title, description }) {
+  const themedStyles = useParentSharedStyles();
+
+  return (
+    <ScreenShell title={title} emoji={icon} navigation={navigation}>
+      <View style={themedStyles.placeholderCard}>
+        <Text style={themedStyles.placeholderIcon}>{icon}</Text>
+        <Text style={themedStyles.placeholderTitle}>{title}</Text>
+        <Text style={themedStyles.placeholderDesc}>{description || 'Bu alan yakında aktif olacak.'}</Text>
+      </View>
+    </ScreenShell>
   );
 }
