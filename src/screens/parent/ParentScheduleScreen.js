@@ -12,7 +12,7 @@ import { ETKINLIK_KATEGORILERI } from '../../constants';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 
 const NODE_PATH = 'dersProgramlari';
-const KAYNAK = 'admin_aylik';
+const KAYNAKLAR = ['admin_aylik', 'ogretmen_aylik'];
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const classIdOf = (item) => item?.sinifId || item?.classId || '';
@@ -60,34 +60,57 @@ export default function ParentScheduleScreen({ navigation }) {
   const [displayMonthKey, setDisplayMonthKey] = useState(() => getMonthKey(new Date()));
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
 
+  const visibleRecords = useMemo(() => {
+    return records.filter((item) => {
+      if (item.aktif === false || !KAYNAKLAR.includes(item.kaynak)) return false;
+      const itemClassId = classIdOf(item);
+      return !itemClassId || itemClassId === sinifId;
+    });
+  }, [records, sinifId]);
+
   const scheduledDateSet = useMemo(() => {
     const set = new Set();
-    records.forEach((item) => {
-      if (item.aktif === false || item.kaynak !== KAYNAK) return;
-      const itemClassId = classIdOf(item);
-      if (itemClassId && itemClassId !== sinifId) return;
+    visibleRecords.forEach((item) => {
       const entries = Array.isArray(item.etkinlikler) ? item.etkinlikler : [];
       if (entries.some((entry) => String(entry?.etkinlik || '').trim()) && item.tarih) set.add(item.tarih);
     });
     return set;
-  }, [records, sinifId]);
+  }, [visibleRecords]);
 
   const selectedDayEntries = useMemo(() => {
-    const match = records.find((item) => {
-      if (item.aktif === false || item.kaynak !== KAYNAK || item.tarih !== selectedDateKey) return false;
-      const itemClassId = classIdOf(item);
-      return !itemClassId || itemClassId === sinifId;
-    });
-    const list = Array.isArray(match?.etkinlikler) ? match.etkinlikler : [];
-    return list.filter((entry) => String(entry?.etkinlik || '').trim()).map((entry, index) => ({
-      id: `${match?.id || 'ders'}-${index}`, baslik: entry.etkinlik, kategori: entry.kategori || '', tema: entry.tema || '', aciklama: entry.aciklama || '',
-      baslangicSaati: entry.baslangicSaati || '', bitisSaati: entry.bitisSaati || '',
-      saat: entry.baslangicSaati ? `${entry.baslangicSaati}${entry.bitisSaati ? ` - ${entry.bitisSaati}` : ''}` : '',
-    })).sort((a, b) => {
+    // Aynı gün için admin ve öğretmen yayınlarının İKİSİNİ DE göster.
+    // Aynı kaynak birden fazla kez yayınlandıysa yalnızca o kaynağın en güncel,
+    // içeriği dolu kaydını kullan; böylece republish sonrası çift liste oluşmaz.
+    const bySource = KAYNAKLAR.map((kaynak) => {
+      const matches = visibleRecords.filter((item) => item.kaynak === kaynak && item.tarih === selectedDateKey);
+      return matches.sort((a, b) => {
+        const aHas = Array.isArray(a.etkinlikler) && a.etkinlikler.some((entry) => String(entry?.etkinlik || '').trim()) ? 1 : 0;
+        const bHas = Array.isArray(b.etkinlikler) && b.etkinlikler.some((entry) => String(entry?.etkinlik || '').trim()) ? 1 : 0;
+        if (aHas !== bHas) return bHas - aHas;
+        return Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0);
+      })[0] || null;
+    }).filter(Boolean);
+
+    return bySource.flatMap((match) => {
+      const list = Array.isArray(match.etkinlikler) ? match.etkinlikler : [];
+      const kaynakLabel = match.kaynak === 'ogretmen_aylik' ? 'Öğretmen' : 'Yönetim';
+      return list.filter((entry) => String(entry?.etkinlik || '').trim()).map((entry, index) => ({
+        id: `${match.id || match.kaynak || 'ders'}-${index}`,
+        baslik: entry.etkinlik,
+        kategori: entry.kategori || '',
+        tema: entry.tema || '',
+        aciklama: entry.aciklama || '',
+        kaynak: match.kaynak,
+        kaynakLabel,
+        baslangicSaati: entry.baslangicSaati || '',
+        bitisSaati: entry.bitisSaati || '',
+        saat: entry.baslangicSaati ? `${entry.baslangicSaati}${entry.bitisSaati ? ` - ${entry.bitisSaati}` : ''}` : '',
+      }));
+    }).sort((a, b) => {
       const aStart = parseTimeToMinutes(a.baslangicSaati); const bStart = parseTimeToMinutes(b.baslangicSaati);
       if (aStart === null && bStart === null) return 0; if (aStart === null) return 1; if (bStart === null) return -1; return aStart - bStart;
     });
-  }, [records, sinifId, selectedDateKey]);
+  }, [visibleRecords, selectedDateKey]);
 
   const calendarCells = useMemo(() => buildCalendarCells(displayMonthKey), [displayMonthKey]);
   if (loading) return <LoadingScreen text={t('parent.schedule.loading')} />;
@@ -113,13 +136,13 @@ export default function ParentScheduleScreen({ navigation }) {
               })}
             </View>
           </View>
-          <MonthlyDocumentPdfBar kresId={kresId} nodePath={NODE_PATH} kaynak={KAYNAK} docType="ders" monthKey={displayMonthKey} monthLabel={formatMonthLabel(displayMonthKey, t)} theme={THEME} />
+          <MonthlyDocumentPdfBar kresId={kresId} nodePath={NODE_PATH} kaynak="admin_aylik" docType="ders" monthKey={displayMonthKey} monthLabel={formatMonthLabel(displayMonthKey, t)} theme={THEME} />
           <View style={localStyles.selectedDatePill}><Text style={localStyles.selectedDatePillText}>📅 {formatSelectedDateLabel(selectedDateKey, selectedDateKey === todayKey, t)}</Text></View>
           {selectedDayEntries.length === 0 ? <EmptyState icon="📘" title={t('parent.schedule.emptyDayTitle')} desc={t('parent.schedule.emptyDayDesc')} /> : (
             <View style={localStyles.timeline}>{selectedDayEntries.map((entry, index) => {
               const isLast = index === selectedDayEntries.length - 1; const meta = getCategoryMeta(entry.kategori);
               return <View key={entry.id} style={localStyles.timelineItem}><View style={localStyles.timelineRail}><View style={[localStyles.timelineDot, { backgroundColor: meta.color, borderColor: meta.color }]} />{!isLast ? <View style={[localStyles.timelineLine, { backgroundColor: THEME.border }]} /> : null}</View>
-                <View style={[styles.card, localStyles.timelineCard]}><View style={localStyles.timelineCardHead}><Text style={[localStyles.categoryBadge, { color: meta.color, backgroundColor: THEME.primarySoft }]}>{meta.emoji} {meta.label}</Text>{entry.saat ? <Text style={localStyles.timelineTime}>{entry.saat}</Text> : null}</View><Text style={[styles.cardTitle, { marginTop: 7, fontSize: 14.5 }]}>{entry.baslik}</Text>{entry.tema ? <Text style={[styles.cardText, { marginTop: 3 }]}>🎨 {t('parent.schedule.theme')}: {entry.tema}</Text> : null}{entry.aciklama ? <Text style={[styles.cardText, { marginTop: 3 }]}>{entry.aciklama}</Text> : null}</View>
+                <View style={[styles.card, localStyles.timelineCard]}><View style={localStyles.timelineCardHead}><Text style={[localStyles.categoryBadge, { color: meta.color, backgroundColor: THEME.primarySoft }]}>{meta.emoji} {meta.label}</Text><View style={localStyles.sourceAndTime}><Text style={[localStyles.sourceBadge, entry.kaynak === 'ogretmen_aylik' ? { color: THEME.secondary } : { color: THEME.primary }]}>{entry.kaynakLabel}</Text>{entry.saat ? <Text style={localStyles.timelineTime}>{entry.saat}</Text> : null}</View></View><Text style={[styles.cardTitle, { marginTop: 7, fontSize: 14.5 }]}>{entry.baslik}</Text>{entry.tema ? <Text style={[styles.cardText, { marginTop: 3 }]}>🎨 {t('parent.schedule.theme')}: {entry.tema}</Text> : null}{entry.aciklama ? <Text style={[styles.cardText, { marginTop: 3 }]}>{entry.aciklama}</Text> : null}</View>
               </View>;
             })}</View>
           )}
@@ -137,5 +160,5 @@ const localStyles = {
   calMonthLabel: { color: THEME.text, fontWeight: '900', fontSize: 14.5 },
   calDowRow: { flexDirection: 'row', marginBottom: 4 }, calDow: { flex: 1, textAlign: 'center', color: THEME.muted, fontWeight: '800', fontSize: 10.5, paddingBottom: 4 }, calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calDayCell: { width: `${100 / 7}%`, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, marginVertical: 1 }, calDayText: { color: THEME.text, fontWeight: '800', fontSize: 12.5 }, calDot: { width: 4, height: 4, borderRadius: 2, marginTop: 3 },
-  selectedDatePill: { alignSelf: 'flex-start', backgroundColor: THEME.primarySoft, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 12, marginTop: 4 }, selectedDatePillText: { color: THEME.primary, fontWeight: '800', fontSize: 12 }, timeline: { marginTop: 2 }, timelineItem: { flexDirection: 'row', alignItems: 'stretch' }, timelineRail: { width: 22, alignItems: 'center' }, timelineDot: { width: 13, height: 13, borderRadius: 7, marginTop: 5, borderWidth: 2.5 }, timelineLine: { width: 2, flex: 1, marginTop: 2, marginBottom: -8, opacity: 0.5, borderRadius: 1 }, timelineCard: { flex: 1, marginLeft: 9, marginBottom: 10 }, timelineCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, categoryBadge: { fontSize: 10, fontWeight: '900', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 99, overflow: 'hidden' }, timelineTime: { color: THEME.muted, fontSize: 11, fontWeight: '800' },
+  selectedDatePill: { alignSelf: 'flex-start', backgroundColor: THEME.primarySoft, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 12, marginTop: 4 }, selectedDatePillText: { color: THEME.primary, fontWeight: '800', fontSize: 12 }, timeline: { marginTop: 2 }, timelineItem: { flexDirection: 'row', alignItems: 'stretch' }, timelineRail: { width: 22, alignItems: 'center' }, timelineDot: { width: 13, height: 13, borderRadius: 7, marginTop: 5, borderWidth: 2.5 }, timelineLine: { width: 2, flex: 1, marginTop: 2, marginBottom: -8, opacity: 0.5, borderRadius: 1 }, timelineCard: { flex: 1, marginLeft: 9, marginBottom: 10 }, timelineCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, sourceAndTime: { flexDirection: 'row', alignItems: 'center', gap: 8 }, sourceBadge: { fontSize: 9.5, fontWeight: '900' }, categoryBadge: { fontSize: 10, fontWeight: '900', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 99, overflow: 'hidden' }, timelineTime: { color: THEME.muted, fontSize: 11, fontWeight: '800' },
 };
