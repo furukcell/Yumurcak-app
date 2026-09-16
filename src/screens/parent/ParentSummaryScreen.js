@@ -429,7 +429,7 @@ function parseBirthDate(value) {
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 function isBirthdayToday(value) { const birth = parseBirthDate(value); if (!birth) return false; const todayDate = new Date(); return birth.getDate() === todayDate.getDate() && birth.getMonth() === todayDate.getMonth(); }
-function getMealText(value) { if (!value) return ''; if (typeof value === 'string') return value; if (typeof value === 'object') return value.text || value.aciklama || ''; return String(value); }
+
 function buildMealSummary(report, mealList, t) { const reportMeal = report?.yemek || {}; const menu = mealList?.ogunler || {}; return ['kahvalti', 'ogle', 'araOgun'].map((key) => { const rawStatus = reportMeal?.[key]?.durum || (reportMeal?.[key] === true ? 'bitirdi' : '') || ''; return { key, label: t(`parent.mealCard.mealName.${key}`), menu: getMealText(menu?.[key]), photo: getMealPhoto(menu?.[key]), status: rawStatus, statusLabel: getMealStatusLabel(rawStatus, t) }; }); }
 function getMainMealStatus(items, t) { if (items.some((item) => item.status === 'yemedi')) return t('parent.summary.mealStatus.yemedi'); if (items.some((item) => item.status === 'az_yedi')) return t('parent.summary.mealStatus.az_yedi'); if (items.some((item) => item.status === 'bitirdi')) return t('parent.summary.mealStatus.bitirdi'); return t('parent.summary.mealStatus.waiting'); }
 function getMoodEmoji(moodLabel) { const found = MOOD_LISTESI.find((item) => item.label === moodLabel); return found ? found.emoji : '🙂'; }
