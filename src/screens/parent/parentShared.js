@@ -38,6 +38,33 @@ function syncTheme(theme) {
   Object.assign(THEME, theme || {});
 }
 
+function createStyles(theme) {
+  const t = theme || THEME;
+  return StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: t.bg },
+    screen: { flex: 1, backgroundColor: t.bg },
+    scrollContent: { paddingHorizontal: 16, paddingTop: 12 },
+    header: { minHeight: 64, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderBottomWidth: 1, borderBottomColor: t.border },
+    backButton: { minWidth: 72, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+    backArrow: { fontSize: 32, lineHeight: 32, color: t.primary },
+    backLabel: { marginLeft: 4, fontSize: 14, fontWeight: '800', color: t.primary },
+    backSpacer: { width: 72 },
+    headerTitleWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
+    headerTitle: { fontSize: 17, fontWeight: '900', color: t.text, textAlign: 'center' },
+    headerSubtitle: { marginTop: 2, fontSize: 11, fontWeight: '700', color: t.muted, textAlign: 'center' },
+    headerEmoji: { width: 36, textAlign: 'center', fontSize: 22 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg, paddingHorizontal: 24 },
+    loadingText: { marginTop: 12, color: t.muted, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+    content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
+    card: { backgroundColor: t.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: t.border, marginBottom: 12 },
+    text: { fontSize: 14, color: t.text },
+    muted: { fontSize: 13, color: t.muted },
+    row: { flexDirection: 'row', alignItems: 'center' },
+  });
+}
+
+export const styles = createStyles(THEME);
+
 function useParentSharedStyles() {
   const { theme } = useAppTheme();
   syncTheme(theme);
