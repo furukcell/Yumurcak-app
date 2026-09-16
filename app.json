@@ -74,6 +74,10 @@
           "bilimcocuk": {
             "image": "./assets/brand-icons/bilimcocuk.png",
             "prerendered": true
+          },
+          "harikacocuklar": {
+            "image": "./assets/brand-icons/harikacocuklar.png",
+            "prerendered": true
           }
         }
       ],
