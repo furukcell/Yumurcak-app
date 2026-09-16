@@ -292,7 +292,7 @@ export function useParentBase() {
   const parentPhotoUrl = getProfilePhotoUrl(mergedKullanici);
 
   const kresId = selectedChild?.kresId || mergedKullanici?.kresId || null;
-  const sinifId = selectedChild?.sinifId || null;
+  const sinifId = selectedChild?.sinifId || selectedChild?.classId || null;
 
   useEffect(() => {
     if (!sinifId) {
@@ -498,107 +498,3 @@ export function LoadingScreen({ text = 'Hazırlanıyor...' }) {
     </View>
   );
 }
-
-export function EmptyState({ icon = 'ℹ️', title, desc }) {
-  const themedStyles = useParentSharedStyles();
-
-  return (
-    <View style={themedStyles.emptyStateCard}>
-      <Text style={themedStyles.emptyIcon}>{icon}</Text>
-      <Text style={themedStyles.emptyTitle}>{title}</Text>
-      {desc ? <Text style={themedStyles.emptyDesc}>{desc}</Text> : null}
-    </View>
-  );
-}
-
-export function InfoRow({ icon, label, value }) {
-  const themedStyles = useParentSharedStyles();
-
-  return (
-    <View style={themedStyles.infoRow}>
-      <Text style={themedStyles.infoIcon}>{icon}</Text>
-      <Text style={themedStyles.infoLabel}>{label}</Text>
-      <Text style={themedStyles.infoValue}>{value || '-'}</Text>
-    </View>
-  );
-}
-
-export function PlaceholderScreen({ navigation, icon, title, description }) {
-  const themedStyles = useParentSharedStyles();
-
-  return (
-    <ScreenShell title={title} emoji={icon} navigation={navigation}>
-      <View style={themedStyles.placeholderCard}>
-        <Text style={themedStyles.placeholderIcon}>{icon}</Text>
-        <Text style={themedStyles.placeholderTitle}>{title}</Text>
-        <Text style={themedStyles.placeholderDesc}>{description || 'Bu alan yakında aktif olacak.'}</Text>
-      </View>
-    </ScreenShell>
-  );
-}
-
-function createStyles(theme) {
-  const t = { ...THEME, ...(theme || {}) };
-  return StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: t.bg,
-      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
-    },
-    screen: { flex: 1, backgroundColor: t.bg },
-    scrollContent: { padding: 16, paddingBottom: 120 },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg },
-    loadingText: { marginTop: 12, color: t.muted, fontWeight: '700' },
-    header: {
-      paddingHorizontal: 16,
-      paddingTop: 8,
-      paddingBottom: 12,
-      backgroundColor: t.bg,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    backButton: { width: 74, flexDirection: 'row', alignItems: 'center' },
-    backArrow: { fontSize: 28, color: t.primary, fontWeight: '800', marginRight: 3 },
-    backLabel: { color: t.primary, fontWeight: '800' },
-    backSpacer: { width: 74 },
-    headerTitleWrap: { flex: 1, alignItems: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: t.primary },
-    headerSubtitle: { fontSize: 11, color: t.muted, marginTop: 2, fontWeight: '700' },
-    headerEmoji: { width: 36, textAlign: 'right', fontSize: 21 },
-    emptyStateCard: {
-      backgroundColor: t.card,
-      borderRadius: 22,
-      padding: 22,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: t.border,
-    },
-    emptyIcon: { fontSize: 40, marginBottom: 8 },
-    emptyTitle: { fontSize: 17, fontWeight: '900', color: t.text, textAlign: 'center' },
-    emptyDesc: { fontSize: 13, color: t.muted, marginTop: 5, textAlign: 'center', lineHeight: 18 },
-    card: { backgroundColor: t.card, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: t.border },
-    cardTitle: { fontSize: 17, fontWeight: '900', color: t.text },
-    cardText: { color: t.muted, marginTop: 6, fontWeight: '700', lineHeight: 19 },
-    badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, fontWeight: '900', overflow: 'hidden' },
-    sectionTitle: { fontSize: 18, fontWeight: '900', color: t.text, marginTop: 8, marginBottom: 12 },
-    infoRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.border },
-    infoIcon: { width: 26, fontSize: 17 },
-    infoLabel: { width: 116, color: t.muted, fontWeight: '800' },
-    infoValue: { flex: 1, color: t.text, fontWeight: '800' },
-    secondaryButton: { backgroundColor: t.primarySoft, borderRadius: 14, padding: 13, alignItems: 'center', marginTop: 12 },
-    secondaryButtonText: { color: t.primary, fontWeight: '900' },
-    placeholderCard: {
-      backgroundColor: t.card,
-      borderRadius: 22,
-      padding: 24,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: t.border,
-    },
-    placeholderIcon: { fontSize: 44, marginBottom: 10 },
-    placeholderTitle: { fontSize: 18, fontWeight: '900', color: t.text },
-    placeholderDesc: { color: t.muted, marginTop: 7, textAlign: 'center', lineHeight: 20, fontWeight: '600' },
-  });
-}
-
-export const styles = createStyles(THEME);
