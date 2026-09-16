@@ -486,7 +486,6 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   const insets = useSafeAreaInsets();
   const canGoBack = !!navigation?.canGoBack?.();
   const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);
-  const { children: parentChildren, selectedChild: shellSelectedChild, selectChild } = useParentChild();
   // Header yüksekliği sabit bir sayı yerine gerçek render edilen yüksekliğe
   // göre ölçülüyor; iOS'ta klavye offset'i buna göre hesaplanıyor.
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -511,24 +510,6 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
         </View>
         <Text style={themedStyles.headerEmoji}>{emoji || ''}</Text>
       </View>
-      {parentChildren.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8 }}>
-          {parentChildren.map((child) => {
-            const isSelected = String(child.id) === String(shellSelectedChild?.id);
-            const name = `${child.ad || child.adSoyad || child.isim || 'Çocuk'} ${child.soyad || ''}`.trim();
-            return (
-              <TouchableOpacity
-                key={child.id}
-                onPress={() => selectChild(child.id)}
-                activeOpacity={0.8}
-                style={{ marginRight: 8, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: isSelected ? THEME.primary : THEME.border, backgroundColor: isSelected ? THEME.primarySoft : THEME.card }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '800', color: isSelected ? THEME.primary : THEME.text }}>{name}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      ) : null}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
