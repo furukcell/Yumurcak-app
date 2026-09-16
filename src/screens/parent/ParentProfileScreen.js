@@ -22,12 +22,14 @@ import { useTranslation } from 'react-i18next';
 import { database, storage } from '../../config/firebase';
 import { setAppLanguage } from '../../i18n';
 import { ScreenShell, InfoRow, EmptyState, LoadingScreen, useParentBase, styles, THEME } from './parentShared';
+import { useParentChild } from '../../context/ParentChildContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import ChangePasswordCard from '../../components/ChangePasswordCard';
 
 export default function ParentProfileScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { loading, selectedChild, childName, parentName, kullanici, parentId, parentPhotoUrl, sinif, ogretmen, cikisYap } = useParentBase();
+  const { children: allChildren, selectChild } = useParentChild();
   const [photoUrl, setPhotoUrl] = useState(parentPhotoUrl || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -188,6 +190,24 @@ export default function ParentProfileScreen({ navigation }) {
        />
      ) : (
        <View style={styles.card}>
+         {allChildren.length > 1 ? (
+           <View style={local.childSwitcherRow}>
+             {allChildren.map((child) => {
+               const isSelected = String(child.id) === String(selectedChild.id);
+               const name = `${child.ad || child.adSoyad || child.isim || 'Çocuk'}`.trim();
+               return (
+                 <TouchableOpacity
+                   key={child.id}
+                   onPress={() => selectChild(child.id)}
+                   activeOpacity={0.85}
+                   style={[local.childPill, isSelected && local.childPillActive]}
+                 >
+                   <Text style={[local.childPillText, isSelected && local.childPillTextActive]} numberOfLines={1}>{name}</Text>
+                 </TouchableOpacity>
+               );
+             })}
+           </View>
+         ) : null}
          <Text style={styles.cardTitle}>👧 {childName}</Text>
          <Text style={styles.cardText}>
            {selectedChild?.dogumTarihi
@@ -314,6 +334,18 @@ export default function ParentProfileScreen({ navigation }) {
 }
 
 const local = {
+  childSwitcherRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  childPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    backgroundColor: THEME.card,
+  },
+  childPillActive: { borderColor: THEME.primary, backgroundColor: THEME.primarySoft },
+  childPillText: { fontSize: 13, fontWeight: '800', color: THEME.text },
+  childPillTextActive: { color: THEME.primary },
   avatarWrap: { alignItems: 'center', marginVertical: 12 },
   avatarImage: { width: 96, height: 96, borderRadius: 48, backgroundColor: THEME.primarySoft },
   avatarPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center' },
