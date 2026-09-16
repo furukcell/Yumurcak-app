@@ -1,0 +1,69 @@
+name: Apply parent child selection integration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'apply parent child selection integration') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch parent shared
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/screens/parent/parentShared.js')
+          s = p.read_text(encoding='utf-8')
+          old_import = "import { useAuth } from '../../context/AuthContext';\n"
+          new_import = old_import + "import { useParentChild } from '../../context/ParentChildContext';\n"
+          if old_import in s and "ParentChildContext" not in s:
+              s = s.replace(old_import, new_import, 1)
+          old_selected = "  const selectedChild = children[0] || null;\n"
+          new_selected = "  const { selectedChild } = useParentChild();\n"
+          if old_selected in s:
+              s = s.replace(old_selected, new_selected, 1)
+          old_shell = "  const canGoBack = !!navigation?.canGoBack?.();\n  const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);"
+          new_shell = """  const canGoBack = !!navigation?.canGoBack?.();
+  const bottomSafePadding = 96 + Math.max(insets.bottom || 0, 8);
+  const { children: parentChildren, selectedChild: shellSelectedChild, selectChild } = useParentChild();"""
+          if old_shell in s:
+              s = s.replace(old_shell, new_shell, 1)
+          old_header_end = "      </View>\n      <KeyboardAvoidingView"
+          new_header_end = """      </View>
+      {parentChildren.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 8 }}>
+          {parentChildren.map((child) => {
+            const isSelected = String(child.id) === String(shellSelectedChild?.id);
+            const name = `${child.ad || child.adSoyad || child.isim || 'Çocuk'} ${child.soyad || ''}`.trim();
+            return (
+              <TouchableOpacity
+                key={child.id}
+                onPress={() => selectChild(child.id)}
+                activeOpacity={0.8}
+                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: isSelected ? themedStyles.headerTitle.color || THEME.primary : THEME.border, backgroundColor: isSelected ? THEME.primarySoft : THEME.card }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '800', color: isSelected ? THEME.primary : THEME.text }}>{name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+      <KeyboardAvoidingView"""
+          if old_header_end in s:
+              s = s.replace(old_header_end, new_header_end, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Remove one-time workflow and commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/patch-parent-child.yml
+          git add src/screens/parent/parentShared.js .github/workflows/patch-parent-child.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "feat(parent): integrate shared child selection"
+          git push
