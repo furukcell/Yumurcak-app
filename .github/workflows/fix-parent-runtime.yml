@@ -1,0 +1,69 @@
+name: Fix Parent Runtime
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch parent runtime
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/screens/parent/parentShared.js')
+          s = p.read_text()
+          marker = 'function useParentSharedStyles() {'
+          if 'function createStyles(theme) {' not in s:
+              fn = '''function createStyles(theme) {
+            const t = theme || THEME;
+            return StyleSheet.create({
+              safeArea: { flex: 1, backgroundColor: t.bg },
+              screen: { flex: 1, backgroundColor: t.bg },
+              scrollContent: { paddingHorizontal: 16, paddingTop: 12 },
+              header: { minHeight: 64, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderBottomWidth: 1, borderBottomColor: t.border },
+              backButton: { minWidth: 72, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+              backArrow: { fontSize: 32, lineHeight: 32, color: t.primary },
+              backLabel: { marginLeft: 4, fontSize: 14, fontWeight: '800', color: t.primary },
+              backSpacer: { width: 72 },
+              headerTitleWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
+              headerTitle: { fontSize: 17, fontWeight: '900', color: t.text, textAlign: 'center' },
+              headerSubtitle: { marginTop: 2, fontSize: 11, fontWeight: '700', color: t.muted, textAlign: 'center' },
+              headerEmoji: { width: 36, textAlign: 'center', fontSize: 22 },
+              center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg, paddingHorizontal: 24 },
+              loadingText: { marginTop: 12, color: t.muted, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+              content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
+              card: { backgroundColor: t.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: t.border, marginBottom: 12 },
+              text: { fontSize: 14, color: t.text },
+              muted: { fontSize: 13, color: t.muted },
+              row: { flexDirection: 'row', alignItems: 'center' },
+            });
+          }
+
+          '''
+              s = s.replace(marker, fn + marker, 1)
+          if 'export const styles = createStyles(THEME);' not in s:
+              s = s.replace(marker, 'export const styles = createStyles(THEME);\n\n' + marker, 1)
+          p.write_text(s)
+
+          p = Path('src/context/ParentChildContext.js')
+          s = p.read_text()
+          if 'const loadedIds = new Set();' not in s:
+              s = s.replace('      const childMap = {};\n      let loaded = 0;\n', '      const childMap = {};\n      let loaded = 0;\n      const loadedIds = new Set();\n      const markLoaded = (childId) => {\n        if (loadedIds.has(childId)) return;\n        loadedIds.add(childId);\n        loaded += 1;\n      };\n', 1)
+              s = s.replace('          loaded += 1;\n          if (loaded >= ids.length) publish(); else setChildren(Object.values(childMap));', '          markLoaded(childId);\n          if (loaded >= ids.length) publish(); else setChildren(Object.values(childMap));', 1)
+              s = s.replace('          loaded += 1;\n          delete childMap[childId];\n          if (loaded >= ids.length) publish();', '          markLoaded(childId);\n          delete childMap[childId];\n          if (loaded >= ids.length) publish();', 1)
+          p.write_text(s)
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/screens/parent/parentShared.js src/context/ParentChildContext.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: restore parent shared styles and stabilize child loading'
+          git push
