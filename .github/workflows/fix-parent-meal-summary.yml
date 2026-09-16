@@ -1,0 +1,35 @@
+name: Fix parent meal summary
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch parent meal summary
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/screens/parent/ParentSummaryScreen.js')
+          text = path.read_text()
+          old = '''  const todayMeal = useMemo(() => {\n    const active = meals.filter((item) => item.aktif !== false).filter((item) => !kresId || !item.kresId || item.kresId === kresId).filter((item) => !item.sinifId || item.sinifId === sinifId).filter((item) => item.tarih === today);\n    const classMatches = active.filter((item) => item.sinifId === sinifId);\n    return pickFreshestRecord(classMatches, mealHasContent) || pickFreshestRecord(active, mealHasContent);\n  }, [meals, kresId, sinifId, today]);'''
+          new = '''  const todayMeal = useMemo(() => {\n    const active = meals\n      .filter((item) => item.aktif !== false)\n      .filter((item) => !kresId || !item.kresId || item.kresId === kresId)\n      .filter((item) => !item.sinifId || item.sinifId === sinifId);\n\n    // ParentMealsScreen ile aynı kaynak önceliği: günlük kayıt > sınıfa özel\n    // öğretmen aylık kaydı > kurum geneli yönetici aylık kaydı.\n    // Ayrıca günlük kayıt sadece dolu olduğu öğünlerde aylık menünün üzerine\n    // yazılır; böylece aylık menü özeti kaybolmaz.\n    const dailyMeal = pickFreshestRecord(\n      active.filter((item) => item.tarih === today && item.kaynak !== 'admin_aylik' && item.kaynak !== 'ogretmen_aylik'),\n      mealHasContent\n    );\n    const teacherMonthlyMeal = pickFreshestRecord(\n      active.filter((item) => item.tarih === today && item.kaynak === 'ogretmen_aylik' && item.sinifId === sinifId),\n      mealHasContent\n    );\n    const institutionMonthlyMeal = pickFreshestRecord(\n      active.filter((item) => item.tarih === today && item.kaynak === 'admin_aylik'),\n      mealHasContent\n    );\n    const monthlyMeal = teacherMonthlyMeal || institutionMonthlyMeal;\n\n    if (!dailyMeal && !monthlyMeal) return null;\n\n    const dailyOguns = dailyMeal?.ogunler || {};\n    const monthlyOguns = monthlyMeal?.ogunler || {};\n    const hasMealValue = (value) => !!(getMealMenuText(value) || getMealPhoto(value));\n\n    return {\n      ...(monthlyMeal || dailyMeal),\n      ...(dailyMeal || {}),\n      id: dailyMeal?.id || monthlyMeal?.id || '',\n      tarih: today,\n      ogunler: {\n        kahvalti: hasMealValue(dailyOguns.kahvalti) ? dailyOguns.kahvalti : monthlyOguns.kahvalti,\n        ogle: hasMealValue(dailyOguns.ogle) ? dailyOguns.ogle : monthlyOguns.ogle,\n        araOgun: hasMealValue(dailyOguns.araOgun) ? dailyOguns.araOgun : monthlyOguns.araOgun,\n      },\n    };\n  }, [meals, kresId, sinifId, today]);'''
+          if old not in text:
+              raise SystemExit('Target todayMeal block not found; aborting without changes.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit fix and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/screens/parent/ParentSummaryScreen.js .github/workflows/fix-parent-meal-summary.yml
+          git commit -m "fix: sync parent daily meal summary" || exit 0
+          git rm .github/workflows/fix-parent-meal-summary.yml
+          git commit -m "chore: remove temporary parent meal patch workflow"
+          git push
