@@ -1794,3 +1794,110 @@ exports.deleteKullanici = functions
 
     return { success: true };
   });
+
+// Web panelin "Ayrıldı" sekmesindeki çocuk silme butonu bu fonksiyonu çağırır.
+// Client SDK, database.rules.json kuralları yüzünden kullanıcının kendi
+// kreşi dışındaki veya iç içe bağlı (rapor/yoklama/gelişim vb.) düğümleri
+// güvenli şekilde toplu silemiyor; bu yüzden iş Cloud Function'a devredildi.
+// Güvenlik: sadece durum === 'ayrildi' olan (yani önce "Ayrıldı" olarak
+// işaretlenmiş) çocuklar silinebilir — aktif bir öğrenci bu fonksiyonla
+// yanlışlıkla silinemez.
+exports.deleteCocuk = functions
+  .region('europe-west1')
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Giriş yapmalısınız.');
+    }
+
+    const targetId = data && data.id;
+    if (!targetId) {
+      throw new functions.https.HttpsError('invalid-argument', 'id parametresi gerekli.');
+    }
+
+    const db = admin.database();
+    const callerAuthUid = context.auth.uid;
+    const SUPERADMIN_UID = 'K966myrwH1arMN0Wfl5FXJhc4T03';
+
+    const callerIdSnap = await db.ref(`authKullaniciIndex/${callerAuthUid}`).once('value');
+    const callerId = callerIdSnap.val();
+    const callerSnap = callerId ? await db.ref(`kullanicilar/${callerId}`).once('value') : null;
+    const caller = callerSnap && callerSnap.exists() ? callerSnap.val() : null;
+
+    const isSuperadmin = callerAuthUid === SUPERADMIN_UID || (caller && caller.rol === 'superadmin');
+    const isYonetici = caller && caller.rol === 'yonetici';
+
+    if (!isSuperadmin && !isYonetici) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu işlem için yetkiniz yok.');
+    }
+
+    const targetSnap = await db.ref(`cocuklar/${targetId}`).once('value');
+    if (!targetSnap.exists()) {
+      throw new functions.https.HttpsError('not-found', 'Çocuk kaydı bulunamadı.');
+    }
+    const target = targetSnap.val();
+
+    if (!isSuperadmin && caller.kresId !== target.kresId) {
+      throw new functions.https.HttpsError('permission-denied', 'Farklı bir kreşin öğrencisini silemezsiniz.');
+    }
+
+    if (target.durum !== 'ayrildi') {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Önce çocuğu "Ayrıldı" olarak işaretlemeden kalıcı silme yapılamaz.'
+      );
+    }
+
+    const kresId = target.kresId;
+    const sinifId = target.sinifId;
+    const veliIds = arr(target.veliIds);
+    const updates = {};
+
+    // Ana kayıt ve index'ler
+    updates[`cocuklar/${targetId}`] = null;
+    if (kresId) updates[`kresCocuklari/${kresId}/${targetId}`] = null;
+    if (sinifId) updates[`sinifCocuklari/${sinifId}/${targetId}`] = null;
+    veliIds.forEach((veliId) => {
+      if (veliId) updates[`veliCocuklari/${veliId}/${targetId}`] = null;
+    });
+
+    // cocukId anahtarıyla doğrudan tutulan düğüm (tarih bazlı AI yorumları)
+    updates[`gunlukYorumlar/${targetId}`] = null;
+
+    // cocukId/childId alanıyla filtrelenen düz koleksiyonlar — her birini
+    // tarayıp sadece bu çocuğa ait kayıtları siliyoruz.
+    const flatCollections = [
+      'gunlukRaporlar',
+      'fizikselGelisim',
+      'yoklamalar',
+      'uyumKayitlari',
+      'haftaninRozetleri',
+      'ilacTakipFormlari',
+    ];
+    await Promise.all(
+      flatCollections.map(async (koleksiyon) => {
+        const snap = await db.ref(koleksiyon).once('value');
+        snap.forEach((child) => {
+          const val = child.val() || {};
+          if ((val.cocukId || val.childId) === targetId) {
+            updates[`${koleksiyon}/${child.key}`] = null;
+          }
+        });
+      })
+    );
+
+    // Galeri: bir paylaşım birden fazla çocuğu etiketleyebiliyor, o yüzden
+    // paylaşımın kendisini silmiyoruz — sadece bu çocuğun etiketini
+    // cocukIds listesinden çıkarıyoruz (tekil cocukId ile paylaşılanlar hariç).
+    const gallerySnap = await db.ref('galeri').once('value');
+    gallerySnap.forEach((child) => {
+      const val = child.val() || {};
+      const cocukIds = arr(val.cocukIds);
+      if (cocukIds.includes(String(targetId))) {
+        updates[`galeri/${child.key}/cocukIds`] = cocukIds.filter((cid) => cid !== String(targetId));
+      }
+    });
+
+    await db.ref().update(updates);
+
+    return { success: true };
+  });
