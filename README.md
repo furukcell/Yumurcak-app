@@ -22,7 +22,7 @@ Admin paneli               ✅
 Öğretmen paneli            ✅
 Veli paneli                ✅
 Firebase backend           ✅
-Günlük takip                ✅
+Günlük takip               ✅
 Bildirim sistemi           ✅
 Galeri                     ✅
 Döküman / PDF sistemi      ✅
