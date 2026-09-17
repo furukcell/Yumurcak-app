@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import * as ImagePicker from 'expo-image-picker';
+import { launchSafeGalleryPicker } from '../../utils/safeImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Video } from 'react-native-compressor';
@@ -703,7 +704,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
+        const result = await launchSafeGalleryPicker({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: false,
         allowsMultipleSelection: true,
