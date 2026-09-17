@@ -27,10 +27,11 @@ import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'fi
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
+import InAppMediaPicker from '../../components/InAppMediaPicker';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_MEDIA_PER_POST = 10;
-const MAX_VIDEO_PER_POST = 2;
+const MAX_MEDIA_PER_POST = 20;
+const MAX_VIDEO_PER_POST = 5;
 const MAX_VIDEO_DURATION_MS = 120 * 1000;
 const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 const MAX_IMAGE_WIDTH = 1920;
@@ -338,6 +339,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [now, setNow] = useState(Date.now());
   const [viewerItem, setViewerItem] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   const canUpload = mode === 'admin' || mode === 'teacher';
   const title = mode === 'parent' ? 'Galeri' : mode === 'teacher' ? 'Sınıf Galerisi' : 'Galeri Yönetimi';
