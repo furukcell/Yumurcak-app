@@ -29,11 +29,18 @@ export default function RootNavigator() {
   // Kreşe özel splash ekranı, veri hızlı yüklendiğinde göz açıp kapayana kadar
   // (birkaç yüz milisaniye) kaybolup fark edilmiyordu. Veri ne kadar hızlı
   // gelirse gelsin splash'i en az 3 saniye ekranda tutmak için bu sayaç kullanılıyor.
-  const [minSplashSuresiDoldu, setMinSplashSuresiDoldu] = useState(false);
+    const [minSplashSuresiDoldu, setMinSplashSuresiDoldu] = useState(false);
   useEffect(() => {
+    // Otomatik girişte RootNavigator uygulama açılışında mount olur, 3 saniye
+    // burada başlar ve tema/veli-çocuk verisi bu süre içinde sessizce yüklenir.
+    // Şifreyle girişte ise kullanıcı login ekranında zaman geçirdiği için bu
+    // süre çoktan dolmuş olur; kullanici state'i az önce set edildiğinde ekran
+    // context verileri hazır olmadan hemen açılır. Bu yüzden sayaç, kullanici
+    // her (yeniden) set edildiğinde sıfırdan başlatılır.
+    setMinSplashSuresiDoldu(false);
     const zamanlayici = setTimeout(() => setMinSplashSuresiDoldu(true), 3000);
     return () => clearTimeout(zamanlayici);
-  }, []);
+  }, [kullanici?.uid]);
 
   const role = kullanici?.rol;
   const kresId = kullanici?.kresId;
