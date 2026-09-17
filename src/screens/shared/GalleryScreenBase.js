@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Modal,
   Platform,
   SafeAreaView,
@@ -653,8 +654,20 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     if (targetType === 'child' && !selectedChildId) return Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
 
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        if (permission.canAskAgain === false) {
+          return Alert.alert(
+            'İzin Gerekli',
+            'Galeri izni daha önce reddedilmiş. Ayarlar\'dan Fotoğraflar erişimini açman gerekiyor.',
+            [
+              { text: 'Vazgeç', style: 'cancel' },
+              { text: 'Ayarlara Git', onPress: () => Linking.openSettings() },
+            ]
+          );
+        }
+        return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
+      }
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
