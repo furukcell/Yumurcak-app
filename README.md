@@ -17,23 +17,23 @@ Yumurcak'ın ana ürün geliştirme fazları tamamlanmıştır.
 Şu anda proje:
 
 ```txt
-Ana ürün geliştirme        ✅ TAMAMLANDI
-Admin paneli               ✅
-Öğretmen paneli            ✅
-Veli paneli                ✅
-Firebase backend           ✅
-Günlük takip               ✅
-Bildirim sistemi           ✅
-Galeri                     ✅
-Döküman / PDF sistemi      ✅
-Uyum modülü                ✅
-Gelişim sistemi            ✅
-Rozet sistemi              ✅
-Mesajlaşma                 ✅
-Duyuru / Anket             ✅
-Ödeme takibi               ✅
-Abonelik altyapısı (Android) ✅
-Abonelik altyapısı (iOS)   🟡 KURULUYOR
+Ana ürün geliştirme         ✅ TAMAMLANDI
+Admin paneli                ✅
+Öğretmen paneli             ✅
+Veli paneli                 ✅
+Firebase backend            ✅
+Günlük takip                ✅
+Bildirim sistemi            ✅
+Galeri                      ✅
+Döküman / PDF sistemi       ✅
+Uyum modülü                 ✅
+Gelişim sistemi             ✅
+Rozet sistemi               ✅
+Mesajlaşma                  ✅
+Duyuru / Anket              ✅
+Ödeme takibi                ✅
+Abonelik altyapısı (Android)✅
+Abonelik altyapısı (iOS)    🟡 KURULUYOR
 AI günlük özet              ✅
 Dil desteği                 ✅
 Android (Google Play)       🟡 YAYINDA / PİLOT AŞAMASI
