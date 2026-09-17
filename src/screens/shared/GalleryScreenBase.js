@@ -396,8 +396,32 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       }, () => setChildren([]));
     };
 
-    if (mode === 'teacher') {
+        if (mode === 'teacher') {
       const teacherKresId = kullanici?.kresId || null;
+      let childIndexUnsub = null;
+
+      const cleanupChildIndex = () => {
+        if (childIndexUnsub) childIndexUnsub();
+        childIndexUnsub = null;
+      };
+
+      // Sınıf id'si bulunduğunda (index veya fallback yoluyla) o sınıfın çocuklarını çeker.
+      // Önce sinifCocuklari index'ini dener, yoksa cocuklar node'unu sinifId'ye göre filtreler.
+      const loadClassChildren = (classId) => {
+        cleanupChildIndex();
+        childIndexUnsub = listenValue(`sinifCocuklari/${classId}`, (data) => {
+          const ids = indexIds(data);
+          if (ids.length === 0) {
+            fallbackChildrenByFilter(teacherKresId, (child) => child.sinifId === classId);
+            return;
+          }
+          if (childFallbackUnsub) {
+            childFallbackUnsub();
+            childFallbackUnsub = null;
+          }
+          setChildrenFromIds(ids);
+        }, () => fallbackChildrenByFilter(teacherKresId, (child) => child.sinifId === classId));
+      };
 
       // Fallback artık tüm 'siniflar' node'unu çekmiyor, öğretmenin kendi kresId'sine göre sorguluyor.
       const startClassFallback = () => {
@@ -408,7 +432,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
           const found = list.find((item) => includesId(item.ogretmenIds, userId)) || list.find((item) => item.ogretmenId === userId || item.id === kullanici?.sinifId) || null;
           setClasses(found ? [found] : []);
           if (found?.id) {
-            fallbackChildrenByFilter(teacherKresId, (child) => child.sinifId === found.id);
+            loadClassChildren(found.id);
+          } else {
+            cleanupChildIndex();
+            setChildren([]);
           }
           setLoading(false);
         }, () => setLoading(false));
@@ -427,7 +454,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         cleanupClass();
         classUnsub = listenValue(`siniflar/${classId}`, (classData) => {
           const classObj = safeObject(classData);
-          setClasses(Object.keys(classObj).length > 0 ? [{ id: classId, ...classObj }] : []);
+          const hasClass = Object.keys(classObj).length > 0;
+          setClasses(hasClass ? [{ id: classId, ...classObj }] : []);
+          if (hasClass) {
+            loadClassChildren(classId);
+          } else {
+            cleanupChildIndex();
+            setChildren([]);
+          }
           setLoading(false);
         }, startClassFallback);
       }, startClassFallback);
@@ -436,11 +470,11 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         indexUnsub && indexUnsub();
         cleanupClass();
         cleanupChildren();
+        cleanupChildIndex();
         if (classFallbackUnsub) classFallbackUnsub();
         if (childFallbackUnsub) childFallbackUnsub();
       };
     }
-
     if (mode === 'parent') {
       const parentKresId = kullanici?.kresId || null;
 
