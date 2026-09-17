@@ -689,22 +689,24 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     if (targetType === 'child' && !selectedChildId) return Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
 
     try {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        if (permission.canAskAgain === false) {
-          return Alert.alert(
-            'İzin Gerekli',
-            'Galeri izni daha önce reddedilmiş. Ayarlar\'dan Fotoğraflar erişimini açman gerekiyor.',
-            [
-              { text: 'Vazgeç', style: 'cancel' },
-              { text: 'Ayarlara Git', onPress: () => Linking.openSettings() },
-            ]
-          );
+      if (Platform.OS === 'ios') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          if (permission.canAskAgain === false) {
+            return Alert.alert(
+              'İzin Gerekli',
+              'Galeri izni daha önce reddedilmiş. Ayarlar\'dan Fotoğraflar erişimini açman gerekiyor.',
+              [
+                { text: 'Vazgeç', style: 'cancel' },
+                { text: 'Ayarlara Git', onPress: () => Linking.openSettings() },
+              ]
+            );
+          }
+          return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
         }
-        return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
       }
 
-        const result = await launchSafeGalleryPicker({
+      const result = await launchSafeGalleryPicker({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: false,
         allowsMultipleSelection: true,
@@ -712,7 +714,6 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         quality: 0.78,
         videoMaxDuration: 120,
       });
-
       const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
       if (assets.length === 0) return;
       if (assets.length > MAX_MEDIA_PER_POST) return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
