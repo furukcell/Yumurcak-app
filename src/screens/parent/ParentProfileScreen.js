@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import InAppSinglePhotoPicker from '../../components/InAppSinglePhotoPicker';
+import * as ImagePicker from 'expo-image-picker';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
@@ -36,8 +36,7 @@ export default function ParentProfileScreen({ navigation }) {
   const [changingLang, setChangingLang] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
-  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
-  
+
   const LANGUAGES = [
     { code: 'tr', flag: '🇹🇷', label: 'Türkçe' },
     { code: 'en', flag: '🇬🇧', label: 'English' },
@@ -67,14 +66,26 @@ export default function ParentProfileScreen({ navigation }) {
     }
   };
 
-  const pickAndUploadPhoto = () => {
+  const pickAndUploadPhoto = async () => {
     if (!parentId) return Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.accountNotFoundDesc'));
-    setPhotoPickerVisible(true);
-  };
 
-  const handlePhotoPicked = async (uri) => {
-    setPhotoPickerVisible(false);
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t('parent.profile.permissionRequiredTitle'), t('parent.profile.permissionRequiredDesc'));
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.75,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      const uri = result.assets[0].uri;
       setUploading(true);
 
       const response = await fetch(uri);
@@ -163,10 +174,6 @@ export default function ParentProfileScreen({ navigation }) {
               <Text style={local.primaryButtonText}>{t('parent.profile.pickPhotoButton')}</Text>
             )}
           </TouchableOpacity>
-
-          <Modal visible={photoPickerVisible} animationType="slide" onRequestClose={() => setPhotoPickerVisible(false)}>
-            <InAppSinglePhotoPicker aspect={[1, 1]} onConfirm={handlePhotoPicked} onCancel={() => setPhotoPickerVisible(false)} />
-          </Modal>
 
           {photoUrl ? (
             <TouchableOpacity style={local.removeButton} onPress={removePhoto} disabled={saving || uploading}>
