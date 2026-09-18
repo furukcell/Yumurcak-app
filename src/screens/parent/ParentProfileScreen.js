@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import InAppSinglePhotoPicker from '../../components/InAppSinglePhotoPicker';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
@@ -67,25 +67,14 @@ export default function ParentProfileScreen({ navigation }) {
   };
 
   const pickAndUploadPhoto = async () => {
+  const pickAndUploadPhoto = () => {
     if (!parentId) return Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.accountNotFoundDesc'));
+    setPhotoPickerVisible(true);
+  };
 
+  const handlePhotoPicked = async (uri) => {
+    setPhotoPickerVisible(false);
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(t('parent.profile.permissionRequiredTitle'), t('parent.profile.permissionRequiredDesc'));
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.75,
-      });
-
-      if (result.canceled || !result.assets?.[0]?.uri) return;
-
-      const uri = result.assets[0].uri;
       setUploading(true);
 
       const response = await fetch(uri);
