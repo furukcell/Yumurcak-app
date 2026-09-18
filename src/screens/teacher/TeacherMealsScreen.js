@@ -252,6 +252,7 @@ export default function TeacherMealsScreen() {
   // bağlıydı; 3 öğüne foto eklemek için 3 ayrı "Kaydet" gerekiyordu. Artık her
   // öğün için ayrı foto tutuyoruz, tek "Kaydet" hepsini birlikte yüklüyor.
   const [mealPhotos, setMealPhotos] = useState({ kahvalti: null, ogle: null, araOgun: null });
+  const [mealPhotoPickerVisible, setMealPhotoPickerVisible] = useState(false);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
