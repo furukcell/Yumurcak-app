@@ -239,11 +239,35 @@ async function optimizeGalleryAsset(asset, onProgress) {
   return optimizeImageAsset(asset);
 }
 
-function readAssetAsBlob(uri) {
+async function readAssetAsBlob(uri) {
+  if (!uri) throw new Error('Medya dosyası bulunamadı.');
+
+  // Modern Android cihazlarda content:// URI'larını önce fetch ile okumayı
+  // deniyoruz. Bazı üreticilerde XMLHttpRequest + Blob kombinasyonu sorun çıkarabiliyor.
+  try {
+    const response = await fetch(uri);
+    if (!response.ok) throw new Error(`Medya okunamadı (HTTP ${response.status}).`);
+    const blob = await response.blob();
+    if (!blob || blob.size === 0) throw new Error('Medya dosyası boş okunuyor.');
+    return blob;
+  } catch (fetchError) {
+    console.warn(
+      'Medya fetch ile okunamadı, XMLHttpRequest yedeği deneniyor:',
+      fetchError?.message || fetchError
+    );
+  }
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.onload = () => resolve(xhr.response);
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300 && xhr.response?.size > 0) {
+        resolve(xhr.response);
+      } else {
+        reject(new Error('Medya dosyası okunamadı.'));
+      }
+    };
     xhr.onerror = () => reject(new Error('Medya dosyası okunamadı.'));
+    xhr.onabort = () => reject(new Error('Medya dosyası okunması iptal edildi.'));
     xhr.responseType = 'blob';
     xhr.open('GET', uri, true);
     xhr.send(null);
