@@ -5,11 +5,10 @@
 // alias adıydı, boş string ile düzeltildi
 // ============================================================
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
-import { getAppIcon, setAppIcon } from 'expo-dynamic-app-icon';
+import { setAppIcon } from 'expo-dynamic-app-icon';
 import { auth, database } from '../config/firebase';
 import { getKresForUser, findUserIdByAuthUid, usernameToEmail } from '../utils/authHelpers';
 import { setUsageUser, trackLogin, trackLogout } from '../services/usageTracker';
@@ -42,74 +41,16 @@ export function AuthProvider({ children }) {
   const isSigningOutRef = useRef(false);
   const restoringAuthRef = useRef(false);
 
-  const pendingIconKeyRef = useRef(null);
-  const iconAppStateSubscriptionRef = useRef(null);
-
   useEffect(() => {
-    const desiredIconKey = kres?.appIconKey || '';
-    const desiredIconName = desiredIconKey || 'DEFAULT';
-
-    iconAppStateSubscriptionRef.current?.remove?.();
-    iconAppStateSubscriptionRef.current = null;
-    pendingIconKeyRef.current = null;
-
-    let currentIconName = 'DEFAULT';
     try {
-      currentIconName = getAppIcon?.() || 'DEFAULT';
+      const iconKey = kres?.appIconKey || '';
+      const result = setAppIcon(iconKey);
+      if (result === false) {
+        console.warn('Uygulama ikonu değiştirilemedi');
+      }
     } catch (error) {
-      console.warn('Mevcut uygulama ikonu okunamadı:', error?.message || error);
+      console.warn('Uygulama ikonu değiştirilemedi:', error?.message || error);
     }
-
-    // Android'de aynı activity-alias'ı tekrar etkinleştirmek gereksizdir.
-    // Bildirimden cold-start sırasında yapılan gereksiz setAppIcon çağrısı
-    // launcher/activity lifecycle'ı ile yarışabilir.
-    if (currentIconName === desiredIconName) {
-      return undefined;
-    }
-
-    const applyIcon = () => {
-      const iconKey = pendingIconKeyRef.current;
-      if (iconKey === null) return;
-
-      pendingIconKeyRef.current = null;
-      iconAppStateSubscriptionRef.current?.remove?.();
-      iconAppStateSubscriptionRef.current = null;
-
-      try {
-        const result = setAppIcon(iconKey);
-        if (result === false) {
-          console.warn('Uygulama ikonu değiştirilemedi');
-        }
-      } catch (error) {
-        console.warn('Uygulama ikonu değiştirilemedi:', error?.message || error);
-      }
-    };
-
-    pendingIconKeyRef.current = desiredIconKey;
-
-    // expo-dynamic-app-icon Android'de launcher activity-alias'larını değiştirir.
-    // Cold-start/foreground sırasında ikon değiştirmiyoruz. Kullanıcı uygulamadan
-    // çıktığında Android zaten arka plandadır; değişiklik o noktada uygulanır.
-    // iOS'ta mevcut davranış korunur.
-    if (Platform.OS === 'android') {
-      if (AppState.currentState === 'background') {
-        applyIcon();
-      } else {
-        iconAppStateSubscriptionRef.current = AppState.addEventListener('change', (nextState) => {
-          if (nextState === 'background') {
-            applyIcon();
-          }
-        });
-      }
-    } else {
-      applyIcon();
-    }
-
-    return () => {
-      iconAppStateSubscriptionRef.current?.remove?.();
-      iconAppStateSubscriptionRef.current = null;
-      pendingIconKeyRef.current = null;
-    };
   }, [kres?.appIconKey]);
 
   useEffect(() => {

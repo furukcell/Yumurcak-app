@@ -395,7 +395,9 @@ export default function MessageDetailScreen() {
             )}
         </View>
 
-        <KeyboardStickyView offset={{ closed: 0, opened: -insets.bottom }}>
+        <KeyboardStickyView
+          offset={{ closed: 0, opened: 0 }}
+        >
           <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
             <View style={styles.inputBar}>
               <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>

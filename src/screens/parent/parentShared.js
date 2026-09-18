@@ -6,12 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -494,7 +493,7 @@ export function ScreenShell({ title, emoji, navigation, children, subtitle }) {
   }, []);
 
   return (
-    <SafeAreaView style={themedStyles.safeArea}>
+    <SafeAreaView style={themedStyles.safeArea} edges={['top']}>
       <View style={themedStyles.header} onLayout={onHeaderLayout}>
         {navigation && canGoBack ? (
           <TouchableOpacity style={themedStyles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
