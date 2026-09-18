@@ -7,9 +7,9 @@
 // - RTDB: kullanicilar/{teacherId}/profilFotoUrl
 // ============================================================
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
+import InAppSinglePhotoPicker from '../../components/InAppSinglePhotoPicker';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
@@ -24,6 +24,7 @@ export default function TeacherProfileScreen() {
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
+  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
 
   useEffect(() => {
     setPhotoUrl(kullanici?.profilFotoUrl || '');
@@ -33,26 +34,14 @@ export default function TeacherProfileScreen() {
 
   const showSuccess = (message) => setSuccessToast({ visible: true, message });
 
-  const pickAndUploadPhoto = async () => {
+  const pickAndUploadPhoto = () => {
     if (!teacherId) return Alert.alert('Hata', 'Öğretmen hesabı bulunamadı.');
+    setPhotoPickerVisible(true);
+  };
 
+  const handlePhotoPicked = async (uri) => {
+    setPhotoPickerVisible(false);
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Profil fotoğrafı seçmek için galeri izni vermen gerekiyor.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.75,
-      });
-
-      if (result.canceled || !result.assets?.[0]?.uri) return;
-
-      const uri = result.assets[0].uri;
       setUploading(true);
 
       const response = await fetch(uri);
@@ -134,6 +123,10 @@ export default function TeacherProfileScreen() {
           <TouchableOpacity style={styles.primaryButton} onPress={pickAndUploadPhoto} disabled={uploading || removing} activeOpacity={0.85}>
             {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Galeriden Fotoğraf Seç</Text>}
           </TouchableOpacity>
+
+          <Modal visible={photoPickerVisible} animationType="slide" onRequestClose={() => setPhotoPickerVisible(false)}>
+            <InAppSinglePhotoPicker aspect={[1, 1]} onConfirm={handlePhotoPicked} onCancel={() => setPhotoPickerVisible(false)} />
+          </Modal>
 
           {photoUrl ? (
             <TouchableOpacity style={styles.removeButton} onPress={removePhoto} disabled={uploading || removing} activeOpacity={0.85}>
