@@ -71,6 +71,7 @@ const ROUTE_TO_URL = {
   MessageDetail: 'yumurcak://messages',
 
   ParentDashboard: 'yumurcak://parent/home',
+  ParentSummary: 'yumurcak://parent/summary',
   ParentReports: 'yumurcak://parent/reports',
   ParentAnnouncements: 'yumurcak://parent/announcements',
   ParentMeals: 'yumurcak://parent/meals',
@@ -321,6 +322,175 @@ export function getNotificationUrlFromData(data = {}, role) {
   for (const candidate of typeCandidates) {
     const url = urlFromType(candidate, targetRole);
     if (url) return url;
+  }
+
+  return null;
+}
+
+const URL_TO_NAVIGATION_TARGET = {
+  notifications: { routeName: 'Notifications' },
+  'parent/home': { routeName: 'ParentDashboard' },
+  'parent/summary': { routeName: 'ParentTabs', params: { screen: 'ParentSummary' } },
+  'parent/reports': { routeName: 'ParentReports' },
+  'parent/announcements': { routeName: 'ParentAnnouncements' },
+  'parent/meals': { routeName: 'ParentMeals' },
+  'parent/events': { routeName: 'ParentEvents' },
+  'parent/attendance': { routeName: 'ParentAttendance' },
+  'parent/development': { routeName: 'ParentDevelopment' },
+  'parent/adaptation': { routeName: 'ParentUyum' },
+  'parent/badges': { routeName: 'ParentBadges' },
+  'parent/medical': { routeName: 'ParentMedical' },
+  'parent/service': { routeName: 'ParentService' },
+  'parent/messages': { routeName: 'ParentMessages' },
+  'parent/gallery': { routeName: 'ParentGallery' },
+  'parent/documents': { routeName: 'ParentDocuments' },
+  'parent/bell': { routeName: 'ParentBell' },
+  'parent/payments': { routeName: 'ParentPayments' },
+  'parent/polls': { routeName: 'ParentPolls' },
+
+  'teacher/home': { routeName: 'TeacherDashboard' },
+  'teacher/children': { routeName: 'TeacherChildren' },
+  'teacher/attendance': { routeName: 'TeacherAttendance' },
+  'teacher/schedule': { routeName: 'TeacherSchedule' },
+  'teacher/events': { routeName: 'TeacherEvents' },
+  'teacher/meals': { routeName: 'TeacherMeals' },
+  'teacher/medical': { routeName: 'TeacherMedical' },
+  'teacher/announcements': { routeName: 'TeacherAnnouncements' },
+  'teacher/messages': { routeName: 'TeacherMessages' },
+  'teacher/gallery': { routeName: 'TeacherGallery' },
+  'teacher/profile': { routeName: 'TeacherProfile' },
+  'teacher/development': { routeName: 'TeacherPhysicalDevelopment' },
+  'teacher/adaptation': { routeName: 'TeacherAdaptationTracking' },
+  'teacher/badges': { routeName: 'TeacherWeeklyStar' },
+
+  'admin/home': { routeName: 'Dashboard' },
+  'admin/statistics': { routeName: 'AdminStatistics' },
+  'admin/gallery': { routeName: 'AdminGallery' },
+  'admin/meals': { routeName: 'AdminMonthlyMeal' },
+  'admin/institution': { routeName: 'InstitutionSettings' },
+  'admin/theme': { routeName: 'ThemeSettings' },
+  'admin/subscription': { routeName: 'Subscription' },
+  'admin/messages': { routeName: 'AdminMessages' },
+  'admin/classes': { routeName: 'ClassList' },
+  'admin/children': { routeName: 'ChildList' },
+  'admin/teachers': { routeName: 'TeacherList' },
+  'admin/parents': { routeName: 'VeliList' },
+  'admin/announcements': { routeName: 'AnnouncementList' },
+  'admin/payments': { routeName: 'PaymentList' },
+  'admin/polls': { routeName: 'PollManagement' },
+  'admin/bell': { routeName: 'AdminBell' },
+  'admin/schedule': { routeName: 'LessonScheduleList' },
+  'admin/events': { routeName: 'EventList' },
+};
+
+function notificationPathFromUrl(url) {
+  if (typeof url !== 'string' || !url) return '';
+  const raw = url.startsWith('yumurcak://') ? url.slice('yumurcak://'.length) : url;
+  return raw.split('?')[0].replace(/^\/+|\/+$/g, '').toLowerCase();
+}
+
+function hasRouteParams(params) {
+  return params && typeof params === 'object' && !Array.isArray(params) && Object.keys(params).length > 0;
+}
+
+function applyNotificationRouteParams(target, routeParams) {
+  if (!target) return null;
+  if (!hasRouteParams(routeParams)) return target;
+
+  if (target.routeName === 'ParentTabs') {
+    return {
+      ...target,
+      params: {
+        ...(target.params || {}),
+        params: routeParams,
+      },
+    };
+  }
+
+  return { ...target, params: routeParams };
+}
+
+function roleMessagesTarget(role, routeParams) {
+  const group = getRoleGroup(role);
+  const routeName = group === 'teacher'
+    ? 'TeacherMessages'
+    : group === 'admin'
+      ? 'AdminMessages'
+      : 'ParentMessages';
+  return applyNotificationRouteParams({ routeName }, routeParams);
+}
+
+function navigationTargetFromUrl(url, role, routeParams) {
+  const path = notificationPathFromUrl(url);
+  if (path === 'messages') return roleMessagesTarget(role, routeParams);
+
+  const target = URL_TO_NAVIGATION_TARGET[path];
+  return applyNotificationRouteParams(target, routeParams);
+}
+
+export function getNotificationNavigationTarget(data = {}, role) {
+  const targetRole = data.role || data.targetRole || role;
+  const routeParams = data.routeParams || {};
+  const route = data.routeName || data.screen || data.route || data.targetScreen || data.navigateTo;
+
+  if (route === 'MessageDetail') {
+    if (routeParams?.conversationId) {
+      return { routeName: 'MessageDetail', params: routeParams };
+    }
+    return roleMessagesTarget(targetRole, routeParams);
+  }
+
+  const directUrl = data.url || data.deepLink || data.link;
+  if (typeof directUrl === 'string') {
+    const directTarget = navigationTargetFromUrl(directUrl, targetRole, routeParams);
+    if (directTarget) return directTarget;
+  }
+
+  if (route === 'TeacherMedicationFormDetail' && getRoleGroup(targetRole) === 'teacher') {
+    return { routeName: 'TeacherMedicationFormDetail', params: routeParams };
+  }
+  if (route === 'AdminService' && getRoleGroup(targetRole) === 'admin') {
+    return { routeName: 'AdminService', params: routeParams };
+  }
+  if (route === 'AdminSubscription' && getRoleGroup(targetRole) === 'admin') {
+    return { routeName: 'Subscription', params: routeParams };
+  }
+  if (route === 'ParentMessages' && getRoleGroup(targetRole) === 'admin') {
+    return { routeName: 'AdminMessages', params: routeParams };
+  }
+  if (route === 'ParentAnnouncements' && getRoleGroup(targetRole) === 'admin') {
+    return { routeName: 'AnnouncementList', params: routeParams };
+  }
+  if (route === 'ParentSummary' && getRoleGroup(targetRole) === 'parent') {
+    return applyNotificationRouteParams(
+      { routeName: 'ParentTabs', params: { screen: 'ParentSummary' } },
+      routeParams
+    );
+  }
+
+  const routeUrl = routeUrlForRole(route, targetRole);
+  if (routeUrl) {
+    const target = navigationTargetFromUrl(routeUrl, targetRole, routeParams);
+    if (target) return target;
+  }
+
+  const typeCandidates = [
+    data.tip,
+    data.type,
+    data.notificationType,
+    data.kind,
+    data.category,
+    data.documentType,
+    data.dokumanTipi,
+    data.belgeTipi,
+  ];
+
+  for (const candidate of typeCandidates) {
+    const url = urlFromType(candidate, targetRole);
+    if (url) {
+      const target = navigationTargetFromUrl(url, targetRole, routeParams);
+      if (target) return target;
+    }
   }
 
   return null;

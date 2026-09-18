@@ -2,8 +2,8 @@
 // YUMURCAK — App.js
 // SafeAreaProvider + StatusBar + Push token + Android navigation bar + Notification deep links
 // ============================================================
-import { useEffect, useRef, useState } from 'react';
-import { AppState, Linking, Platform, Alert } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, Platform, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
@@ -13,7 +13,11 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import './src/i18n';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { NavigationContainer, useNavigationState } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  useNavigationContainerRef,
+  useNavigationState,
+} from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { startUsageTracking, stopUsageTracking, trackScreen } from './src/services/usageTracker';
@@ -23,19 +27,8 @@ import {
 } from './src/utils/notifications';
 import {
   YUMURCAK_LINKING,
-  getNotificationUrlFromData,
+  getNotificationNavigationTarget,
 } from './src/utils/notificationDeepLinks';
-
-async function openNotificationUrl(data, role) {
-  const url = getNotificationUrlFromData(data, role);
-  if (!url) return;
-
-  try {
-    await Linking.openURL(url);
-  } catch (error) {
-    console.warn('Bildirim linki açılamadı:', url, error?.message || error);
-  }
-}
 
 export default function App() {
   useEffect(() => {
@@ -94,16 +87,17 @@ export default function App() {
   }, []);
 
   const [navKey, setNavKey] = useState(0);
+  const navigationRef = useNavigationContainerRef();
 
   return (
     <KeyboardProvider>
       <SafeAreaProvider>
         <LanguageProvider>
           <AuthProvider>
-            <NavigationContainer linking={YUMURCAK_LINKING}>
+            <NavigationContainer ref={navigationRef} linking={YUMURCAK_LINKING}>
               <UsageTrackingBridge />
               <PushTokenSync />
-              <NotificationDeepLinkHandler />
+              <NotificationDeepLinkHandler navigationRef={navigationRef} />
               <StatusBar style="dark" backgroundColor="#F8F6FF" />
               <ErrorBoundary onRetry={() => setNavKey((k) => k + 1)}>
                 <RootNavigator key={navKey} />
@@ -217,27 +211,99 @@ function PushTokenSync() {
   return null;
 }
 
-function NotificationDeepLinkHandler() {
+function getNotificationResponseId(response) {
+  const request = response?.notification?.request;
+  const identifier = request?.identifier;
+  if (identifier) return String(identifier);
+
+  const data = request?.content?.data || {};
+  const date = response?.notification?.date || '';
+  return String(date) + ':' + JSON.stringify(data);
+}
+
+function NotificationDeepLinkHandler({ navigationRef }) {
   const { kullanici } = useAuth();
   const role = kullanici?.rol;
+  const navigationState = useNavigationState((state) => state);
+
+  const pendingResponseRef = useRef(null);
+  const handledIdsRef = useRef(new Set());
+  const [, setNotificationQueueVersion] = useState(0);
+  const flushingRef = useRef(false);
+
+  const queueResponse = useCallback((response) => {
+    if (!response) return;
+    if (
+      response.actionIdentifier &&
+      response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER
+    ) {
+      return;
+    }
+
+    const id = getNotificationResponseId(response);
+    if (handledIdsRef.current.has(id)) return;
+
+    const data = response?.notification?.request?.content?.data || {};
+    if (!data || typeof data !== 'object') return;
+
+    pendingResponseRef.current = { id, data };
+    setNotificationQueueVersion((version) => version + 1);
+  }, []);
+
+  const flushPendingResponse = useCallback(async () => {
+    if (flushingRef.current || !pendingResponseRef.current) return;
+    if (!kullanici?.id && !kullanici?.uid) return;
+    if (!navigationRef?.isReady?.()) return;
+
+    const pending = pendingResponseRef.current;
+    const target = getNotificationNavigationTarget(pending.data, role);
+
+    if (!target?.routeName) {
+      console.warn('Bildirim için geçerli navigation hedefi bulunamadı:', pending.data);
+      pendingResponseRef.current = null;
+      try {
+        await Notifications.clearLastNotificationResponseAsync?.();
+      } catch {}
+      return;
+    }
+
+    flushingRef.current = true;
+
+    try {
+      if (target.params === undefined) {
+        navigationRef.navigate(target.routeName);
+      } else {
+        navigationRef.navigate(target.routeName, target.params);
+      }
+
+      handledIdsRef.current.add(pending.id);
+      if (handledIdsRef.current.size > 50) {
+        const firstId = handledIdsRef.current.values().next().value;
+        if (firstId) handledIdsRef.current.delete(firstId);
+      }
+
+      pendingResponseRef.current = null;
+
+      // Navigation başlatıldıktan sonra native last-response kaydını temizliyoruz.
+      // Uygulama navigation hazır olmadan kapanırsa response yeniden alınabilir.
+      try {
+        await Notifications.clearLastNotificationResponseAsync?.();
+      } catch {}
+    } catch (error) {
+      console.warn('Bildirim navigation hatası:', error?.message || error);
+    } finally {
+      flushingRef.current = false;
+    }
+  }, [kullanici?.id, kullanici?.uid, navigationRef, role]);
 
   useEffect(() => {
-    if (!kullanici?.id && !kullanici?.uid) return undefined;
-
     let cancelled = false;
-
-    const handleResponse = async (response) => {
-      const data = response?.notification?.request?.content?.data || {};
-      if (!data || cancelled) return;
-      await openNotificationUrl(data, role);
-    };
 
     const handleInitialResponse = async () => {
       try {
         const response = await Notifications.getLastNotificationResponseAsync?.();
-        if (response && !cancelled) {
-          await handleResponse(response);
-          await Notifications.clearLastNotificationResponseAsync?.();
+        if (!cancelled && response) {
+          queueResponse(response);
         }
       } catch (error) {
         console.warn('İlk bildirim yönlendirmesi okunamadı:', error?.message || error);
@@ -245,13 +311,21 @@ function NotificationDeepLinkHandler() {
     };
 
     handleInitialResponse();
-    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(queueResponse);
 
     return () => {
       cancelled = true;
       subscription?.remove?.();
     };
-  }, [kullanici?.id, kullanici?.uid, role]);
+  }, [queueResponse]);
+
+  // Auth ve RootNavigator değiştiğinde tekrar deniyoruz. Kurumun 3 saniyelik
+  // splash ekranı aynen kalır; navigationRef.isReady() false olduğu sürece
+  // pending bildirim sadece kuyrukta bekler.
+  useEffect(() => {
+    flushPendingResponse();
+  }, [flushPendingResponse, navigationState]);
 
   return null;
 }
