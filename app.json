@@ -3,7 +3,7 @@
     "name": "Yumurcak — Kreş ve Anaokulu Takip",
     "slug": "yumurcak-app-",
     "scheme": "yumurcak",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "orientation": "portrait",
     "icon": "./icon.png",
     "userInterfaceStyle": "light",
@@ -28,7 +28,7 @@
     "android": {
       "package": "com.furukcell.yumurcakapp",
       "allowBackup": false,
-      "versionCode": 25,
+      "versionCode": 26,
       "googleServicesFile": "./google-services.json",
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
@@ -43,7 +43,7 @@
         "expo-media-library",
         {
           "photosPermission": "Yumurcak fotoğraf ve videoları göstermek için galeri erişimi ister.",
-          "savePhotosPermission": "Yumurcak fotoğraf ve videoları cihaz galerisine kaydetmek için izin ister.",
+          "savePhotosPermission": "Yumurcak fotoğraf ve videoları cihaz galerisine kaydetmek için galeri erişimi ister.",
           "isAccessMediaLocationEnabled": false,
           "granularPermissions": ["photo", "video"]
         }

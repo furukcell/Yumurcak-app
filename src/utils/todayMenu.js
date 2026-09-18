@@ -15,9 +15,19 @@ export const INSTITUTION_KAYNAK = 'admin_aylik';
 const MEAL_KEYS = ['kahvalti', 'ogle', 'araOgun'];
 
 export function toMealArray(value) {
-  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
-  const text = String(value || '').trim();
-  return text ? [text] : [];
+  const normalizeItem = (item) => {
+    if (item == null) return '';
+    if (typeof item === 'string' || typeof item === 'number') return String(item).trim();
+    if (typeof item === 'object') {
+      return String(item.text || item.aciklama || item.ad || item.name || '').trim();
+    }
+    return '';
+  };
+
+  if (Array.isArray(value)) return value.map(normalizeItem).filter(Boolean);
+
+  const normalized = normalizeItem(value);
+  return normalized ? [normalized] : [];
 }
 
 function hasMealValue(value) {

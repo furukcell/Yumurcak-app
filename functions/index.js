@@ -167,7 +167,9 @@ async function getTargetPushTokens(payload = {}) {
     if (token) tokens.push(String(token));
   });
 
-  return unique(tokens).filter((token) => token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['));
+  return unique(tokens).filter((token) =>
+    token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[')
+  );
 }
 
 async function sendExpoPushMessages(messages = []) {

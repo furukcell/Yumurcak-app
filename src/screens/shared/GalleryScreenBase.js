@@ -20,19 +20,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { launchSafeGalleryPicker } from '../../utils/safeImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { Video } from 'react-native-compressor';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { onValue, push, query, orderByChild, equalTo, ref as dbRef, remove, set } from 'firebase/database';
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { database, storage } from '../../config/firebase';
+import { deleteObject, getDownloadURL, ref as storageRef } from 'firebase/storage';
+import { auth, database, firebaseConfig, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
+import { logGalleryError } from '../../utils/galleryErrorLogger';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_MEDIA_PER_POST = 20;
 const MAX_VIDEO_PER_POST = 5;
-const MAX_VIDEO_DURATION_MS = 120 * 1000;
-const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_DURATION_MS = 5 * 60 * 1000;
+const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
 const MAX_IMAGE_WIDTH = 1920;
 const IMAGE_COMPRESS = 0.8;
 
@@ -209,28 +211,63 @@ async function optimizeImageAsset(asset) {
 
 async function optimizeVideoAsset(asset, onProgress) {
   const durationMs = getAssetDurationMs(asset);
-  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
-
-  const originalSize = asset.fileSize || await getLocalFileSize(asset.uri);
-  const compressedUri = await Video.compress(asset.uri, { compressionMethod: 'auto', maxSize: 1280 }, (progress) => {
-    if (typeof onProgress === 'function') onProgress(progress);
-  });
-  const optimizedSize = await getLocalFileSize(compressedUri);
-
-  if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
-    throw new Error(`Video optimize edildi ama hâlâ çok büyük (${formatFileSize(optimizedSize)}). Lütfen daha kısa bir video seç.`);
+  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) {
+    throw new Error('Video süresi en fazla 5 dakika olabilir. Lütfen daha kısa bir video seç.');
   }
 
-  return {
-    ...asset,
-    uri: compressedUri,
-    type: 'video',
-    mimeType: 'video/mp4',
-    fileName: `${String(asset.fileName || 'video').split('.')[0]}_optimized.mp4`,
-    fileSize: optimizedSize || originalSize || 0,
-    originalFileSize: originalSize || 0,
-    optimized: true,
-  };
+  const originalSize = Number(asset.fileSize || asset.size || await getLocalFileSize(asset.uri) || 0);
+
+  // 200 MB altındaki videolarda MediaCodec sıkıştırmasına hiç girmiyoruz.
+  // Böylece Vivo/Samsung gibi bazı cihazlarda görülen native compressor hatalarını
+  // gereksiz yere tetiklemiyoruz.
+  if (originalSize > 0 && originalSize <= MAX_VIDEO_SIZE_BYTES) {
+    return {
+      ...asset,
+      type: 'video',
+      fileSize: originalSize,
+      originalFileSize: originalSize,
+      optimized: false,
+    };
+  }
+
+  try {
+    const compressedUri = await Video.compress(
+      asset.uri,
+      { compressionMethod: 'auto', maxSize: 1280 },
+      (progress) => {
+        if (typeof onProgress === 'function') onProgress(progress);
+      }
+    );
+    const optimizedSize = await getLocalFileSize(compressedUri);
+
+    if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
+      throw new Error(`Video optimize edildi ama hâlâ çok büyük (${formatFileSize(optimizedSize)}). Lütfen daha kısa bir video seç.`);
+    }
+
+    return {
+      ...asset,
+      uri: compressedUri,
+      type: 'video',
+      mimeType: 'video/mp4',
+      fileName: `${String(asset.fileName || 'video').split('.')[0]}_optimized.mp4`,
+      fileSize: optimizedSize || originalSize || 0,
+      originalFileSize: originalSize || 0,
+      optimized: true,
+    };
+  } catch (error) {
+    // Dosya aslında limit altındaysa compressor başarısız olsa bile
+    // orijinali yüklemeyi dene. Native MediaCodec hatalarında güvenli fallback.
+    if (originalSize > 0 && originalSize <= MAX_VIDEO_SIZE_BYTES) {
+      return {
+        ...asset,
+        type: 'video',
+        fileSize: originalSize,
+        originalFileSize: originalSize,
+        optimized: false,
+      };
+    }
+    throw error;
+  }
 }
 
 async function optimizeGalleryAsset(asset, onProgress) {
@@ -239,15 +276,38 @@ async function optimizeGalleryAsset(asset, onProgress) {
   return optimizeImageAsset(asset);
 }
 
-function readAssetAsBlob(uri) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.onload = () => resolve(xhr.response);
-    xhr.onerror = () => reject(new Error('Medya dosyası okunamadı.'));
-    xhr.responseType = 'blob';
-    xhr.open('GET', uri, true);
-    xhr.send(null);
+async function uploadFileToFirebaseStorage(uri, storagePath, contentType, onProgress) {
+  if (!uri) throw new Error('Medya dosyası bulunamadı.');
+
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yap.');
+
+  const idToken = await currentUser.getIdToken();
+  const bucket = firebaseConfig.storageBucket;
+  const uploadUrl =
+    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(storagePath)}`;
+
+  const result = await FileSystemLegacy.uploadAsync(uploadUrl, uri, {
+    httpMethod: 'POST',
+    uploadType: FileSystemLegacy.FileSystemUploadType.BINARY_CONTENT,
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': contentType || 'application/octet-stream',
+    },
+    uploadProgressCallback: (progressEvent) => {
+      if (typeof onProgress !== 'function') return;
+      const sent = Number(progressEvent?.totalBytesSent || 0);
+      const expected = Number(progressEvent?.totalBytesExpectedToSend || 0);
+      onProgress({ sent, expected });
+    },
   });
+
+  if (!result || result.status < 200 || result.status >= 300) {
+    const detail = String(result?.body || '').slice(0, 500);
+    throw new Error(`Storage yüklemesi başarısız (${result?.status || 'bilinmeyen'}).${detail ? ` ${detail}` : ''}`);
+  }
+
+  return result;
 }
 
 function normalizeTargetType(item) {
@@ -329,6 +389,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadBytesSent, setUploadBytesSent] = useState(0);
+  const [uploadBytesExpected, setUploadBytesExpected] = useState(0);
   const [savingMediaId, setSavingMediaId] = useState('');
   const [caption, setCaption] = useState('');
   const [selectedAssets, setSelectedAssets] = useState([]);
@@ -728,7 +791,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       })));
     } catch (error) {
       console.error('Medya seçilemedi:', error?.code || error?.message || error);
-      Alert.alert('Hata', 'Medya seçilirken bir sorun oluştu.');
+      await logGalleryError({
+        stage: 'PICKER',
+        error,
+        userId,
+        kresId,
+        mode,
+      });
+      Alert.alert('Medya Seçilemedi', 'Medya seçilirken bir sorun oluştu. Lütfen tekrar deneyin.');
     }
   }
 
@@ -756,19 +826,71 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const rawInfo = getFileInfo(rawAsset);
         setUploadStatus(rawInfo.isVideo ? `Video optimize ediliyor... (${index + 1}/${selectedAssets.length})` : `Fotoğraf hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
 
-        const asset = await optimizeGalleryAsset(rawAsset, (progress) => {
-          if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
-        });
+        let asset;
+        try {
+          asset = await optimizeGalleryAsset(rawAsset, (progress) => {
+            if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
+          });
+        } catch (error) {
+          await logGalleryError({
+            stage: rawInfo.isVideo ? 'COMPRESS_VIDEO' : 'OPTIMIZE_IMAGE',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset: rawAsset,
+            extra: { galleryId, mediaIndex: index },
+          });
+          throw error;
+        }
 
         const { isVideo, extension, contentType } = getFileInfo(asset);
         const mediaId = `${galleryId}-${index}`;
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
-        setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
-        const blob = await readAssetAsBlob(asset.uri);
+        setUploadStatus(`Medya hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
         const fileRef = storageRef(storage, storagePath);
-        await uploadBytes(fileRef, blob, { contentType });
-        const url = await getDownloadURL(fileRef);
+        try {
+          setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
+          setUploadProgress(0);
+          setUploadBytesSent(0);
+          setUploadBytesExpected(Number(asset.fileSize || 0));
+          await uploadFileToFirebaseStorage(asset.uri, storagePath, contentType, ({ sent, expected }) => {
+            const resolvedExpected = expected || Number(asset.fileSize || 0);
+            const percent = resolvedExpected > 0 ? Math.min(100, Math.round((sent / resolvedExpected) * 100)) : 0;
+            setUploadProgress(percent);
+            setUploadBytesSent(sent);
+            setUploadBytesExpected(resolvedExpected);
+            setUploadStatus('Medya yükleniyor... %' + percent + ' • ' + formatFileSize(sent) + ' / ' + formatFileSize(resolvedExpected) + ' (' + (index + 1) + '/' + selectedAssets.length + ')');
+          });
+        } catch (error) {
+          await logGalleryError({
+            stage: 'UPLOAD_STORAGE',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset,
+            extra: { galleryId, mediaIndex: index, storagePath },
+          });
+          throw error;
+        }
+
+        let url;
+        try {
+          url = await getDownloadURL(fileRef);
+        } catch (error) {
+          await logGalleryError({
+            stage: 'DOWNLOAD_URL',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset,
+            extra: { galleryId, mediaIndex: index, storagePath },
+          });
+          throw error;
+        }
 
         mediaItems.push({
           id: mediaId,
@@ -806,24 +928,46 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         expiresAt: createdAt + DAY_MS,
       };
 
-      await set(itemRef, galleryRecord);
-      await Promise.all([
-        set(dbRef(database, `kresGalerileri/${kresId}/${galleryId}`), true),
-        galleryRecord.classId ? set(dbRef(database, `sinifGalerileri/${galleryRecord.classId}/${galleryId}`), true) : Promise.resolve(),
-        ...asArray(galleryRecord.cocukIds).map((childId) => set(dbRef(database, `cocukGalerileri/${childId}/${galleryId}`), true)),
-      ]);
+      try {
+        setUploadStatus('Galeri kaydı oluşturuluyor...');
+        await set(itemRef, galleryRecord);
+        await Promise.all([
+          set(dbRef(database, `kresGalerileri/${kresId}/${galleryId}`), true),
+          galleryRecord.classId ? set(dbRef(database, `sinifGalerileri/${galleryRecord.classId}/${galleryId}`), true) : Promise.resolve(),
+          ...asArray(galleryRecord.cocukIds).map((childId) => set(dbRef(database, `cocukGalerileri/${childId}/${galleryId}`), true)),
+        ]);
+      } catch (error) {
+        await logGalleryError({
+          stage: 'SAVE_DATABASE',
+          error,
+          userId,
+          kresId,
+          mode,
+          extra: { galleryId },
+        });
+        throw error;
+      }
 
       setCaption('');
       setSelectedAssets([]);
+      setUploadProgress(0);
+      setUploadBytesSent(0);
+      setUploadBytesExpected(0);
       setSelectedClassId('');
       setSelectedChildId('');
       setTargetType('all');
       Alert.alert('Yüklendi', `${uploadTarget.label} için ${mediaItems.length} medya 24 saat boyunca galeride görünecek.`);
     } catch (error) {
       console.error('Galeri yüklemesi yapılamadı:', error?.code || error?.message || error);
-      Alert.alert('Hata', `Galeri yüklemesi yapılamadı. ${error?.code || error?.message || 'Storage ayarlarını kontrol et.'}`);
+      Alert.alert(
+        'Yükleme Başarısız',
+        `Medya yüklenemedi. ${error?.message || 'Lütfen tekrar deneyin.'}`
+      );
     } finally {
       setUploadStatus('');
+      setUploadProgress(0);
+      setUploadBytesSent(0);
+      setUploadBytesExpected(0);
       setUploading(false);
     }
   }
@@ -994,7 +1138,17 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
                     <Text style={styles.secondaryButtonText}>Vazgeç</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.primaryButton, styles.primaryButtonFlex, uploading && styles.disabledButton]} onPress={confirmUpload} disabled={uploading}>
-                    {uploading ? <View style={styles.uploadingButtonContent}><ActivityIndicator color="#fff" /><Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text></View> : <Text style={styles.primaryButtonText}>{`Yükle (${selectedAssets.length})`}</Text>}
+                    {uploading ? (
+                      <View style={styles.uploadingButtonContent}>
+                        <ActivityIndicator color="#fff" />
+                        <View style={styles.uploadProgressTextWrap}>
+                          <Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text>
+                          {uploadBytesExpected > 0 && uploadProgress > 0 ? (
+                            <Text style={styles.uploadProgressDetail}>{uploadProgress}% • {formatFileSize(uploadBytesSent)} / {formatFileSize(uploadBytesExpected)}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    ) : <Text style={styles.primaryButtonText}>{`Yükle (${selectedAssets.length})`}</Text>}
                   </TouchableOpacity>
                 </View>
               </>
@@ -1063,6 +1217,8 @@ const styles = StyleSheet.create({
   primaryButtonFlex: { flex: 1, marginTop: 0 },
   disabledButton: { opacity: 0.7 },
   uploadingButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  uploadProgressTextWrap: { flex: 1, alignItems: 'center' },
+  uploadProgressDetail: { color: '#fff', fontWeight: '800', fontSize: 11, marginTop: 2 },
   primaryButtonText: { color: '#fff', fontWeight: '900', textAlign: 'center' },
   previewRow: { marginTop: 12 },
   previewThumbWrap: { marginRight: 10, position: 'relative' },
