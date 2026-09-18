@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { logGalleryError } from './galleryErrorLogger';
 
 /**
  * Android medya seçimini cihazlar arası daha güvenli hale getirir.
@@ -15,9 +16,11 @@ export async function launchSafeGalleryPicker(options = {}) {
     return ImagePicker.launchImageLibraryAsync(options);
   }
 
+  const documentPickerType = ['image/*', 'video/*'];
+
   try {
     const result = await DocumentPicker.getDocumentAsync({
-      type: 'image/*',
+      type: documentPickerType,
       multiple: true,
       copyToCacheDirectory: true,
     });
@@ -31,8 +34,8 @@ export async function launchSafeGalleryPicker(options = {}) {
             uri: asset.uri,
             name: asset.name,
             fileName: asset.name,
-            mimeType: asset.mimeType || 'image/jpeg',
-            type: 'image',
+            mimeType: asset.mimeType || '',
+            type: asset.mimeType?.startsWith('video/') ? 'video' : 'image',
             size: asset.size || 0,
           })),
       };
@@ -47,11 +50,16 @@ export async function launchSafeGalleryPicker(options = {}) {
       'Android DocumentPicker başarısız, ImagePicker deneniyor:',
       documentPickerError?.message || documentPickerError
     );
+    await logGalleryError({
+      stage: 'PICKER_DOCUMENT',
+      error: documentPickerError,
+      extra: { fallback: 'image-picker' },
+    });
 
     try {
       return await ImagePicker.launchImageLibraryAsync({
         ...options,
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsMultipleSelection: true,
         selectionLimit: options.selectionLimit || 10,
         allowsEditing: false,
@@ -61,6 +69,11 @@ export async function launchSafeGalleryPicker(options = {}) {
         'Android medya seçici tamamen başarısız:',
         imagePickerError?.message || imagePickerError
       );
+      await logGalleryError({
+        stage: 'PICKER_IMAGE',
+        error: imagePickerError,
+        extra: { fallback: 'none' },
+      });
       return {
         canceled: true,
         assets: [],
