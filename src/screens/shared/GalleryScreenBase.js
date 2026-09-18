@@ -34,7 +34,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_MEDIA_PER_POST = 20;
 const MAX_VIDEO_PER_POST = 5;
 const MAX_VIDEO_DURATION_MS = 5 * 60 * 1000;
-const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
 const MAX_IMAGE_WIDTH = 1920;
 const IMAGE_COMPRESS = 0.8;
 
@@ -212,12 +212,12 @@ async function optimizeImageAsset(asset) {
 async function optimizeVideoAsset(asset, onProgress) {
   const durationMs = getAssetDurationMs(asset);
   if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) {
-    throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
+    throw new Error('Video süresi en fazla 5 dakika olabilir. Lütfen daha kısa bir video seç.');
   }
 
   const originalSize = Number(asset.fileSize || asset.size || await getLocalFileSize(asset.uri) || 0);
 
-  // 100 MB altındaki videolarda MediaCodec sıkıştırmasına hiç girmiyoruz.
+  // 200 MB altındaki videolarda MediaCodec sıkıştırmasına hiç girmiyoruz.
   // Böylece Vivo/Samsung gibi bazı cihazlarda görülen native compressor hatalarını
   // gereksiz yere tetiklemiyoruz.
   if (originalSize > 0 && originalSize <= MAX_VIDEO_SIZE_BYTES) {
