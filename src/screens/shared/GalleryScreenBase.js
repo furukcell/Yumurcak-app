@@ -790,9 +790,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
         setUploadStatus(`Medya hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
-        let blob;
+        let bytes;
         try {
-          blob = await readAssetAsBlob(asset.uri);
+          bytes = await readAssetAsBytes(asset.uri);
         } catch (error) {
           await logGalleryError({
             stage: 'READ_FILE',
