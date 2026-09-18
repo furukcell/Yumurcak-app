@@ -163,20 +163,8 @@ async function getTargetPushTokens(payload = {}) {
 
     if (targetSinifIds.length && userSinifId && !targetSinifIds.includes(userSinifId)) return;
 
-    const legacyTokens = [
-      user.pushToken,
-      user.expoPushToken,
-      user.notificationToken,
-    ];
-
-    const deviceTokens = user.pushTokens && typeof user.pushTokens === 'object'
-      ? Object.values(user.pushTokens)
-          .filter((entry) => entry && entry.active !== false)
-          .map((entry) => entry.token)
-      : [];
-
-    tokens.push(...legacyTokens.filter(Boolean).map(String));
-    tokens.push(...deviceTokens.filter(Boolean).map(String));
+    const token = user.pushToken || user.expoPushToken || user.notificationToken;
+    if (token) tokens.push(String(token));
   });
 
   return unique(tokens).filter((token) =>
