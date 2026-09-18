@@ -27,6 +27,7 @@ import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'fi
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
+import { logGalleryError } from '../../utils/galleryErrorLogger';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_MEDIA_PER_POST = 20;
@@ -752,7 +753,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       })));
     } catch (error) {
       console.error('Medya seçilemedi:', error?.code || error?.message || error);
-      Alert.alert('Hata', 'Medya seçilirken bir sorun oluştu.');
+      await logGalleryError({
+        stage: 'PICKER',
+        error,
+        userId,
+        kresId,
+        mode,
+      });
+      Alert.alert('Medya Seçilemedi', 'Medya seçilirken bir sorun oluştu. Lütfen tekrar deneyin.');
     }
   }
 
@@ -780,19 +788,77 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const rawInfo = getFileInfo(rawAsset);
         setUploadStatus(rawInfo.isVideo ? `Video optimize ediliyor... (${index + 1}/${selectedAssets.length})` : `Fotoğraf hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
 
-        const asset = await optimizeGalleryAsset(rawAsset, (progress) => {
-          if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
-        });
+        let asset;
+        try {
+          asset = await optimizeGalleryAsset(rawAsset, (progress) => {
+            if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
+          });
+        } catch (error) {
+          await logGalleryError({
+            stage: rawInfo.isVideo ? 'COMPRESS_VIDEO' : 'OPTIMIZE_IMAGE',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset: rawAsset,
+            extra: { galleryId, mediaIndex: index },
+          });
+          throw error;
+        }
 
         const { isVideo, extension, contentType } = getFileInfo(asset);
         const mediaId = `${galleryId}-${index}`;
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
-        setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
-        const blob = await readAssetAsBlob(asset.uri);
+        setUploadStatus(`Medya hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
+        let blob;
+        try {
+          blob = await readAssetAsBlob(asset.uri);
+        } catch (error) {
+          await logGalleryError({
+            stage: 'READ_FILE',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset,
+            extra: { galleryId, mediaIndex: index },
+          });
+          throw error;
+        }
+
         const fileRef = storageRef(storage, storagePath);
-        await uploadBytes(fileRef, blob, { contentType });
-        const url = await getDownloadURL(fileRef);
+        try {
+          setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
+          await uploadBytes(fileRef, blob, { contentType });
+        } catch (error) {
+          await logGalleryError({
+            stage: 'UPLOAD_STORAGE',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset,
+            extra: { galleryId, mediaIndex: index, storagePath },
+          });
+          throw error;
+        }
+
+        let url;
+        try {
+          url = await getDownloadURL(fileRef);
+        } catch (error) {
+          await logGalleryError({
+            stage: 'DOWNLOAD_URL',
+            error,
+            userId,
+            kresId,
+            mode,
+            asset,
+            extra: { galleryId, mediaIndex: index, storagePath },
+          });
+          throw error;
+        }
 
         mediaItems.push({
           id: mediaId,
@@ -830,12 +896,25 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         expiresAt: createdAt + DAY_MS,
       };
 
-      await set(itemRef, galleryRecord);
-      await Promise.all([
-        set(dbRef(database, `kresGalerileri/${kresId}/${galleryId}`), true),
-        galleryRecord.classId ? set(dbRef(database, `sinifGalerileri/${galleryRecord.classId}/${galleryId}`), true) : Promise.resolve(),
-        ...asArray(galleryRecord.cocukIds).map((childId) => set(dbRef(database, `cocukGalerileri/${childId}/${galleryId}`), true)),
-      ]);
+      try {
+        setUploadStatus('Galeri kaydı oluşturuluyor...');
+        await set(itemRef, galleryRecord);
+        await Promise.all([
+          set(dbRef(database, `kresGalerileri/${kresId}/${galleryId}`), true),
+          galleryRecord.classId ? set(dbRef(database, `sinifGalerileri/${galleryRecord.classId}/${galleryId}`), true) : Promise.resolve(),
+          ...asArray(galleryRecord.cocukIds).map((childId) => set(dbRef(database, `cocukGalerileri/${childId}/${galleryId}`), true)),
+        ]);
+      } catch (error) {
+        await logGalleryError({
+          stage: 'SAVE_DATABASE',
+          error,
+          userId,
+          kresId,
+          mode,
+          extra: { galleryId },
+        });
+        throw error;
+      }
 
       setCaption('');
       setSelectedAssets([]);
@@ -845,7 +924,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       Alert.alert('Yüklendi', `${uploadTarget.label} için ${mediaItems.length} medya 24 saat boyunca galeride görünecek.`);
     } catch (error) {
       console.error('Galeri yüklemesi yapılamadı:', error?.code || error?.message || error);
-      Alert.alert('Hata', `Galeri yüklemesi yapılamadı. ${error?.code || error?.message || 'Storage ayarlarını kontrol et.'}`);
+      Alert.alert(
+        'Yükleme Başarısız',
+        `Medya yüklenemedi. ${error?.message || 'Lütfen tekrar deneyin.'}`
+      );
     } finally {
       setUploadStatus('');
       setUploading(false);
