@@ -395,71 +395,40 @@ export default function MessageDetailScreen() {
             )}
         </View>
 
-        {Platform.OS === 'android' ? (
-          <View>
-            <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
-              <View style={styles.inputBar}>
-                <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
-                  <TextInput
-                    ref={inputRef}
-                    style={styles.input}
-                    value={text}
-                    onChangeText={setText}
-                    placeholder="Mesaj yaz..."
-                    placeholderTextColor="#999"
-                    multiline
-                    editable={!sending}
-                    pointerEvents="auto"
-                    textAlignVertical="top"
-                    blurOnSubmit={false}
-                    underlineColorAndroid="transparent"
-                  />
-                </TouchableOpacity>
+        <KeyboardStickyView
+          enabled={Platform.OS !== 'android'}
+          offset={{ closed: 0, opened: -insets.bottom }}
+        >
+          <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
+            <View style={styles.inputBar}>
+              <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
+                <TextInput
+                  ref={inputRef}
+                  style={styles.input}
+                  value={text}
+                  onChangeText={setText}
+                  placeholder="Mesaj yaz..."
+                  placeholderTextColor="#999"
+                  multiline
+                  editable={!sending}
+                  pointerEvents="auto"
+                  textAlignVertical="top"
+                  blurOnSubmit={false}
+                  underlineColorAndroid="transparent"
+                />
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
-                  onPress={sendMessage}
-                  disabled={!text.trim() || sending}
-                  activeOpacity={0.85}
-                >
-                  {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.sendText}>Gönder</Text>}
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
+                onPress={sendMessage}
+                disabled={!text.trim() || sending}
+                activeOpacity={0.85}
+              >
+                {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.sendText}>Gönder</Text>}
+              </TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <KeyboardStickyView offset={{ closed: 0, opened: -insets.bottom }}>
-            <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
-              <View style={styles.inputBar}>
-                <TouchableOpacity style={styles.inputTouchable} activeOpacity={1} onPress={focusInput}>
-                  <TextInput
-                    ref={inputRef}
-                    style={styles.input}
-                    value={text}
-                    onChangeText={setText}
-                    placeholder="Mesaj yaz..."
-                    placeholderTextColor="#999"
-                    multiline
-                    editable={!sending}
-                    pointerEvents="auto"
-                    textAlignVertical="top"
-                    blurOnSubmit={false}
-                    underlineColorAndroid="transparent"
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
-                  onPress={sendMessage}
-                  disabled={!text.trim() || sending}
-                  activeOpacity={0.85}
-                >
-                  {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.sendText}>Gönder</Text>}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardStickyView>
-        )}
+        </KeyboardStickyView>
     </View>
   );
 }
