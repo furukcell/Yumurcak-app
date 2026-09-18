@@ -276,7 +276,7 @@ async function optimizeGalleryAsset(asset, onProgress) {
   return optimizeImageAsset(asset);
 }
 
-async function uploadFileToFirebaseStorage(uri, storagePath, contentType) {
+async function uploadFileToFirebaseStorage(uri, storagePath, contentType, onProgress) {
   if (!uri) throw new Error('Medya dosyası bulunamadı.');
 
   const currentUser = auth.currentUser;
@@ -293,6 +293,12 @@ async function uploadFileToFirebaseStorage(uri, storagePath, contentType) {
     headers: {
       Authorization: `Bearer ${idToken}`,
       'Content-Type': contentType || 'application/octet-stream',
+    },
+    uploadProgressCallback: (progressEvent) => {
+      if (typeof onProgress !== 'function') return;
+      const sent = Number(progressEvent?.totalBytesSent || 0);
+      const expected = Number(progressEvent?.totalBytesExpectedToSend || 0);
+      onProgress({ sent, expected });
     },
   });
 
@@ -383,6 +389,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadBytesSent, setUploadBytesSent] = useState(0);
+  const [uploadBytesExpected, setUploadBytesExpected] = useState(0);
   const [savingMediaId, setSavingMediaId] = useState('');
   const [caption, setCaption] = useState('');
   const [selectedAssets, setSelectedAssets] = useState([]);
@@ -843,7 +852,17 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const fileRef = storageRef(storage, storagePath);
         try {
           setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
-          await uploadFileToFirebaseStorage(asset.uri, storagePath, contentType);
+          setUploadProgress(0);
+          setUploadBytesSent(0);
+          setUploadBytesExpected(Number(asset.fileSize || 0));
+          await uploadFileToFirebaseStorage(asset.uri, storagePath, contentType, ({ sent, expected }) => {
+            const resolvedExpected = expected || Number(asset.fileSize || 0);
+            const percent = resolvedExpected > 0 ? Math.min(100, Math.round((sent / resolvedExpected) * 100)) : 0;
+            setUploadProgress(percent);
+            setUploadBytesSent(sent);
+            setUploadBytesExpected(resolvedExpected);
+            setUploadStatus('Medya yükleniyor... %' + percent + ' • ' + formatFileSize(sent) + ' / ' + formatFileSize(resolvedExpected) + ' (' + (index + 1) + '/' + selectedAssets.length + ')');
+          });
         } catch (error) {
           await logGalleryError({
             stage: 'UPLOAD_STORAGE',
@@ -931,6 +950,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
 
       setCaption('');
       setSelectedAssets([]);
+      setUploadProgress(0);
+      setUploadBytesSent(0);
+      setUploadBytesExpected(0);
       setSelectedClassId('');
       setSelectedChildId('');
       setTargetType('all');
@@ -943,6 +965,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       );
     } finally {
       setUploadStatus('');
+      setUploadProgress(0);
+      setUploadBytesSent(0);
+      setUploadBytesExpected(0);
       setUploading(false);
     }
   }
@@ -1113,7 +1138,17 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
                     <Text style={styles.secondaryButtonText}>Vazgeç</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.primaryButton, styles.primaryButtonFlex, uploading && styles.disabledButton]} onPress={confirmUpload} disabled={uploading}>
-                    {uploading ? <View style={styles.uploadingButtonContent}><ActivityIndicator color="#fff" /><Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text></View> : <Text style={styles.primaryButtonText}>{`Yükle (${selectedAssets.length})`}</Text>}
+                    {uploading ? (
+                      <View style={styles.uploadingButtonContent}>
+                        <ActivityIndicator color="#fff" />
+                        <View style={styles.uploadProgressTextWrap}>
+                          <Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text>
+                          {uploadBytesExpected > 0 && uploadProgress > 0 ? (
+                            <Text style={styles.uploadProgressDetail}>{uploadProgress}% • {formatFileSize(uploadBytesSent)} / {formatFileSize(uploadBytesExpected)}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    ) : <Text style={styles.primaryButtonText}>{`Yükle (${selectedAssets.length})`}</Text>}
                   </TouchableOpacity>
                 </View>
               </>
@@ -1182,6 +1217,8 @@ const styles = StyleSheet.create({
   primaryButtonFlex: { flex: 1, marginTop: 0 },
   disabledButton: { opacity: 0.7 },
   uploadingButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  uploadProgressTextWrap: { flex: 1, alignItems: 'center' },
+  uploadProgressDetail: { color: '#fff', fontWeight: '800', fontSize: 11, marginTop: 2 },
   primaryButtonText: { color: '#fff', fontWeight: '900', textAlign: 'center' },
   previewRow: { marginTop: 12 },
   previewThumbWrap: { marginRight: 10, position: 'relative' },
