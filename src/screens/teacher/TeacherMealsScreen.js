@@ -8,6 +8,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, remove, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+import InAppSinglePhotoPicker from '../../components/InAppSinglePhotoPicker';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
