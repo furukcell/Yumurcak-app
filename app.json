@@ -83,6 +83,7 @@
           }
         }
       ],
+      "./plugins/withDynamicAppIconFix.js",
       "./plugins/withJvmTargetFix.js",
       "./plugins/withAllowBackupFix.js"
     ]
