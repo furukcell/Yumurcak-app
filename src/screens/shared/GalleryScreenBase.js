@@ -20,12 +20,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { launchSafeGalleryPicker } from '../../utils/safeImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { File } from 'expo-file-system';
 import { Video } from 'react-native-compressor';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { onValue, push, query, orderByChild, equalTo, ref as dbRef, remove, set } from 'firebase/database';
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { database, storage } from '../../config/firebase';
+import { auth, database, firebaseConfig, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
 import { logGalleryError } from '../../utils/galleryErrorLogger';
@@ -276,17 +277,32 @@ async function optimizeGalleryAsset(asset, onProgress) {
   return optimizeImageAsset(asset);
 }
 
-async function readAssetAsBytes(uri) {
+async function uploadFileToFirebaseStorage(uri, storagePath, contentType) {
   if (!uri) throw new Error('Medya dosyası bulunamadı.');
 
-  const file = new File(uri);
-  const bytes = await file.bytes();
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yap.');
 
-  if (!bytes || bytes.byteLength === 0) {
-    throw new Error('Medya dosyası boş okunuyor.');
+  const idToken = await currentUser.getIdToken();
+  const bucket = firebaseConfig.storageBucket;
+  const uploadUrl =
+    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(storagePath)}`;
+
+  const result = await FileSystemLegacy.uploadAsync(uploadUrl, uri, {
+    httpMethod: 'POST',
+    uploadType: FileSystemLegacy.FileSystemUploadType.BINARY_CONTENT,
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': contentType || 'application/octet-stream',
+    },
+  });
+
+  if (!result || result.status < 200 || result.status >= 300) {
+    const detail = String(result?.body || '').slice(0, 500);
+    throw new Error(`Storage yüklemesi başarısız (${result?.status || 'bilinmeyen'}).${detail ? ` ${detail}` : ''}`);
   }
 
-  return bytes;
+  return result;
 }
 
 function normalizeTargetType(item) {
@@ -825,26 +841,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
         setUploadStatus(`Medya hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
-        let bytes;
-        try {
-          bytes = await readAssetAsBytes(asset.uri);
-        } catch (error) {
-          await logGalleryError({
-            stage: 'READ_FILE',
-            error,
-            userId,
-            kresId,
-            mode,
-            asset,
-            extra: { galleryId, mediaIndex: index },
-          });
-          throw error;
-        }
-
         const fileRef = storageRef(storage, storagePath);
         try {
           setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
-          await uploadBytes(fileRef, bytes, { contentType });
+          await uploadFileToFirebaseStorage(asset.uri, storagePath, contentType);
         } catch (error) {
           await logGalleryError({
             stage: 'UPLOAD_STORAGE',
