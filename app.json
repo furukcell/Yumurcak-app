@@ -43,7 +43,7 @@
         "expo-media-library",
         {
           "photosPermission": "Yumurcak fotoğraf ve videoları göstermek için galeri erişimi ister.",
-          "savePhotosPermission": "Yumurcak fotoğraf ve videoları cihaz galerisine kaydetmek için izin ister.",
+          "savePhotosPermission": "Yumurcak fotoğraf ve videoları cihaz galerisine kaydetmek için galeri erişimi ister.",
           "isAccessMediaLocationEnabled": false,
           "granularPermissions": ["photo", "video"]
         }
@@ -83,7 +83,6 @@
           }
         }
       ],
-      "./plugins/withDynamicAppIconFix.js",
       "./plugins/withJvmTargetFix.js",
       "./plugins/withAllowBackupFix.js"
     ]
