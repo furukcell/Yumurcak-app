@@ -33,7 +33,7 @@ import { logGalleryError } from '../../utils/galleryErrorLogger';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_MEDIA_PER_POST = 20;
 const MAX_VIDEO_PER_POST = 5;
-const MAX_VIDEO_DURATION_MS = 120 * 1000;
+const MAX_VIDEO_DURATION_MS = 5 * 60 * 1000;
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_IMAGE_WIDTH = 1920;
 const IMAGE_COMPRESS = 0.8;
