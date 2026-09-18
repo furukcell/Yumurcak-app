@@ -1,6 +1,6 @@
 // src/components/InAppMediaPicker.js
 import { useState, useEffect, useCallback } from 'react';
-import { View, FlatList, Image, TouchableOpacity, Text, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, FlatList, Image, TouchableOpacity, Text, StyleSheet, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
 import * as MediaLibrary from 'expo-media-library';
 
 const NUM_COLUMNS = 4;
@@ -29,6 +29,7 @@ export default function InAppMediaPicker({ onConfirm, onCancel }) {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState([]);
+  const [resolving, setResolving] = useState(false);
 
   useEffect(() => { if (!permission?.granted) requestPermission(); }, [permission]);
   useEffect(() => { if (permission?.granted) loadMore(); }, [permission?.granted]);
@@ -64,6 +65,28 @@ export default function InAppMediaPicker({ onConfirm, onCancel }) {
       if (current >= limit) return prev;
       return [...prev, asset];
     });
+  };
+
+  const handleConfirmPress = async () => {
+    if (Platform.OS !== 'ios') {
+      onConfirm(selected);
+      return;
+    }
+    setResolving(true);
+    try {
+      const resolved = await Promise.all(
+        selected.map(async (asset) => {
+          const info = await MediaLibrary.getAssetInfoAsync(asset.id);
+          return { ...asset, uri: info.localUri || asset.uri };
+        })
+      );
+      onConfirm(resolved);
+    } catch (e) {
+      console.error('iOS asset çözümleme hatası:', e);
+      onConfirm(selected);
+    } finally {
+      setResolving(false);
+    }
   };
 
   if (!permission?.granted) {
@@ -118,11 +141,13 @@ export default function InAppMediaPicker({ onConfirm, onCancel }) {
           <Text style={styles.footerCount}>{selectedVideoCount}/{VIDEO_LIMIT} video</Text>
         </View>
         <TouchableOpacity
-          disabled={selected.length === 0}
+          disabled={selected.length === 0 || resolving}
           style={[styles.primaryButton, selected.length === 0 && styles.primaryButtonDisabled]}
-          onPress={() => onConfirm(selected)}
+          onPress={handleConfirmPress}
         >
-          <Text style={styles.primaryButtonText}>Seç ({selected.length})</Text>
+          {resolving
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.primaryButtonText}>Seç ({selected.length})</Text>}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
