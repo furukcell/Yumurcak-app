@@ -68,7 +68,7 @@ service firebase.storage {
 
       allow create, update: if request.auth != null
         && request.resource != null
-        && request.resource.size < 50 * 1024 * 1024;
+        && request.resource.size < 200 * 1024 * 1024;
 
       allow delete: if request.auth != null;
     }
