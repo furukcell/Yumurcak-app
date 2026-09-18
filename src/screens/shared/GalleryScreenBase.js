@@ -987,6 +987,11 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             )}
           </View>
         ) : null}
+
+        <Modal visible={pickerVisible} animationType="slide" onRequestClose={() => setPickerVisible(false)}>
+          <InAppMediaPicker onConfirm={handlePickerConfirm} onCancel={() => setPickerVisible(false)} />
+        </Modal>
+              
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
         {visibleGallery.length === 0 ? (
           <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>Aktif galeri yok</Text><Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text></View>
