@@ -36,7 +36,8 @@ export default function ParentProfileScreen({ navigation }) {
   const [changingLang, setChangingLang] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [successToast, setSuccessToast] = useState({ visible: false, message: '' });
-
+  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
+  
   const LANGUAGES = [
     { code: 'tr', flag: '🇹🇷', label: 'Türkçe' },
     { code: 'en', flag: '🇬🇧', label: 'English' },
