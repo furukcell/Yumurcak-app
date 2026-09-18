@@ -67,7 +67,6 @@ export default function ParentProfileScreen({ navigation }) {
     }
   };
 
-  const pickAndUploadPhoto = async () => {
   const pickAndUploadPhoto = () => {
     if (!parentId) return Alert.alert(t('parent.profile.errorTitle'), t('parent.profile.accountNotFoundDesc'));
     setPhotoPickerVisible(true);
@@ -164,6 +163,10 @@ export default function ParentProfileScreen({ navigation }) {
               <Text style={local.primaryButtonText}>{t('parent.profile.pickPhotoButton')}</Text>
             )}
           </TouchableOpacity>
+
+          <Modal visible={photoPickerVisible} animationType="slide" onRequestClose={() => setPhotoPickerVisible(false)}>
+            <InAppSinglePhotoPicker aspect={[1, 1]} onConfirm={handlePhotoPicked} onCancel={() => setPhotoPickerVisible(false)} />
+          </Modal>
 
           {photoUrl ? (
             <TouchableOpacity style={local.removeButton} onPress={removePhoto} disabled={saving || uploading}>
