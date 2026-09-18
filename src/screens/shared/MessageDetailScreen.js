@@ -396,8 +396,7 @@ export default function MessageDetailScreen() {
         </View>
 
         <KeyboardStickyView
-          enabled={Platform.OS !== 'android'}
-          offset={{ closed: 0, opened: -insets.bottom }}
+          offset={{ closed: 0, opened: 0 }}
         >
           <View style={[styles.inputOuter, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
             <View style={styles.inputBar}>
