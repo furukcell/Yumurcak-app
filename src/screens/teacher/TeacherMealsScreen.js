@@ -553,29 +553,33 @@ export default function TeacherMealsScreen() {
   };
 
   const pickMealPhoto = async (source) => {
+    if (source === 'gallery') {
+      setMealPhotoPickerVisible(true);
+      return;
+    }
+    // Kamera akışı değişmedi
     try {
-      const permission = source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', source === 'camera' ? 'Kamera kullanımı için izin vermelisin.' : 'Galeriden fotoğraf seçmek için izin vermelisin.');
+        Alert.alert('İzin Gerekli', 'Kamera kullanımı için izin vermelisin.');
         return;
       }
-
-      const picker = source === 'camera' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-      const result = await picker({
+      const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.75,
       });
-
       if (result.canceled || !result.assets?.[0]?.uri) return;
       setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: result.assets[0] }));
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+      Alert.alert('Hata', 'Fotoğraf çekilemedi.');
     }
+  };
+
+  const handleMealPhotoPicked = (uri) => {
+    setMealPhotoPickerVisible(false);
+    setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: { uri } }));
   };
 
   // Henüz kaydedilmemiş, sadece önizlemede duran fotoğrafı kaldırır — hiçbir şey paylaşılmaz.
@@ -864,7 +868,9 @@ export default function TeacherMealsScreen() {
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
-
+      <Modal visible={mealPhotoPickerVisible} animationType="slide" onRequestClose={() => setMealPhotoPickerVisible(false)}>
+        <InAppSinglePhotoPicker aspect={[1, 1]} onConfirm={handleMealPhotoPicked} onCancel={() => setMealPhotoPickerVisible(false)} />
+      </Modal>
       <Modal visible={!!monthlySelectedDay} transparent animationType="slide" onRequestClose={() => setMonthlySelectedDateKey('')}>
         <KeyboardAvoidingView
           style={styles.modalBackdrop}
