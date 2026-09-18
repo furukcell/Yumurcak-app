@@ -34,7 +34,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_MEDIA_PER_POST = 20;
 const MAX_VIDEO_PER_POST = 5;
 const MAX_VIDEO_DURATION_MS = 120 * 1000;
-const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_IMAGE_WIDTH = 1920;
 const IMAGE_COMPRESS = 0.8;
 
@@ -211,28 +211,63 @@ async function optimizeImageAsset(asset) {
 
 async function optimizeVideoAsset(asset, onProgress) {
   const durationMs = getAssetDurationMs(asset);
-  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
-
-  const originalSize = asset.fileSize || await getLocalFileSize(asset.uri);
-  const compressedUri = await Video.compress(asset.uri, { compressionMethod: 'auto', maxSize: 1280 }, (progress) => {
-    if (typeof onProgress === 'function') onProgress(progress);
-  });
-  const optimizedSize = await getLocalFileSize(compressedUri);
-
-  if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
-    throw new Error(`Video optimize edildi ama hâlâ çok büyük (${formatFileSize(optimizedSize)}). Lütfen daha kısa bir video seç.`);
+  if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) {
+    throw new Error('Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
   }
 
-  return {
-    ...asset,
-    uri: compressedUri,
-    type: 'video',
-    mimeType: 'video/mp4',
-    fileName: `${String(asset.fileName || 'video').split('.')[0]}_optimized.mp4`,
-    fileSize: optimizedSize || originalSize || 0,
-    originalFileSize: originalSize || 0,
-    optimized: true,
-  };
+  const originalSize = Number(asset.fileSize || asset.size || await getLocalFileSize(asset.uri) || 0);
+
+  // 100 MB altındaki videolarda MediaCodec sıkıştırmasına hiç girmiyoruz.
+  // Böylece Vivo/Samsung gibi bazı cihazlarda görülen native compressor hatalarını
+  // gereksiz yere tetiklemiyoruz.
+  if (originalSize > 0 && originalSize <= MAX_VIDEO_SIZE_BYTES) {
+    return {
+      ...asset,
+      type: 'video',
+      fileSize: originalSize,
+      originalFileSize: originalSize,
+      optimized: false,
+    };
+  }
+
+  try {
+    const compressedUri = await Video.compress(
+      asset.uri,
+      { compressionMethod: 'auto', maxSize: 1280 },
+      (progress) => {
+        if (typeof onProgress === 'function') onProgress(progress);
+      }
+    );
+    const optimizedSize = await getLocalFileSize(compressedUri);
+
+    if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
+      throw new Error(`Video optimize edildi ama hâlâ çok büyük (${formatFileSize(optimizedSize)}). Lütfen daha kısa bir video seç.`);
+    }
+
+    return {
+      ...asset,
+      uri: compressedUri,
+      type: 'video',
+      mimeType: 'video/mp4',
+      fileName: `${String(asset.fileName || 'video').split('.')[0]}_optimized.mp4`,
+      fileSize: optimizedSize || originalSize || 0,
+      originalFileSize: originalSize || 0,
+      optimized: true,
+    };
+  } catch (error) {
+    // Dosya aslında limit altındaysa compressor başarısız olsa bile
+    // orijinali yüklemeyi dene. Native MediaCodec hatalarında güvenli fallback.
+    if (originalSize > 0 && originalSize <= MAX_VIDEO_SIZE_BYTES) {
+      return {
+        ...asset,
+        type: 'video',
+        fileSize: originalSize,
+        originalFileSize: originalSize,
+        optimized: false,
+      };
+    }
+    throw error;
+  }
 }
 
 async function optimizeGalleryAsset(asset, onProgress) {
