@@ -8,7 +8,6 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, remove, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
-import InAppSinglePhotoPicker from '../../components/InAppSinglePhotoPicker';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
@@ -252,7 +251,6 @@ export default function TeacherMealsScreen() {
   // bağlıydı; 3 öğüne foto eklemek için 3 ayrı "Kaydet" gerekiyordu. Artık her
   // öğün için ayrı foto tutuyoruz, tek "Kaydet" hepsini birlikte yüklüyor.
   const [mealPhotos, setMealPhotos] = useState({ kahvalti: null, ogle: null, araOgun: null });
-  const [mealPhotoPickerVisible, setMealPhotoPickerVisible] = useState(false);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
 
@@ -553,33 +551,29 @@ export default function TeacherMealsScreen() {
   };
 
   const pickMealPhoto = async (source) => {
-    if (source === 'gallery') {
-      setMealPhotoPickerVisible(true);
-      return;
-    }
-    // Kamera akışı değişmedi
     try {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      const permission = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Kamera kullanımı için izin vermelisin.');
+        Alert.alert('İzin Gerekli', source === 'camera' ? 'Kamera kullanımı için izin vermelisin.' : 'Galeriden fotoğraf seçmek için izin vermelisin.');
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({
+
+      const picker = source === 'camera' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+      const result = await picker({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.75,
       });
+
       if (result.canceled || !result.assets?.[0]?.uri) return;
       setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: result.assets[0] }));
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Fotoğraf çekilemedi.');
+      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
     }
-  };
-
-  const handleMealPhotoPicked = (uri) => {
-    setMealPhotoPickerVisible(false);
-    setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: { uri } }));
   };
 
   // Henüz kaydedilmemiş, sadece önizlemede duran fotoğrafı kaldırır — hiçbir şey paylaşılmaz.
@@ -868,9 +862,7 @@ export default function TeacherMealsScreen() {
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
-      <Modal visible={mealPhotoPickerVisible} animationType="slide" onRequestClose={() => setMealPhotoPickerVisible(false)}>
-        <InAppSinglePhotoPicker aspect={[1, 1]} onConfirm={handleMealPhotoPicked} onCancel={() => setMealPhotoPickerVisible(false)} />
-      </Modal>
+
       <Modal visible={!!monthlySelectedDay} transparent animationType="slide" onRequestClose={() => setMonthlySelectedDateKey('')}>
         <KeyboardAvoidingView
           style={styles.modalBackdrop}

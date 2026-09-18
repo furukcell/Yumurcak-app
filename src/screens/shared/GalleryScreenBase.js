@@ -16,7 +16,8 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import InAppMediaPicker from '../../components/InAppMediaPicker';
+import * as ImagePicker from 'expo-image-picker';
+import { launchSafeGalleryPicker } from '../../utils/safeImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Video } from 'react-native-compressor';
@@ -337,7 +338,6 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [now, setNow] = useState(Date.now());
   const [viewerItem, setViewerItem] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(0);
-  const [pickerVisible, setPickerVisible] = useState(false);
 
   const canUpload = mode === 'admin' || mode === 'teacher';
   const title = mode === 'parent' ? 'Galeri' : mode === 'teacher' ? 'Sınıf Galerisi' : 'Galeri Yönetimi';
@@ -682,36 +682,54 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     return { hedef: 'kurum', targetType: 'school', classId: null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: 'Tüm kurum' };
   }, [availableClasses, currentClass, mode, myChildren, selectedChildId, selectedClassId, targetType]);
 
-  function pickMedia() {
+  async function pickMedia() {
     if (!canUpload) return;
     if (!kresId) return Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
     if (targetType === 'class' && !selectedClassId) return Alert.alert('Sınıf Seç', 'Sınıfa özel paylaşım için bir sınıf seçmelisin.');
     if (targetType === 'child' && !selectedChildId) return Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
-    setPickerVisible(true);
-  }
 
-  function handlePickerConfirm(mediaLibraryAssets) {
-    setPickerVisible(false);
-    if (!mediaLibraryAssets || mediaLibraryAssets.length === 0) return;
+    try {
+      if (Platform.OS === 'ios') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          if (permission.canAskAgain === false) {
+            return Alert.alert(
+              'İzin Gerekli',
+              'Galeri izni daha önce reddedilmiş. Ayarlar\'dan Fotoğraflar erişimini açman gerekiyor.',
+              [
+                { text: 'Vazgeç', style: 'cancel' },
+                { text: 'Ayarlara Git', onPress: () => Linking.openSettings() },
+              ]
+            );
+          }
+          return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
+        }
+      }
 
-    const tooLong = mediaLibraryAssets.find(
-      (a) => a.mediaType === 'video' && getAssetDurationMs(a) > MAX_VIDEO_DURATION_MS
-    );
-    if (tooLong) return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
+      const result = await launchSafeGalleryPicker({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
+        quality: 0.78,
+        videoMaxDuration: 120,
+      });
+      const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
+      if (assets.length === 0) return;
+      if (assets.length > MAX_MEDIA_PER_POST) return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
+      if (countVideoAssets(assets) > MAX_VIDEO_PER_POST) return Alert.alert('Çok Fazla Video', `Tek paylaşımda en fazla ${MAX_VIDEO_PER_POST} video seçebilirsin.`);
+      if (assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS)) return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
 
-    setSelectedAssets(mediaLibraryAssets.map((a, index) => ({
-      localId: `${Date.now()}-${index}`,
-      asset: {
-        uri: a.uri,
-        fileName: a.filename,
-        type: a.mediaType === 'video' ? 'video' : 'image',
-        mimeType: a.mediaType === 'video' ? 'video/mp4' : 'image/jpeg',
-        width: a.width,
-        height: a.height,
-        duration: a.duration,
-        fileSize: 0,
-      },
-    })));
+      // Seçilen medya burada sadece önizlemeye alınır — Firebase'e henüz yüklenmez.
+      // Kullanıcı "Yükle" butonuna basana kadar hiçbir şey paylaşılmaz.
+      setSelectedAssets(assets.map((asset, index) => ({
+        localId: `${Date.now()}-${index}`,
+        asset,
+      })));
+    } catch (error) {
+      console.error('Medya seçilemedi:', error?.code || error?.message || error);
+      Alert.alert('Hata', 'Medya seçilirken bir sorun oluştu.');
+    }
   }
 
   function removeSelectedAsset(localId) {
@@ -987,11 +1005,6 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             )}
           </View>
         ) : null}
-
-        <Modal visible={pickerVisible} animationType="slide" onRequestClose={() => setPickerVisible(false)}>
-          <InAppMediaPicker onConfirm={handlePickerConfirm} onCancel={() => setPickerVisible(false)} />
-        </Modal>
-              
         <Text style={styles.sectionTitle}>Aktif Galeri</Text>
         {visibleGallery.length === 0 ? (
           <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>Aktif galeri yok</Text><Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text></View>

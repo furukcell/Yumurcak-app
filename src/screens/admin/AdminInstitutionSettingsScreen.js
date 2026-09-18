@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -20,7 +19,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useNavigation } from '@react-navigation/native';
-import InAppSinglePhotoPicker from '../../components/InAppSinglePhotoPicker';
+import * as ImagePicker from 'expo-image-picker';
 import { get, ref, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
@@ -52,8 +51,6 @@ export default function AdminInstitutionSettingsScreen() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [splashUrl, setSplashUrl] = useState('');
   const [uploadingSplash, setUploadingSplash] = useState(false);
-  const [logoPickerVisible, setLogoPickerVisible] = useState(false);
-  const [splashPickerVisible, setSplashPickerVisible] = useState(false);
 
   const [form, setForm] = useState({
     ad: '',
@@ -140,14 +137,26 @@ export default function AdminInstitutionSettingsScreen() {
     }
   };
 
-  const pickAndUploadLogo = () => {
+  const pickAndUploadLogo = async () => {
     if (!kresId) return Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
-    setLogoPickerVisible(true);
-  };
 
-  const handleLogoPicked = async (uri) => {
-    setLogoPickerVisible(false);
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('İzin Gerekli', 'Kurum fotoğrafı seçmek için galeri izni vermen gerekiyor.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.75,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      const uri = result.assets[0].uri;
       setUploadingLogo(true);
 
       const response = await fetch(uri);
@@ -194,14 +203,26 @@ export default function AdminInstitutionSettingsScreen() {
     ]);
   };
 
-  const pickAndUploadSplash = () => {
+  const pickAndUploadSplash = async () => {
     if (!kresId) return Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
-    setSplashPickerVisible(true);
-  };
 
-  const handleSplashPicked = async (uri) => {
-    setSplashPickerVisible(false);
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('İzin Gerekli', 'Açılış ekranı görseli seçmek için galeri izni vermen gerekiyor.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [9, 16],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      const uri = result.assets[0].uri;
       setUploadingSplash(true);
 
       const response = await fetch(uri);
@@ -264,13 +285,6 @@ export default function AdminInstitutionSettingsScreen() {
         message="Kurum bilgileri kaydedildi"
         onHide={() => setSuccessToast(false)}
       />
-
-      <Modal visible={logoPickerVisible} animationType="slide" onRequestClose={() => setLogoPickerVisible(false)}>
-        <InAppSinglePhotoPicker aspect={[1, 1]} onConfirm={handleLogoPicked} onCancel={() => setLogoPickerVisible(false)} />
-      </Modal>
-      <Modal visible={splashPickerVisible} animationType="slide" onRequestClose={() => setSplashPickerVisible(false)}>
-        <InAppSinglePhotoPicker aspect={[9, 16]} onConfirm={handleSplashPicked} onCancel={() => setSplashPickerVisible(false)} />
-      </Modal>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
