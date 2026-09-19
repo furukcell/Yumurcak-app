@@ -38,7 +38,7 @@ export async function logGalleryError({
     const mimeType = asset?.mimeType || '';
     const type = asset?.type || asset?.mediaType || '';
 
-    const errorRef = push(dbRef(database, 'appErrorLogs'));
+    const errorRef = push(dbRef(database, 'hataLoglari/appErrorLogs'));
     await set(errorRef, {
       category: 'gallery',
       stage: stage || 'UNKNOWN',
@@ -70,7 +70,7 @@ export async function logGalleryError({
  * Döndürdüğü finish(status, extra) fonksiyonu ile kayıt güncellenir.
  */
 export async function startGalleryPickerAttempt({ stage, userId = '', kresId = '', mode = '' } = {}) {
-  const attemptRef = push(dbRef(database, 'appErrorLogs'));
+  const attemptRef = push(dbRef(database, 'hataLoglari/appErrorLogs'));
   const startedAt = Date.now();
 
   try {
@@ -112,7 +112,7 @@ export async function logGalleryEvent({
   extra = {},
 } = {}) {
   try {
-    const eventRef = push(dbRef(database, 'appErrorLogs'));
+    const eventRef = push(dbRef(database, 'hataLoglari/appErrorLogs'));
     await set(eventRef, {
       category: 'gallery',
       stage: stage || 'EVENT',
