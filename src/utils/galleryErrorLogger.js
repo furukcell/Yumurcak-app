@@ -69,22 +69,24 @@ export async function logGalleryError({
  * cihaz/OS bilgisiyle birlikte görebiliriz.
  * Döndürdüğü finish(status, extra) fonksiyonu ile kayıt güncellenir.
  */
-export function startGalleryPickerAttempt({ stage, userId = '', kresId = '', mode = '' } = {}) {
+export async function startGalleryPickerAttempt({ stage, userId = '', kresId = '', mode = '' } = {}) {
   const attemptRef = push(dbRef(database, 'appErrorLogs'));
   const startedAt = Date.now();
 
-  update(attemptRef, {
-    category: 'gallery',
-    stage: stage || 'PICKER_ATTEMPT',
-    status: 'started',
-    device: getDeviceInfo(),
-    userId: userId || '',
-    kresId: kresId || '',
-    mode: mode || '',
-    createdAt: startedAt,
-  }).catch((logError) => {
-    console.warn('Galeri deneme kaydı yazılamadı:', logError?.message || logError);
-  });
+  try {
+    await set(attemptRef, {
+      category: 'gallery',
+      stage: stage || 'PICKER_ATTEMPT',
+      status: 'started',
+      device: getDeviceInfo(),
+      userId: userId || '',
+      kresId: kresId || '',
+      mode: mode || '',
+      createdAt: startedAt,
+    });
+  } catch (logError) {
+    console.warn('Galeri deneme başlangıç kaydı yazılamadı:', logError?.message || logError);
+  }
 
   return async function finish(status, extra = {}) {
     try {
@@ -98,4 +100,38 @@ export function startGalleryPickerAttempt({ stage, userId = '', kresId = '', mod
       console.warn('Galeri deneme sonucu güncellenemedi:', logError?.message || logError);
     }
   };
+}
+
+
+export async function logGalleryEvent({
+  stage,
+  userId = '',
+  kresId = '',
+  mode = '',
+  asset = null,
+  extra = {},
+} = {}) {
+  try {
+    const eventRef = push(dbRef(database, 'appErrorLogs'));
+    await set(eventRef, {
+      category: 'gallery',
+      stage: stage || 'EVENT',
+      status: 'event',
+      device: getDeviceInfo(),
+      userId: userId || '',
+      kresId: kresId || '',
+      mode: mode || '',
+      asset: asset ? {
+        uri: String(asset?.uri || '').slice(0, 500),
+        type: String(asset?.type || asset?.mediaType || ''),
+        mimeType: String(asset?.mimeType || ''),
+        fileName: String(asset?.fileName || asset?.name || '').slice(0, 200),
+        size: Number(asset?.fileSize || asset?.size || 0),
+      } : null,
+      extra,
+      createdAt: Date.now(),
+    });
+  } catch (logError) {
+    console.warn('Galeri olay kaydı Firebase\\'e yazılamadı:', logError?.message || logError);
+  }
 }

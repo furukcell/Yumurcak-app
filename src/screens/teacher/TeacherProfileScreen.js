@@ -10,6 +10,8 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { launchSafeImagePicker } from '../../utils/safeImagePicker';
+import { logGalleryEvent, logGalleryError } from '../../utils/galleryErrorLogger';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
@@ -43,23 +45,32 @@ export default function TeacherProfileScreen() {
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const result = await launchSafeImagePicker({
+        userId: teacherId,
+        kresId: kullanici?.kresId || kurum?.id || '',
+        mode: 'teacher_profile',
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 0.75,
       });
 
       if (result.canceled || !result.assets?.[0]?.uri) return;
 
-      const uri = result.assets[0].uri;
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      await logGalleryEvent({ stage: 'PROFILE_ASSET_RECEIVED', userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile', asset });
       setUploading(true);
 
+      await logGalleryEvent({ stage: 'PROFILE_URI_READ_START', userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile', asset });
       const response = await fetch(uri);
       const blob = await response.blob();
+      await logGalleryEvent({ stage: 'PROFILE_URI_READ_DONE', userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile', asset, extra: { blobSize: blob?.size || 0 } });
 
       const fileRef = storageRef(storage, `profilFotograflari/ogretmenler/${teacherId}.jpg`);
+      await logGalleryEvent({ stage: 'PROFILE_UPLOAD_START', userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile', asset });
       await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
+      await logGalleryEvent({ stage: 'PROFILE_UPLOAD_DONE', userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile', asset });
 
       const downloadUrl = await getDownloadURL(fileRef);
 
@@ -72,6 +83,7 @@ export default function TeacherProfileScreen() {
       setPhotoUrl(downloadUrl);
       showSuccess('Profil fotoğrafı yüklendi');
     } catch (err) {
+      await logGalleryError({ stage: 'PROFILE_FLOW_ERROR', error: err, userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile' });
       console.error(err);
       Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
     } finally {

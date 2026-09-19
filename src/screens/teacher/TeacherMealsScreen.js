@@ -8,6 +8,8 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, remove, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+import { launchSafeImagePicker } from '../../utils/safeImagePicker';
+import { logGalleryEvent, logGalleryError } from '../../utils/galleryErrorLogger';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
@@ -561,16 +563,32 @@ export default function TeacherMealsScreen() {
         return;
       }
 
-      const picker = source === 'camera' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-      const result = await picker({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.75,
-      });
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: false,
+            quality: 0.75,
+          })
+        : await launchSafeImagePicker({
+            userId: teacherId,
+            kresId: kresId || currentClass?.kresId || '',
+            mode: 'teacher_meal_' + selectedMealKey,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.75,
+          });
 
       if (result.canceled || !result.assets?.[0]?.uri) return;
+      await logGalleryEvent({
+        stage: 'MEAL_ASSET_RECEIVED',
+        userId: teacherId,
+        kresId: kresId || currentClass?.kresId || '',
+        mode: 'teacher_meal_' + selectedMealKey,
+        asset: result.assets[0],
+      });
       setMealPhotos((prev) => ({ ...prev, [selectedMealKey]: result.assets[0] }));
     } catch (err) {
+      await logGalleryError({ stage: 'MEAL_PICKER_FLOW_ERROR', error: err, userId: teacherId, kresId: kresId || currentClass?.kresId || '', mode: 'teacher_meal_' + selectedMealKey });
       console.error(err);
       Alert.alert('Hata', 'Fotoğraf seçilemedi.');
     }

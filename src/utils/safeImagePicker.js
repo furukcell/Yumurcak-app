@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { crashLog } from './crashlyticsSafe';
-import { logGalleryError, startGalleryPickerAttempt } from './galleryErrorLogger';
+import { logGalleryError, logGalleryEvent, startGalleryPickerAttempt } from './galleryErrorLogger';
 
 const PICKER_TIMEOUT_MS = 12000;
 
@@ -61,7 +61,7 @@ export async function launchSafeGalleryPicker(options = {}) {
     return ImagePicker.launchImageLibraryAsync(pickerOptions);
   }
 
-  const finishDocumentAttempt = startGalleryPickerAttempt({
+  const finishDocumentAttempt = await startGalleryPickerAttempt({
     stage: 'PICKER_DOCUMENT',
     userId,
     kresId,
@@ -125,7 +125,7 @@ export async function launchSafeGalleryPicker(options = {}) {
       extra: { fallback: 'image-picker', timeout: isTimeout },
     });
 
-    const finishImageAttempt = startGalleryPickerAttempt({
+    const finishImageAttempt = await startGalleryPickerAttempt({
       stage: 'PICKER_IMAGE',
       userId,
       kresId,
@@ -167,5 +167,116 @@ export async function launchSafeGalleryPicker(options = {}) {
       });
       return { canceled: true, assets: [], failed: true };
     }
+  }
+}
+
+
+/**
+ * Android ImagePicker için profil/yemek gibi tek fotoğraflık akışların ortak güvenli girişi.
+ * Native Activity yeniden oluşturulursa pending sonucu da kontrol eder.
+ */
+export async function launchSafeImagePicker({
+  userId = '',
+  kresId = '',
+  mode = 'image',
+  ...pickerOptions
+} = {}) {
+  const finishAttempt = await startGalleryPickerAttempt({
+    stage: 'IMAGE_PICKER',
+    userId,
+    kresId,
+    mode,
+  });
+
+  try {
+    await logGalleryEvent({
+      stage: 'IMAGE_PICKER_LAUNCH',
+      userId,
+      kresId,
+      mode,
+      extra: { platform: Platform.OS },
+    });
+    crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
+
+    let result = await withTimeout(
+      ImagePicker.launchImageLibraryAsync(pickerOptions),
+      PICKER_TIMEOUT_MS,
+      'ImagePicker'
+    );
+
+    // Android MainActivity yeniden oluşturulduysa Expo pending sonucu burada tutabilir.
+    try {
+      const pending = await ImagePicker.getPendingResultAsync();
+      if (pending?.assets?.length && (!result || result.canceled || !result.assets?.length)) {
+        result = pending;
+        await logGalleryEvent({
+          stage: 'IMAGE_PICKER_PENDING_RECOVERED',
+          userId,
+          kresId,
+          mode,
+          asset: pending.assets[0],
+          extra: { assetCount: pending.assets.length },
+        });
+      }
+    } catch (pendingError) {
+      await logGalleryError({
+        stage: 'IMAGE_PICKER_PENDING_READ_ERROR',
+        error: pendingError,
+        userId,
+        kresId,
+        mode,
+      });
+    }
+
+    await logGalleryEvent({
+      stage: result?.canceled ? 'IMAGE_PICKER_CANCELED' : 'IMAGE_PICKER_RETURNED',
+      userId,
+      kresId,
+      mode,
+      asset: result?.assets?.[0],
+      extra: { assetCount: result?.assets?.length || 0 },
+    });
+    await finishAttempt('completed', {
+      resultType: result?.canceled ? 'canceled' : 'selected',
+      assetCount: result?.assets?.length || 0,
+    });
+    return result;
+  } catch (error) {
+    const isTimeout = error?.code === 'PICKER_TIMEOUT';
+    await logGalleryError({
+      stage: isTimeout ? 'IMAGE_PICKER_TIMEOUT' : 'IMAGE_PICKER_ERROR',
+      error,
+      userId,
+      kresId,
+      mode,
+    });
+    await finishAttempt(isTimeout ? 'timeout' : 'error');
+    throw error;
+  }
+}
+
+export async function recoverPendingImagePickerResult({ userId = '', kresId = '', mode = 'app_start' } = {}) {
+  try {
+    const pending = await ImagePicker.getPendingResultAsync();
+    if (!pending?.assets?.length) return null;
+
+    await logGalleryEvent({
+      stage: 'IMAGE_PICKER_PENDING_AT_APP_START',
+      userId,
+      kresId,
+      mode,
+      asset: pending.assets[0],
+      extra: { assetCount: pending.assets.length },
+    });
+    return pending;
+  } catch (error) {
+    await logGalleryError({
+      stage: 'IMAGE_PICKER_PENDING_APP_START_ERROR',
+      error,
+      userId,
+      kresId,
+      mode,
+    });
+    return null;
   }
 }
