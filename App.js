@@ -29,7 +29,9 @@ import {
 import {
   YUMURCAK_LINKING,
   getNotificationNavigationTarget,
-} from// ------------------------------------------------------------
+} from './src/utils/notificationDeepLinks';
+
+// ------------------------------------------------------------
 // Crashlytics kurulumu
 // Crashlytics JS modülü burada import edilmez; uygulama render olduktan
 // sonra güvenli wrapper üzerinden lazy olarak yüklenir. Böylece native
@@ -45,7 +47,7 @@ export default function App() {
 
     const defaultGlobalHandler = global.ErrorUtils?.getGlobalHandler?.();
     global.ErrorUtils?.setGlobalHandler?.((error, isFatal) => {
-      crashLog(`GlobalHandler isFatal=${String(isFatal)}`);
+      crashLog('GlobalHandler isFatal=' + String(isFatal));
       crashRecordError(error instanceof Error ? error : new Error(String(error)));
       defaultGlobalHandler?.(error, isFatal);
     });
