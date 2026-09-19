@@ -255,28 +255,3 @@ export async function launchSafeImagePicker({
   }
 }
 
-export async function recoverPendingImagePickerResult({ userId = '', kresId = '', mode = 'app_start' } = {}) {
-  try {
-    const pending = await ImagePicker.getPendingResultAsync();
-    if (!pending?.assets?.length) return null;
-
-    await logGalleryEvent({
-      stage: 'IMAGE_PICKER_PENDING_AT_APP_START',
-      userId,
-      kresId,
-      mode,
-      asset: pending.assets[0],
-      extra: { assetCount: pending.assets.length },
-    });
-    return pending;
-  } catch (error) {
-    await logGalleryError({
-      stage: 'IMAGE_PICKER_PENDING_APP_START_ERROR',
-      error,
-      userId,
-      kresId,
-      mode,
-    });
-    return null;
-  }
-}
