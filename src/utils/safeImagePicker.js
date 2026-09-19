@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import crashlytics from '@react-native-firebase/crashlytics';
+import { crashLog } from './crashlyticsSafe';
 import { logGalleryError, startGalleryPickerAttempt } from './galleryErrorLogger';
 
 const PICKER_TIMEOUT_MS = 12000;
@@ -69,7 +69,7 @@ export async function launchSafeGalleryPicker(options = {}) {
   });
 
   try {
-    crashlytics().log('DocumentPicker.getDocumentAsync çağrılıyor');
+    crashLog('DocumentPicker.getDocumentAsync çağrılıyor');
     // NOT: type olarak ['image/*','video/*'] gibi bir dizi + multiple:true
     // kombinasyonu bazı OEM dosya seçicilerinde (ör. HyperOS/MIUI
     // DocumentsUI) seçici açılır açılmaz sonuç dönmeden kapanmasına
@@ -133,7 +133,7 @@ export async function launchSafeGalleryPicker(options = {}) {
     });
 
     try {
-      crashlytics().log('Fallback: ImagePicker.launchImageLibraryAsync çağrılıyor');
+      crashLog('Fallback: ImagePicker.launchImageLibraryAsync çağrılıyor');
       const result = await withTimeout(
         ImagePicker.launchImageLibraryAsync({
           ...pickerOptions,
