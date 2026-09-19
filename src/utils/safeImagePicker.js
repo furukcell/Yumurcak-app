@@ -61,30 +61,81 @@ export async function launchSafeGalleryPicker(options = {}) {
     return ImagePicker.launchImageLibraryAsync(pickerOptions);
   }
 
-  const finishDocumentAttempt = await startGalleryPickerAttempt({
-    stage: 'PICKER_DOCUMENT',
+  // Android'de ana akış artık doğrudan Expo ImagePicker.
+  // Ama DocumentPicker'ı kaldırmıyoruz: native ImagePicker JS seviyesinde
+  // hata/timeout verirse ikinci bir güvenli fallback olarak tutuluyor.
+  const finishImageAttempt = await startGalleryPickerAttempt({
+    stage: 'PICKER_IMAGE',
     userId,
     kresId,
     mode,
   });
 
   try {
-    crashLog('DocumentPicker.getDocumentAsync çağrılıyor');
-    // Galeri akışında yalnızca medya türlerini istemek, Android sistem
-    // picker'ının belge/genel dosya sağlayıcılarını devreye sokmasını önler.
-    // Multiple seçimi KORUYORUZ; galeri aynı anda birden fazla fotoğraf/video
-    // seçebilmelidir. Sonuç yine JS tarafında MIME türüne göre filtrelenir.
+    crashLog('Android ana akış: ImagePicker.launchImageLibraryAsync çağrılıyor');
     const result = await withTimeout(
-      DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'video/*'],
-        multiple: true,
-        copyToCacheDirectory: true,
+      ImagePicker.launchImageLibraryAsync({
+        ...pickerOptions,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsMultipleSelection: true,
+        selectionLimit: pickerOptions.selectionLimit || 10,
+        allowsEditing: false,
       }),
       PICKER_TIMEOUT_MS,
-      'DocumentPicker'
+      'ImagePicker'
     );
 
-    if (!result.canceled) {
+    await finishImageAttempt('completed', {
+      resultType: result?.canceled ? 'canceled' : 'selected',
+      assetCount: result?.assets?.length || 0,
+    });
+
+    return result;
+  } catch (imagePickerError) {
+    const imageIsTimeout = imagePickerError?.code === 'PICKER_TIMEOUT';
+
+    console.warn(
+      'Android ImagePicker başarısız, DocumentPicker fallback deneniyor:',
+      imagePickerError?.message || imagePickerError
+    );
+
+    await finishImageAttempt(imageIsTimeout ? 'timeout' : 'error', {
+      fallback: 'document-picker',
+    });
+
+    await logGalleryError({
+      stage: 'PICKER_IMAGE',
+      error: imagePickerError,
+      userId,
+      kresId,
+      mode,
+      extra: { fallback: 'document-picker', timeout: imageIsTimeout },
+    });
+
+    const finishDocumentAttempt = await startGalleryPickerAttempt({
+      stage: 'PICKER_DOCUMENT',
+      userId,
+      kresId,
+      mode,
+    });
+
+    try {
+      crashLog('Fallback: DocumentPicker.getDocumentAsync çağrılıyor');
+      const result = await withTimeout(
+        DocumentPicker.getDocumentAsync({
+          type: ['image/*', 'video/*'],
+          multiple: true,
+          copyToCacheDirectory: true,
+        }),
+        PICKER_TIMEOUT_MS,
+        'DocumentPicker'
+      );
+
+      if (result.canceled) {
+        await finishDocumentAttempt('completed', { resultType: 'canceled' });
+        return { canceled: true, assets: [] };
+      }
+
       const assets = (result.assets || [])
         .filter((asset) => {
           if (!asset?.uri) return false;
@@ -100,70 +151,33 @@ export async function launchSafeGalleryPicker(options = {}) {
           size: asset.size || 0,
         }));
 
-      await finishDocumentAttempt('completed', { resultType: 'selected', assetCount: assets.length });
-      return { canceled: false, assets };
-    }
-
-    await finishDocumentAttempt('completed', { resultType: 'canceled' });
-    return { canceled: true, assets: [] };
-  } catch (documentPickerError) {
-    const isTimeout = documentPickerError?.code === 'PICKER_TIMEOUT';
-    console.warn(
-      'Android DocumentPicker başarısız, ImagePicker deneniyor:',
-      documentPickerError?.message || documentPickerError
-    );
-    await finishDocumentAttempt(isTimeout ? 'timeout' : 'error', {
-      fallback: 'image-picker',
-    });
-    await logGalleryError({
-      stage: 'PICKER_DOCUMENT',
-      error: documentPickerError,
-      userId,
-      kresId,
-      mode,
-      extra: { fallback: 'image-picker', timeout: isTimeout },
-    });
-
-    const finishImageAttempt = await startGalleryPickerAttempt({
-      stage: 'PICKER_IMAGE',
-      userId,
-      kresId,
-      mode,
-    });
-
-    try {
-      crashLog('Fallback: ImagePicker.launchImageLibraryAsync çağrılıyor');
-      const result = await withTimeout(
-        ImagePicker.launchImageLibraryAsync({
-          ...pickerOptions,
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          allowsMultipleSelection: true,
-          selectionLimit: pickerOptions.selectionLimit || 10,
-          allowsEditing: false,
-        }),
-        PICKER_TIMEOUT_MS,
-        'ImagePicker'
-      );
-      await finishImageAttempt('completed', {
-        resultType: result.canceled ? 'canceled' : 'selected',
-        assetCount: result.assets?.length || 0,
+      await finishDocumentAttempt('completed', {
+        resultType: 'selected',
+        assetCount: assets.length,
       });
-      return result;
-    } catch (imagePickerError) {
-      const imageIsTimeout = imagePickerError?.code === 'PICKER_TIMEOUT';
+
+      return { canceled: false, assets };
+    } catch (documentPickerError) {
+      const documentIsTimeout = documentPickerError?.code === 'PICKER_TIMEOUT';
+
       console.error(
         'Android medya seçici tamamen başarısız:',
-        imagePickerError?.message || imagePickerError
+        documentPickerError?.message || documentPickerError
       );
-      await finishImageAttempt(imageIsTimeout ? 'timeout' : 'error', { fallback: 'none' });
+
+      await finishDocumentAttempt(documentIsTimeout ? 'timeout' : 'error', {
+        fallback: 'none',
+      });
+
       await logGalleryError({
-        stage: 'PICKER_IMAGE',
-        error: imagePickerError,
+        stage: 'PICKER_DOCUMENT',
+        error: documentPickerError,
         userId,
         kresId,
         mode,
-        extra: { fallback: 'none', timeout: imageIsTimeout },
+        extra: { fallback: 'none', timeout: documentIsTimeout },
       });
+
       return { canceled: true, assets: [], failed: true };
     }
   }
