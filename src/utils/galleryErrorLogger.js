@@ -132,6 +132,6 @@ export async function logGalleryEvent({
       createdAt: Date.now(),
     });
   } catch (logError) {
-    console.warn('Galeri olay kaydı Firebase\\'e yazılamadı:', logError?.message || logError);
+    console.warn("Galeri olay kaydı Firebase'e yazılamadı:", logError?.message || logError);
   }
 }
