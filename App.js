@@ -9,7 +9,6 @@ import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
 import { crashLog, crashRecordError, crashSetCollectionEnabled } from './src/utils/crashlyticsSafe';
-import { recoverPendingImagePickerResult } from './src/utils/safeImagePicker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import './src/i18n';
@@ -69,13 +68,6 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-
-    recoverPendingImagePickerResult({ mode: 'app_start' }).catch((error) => {
-      console.warn('Pending ImagePicker sonucu okunamadı:', error?.message || error);
-    });
-  }, []);
 
   useEffect(() => {
     const checkForUpdates = async () => {
