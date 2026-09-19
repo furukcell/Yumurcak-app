@@ -566,7 +566,7 @@ export default function TeacherMealsScreen() {
       const result = source === 'camera'
         ? await ImagePicker.launchCameraAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: false,
+            allowsEditing: true,
             quality: 0.75,
           })
         : await launchSafeImagePicker({
@@ -574,7 +574,7 @@ export default function TeacherMealsScreen() {
             kresId: kresId || currentClass?.kresId || '',
             mode: 'teacher_meal_' + selectedMealKey,
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
+            allowsEditing: false,
             quality: 0.75,
           });
 
