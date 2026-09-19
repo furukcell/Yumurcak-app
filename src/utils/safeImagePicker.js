@@ -1,10 +1,27 @@
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { crashLog } from './crashlyticsSafe';
 import { logGalleryError, logGalleryEvent, startGalleryPickerAttempt } from './galleryErrorLogger';
 
 const PICKER_TIMEOUT_MS = 12000;
+
+// OTA A/B testi: Xiaomi/Redmi/POCO cihazlarda Expo'nun legacy Android
+// picker yolunu kullanıyoruz. Native kod değişmediği için OTA ile değiştirilebilir.
+function shouldUseLegacyAndroidPicker() {
+  if (Platform.OS !== 'android') return false;
+  const manufacturer = String(Device.manufacturer || '').toLowerCase();
+  const model = String(Device.modelName || '').toLowerCase();
+  return (
+    manufacturer.includes('xiaomi') ||
+    manufacturer.includes('redmi') ||
+    manufacturer.includes('poco') ||
+    model.includes('redmi') ||
+    model.includes('poco')
+  );
+}
+
 
 class PickerTimeoutError extends Error {
   constructor(source) {
@@ -59,6 +76,64 @@ export async function launchSafeGalleryPicker(options = {}) {
 
   if (Platform.OS !== 'android') {
     return ImagePicker.launchImageLibraryAsync(pickerOptions);
+  }
+
+  const useLegacyPicker = shouldUseLegacyAndroidPicker();
+
+  // Xiaomi/Redmi/POCO için DocumentPicker'ı da bypass ediyoruz. Böylece
+  // OTA ile tek bir alternatif native picker yolu test edilmiş oluyor.
+  if (useLegacyPicker) {
+    const finishLegacyAttempt = await startGalleryPickerAttempt({
+      stage: 'PICKER_LEGACY_XIAOMI',
+      userId,
+      kresId,
+      mode,
+    });
+
+    try {
+      await logGalleryEvent({
+        stage: 'PICKER_LEGACY_XIAOMI_LAUNCH',
+        userId,
+        kresId,
+        mode,
+        extra: {
+          manufacturer: Device.manufacturer || '',
+          model: Device.modelName || '',
+          osVersion: Device.osVersion || '',
+        },
+      });
+
+      const result = await withTimeout(
+        ImagePicker.launchImageLibraryAsync({
+          ...pickerOptions,
+          legacy: true,
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsMultipleSelection: true,
+          selectionLimit: pickerOptions.selectionLimit || 10,
+          allowsEditing: false,
+        }),
+        PICKER_TIMEOUT_MS,
+        'LegacyImagePicker'
+      );
+
+      await finishLegacyAttempt('completed', {
+        resultType: result.canceled ? 'canceled' : 'selected',
+        assetCount: result.assets?.length || 0,
+      });
+      return result;
+    } catch (legacyError) {
+      const isTimeout = legacyError?.code === 'PICKER_TIMEOUT';
+      await finishLegacyAttempt(isTimeout ? 'timeout' : 'error', { fallback: 'none' });
+      await logGalleryError({
+        stage: 'PICKER_LEGACY_XIAOMI',
+        error: legacyError,
+        userId,
+        kresId,
+        mode,
+        extra: { timeout: isTimeout },
+      });
+      return { canceled: true, assets: [], failed: true };
+    }
   }
 
   const finishDocumentAttempt = await startGalleryPickerAttempt({
@@ -198,10 +273,14 @@ export async function launchSafeImagePicker({
     });
     crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
 
+    const useLegacyPicker = shouldUseLegacyAndroidPicker();
     let result = await withTimeout(
-      ImagePicker.launchImageLibraryAsync(pickerOptions),
+      ImagePicker.launchImageLibraryAsync({
+        ...pickerOptions,
+        ...(useLegacyPicker ? { legacy: true } : {}),
+      }),
       PICKER_TIMEOUT_MS,
-      'ImagePicker'
+      useLegacyPicker ? 'LegacyImagePicker' : 'ImagePicker'
     );
 
     // Android MainActivity yeniden oluşturulduysa Expo pending sonucu burada tutabilir.
