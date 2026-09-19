@@ -1,0 +1,83 @@
+diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt
+index 0000000..0000000 100644
+--- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt
++++ b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt
+@@ -1,8 +1,9 @@
+ package expo.modules.imagepicker.contracts
+ 
+ import android.app.Activity
+ import android.content.ContentResolver
+ import android.content.Context
+ import android.content.Intent
+ import android.net.Uri
++import android.util.Log
+ import androidx.activity.result.PickVisualMediaRequest
+ import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+ import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+@@ -76,38 +77,46 @@ internal class ImageLibraryContract(
+   }
+ 
+   override fun parseResult(input: ImageLibraryContractOptions, resultCode: Int, intent: Intent?) =
+-    if (resultCode == Activity.RESULT_CANCELED) {
+-      ImagePickerContractResult.Cancelled
+-    } else {
+-      intent?.takeIf { resultCode == Activity.RESULT_OK }?.getAllDataUris()?.let { uris ->
+-        if (input.options.allowsMultipleSelection) {
+-          val results = uris.map { uri ->
+-            uri.toMediaType(contentResolver) to uri
+-          }.let {
+-            if (input.options.selectionLimit > 0) {
+-              it.take(input.options.selectionLimit)
++    try {
++      if (resultCode == Activity.RESULT_CANCELED) {
++        ImagePickerContractResult.Cancelled
++      } else {
++        intent?.takeIf { resultCode == Activity.RESULT_OK }?.getAllDataUris()?.let { uris ->
++          if (input.options.allowsMultipleSelection) {
++            val results = uris.map { uri ->
++              uri.toMediaType(contentResolver) to uri
++            }.let {
++              if (input.options.selectionLimit > 0) {
++                it.take(input.options.selectionLimit)
++              } else {
++                it
++              }
++            }
++
++            ImagePickerContractResult.Success(results)
++          } else {
++            if (intent.data != null) {
++              intent.data?.let { uri ->
++                val type = uri.toMediaType(contentResolver)
++                ImagePickerContractResult.Success(listOf(type to uri))
++              }
+             } else {
+-              it
++              uris.firstOrNull()?.let { uri ->
++                val type = uri.toMediaType(contentResolver)
++                ImagePickerContractResult.Success(listOf(type to uri))
++              } ?: ImagePickerContractResult.Error
+             }
+           }
+-
+-          ImagePickerContractResult.Success(results)
+-        } else {
+-          if (intent.data != null) {
+-            intent.data?.let { uri ->
+-              val type = uri.toMediaType(contentResolver)
+-              ImagePickerContractResult.Success(listOf(type to uri))
+-            }
+-          } else {
+-            uris.firstOrNull()?.let { uri ->
+-              val type = uri.toMediaType(contentResolver)
+-              ImagePickerContractResult.Success(listOf(type to uri))
+-            } ?: ImagePickerContractResult.Error
+-          }
+-        }
+-      } ?: ImagePickerContractResult.Error
++        } ?: ImagePickerContractResult.Error
++      }
++    } catch (e: Exception) {
++      Log.e("ExpoImagePicker", "Image library result handling failed", e)
++      ImagePickerContractResult.Error
+     }
