@@ -12,7 +12,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { push, ref, serverTimestamp } from 'firebase/database';
-import crashlytics from '@react-native-firebase/crashlytics';
+import { crashLog, crashRecordError } from '../utils/crashlyticsSafe';
 import { database } from '../config/firebase';
 
 export default class ErrorBoundary extends React.Component {
@@ -34,8 +34,8 @@ export default class ErrorBoundary extends React.Component {
     console.warn('ErrorBoundary yakaladı:', error?.message || error, errorInfo?.componentStack);
 
     try {
-      crashlytics().log(`ErrorBoundary: ${String(errorInfo?.componentStack || '').slice(0, 500)}`);
-      crashlytics().recordError(error instanceof Error ? error : new Error(String(error)));
+      crashLog(`ErrorBoundary: ${String(errorInfo?.componentStack || '').slice(0, 500)}`);
+      crashRecordError(error instanceof Error ? error : new Error(String(error)));
     } catch (crashlyticsError) {
       console.warn('Crashlytics\'e yazılamadı:', crashlyticsError);
     }
