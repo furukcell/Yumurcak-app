@@ -12,6 +12,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { push, ref, serverTimestamp } from 'firebase/database';
+import crashlytics from '@react-native-firebase/crashlytics';
 import { database } from '../config/firebase';
 
 export default class ErrorBoundary extends React.Component {
@@ -25,10 +26,19 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // İleride bir hata izleme servisine (Sentry vb.) bağlanmak istenirse
-    // burası tam yer. Şimdilik en azından konsola düşüyor, tamamen
-    // sessiz bir çökme olmuyor.
+    // Hem konsola hem Firebase Realtime Database'e (hataLoglari) hem de
+    // Crashlytics'e yazıyoruz. Crashlytics render sırasında oluşan bu
+    // JS hatasını da "non-fatal" olarak kaydeder; component stack'i de
+    // breadcrumb olarak ekliyoruz ki Crashlytics panelinde hangi ekranda
+    // olduğu da görünsün.
     console.warn('ErrorBoundary yakaladı:', error?.message || error, errorInfo?.componentStack);
+
+    try {
+      crashlytics().log(`ErrorBoundary: ${String(errorInfo?.componentStack || '').slice(0, 500)}`);
+      crashlytics().recordError(error instanceof Error ? error : new Error(String(error)));
+    } catch (crashlyticsError) {
+      console.warn('Crashlytics\'e yazılamadı:', crashlyticsError);
+    }
 
     // Production build'de console.warn hiçbir yerde görünmüyor, bu yüzden
     // hatayı en azından Firebase'e de yazıyoruz ki bir dahaki sefere tam
