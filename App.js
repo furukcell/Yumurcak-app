@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
+import crashlytics from '@react-native-firebase/crashlytics';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import './src/i18n';
@@ -29,6 +30,47 @@ import {
   YUMURCAK_LINKING,
   getNotificationNavigationTarget,
 } from './src/utils/notificationDeepLinks';
+
+// ------------------------------------------------------------
+// Crashlytics kurulumu — uygulama içindeki HER YERİ etkiler.
+//
+// ErrorBoundary sadece React render sırasında oluşan hataları yakalar.
+// Ama bir buton'a basınca çalışan async bir fonksiyon içinde (ör. galeri
+// seçici açma) oluşan bir hata React'in render döngüsünden tamamen
+// bağımsızdır — ErrorBoundary bunu HİÇBİR ZAMAN yakalamaz. Bu yüzden
+// burada React Native'in global hata yakalayıcısını (ErrorUtils) ve
+// yakalanmamış promise reddetmelerini de Crashlytics'e bağlıyoruz.
+// Böylece "hiç hata vermeden ekran donuyor/kapanıyor" dediğimiz
+// senaryoların JS tarafında yakalanabilen kısmı artık kaçmıyor.
+// ------------------------------------------------------------
+if (!__DEV__) {
+  crashlytics().setCrashlyticsCollectionEnabled(true);
+
+  const defaultGlobalHandler = global.ErrorUtils?.getGlobalHandler?.();
+  global.ErrorUtils?.setGlobalHandler?.((error, isFatal) => {
+    try {
+      crashlytics().log(`GlobalHandler isFatal=${String(isFatal)}`);
+      crashlytics().recordError(error instanceof Error ? error : new Error(String(error)));
+    } catch (crashlyticsError) {
+      console.warn('Crashlytics global handler hatası:', crashlyticsError);
+    }
+    defaultGlobalHandler?.(error, isFatal);
+  });
+
+  const defaultRejectionHandler = global.HermesInternal
+    ? null
+    : global.onunhandledrejection;
+  global.onunhandledrejection = (event) => {
+    try {
+      const reason = event?.reason ?? event;
+      crashlytics().log('UnhandledPromiseRejection');
+      crashlytics().recordError(reason instanceof Error ? reason : new Error(String(reason)));
+    } catch (crashlyticsError) {
+      console.warn('Crashlytics rejection handler hatası:', crashlyticsError);
+    }
+    defaultRejectionHandler?.(event);
+  };
+}
 
 export default function App() {
   useEffect(() => {
