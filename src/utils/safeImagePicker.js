@@ -70,14 +70,13 @@ export async function launchSafeGalleryPicker(options = {}) {
 
   try {
     crashLog('DocumentPicker.getDocumentAsync çağrılıyor');
-    // NOT: type olarak ['image/*','video/*'] gibi bir dizi + multiple:true
-    // kombinasyonu bazı OEM dosya seçicilerinde (ör. HyperOS/MIUI
-    // DocumentsUI) seçici açılır açılmaz sonuç dönmeden kapanmasına
-    // (sessiz hang) yol açabiliyor. Tek '*/*' tipiyle açıp filtrelemeyi
-    // burada JS tarafında yapıyoruz.
+    // Galeri akışında yalnızca medya türlerini istemek, Android sistem
+    // picker'ının belge/genel dosya sağlayıcılarını devreye sokmasını önler.
+    // Multiple seçimi KORUYORUZ; galeri aynı anda birden fazla fotoğraf/video
+    // seçebilmelidir. Sonuç yine JS tarafında MIME türüne göre filtrelenir.
     const result = await withTimeout(
       DocumentPicker.getDocumentAsync({
-        type: '*/*',
+        type: ['image/*', 'video/*'],
         multiple: true,
         copyToCacheDirectory: true,
       }),
