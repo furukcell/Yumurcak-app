@@ -776,7 +776,16 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         selectionLimit: 10,
         quality: 0.78,
         videoMaxDuration: 120,
+        userId,
+        kresId,
+        mode,
       });
+      if (result.failed) {
+        return Alert.alert(
+          'Seçici Açılamadı',
+          'Galeri seçici yanıt vermedi. Cihazının "Dosyalar" uygulamasının kısıtlanmadığından emin ol (Ayarlar > Uygulamalar > Yumurcak > Otomatik başlatma/arka plan izni açık olmalı) ve tekrar dene.'
+        );
+      }
       const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
       if (assets.length === 0) return;
       if (assets.length > MAX_MEDIA_PER_POST) return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
