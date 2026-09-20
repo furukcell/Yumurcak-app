@@ -110,6 +110,8 @@ async function launchLibrary(options, { userId, kresId, mode, multiple = false }
   return ImagePicker.launchImageLibraryAsync({
     ...options,
     allowsEditing: false,
+    exif: false,
+    base64: false,
     ...(multiple
       ? {
           allowsMultipleSelection: true,
