@@ -28,6 +28,7 @@ import { deleteObject, getDownloadURL, ref as storageRef } from 'firebase/storag
 import { auth, database, firebaseConfig, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
+import { showPickerFailureGuidance } from '../../utils/miuiAutostart';
 import { logGalleryError } from '../../utils/galleryErrorLogger';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -781,10 +782,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         mode,
       });
       if (result.failed) {
-        return Alert.alert(
-          'Seçici Açılamadı',
-          'Galeri seçici yanıt vermedi. Cihazının "Dosyalar" uygulamasının kısıtlanmadığından emin ol (Ayarlar > Uygulamalar > Yumurcak > Otomatik başlatma/arka plan izni açık olmalı) ve tekrar dene.'
-        );
+        showPickerFailureGuidance({ isTimeout: true });
+        return;
       }
       const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
       if (assets.length === 0) return;
