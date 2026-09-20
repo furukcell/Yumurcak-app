@@ -11,6 +11,7 @@ import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Ale
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { launchSafeImagePicker } from '../../utils/safeImagePicker';
+import { showPickerFailureGuidance } from '../../utils/miuiAutostart';
 import { logGalleryEvent, logGalleryError } from '../../utils/galleryErrorLogger';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -85,7 +86,11 @@ export default function TeacherProfileScreen() {
     } catch (err) {
       await logGalleryError({ stage: 'PROFILE_FLOW_ERROR', error: err, userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile' });
       console.error(err);
-      Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
+      if (err?.code === 'PICKER_TIMEOUT') {
+        showPickerFailureGuidance({ isTimeout: true });
+      } else {
+        Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
+      }
     } finally {
       setUploading(false);
     }
