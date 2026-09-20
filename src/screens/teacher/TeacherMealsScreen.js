@@ -9,6 +9,7 @@ import { ref, push, remove, update, onValue, query, orderByChild, equalTo } from
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { launchSafeImagePicker } from '../../utils/safeImagePicker';
+import { showPickerFailureGuidance } from '../../utils/miuiAutostart';
 import { logGalleryEvent, logGalleryError } from '../../utils/galleryErrorLogger';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
@@ -590,7 +591,11 @@ export default function TeacherMealsScreen() {
     } catch (err) {
       await logGalleryError({ stage: 'MEAL_PICKER_FLOW_ERROR', error: err, userId: teacherId, kresId: kresId || currentClass?.kresId || '', mode: 'teacher_meal_' + selectedMealKey });
       console.error(err);
-      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+      if (err?.code === 'PICKER_TIMEOUT') {
+        showPickerFailureGuidance({ isTimeout: true });
+      } else {
+        Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+      }
     }
   };
 
