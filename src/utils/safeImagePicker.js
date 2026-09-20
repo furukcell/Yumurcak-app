@@ -1,38 +1,135 @@
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
+import * as Device from 'expo-device';
 import * as ImagePicker from 'expo-image-picker';
 import { crashLog } from './crashlyticsSafe';
 import { logGalleryError, logGalleryEvent, startGalleryPickerAttempt } from './galleryErrorLogger';
 
-const PICKER_TIMEOUT_MS = 12000;
+const XIAOMI_MANUFACTURERS = ['xiaomi', 'redmi', 'poco'];
+
+function isXiaomiFamilyDevice() {
+  if (Platform.OS !== 'android') return false;
+
+  const values = [
+    Device.manufacturer,
+    Device.brand,
+    Device.modelName,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toLowerCase());
+
+  return values.some((value) =>
+    XIAOMI_MANUFACTURERS.some(
+      (name) => value === name || value.startsWith(name + ' ') || value.startsWith(name + '-')
+    )
+  );
+}
+
+function showCameraFallbackDialog() {
+  return new Promise((resolve) => {
+    Alert.alert(
+      'Fotoğraf seçimi',
+      'Bu cihazda galeriden fotoğraf seçimi kullanılamıyor. Kameradan fotoğraf çekmek ister misin?',
+      [
+        {
+          text: 'Vazgeç',
+          style: 'cancel',
+          onPress: () => resolve(false),
+        },
+        {
+          text: 'Kameradan Çek',
+          onPress: () => resolve(true),
+        },
+      ],
+      { cancelable: false }
+    );
+  });
+}
+
+async function launchCameraFallback({ userId, kresId, mode }) {
+  const shouldOpenCamera = await showCameraFallbackDialog();
+  if (!shouldOpenCamera) {
+    return { canceled: true, assets: [] };
+  }
+
+  const permission = await ImagePicker.requestCameraPermissionsAsync();
+  if (!permission.granted) {
+    await logGalleryEvent({
+      stage: 'CAMERA_PERMISSION_DENIED',
+      userId,
+      kresId,
+      mode,
+      extra: { fallback: 'camera' },
+    });
+
+    Alert.alert(
+      'Kamera izni gerekli',
+      'Fotoğraf çekebilmek için Yumurcak kamera iznine ihtiyaç duyuyor.'
+    );
+
+    return { canceled: true, assets: [] };
+  }
+
+  try {
+    crashLog('Xiaomi/Redmi/POCO kamera fallback açılıyor: ' + mode);
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.78,
+      cameraType: ImagePicker.CameraType.back,
+    });
+
+    await logGalleryEvent({
+      stage: result?.canceled ? 'CAMERA_FALLBACK_CANCELED' : 'CAMERA_FALLBACK_RETURNED',
+      userId,
+      kresId,
+      mode,
+      asset: result?.assets?.[0],
+      extra: { assetCount: result?.assets?.length || 0 },
+    });
+
+    return result;
+  } catch (error) {
+    await logGalleryError({
+      stage: 'CAMERA_FALLBACK_ERROR',
+      error,
+      userId,
+      kresId,
+      mode,
+      extra: { fallback: 'camera' },
+    });
+    throw error;
+  }
+}
+
+async function launchLibrary(options, { userId, kresId, mode, multiple = false }) {
+  if (isXiaomiFamilyDevice()) {
+    return launchCameraFallback({ userId, kresId, mode });
+  }
+
+  return ImagePicker.launchImageLibraryAsync({
+    ...options,
+    allowsEditing: false,
+    ...(multiple
+      ? {
+          allowsMultipleSelection: true,
+          selectionLimit: options.selectionLimit || 10,
+        }
+      : {}),
+  });
+}
 
 /**
- * Android medya seçimini cihazlar arası daha güvenli hale getirir.
+ * Galeri yükleme akışı.
  *
- * Bazı üreticilerin (özellikle bazı Vivo/Xiaomi yazılımlarının) native
- * ImagePicker ekranında çökme yaşatabildiği cihazlarda DocumentPicker
- * kullanıyoruz. DocumentPicker'da da üreticiye özel sorun olursa ImagePicker
- * yedek olarak deneniyor.
- *
- * TEŞHİS: Bazı cihazlarda seçici (DocumentPicker) hiçbir exception
- * fırlatmadan, hiç sonuç döndürmeden "sessizce" takılıyor — uygulama
- * arka plana düşüyor ama geri gelmiyor. Bu durumda normal try/catch
- * hiç tetiklenmez ve Firebase'e hiçbir kayıt düşmez. Bunu görünür
- * kılmak için:
- *   1. Her denemenin BAŞLADIĞI anında (sonucu ne olursa olsun) bir
- *      Firebase kaydı açılıyor (status: 'started', cihaz/OS bilgisiyle).
- *   2. Belirli bir süre (PICKER_TIMEOUT_MS) içinde cevap gelmezse bu
- *      JS tarafında "timeout" olarak işaretlenip kayıt güncelleniyor,
- *      ImagePicker'a fallback yapılıyor ve kullanıcıya tekrar denemesi
- *      söyleniyor.
- * Böylece hem gerçek zamanlı kanıt biriktiriyoruz (hangi cihaz/OS'ta
- * ne sıklıkla takılıyor) hem de kullanıcıyı sonsuza kadar donmuş
- * bırakmıyoruz.
+ * Android'de DocumentPicker/fallback zinciri yoktur. Normal cihazlarda tek
+ * ImagePicker çağrısı kullanılır. Xiaomi/Redmi/POCO cihazlarda sistem
+ * galerisindeki bilinen çökme yoluna hiç girilmez; kullanıcıya kamera
+ * fallback'i sunulur.
  */
 export async function launchSafeGalleryPicker(options = {}) {
   const { userId = '', kresId = '', mode = '', ...pickerOptions } = options;
 
-  // Android ve iOS'ta aynı native ImagePicker akışını kullanıyoruz.
-  // Native taraftaki hatalar doğrudan JS catch'e düşer ve Crashlytics'e kaydedilir.
   const finishAttempt = await startGalleryPickerAttempt({
     stage: 'PICKER_IMAGE',
     userId,
@@ -43,13 +140,13 @@ export async function launchSafeGalleryPicker(options = {}) {
   try {
     crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      ...pickerOptions,
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsMultipleSelection: true,
-      selectionLimit: pickerOptions.selectionLimit || 10,
-      allowsEditing: false,
-    });
+    const result = await launchLibrary(
+      {
+        ...pickerOptions,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+      },
+      { userId, kresId, mode, multiple: true }
+    );
 
     await logGalleryEvent({
       stage: result?.canceled ? 'IMAGE_PICKER_CANCELED' : 'IMAGE_PICKER_RETURNED',
@@ -57,7 +154,10 @@ export async function launchSafeGalleryPicker(options = {}) {
       kresId,
       mode,
       asset: result?.assets?.[0],
-      extra: { assetCount: result?.assets?.length || 0 },
+      extra: {
+        assetCount: result?.assets?.length || 0,
+        fallback: isXiaomiFamilyDevice() ? 'camera' : 'none',
+      },
     });
 
     await finishAttempt('completed', {
@@ -81,8 +181,10 @@ export async function launchSafeGalleryPicker(options = {}) {
 }
 
 /**
- * Android ImagePicker için profil/yemek gibi tek fotoğraflık akışların ortak güvenli girişi.
- * Native Activity yeniden oluşturulursa pending sonucu da kontrol eder.
+ * Profil/yemek gibi tek fotoğraflık seçimler için ortak güvenli giriş.
+ *
+ * Android MainActivity yeniden oluşturulursa Expo'nun pending sonucu kontrol edilir.
+ * Xiaomi/Redmi/POCO cihazlarda galeri picker'ı hiç açılmaz; kamera fallback'i kullanılır.
  */
 export async function launchSafeImagePicker({
   userId = '',
@@ -103,38 +205,44 @@ export async function launchSafeImagePicker({
       userId,
       kresId,
       mode,
-      extra: { platform: Platform.OS },
+      extra: {
+        platform: Platform.OS,
+        xiaomiFamily: isXiaomiFamilyDevice(),
+      },
     });
+
     crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
 
-    let result = await withTimeout(
-      ImagePicker.launchImageLibraryAsync(pickerOptions),
-      PICKER_TIMEOUT_MS,
-      'ImagePicker'
-    );
+    let result = await launchLibrary(pickerOptions, {
+      userId,
+      kresId,
+      mode,
+      multiple: false,
+    });
 
-    // Android MainActivity yeniden oluşturulduysa Expo pending sonucu burada tutabilir.
-    try {
-      const pending = await ImagePicker.getPendingResultAsync();
-      if (pending?.assets?.length && (!result || result.canceled || !result.assets?.length)) {
-        result = pending;
-        await logGalleryEvent({
-          stage: 'IMAGE_PICKER_PENDING_RECOVERED',
+    if (!result?.canceled && !result?.assets?.length) {
+      try {
+        const pending = await ImagePicker.getPendingResultAsync();
+        if (pending?.assets?.length) {
+          result = pending;
+          await logGalleryEvent({
+            stage: 'IMAGE_PICKER_PENDING_RECOVERED',
+            userId,
+            kresId,
+            mode,
+            asset: pending.assets[0],
+            extra: { assetCount: pending.assets.length },
+          });
+        }
+      } catch (pendingError) {
+        await logGalleryError({
+          stage: 'IMAGE_PICKER_PENDING_READ_ERROR',
+          error: pendingError,
           userId,
           kresId,
           mode,
-          asset: pending.assets[0],
-          extra: { assetCount: pending.assets.length },
         });
       }
-    } catch (pendingError) {
-      await logGalleryError({
-        stage: 'IMAGE_PICKER_PENDING_READ_ERROR',
-        error: pendingError,
-        userId,
-        kresId,
-        mode,
-      });
     }
 
     await logGalleryEvent({
@@ -143,23 +251,27 @@ export async function launchSafeImagePicker({
       kresId,
       mode,
       asset: result?.assets?.[0],
-      extra: { assetCount: result?.assets?.length || 0 },
+      extra: {
+        assetCount: result?.assets?.length || 0,
+        fallback: isXiaomiFamilyDevice() ? 'camera' : 'none',
+      },
     });
+
     await finishAttempt('completed', {
       resultType: result?.canceled ? 'canceled' : 'selected',
       assetCount: result?.assets?.length || 0,
     });
+
     return result;
   } catch (error) {
-    const isTimeout = error?.code === 'PICKER_TIMEOUT';
     await logGalleryError({
-      stage: isTimeout ? 'IMAGE_PICKER_TIMEOUT' : 'IMAGE_PICKER_ERROR',
+      stage: 'IMAGE_PICKER_ERROR',
       error,
       userId,
       kresId,
       mode,
     });
-    await finishAttempt(isTimeout ? 'timeout' : 'error');
+    await finishAttempt('error');
     throw error;
   }
 }
