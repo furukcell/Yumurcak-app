@@ -65,7 +65,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
 -          } else {
 -            uris.firstOrNull()?.let { uri ->
 -              val type = uri.toMediaType(contentResolver)
--              ImagePickerContractResult.Success(listOf(type to uri)
+-              ImagePickerContractResult.Success(listOf(type to uri))
 -            } ?: ImagePickerContractResult.Error
 -          }
 -        }
