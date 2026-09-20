@@ -121,7 +121,7 @@ export async function launchSafeGalleryPicker(options = {}) {
   });
 
   try {
-    crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
+    crashLog('Doğrudan galeri picker çağrılıyor: ' + mode);
 
     const result = await pickFromLibrary(
       {
