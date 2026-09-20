@@ -1,35 +1,9 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
 import { crashLog } from './crashlyticsSafe';
 import { logGalleryError, logGalleryEvent, startGalleryPickerAttempt } from './galleryErrorLogger';
 
 const PICKER_TIMEOUT_MS = 12000;
-
-class PickerTimeoutError extends Error {
-  constructor(source) {
-    super(`${source} yanıt vermedi (timeout)`);
-    this.name = 'PickerTimeoutError';
-    this.code = 'PICKER_TIMEOUT';
-  }
-}
-
-/**
- * Bir promise'i verilen sürede tamamlanmazsa reddeden yardımcı.
- * Not: Native taraftaki Activity gerçekten hiç sonuç döndürmezse (bazı
- * OEM dosya seçicilerinde gözlemlediğimiz "sessiz takılma"), orijinal
- * promise JS tarafında sonsuza kadar bekler — bu race sadece BİZİM
- * kodumuzun devam edip kullanıcıyı kurtarmasını sağlar, native
- * activity'yi iptal etmez. Amaç: kullanıcıyı sonsuza kadar donmuş bir
- * ekranda bırakmamak ve olayı Firebase'e kaydedebilmek.
- */
-function withTimeout(promise, ms, source) {
-  let timeoutId;
-  const timeout = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => reject(new PickerTimeoutError(source)), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
-}
 
 /**
  * Android medya seçimini cihazlar arası daha güvenli hale getirir.
@@ -57,118 +31,54 @@ function withTimeout(promise, ms, source) {
 export async function launchSafeGalleryPicker(options = {}) {
   const { userId = '', kresId = '', mode = '', ...pickerOptions } = options;
 
-  if (Platform.OS !== 'android') {
-    return ImagePicker.launchImageLibraryAsync(pickerOptions);
-  }
-
-  const finishDocumentAttempt = await startGalleryPickerAttempt({
-    stage: 'PICKER_DOCUMENT',
+  // Android ve iOS'ta aynı native ImagePicker akışını kullanıyoruz.
+  // Native taraftaki hatalar doğrudan JS catch'e düşer ve Crashlytics'e kaydedilir.
+  const finishAttempt = await startGalleryPickerAttempt({
+    stage: 'PICKER_IMAGE',
     userId,
     kresId,
     mode,
   });
 
   try {
-    crashLog('DocumentPicker.getDocumentAsync çağrılıyor');
-    // Galeri akışında yalnızca medya türlerini istemek, Android sistem
-    // picker'ının belge/genel dosya sağlayıcılarını devreye sokmasını önler.
-    // Multiple seçimi KORUYORUZ; galeri aynı anda birden fazla fotoğraf/video
-    // seçebilmelidir. Sonuç yine JS tarafında MIME türüne göre filtrelenir.
-    const result = await withTimeout(
-      DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'video/*'],
-        multiple: true,
-        copyToCacheDirectory: true,
-      }),
-      PICKER_TIMEOUT_MS,
-      'DocumentPicker'
-    );
+    crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
 
-    if (!result.canceled) {
-      const assets = (result.assets || [])
-        .filter((asset) => {
-          if (!asset?.uri) return false;
-          const mime = asset.mimeType || '';
-          return mime.startsWith('image/') || mime.startsWith('video/');
-        })
-        .map((asset) => ({
-          uri: asset.uri,
-          name: asset.name,
-          fileName: asset.name,
-          mimeType: asset.mimeType || '',
-          type: asset.mimeType?.startsWith('video/') ? 'video' : 'image',
-          size: asset.size || 0,
-        }));
-
-      await finishDocumentAttempt('completed', { resultType: 'selected', assetCount: assets.length });
-      return { canceled: false, assets };
-    }
-
-    await finishDocumentAttempt('completed', { resultType: 'canceled' });
-    return { canceled: true, assets: [] };
-  } catch (documentPickerError) {
-    const isTimeout = documentPickerError?.code === 'PICKER_TIMEOUT';
-    console.warn(
-      'Android DocumentPicker başarısız, ImagePicker deneniyor:',
-      documentPickerError?.message || documentPickerError
-    );
-    await finishDocumentAttempt(isTimeout ? 'timeout' : 'error', {
-      fallback: 'image-picker',
+    const result = await ImagePicker.launchImageLibraryAsync({
+      ...pickerOptions,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsMultipleSelection: true,
+      selectionLimit: pickerOptions.selectionLimit || 10,
+      allowsEditing: false,
     });
+
+    await logGalleryEvent({
+      stage: result?.canceled ? 'IMAGE_PICKER_CANCELED' : 'IMAGE_PICKER_RETURNED',
+      userId,
+      kresId,
+      mode,
+      asset: result?.assets?.[0],
+      extra: { assetCount: result?.assets?.length || 0 },
+    });
+
+    await finishAttempt('completed', {
+      resultType: result?.canceled ? 'canceled' : 'selected',
+      assetCount: result?.assets?.length || 0,
+    });
+
+    return result;
+  } catch (error) {
     await logGalleryError({
-      stage: 'PICKER_DOCUMENT',
-      error: documentPickerError,
+      stage: 'PICKER_IMAGE_ERROR',
+      error,
       userId,
       kresId,
       mode,
-      extra: { fallback: 'image-picker', timeout: isTimeout },
+      extra: { fallback: 'none' },
     });
-
-    const finishImageAttempt = await startGalleryPickerAttempt({
-      stage: 'PICKER_IMAGE',
-      userId,
-      kresId,
-      mode,
-    });
-
-    try {
-      crashLog('Fallback: ImagePicker.launchImageLibraryAsync çağrılıyor');
-      const result = await withTimeout(
-        ImagePicker.launchImageLibraryAsync({
-          ...pickerOptions,
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          allowsMultipleSelection: true,
-          selectionLimit: pickerOptions.selectionLimit || 10,
-          allowsEditing: false,
-        }),
-        PICKER_TIMEOUT_MS,
-        'ImagePicker'
-      );
-      await finishImageAttempt('completed', {
-        resultType: result.canceled ? 'canceled' : 'selected',
-        assetCount: result.assets?.length || 0,
-      });
-      return result;
-    } catch (imagePickerError) {
-      const imageIsTimeout = imagePickerError?.code === 'PICKER_TIMEOUT';
-      console.error(
-        'Android medya seçici tamamen başarısız:',
-        imagePickerError?.message || imagePickerError
-      );
-      await finishImageAttempt(imageIsTimeout ? 'timeout' : 'error', { fallback: 'none' });
-      await logGalleryError({
-        stage: 'PICKER_IMAGE',
-        error: imagePickerError,
-        userId,
-        kresId,
-        mode,
-        extra: { fallback: 'none', timeout: imageIsTimeout },
-      });
-      return { canceled: true, assets: [], failed: true };
-    }
+    await finishAttempt('error', { fallback: 'none' });
+    throw error;
   }
 }
-
 
 /**
  * Android ImagePicker için profil/yemek gibi tek fotoğraflık akışların ortak güvenli girişi.
