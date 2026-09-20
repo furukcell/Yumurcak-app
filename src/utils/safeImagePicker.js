@@ -1,30 +1,13 @@
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 import * as Device from 'expo-device';
 import * as ImagePicker from 'expo-image-picker';
 import { crashLog } from './crashlyticsSafe';
 import { logGalleryError, logGalleryEvent, startGalleryPickerAttempt } from './galleryErrorLogger';
 
-const XIAOMI_MANUFACTURERS = ['xiaomi', 'redmi', 'poco'];
+const deviceBrand = Device.brand?.toLowerCase();
+const isXiaomi = ['xiaomi', 'redmi', 'poco'].includes(deviceBrand);
 
-function isXiaomiFamilyDevice() {
-  if (Platform.OS !== 'android') return false;
-
-  const values = [
-    Device.manufacturer,
-    Device.brand,
-    Device.modelName,
-  ]
-    .filter(Boolean)
-    .map((value) => String(value).trim().toLowerCase());
-
-  return values.some((value) =>
-    XIAOMI_MANUFACTURERS.some(
-      (name) => value === name || value.startsWith(name + ' ') || value.startsWith(name + '-')
-    )
-  );
-}
-
-function showCameraFallbackDialog() {
+function showCameraPrompt() {
   return new Promise((resolve) => {
     Alert.alert(
       'Fotoğraf seçimi',
@@ -45,20 +28,29 @@ function showCameraFallbackDialog() {
   });
 }
 
-async function launchCameraFallback({ userId, kresId, mode }) {
-  const shouldOpenCamera = await showCameraFallbackDialog();
+async function launchCamera({ userId, kresId, mode }) {
+  const shouldOpenCamera = await showCameraPrompt();
+
   if (!shouldOpenCamera) {
+    await logGalleryEvent({
+      stage: 'CAMERA_FALLBACK_CANCELED',
+      userId,
+      kresId,
+      mode,
+      extra: { reason: 'user_cancelled' },
+    });
+
     return { canceled: true, assets: [] };
   }
 
   const permission = await ImagePicker.requestCameraPermissionsAsync();
+
   if (!permission.granted) {
     await logGalleryEvent({
       stage: 'CAMERA_PERMISSION_DENIED',
       userId,
       kresId,
       mode,
-      extra: { fallback: 'camera' },
     });
 
     Alert.alert(
@@ -70,11 +62,13 @@ async function launchCameraFallback({ userId, kresId, mode }) {
   }
 
   try {
-    crashLog('Xiaomi/Redmi/POCO kamera fallback açılıyor: ' + mode);
+    crashLog('Xiaomi/Redmi/POCO kamera açılıyor: ' + mode);
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
+      exif: false,
+      base64: false,
       quality: 0.78,
       cameraType: ImagePicker.CameraType.back,
     });
@@ -96,39 +90,26 @@ async function launchCameraFallback({ userId, kresId, mode }) {
       userId,
       kresId,
       mode,
-      extra: { fallback: 'camera' },
     });
     throw error;
   }
 }
 
-async function launchLibrary(options, { userId, kresId, mode, multiple = false }) {
-  if (isXiaomiFamilyDevice()) {
-    return launchCameraFallback({ userId, kresId, mode });
+async function pickFromLibrary(options, context) {
+  // Xiaomi/Redmi/POCO cihazlarda sorunlu galeri picker'ını hiç açma.
+  if (isXiaomi) {
+    return launchCamera(context);
   }
 
+  // Normal cihazlarda tek ve doğrudan ImagePicker çağrısı.
   return ImagePicker.launchImageLibraryAsync({
     ...options,
     allowsEditing: false,
     exif: false,
     base64: false,
-    ...(multiple
-      ? {
-          allowsMultipleSelection: true,
-          selectionLimit: options.selectionLimit || 10,
-        }
-      : {}),
   });
 }
 
-/**
- * Galeri yükleme akışı.
- *
- * Android'de DocumentPicker/fallback zinciri yoktur. Normal cihazlarda tek
- * ImagePicker çağrısı kullanılır. Xiaomi/Redmi/POCO cihazlarda sistem
- * galerisindeki bilinen çökme yoluna hiç girilmez; kullanıcıya kamera
- * fallback'i sunulur.
- */
 export async function launchSafeGalleryPicker(options = {}) {
   const { userId = '', kresId = '', mode = '', ...pickerOptions } = options;
 
@@ -142,12 +123,14 @@ export async function launchSafeGalleryPicker(options = {}) {
   try {
     crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
 
-    const result = await launchLibrary(
+    const result = await pickFromLibrary(
       {
         ...pickerOptions,
         mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsMultipleSelection: true,
+        selectionLimit: pickerOptions.selectionLimit || 10,
       },
-      { userId, kresId, mode, multiple: true }
+      { userId, kresId, mode }
     );
 
     await logGalleryEvent({
@@ -158,7 +141,8 @@ export async function launchSafeGalleryPicker(options = {}) {
       asset: result?.assets?.[0],
       extra: {
         assetCount: result?.assets?.length || 0,
-        fallback: isXiaomiFamilyDevice() ? 'camera' : 'none',
+        deviceBrand: deviceBrand || 'unknown',
+        xiaomi: isXiaomi,
       },
     });
 
@@ -175,19 +159,13 @@ export async function launchSafeGalleryPicker(options = {}) {
       userId,
       kresId,
       mode,
-      extra: { fallback: 'none' },
     });
-    await finishAttempt('error', { fallback: 'none' });
+
+    await finishAttempt('error');
     throw error;
   }
 }
 
-/**
- * Profil/yemek gibi tek fotoğraflık seçimler için ortak güvenli giriş.
- *
- * Android MainActivity yeniden oluşturulursa Expo'nun pending sonucu kontrol edilir.
- * Xiaomi/Redmi/POCO cihazlarda galeri picker'ı hiç açılmaz; kamera fallback'i kullanılır.
- */
 export async function launchSafeImagePicker({
   userId = '',
   kresId = '',
@@ -208,44 +186,18 @@ export async function launchSafeImagePicker({
       kresId,
       mode,
       extra: {
-        platform: Platform.OS,
-        xiaomiFamily: isXiaomiFamilyDevice(),
+        deviceBrand: deviceBrand || 'unknown',
+        xiaomi: isXiaomi,
       },
     });
 
-    crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor: ' + mode);
-
-    let result = await launchLibrary(pickerOptions, {
-      userId,
-      kresId,
-      mode,
-      multiple: false,
-    });
-
-    if (!result?.canceled && !result?.assets?.length) {
-      try {
-        const pending = await ImagePicker.getPendingResultAsync();
-        if (pending?.assets?.length) {
-          result = pending;
-          await logGalleryEvent({
-            stage: 'IMAGE_PICKER_PENDING_RECOVERED',
-            userId,
-            kresId,
-            mode,
-            asset: pending.assets[0],
-            extra: { assetCount: pending.assets.length },
-          });
-        }
-      } catch (pendingError) {
-        await logGalleryError({
-          stage: 'IMAGE_PICKER_PENDING_READ_ERROR',
-          error: pendingError,
-          userId,
-          kresId,
-          mode,
-        });
-      }
-    }
+    const result = await pickFromLibrary(
+      {
+        ...pickerOptions,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      },
+      { userId, kresId, mode }
+    );
 
     await logGalleryEvent({
       stage: result?.canceled ? 'IMAGE_PICKER_CANCELED' : 'IMAGE_PICKER_RETURNED',
@@ -255,7 +207,8 @@ export async function launchSafeImagePicker({
       asset: result?.assets?.[0],
       extra: {
         assetCount: result?.assets?.length || 0,
-        fallback: isXiaomiFamilyDevice() ? 'camera' : 'none',
+        deviceBrand: deviceBrand || 'unknown',
+        xiaomi: isXiaomi,
       },
     });
 
@@ -273,6 +226,7 @@ export async function launchSafeImagePicker({
       kresId,
       mode,
     });
+
     await finishAttempt('error');
     throw error;
   }
