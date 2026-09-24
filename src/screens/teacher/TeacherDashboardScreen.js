@@ -5,6 +5,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTeacherData, LoadingState, EmptyState } from './teacherShared';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
@@ -12,37 +13,39 @@ import AppNotificationButton from '../../components/AppNotificationButton';
 import DailyChecklistCard from '../../components/DailyChecklistCard';
 import { useUnreadMessagesCount } from '../../utils/messageHelpers';
 
-const MENU = [
-  { icon: '👧', title: 'Çocuklarım', desc: 'Sınıfındaki çocuklar', route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
-  { icon: '✅', title: 'Yoklama', desc: 'Günlük yoklama gir', route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
-  { icon: '📝', title: 'Günlük Rapor', desc: 'Çocuk seç ve rapor gir', route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
-  { icon: '📚', title: 'Ders Programı', desc: 'Haftalık program', route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
-  { icon: '🍽️', title: 'Yemek Listesi', desc: 'Kurum menüsü', route: 'TeacherMeals', bg: '#FFE8DC', border: '#F4A47E' },
-  { icon: '🗓️', title: 'Nöbet Çizelgesi', desc: 'Yöneticinin yayınladığı plan', route: 'TeacherDutyRoster', bg: '#EAF2FF', border: '#8AC3F5' },
-  { icon: '💬', title: 'Mesajlar', desc: 'Velilerle yazış', route: 'TeacherMessages', bg: '#EAF7FF', border: '#77C7EA' },
-  { icon: '🖼️', title: 'Galeri', desc: 'Sınıf paylaşımları', route: 'TeacherGallery', bg: '#E8F5F0', border: '#7CC8AA' },
-  { icon: '📣', title: 'Duyurular', desc: 'Kurum duyuruları', route: 'TeacherAnnouncements', bg: '#FFF6CF', border: '#E8C94F' },
-  { icon: '🎉', title: 'Etkinlikler', desc: 'Sınıf etkinlikleri', route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
-  { icon: '🌱', title: 'Uyum Modülü', desc: 'Yeni başlayan çocukların 30 günlük uyumu', route: 'TeacherAdaptationTracking', bg: '#EAF2FF', border: '#8DB2FF' },
-  { icon: '🌟', title: 'Haftanın Yıldızı', desc: 'Cuma rozeti ver', route: 'TeacherWeeklyStar', bg: '#FFF7E8', border: '#FFE0A3' },
-  { icon: '🩺', title: 'Medikal', desc: 'Alerji, ilaç ve ilaç takip formları', route: 'TeacherMedical', bg: '#E4FAF7', border: '#6DD3C8' },
-  { icon: '🎂', title: 'Doğum Günleri', desc: 'Yaklaşan doğum günleri', route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
-  { icon: '📈', title: 'Fiziksel Gelişim', desc: 'Boy ve kilo ölçümü gir', route: 'TeacherPhysicalDevelopment', bg: '#E9EEFF', border: '#9AAEF5' },
-  { icon: '🎨', title: 'Tema Ayarları', desc: 'Sınıf temasını değiştir', route: 'TeacherTheme', bg: '#F0E7FF', border: '#B99AF5' },
-  { icon: '👤', title: 'Profil', desc: 'Bilgiler ve çıkış', route: 'TeacherProfile', bg: '#F2EDE7', border: '#CDB8A6' },
-  
-   
-];
+function buildMenu(t) {
+  return [
+    { icon: '👧', title: t('teacher.dashboard.menu.children.title'), desc: t('teacher.dashboard.menu.children.desc'), route: 'TeacherChildren', bg: '#FFE8F0', border: '#F7A8C4' },
+    { icon: '✅', title: t('teacher.dashboard.menu.attendance.title'), desc: t('teacher.dashboard.menu.attendance.desc'), route: 'TeacherAttendance', bg: '#E7F8D8', border: '#9EDC7A' },
+    { icon: '📝', title: t('teacher.dashboard.menu.dailyReport.title'), desc: t('teacher.dashboard.menu.dailyReport.desc'), route: 'TeacherChildren', params: { mode: 'report' }, bg: '#FFF0D9', border: '#F0B86A' },
+    { icon: '📚', title: t('teacher.dashboard.menu.schedule.title'), desc: t('teacher.dashboard.menu.schedule.desc'), route: 'TeacherSchedule', bg: '#E6F3FF', border: '#8AC3F5' },
+    { icon: '🍽️', title: t('teacher.dashboard.menu.meals.title'), desc: t('teacher.dashboard.menu.meals.desc'), route: 'TeacherMeals', bg: '#FFE8DC', border: '#F4A47E' },
+    { icon: '🗓️', title: t('teacher.dashboard.menu.dutyRoster.title'), desc: t('teacher.dashboard.menu.dutyRoster.desc'), route: 'TeacherDutyRoster', bg: '#EAF2FF', border: '#8AC3F5' },
+    { icon: '💬', title: t('teacher.dashboard.menu.messages.title'), desc: t('teacher.dashboard.menu.messages.desc'), route: 'TeacherMessages', bg: '#EAF7FF', border: '#77C7EA' },
+    { icon: '🖼️', title: t('teacher.dashboard.menu.gallery.title'), desc: t('teacher.dashboard.menu.gallery.desc'), route: 'TeacherGallery', bg: '#E8F5F0', border: '#7CC8AA' },
+    { icon: '📣', title: t('teacher.dashboard.menu.announcements.title'), desc: t('teacher.dashboard.menu.announcements.desc'), route: 'TeacherAnnouncements', bg: '#FFF6CF', border: '#E8C94F' },
+    { icon: '🎉', title: t('teacher.dashboard.menu.events.title'), desc: t('teacher.dashboard.menu.events.desc'), route: 'TeacherEvents', bg: '#F0E7FF', border: '#B99AF5' },
+    { icon: '🌱', title: t('teacher.dashboard.menu.adaptation.title'), desc: t('teacher.dashboard.menu.adaptation.desc'), route: 'TeacherAdaptationTracking', bg: '#EAF2FF', border: '#8DB2FF' },
+    { icon: '🌟', title: t('teacher.dashboard.menu.weeklyStar.title'), desc: t('teacher.dashboard.menu.weeklyStar.desc'), route: 'TeacherWeeklyStar', bg: '#FFF7E8', border: '#FFE0A3' },
+    { icon: '🩺', title: t('teacher.dashboard.menu.medical.title'), desc: t('teacher.dashboard.menu.medical.desc'), route: 'TeacherMedical', bg: '#E4FAF7', border: '#6DD3C8' },
+    { icon: '🎂', title: t('teacher.dashboard.menu.birthdays.title'), desc: t('teacher.dashboard.menu.birthdays.desc'), route: 'TeacherBirthdays', bg: '#F7F1FF', border: '#D9C9FF' },
+    { icon: '📈', title: t('teacher.dashboard.menu.physicalDevelopment.title'), desc: t('teacher.dashboard.menu.physicalDevelopment.desc'), route: 'TeacherPhysicalDevelopment', bg: '#E9EEFF', border: '#9AAEF5' },
+    { icon: '🎨', title: t('teacher.dashboard.menu.theme.title'), desc: t('teacher.dashboard.menu.theme.desc'), route: 'TeacherTheme', bg: '#F0E7FF', border: '#B99AF5' },
+    { icon: '👤', title: t('teacher.dashboard.menu.profile.title'), desc: t('teacher.dashboard.menu.profile.desc'), route: 'TeacherProfile', bg: '#F2EDE7', border: '#CDB8A6' },
+  ];
+}
 
 export default function TeacherDashboardScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { loading, kullanici, kresAdi, kresId, currentClass, classChildren, reports, attendance, meals, schedules } = useTeacherData();
   const teacherId = kullanici?.uid || kullanici?.id;
   const unreadMessages = useUnreadMessagesCount(teacherId);
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const MENU = useMemo(() => buildMenu(t), [t]);
 
-  if (loading) return <LoadingState text="Öğretmen paneli hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.dashboard.loading')} />;
 
   const _d = new Date();
   const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
@@ -55,9 +58,9 @@ export default function TeacherDashboardScreen() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.title} numberOfLines={1}>{kresAdi || 'Kurum'}</Text>
-              <Text style={styles.panelLabel}>Öğretmen Paneli</Text>
-              <Text style={styles.subtitle} numberOfLines={1}>Merhaba, {kullanici?.ad || kullanici?.kullaniciAdi || 'Öğretmen'} 👋</Text>
+              <Text style={styles.title} numberOfLines={1}>{kresAdi || t('teacher.dashboard.institutionFallback')}</Text>
+              <Text style={styles.panelLabel}>{t('teacher.dashboard.panelLabel')}</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>{t('teacher.dashboard.greeting', { name: kullanici?.ad || kullanici?.kullaniciAdi || t('teacher.dashboard.teacherFallback') })}</Text>
             </View>
             <View style={styles.headerActions}>
               <AppNotificationButton navigation={navigation} />
@@ -73,16 +76,16 @@ export default function TeacherDashboardScreen() {
 
           {currentClass ? (
             <View style={styles.hero}>
-              <Text style={styles.heroTitle}>{currentClass.ad || 'Sınıfım'}</Text>
-              <Text style={styles.heroSub}>Bugünkü sınıf özeti</Text>
+              <Text style={styles.heroTitle}>{currentClass.ad || t('teacher.dashboard.classFallback')}</Text>
+              <Text style={styles.heroSub}>{t('teacher.dashboard.heroSub')}</Text>
               <View style={styles.statsRow}>
-                {renderStat(styles, 'Çocuk', classChildren.length)}
-                {renderStat(styles, 'Rapor', todayReports)}
-                {renderStat(styles, 'Yoklama', todayAttendance)}
+                {renderStat(styles, t('teacher.dashboard.statChild'), classChildren.length)}
+                {renderStat(styles, t('teacher.dashboard.statReport'), todayReports)}
+                {renderStat(styles, t('teacher.dashboard.statAttendance'), todayAttendance)}
               </View>
             </View>
           ) : (
-            <EmptyState icon="🏫" title="Sınıf ataması bulunamadı" desc="Yönetici öğretmeni bir sınıfa bağladığında panel aktifleşir." />
+            <EmptyState icon="🏫" title={t('teacher.dashboard.noClassTitle')} desc={t('teacher.dashboard.noClassDesc')} />
           )}
 
           {currentClass ? (
@@ -98,14 +101,14 @@ export default function TeacherDashboardScreen() {
             />
           ) : null}
 
-          <Text style={styles.sectionTitle}>Sınıf İşlemleri</Text>
+          <Text style={styles.sectionTitle}>{t('teacher.dashboard.sectionTitle')}</Text>
           <View style={styles.grid}>
             {MENU.map((item) => {
               const isMessages = item.route === 'TeacherMessages';
               const badgeCount = isMessages ? unreadMessages : 0;
 
               return (
-                <TouchableOpacity key={item.title} style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]} onPress={() => navigation.navigate(item.route, item.params || undefined)} activeOpacity={0.85}>
+                <TouchableOpacity key={item.route + item.title} style={[styles.menuCard, { backgroundColor: item.bg, borderColor: item.border }]} onPress={() => navigation.navigate(item.route, item.params || undefined)} activeOpacity={0.85}>
                   <View style={styles.menuIconRow}>
                     <Text style={styles.menuIcon}>{item.icon}</Text>
                     {badgeCount > 0 ? <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text></View> : null}
