@@ -9,6 +9,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -41,8 +43,8 @@ export const formatDate = (value) => {
   return raw;
 };
 export const getChildName = (child) => {
-  if (!child) return 'Çocuk';
-  return `${child.ad || child.adSoyad || ''} ${child.soyad || ''}`.trim() || 'Çocuk';
+  if (!child) return i18n.t('common.childFallback');
+  return `${child.ad || child.adSoyad || ''} ${child.soyad || ''}`.trim() || i18n.t('common.childFallback');
 };
 export const getUserName = (user) => {
   if (!user) return '-';
@@ -99,13 +101,14 @@ function uniqueIds(values) {
 }
 
 export function ScreenHeader({ title, subtitle, navigation, showBack = true, rightText, onRightPress }) {
+  const { t } = useTranslation();
   const themedStyles = useTeacherSharedStyles();
   return (
     <View style={themedStyles.header}>
       {showBack ? (
         <TouchableOpacity style={themedStyles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
           <Text style={themedStyles.backArrow}>‹</Text>
-          <Text style={themedStyles.backLabel}>Geri</Text>
+          <Text style={themedStyles.backLabel}>{t('common.back')}</Text>
         </TouchableOpacity>
       ) : (<View style={themedStyles.backSpacer} />)}
       <View style={themedStyles.headerTitleWrap}>
@@ -121,23 +124,24 @@ export function ScreenHeader({ title, subtitle, navigation, showBack = true, rig
   );
 }
 
-export function LoadingState({ text = 'Hazırlanıyor...' }) {
+export function LoadingState({ text }) {
+  const { t } = useTranslation();
   const themedStyles = useTeacherSharedStyles();
   return (
     <View style={themedStyles.center}>
       <ActivityIndicator size="large" color={THEME.primary} />
-      <Text style={themedStyles.loadingText}>{text}</Text>
+      <Text style={themedStyles.loadingText}>{text || t('common.loading')}</Text>
     </View>
   );
 }
 
-export function EmptyState({ icon = '📌', title = 'Kayıt yok', desc = 'Veri eklendiğinde burada görünecek.' }) {
+export function EmptyState({ icon = '📌', title, desc }) {
   const themedStyles = useTeacherSharedStyles();
   return (
     <View style={themedStyles.emptyCard}>
       <Text style={themedStyles.emptyIcon}>{icon}</Text>
-      <Text style={themedStyles.emptyTitle}>{title}</Text>
-      <Text style={themedStyles.emptyDesc}>{desc}</Text>
+      {title ? <Text style={themedStyles.emptyTitle}>{title}</Text> : null}
+      {desc ? <Text style={themedStyles.emptyDesc}>{desc}</Text> : null}
     </View>
   );
 }
