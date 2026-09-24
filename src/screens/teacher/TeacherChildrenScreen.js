@@ -6,6 +6,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ref, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import {
@@ -22,6 +23,7 @@ import { calculateChildAge, formatChildBirthDate, getChildBirthDate } from '../.
 export default function TeacherChildrenScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation();
   const reportMode = route.params?.mode === 'report';
   const { loading, currentClass, classChildren, reports } = useTeacherData();
   const [expandedId, setExpandedId] = useState(null);
@@ -84,7 +86,7 @@ export default function TeacherChildrenScreen() {
     return set;
   }, [reports, today]);
 
-  if (loading) return <LoadingState text={reportMode ? 'Günlük rapor için çocuklar hazırlanıyor...' : 'Çocuklar hazırlanıyor...'} />;
+  if (loading) return <LoadingState text={reportMode ? t('teacher.children.loadingReport') : t('teacher.children.loading')} />;
 
   const handleChildPress = (childId, child) => {
     if (reportMode) {
@@ -99,19 +101,19 @@ export default function TeacherChildrenScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader
         navigation={navigation}
-        title={reportMode ? 'Günlük Rapor' : 'Çocuklarım'}
-        subtitle={reportMode ? 'Çocuk seç ve rapor gir' : (currentClass?.ad || 'Sınıfım')}
+        title={reportMode ? t('teacher.children.reportTitle') : t('teacher.children.title')}
+        subtitle={reportMode ? t('teacher.children.reportSubtitle') : (currentClass?.ad || t('teacher.children.classFallback'))}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {reportMode ? (
           <View style={styles.reportInfoBox}>
-            <Text style={styles.reportInfoTitle}>📝 Rapor girmek için çocuk seç</Text>
-            <Text style={styles.reportInfoText}>Çocuğa dokununca ruh hali, yemek, tuvalet ve öğretmen notu ekranı açılır.</Text>
+            <Text style={styles.reportInfoTitle}>{t('teacher.children.reportInfoTitle')}</Text>
+            <Text style={styles.reportInfoText}>{t('teacher.children.reportInfoText')}</Text>
           </View>
         ) : null}
 
         {classChildren.length === 0 ? (
-          <EmptyState icon="👧" title="Sınıfta çocuk yok" desc="Yönetici çocukları sınıfa bağladığında burada görünecek." />
+          <EmptyState icon="👧" title={t('teacher.children.emptyTitle')} desc={t('teacher.children.emptyDesc')} />
         ) : (
           classChildren.map((child) => {
             const isExpanded = expandedId === child.id;
@@ -130,12 +132,12 @@ export default function TeacherChildrenScreen() {
                   <View style={styles.avatar}><Text style={styles.avatarText}>{reportMode ? '📝' : '👧'}</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{getChildName(child)}</Text>
-                    <Text style={styles.sub}>Yaş: {age || '—'} • Doğum: {birthDateText}</Text>
+                    <Text style={styles.sub}>{t('teacher.children.ageSub', { age: age || '—', birthDate: birthDateText })}</Text>
                   </View>
 
                   {reportedToday ? (
                     <View style={styles.reportBadge}>
-                      <Text style={styles.reportBadgeText}>✓ Rapor girildi</Text>
+                      <Text style={styles.reportBadgeText}>{t('teacher.children.reportedBadge')}</Text>
                     </View>
                   ) : null}
 
@@ -144,13 +146,13 @@ export default function TeacherChildrenScreen() {
 
                 {!reportMode && isExpanded ? (
                   <View style={styles.details}>
-                    <DetailRow label="Yaş" value={age || '—'} />
-                    <DetailRow label="Doğum Tarihi" value={birthDateText} />
+                    <DetailRow label={t('teacher.children.ageLabel')} value={age || '—'} />
+                    <DetailRow label={t('teacher.children.birthDateLabel')} value={birthDateText} />
 
                     {veliLoading ? (
-                      <Text style={styles.veliLoadingText}>Veli bilgileri yükleniyor...</Text>
+                      <Text style={styles.veliLoadingText}>{t('teacher.children.veliLoading')}</Text>
                     ) : (
-                      renderVeliler(child.veliIds, veliMap)
+                      renderVeliler(child.veliIds, veliMap, t)
                     )}
                   </View>
                 ) : null}
@@ -163,11 +165,11 @@ export default function TeacherChildrenScreen() {
   );
 }
 
-function renderVeliler(veliIds, veliMap) {
+function renderVeliler(veliIds, veliMap, t) {
   const ids = Array.isArray(veliIds) ? veliIds : [];
 
   if (ids.length === 0) {
-    return <Text style={styles.veliEmptyText}>Bu çocuğa bağlı veli yok.</Text>;
+    return <Text style={styles.veliEmptyText}>{t('teacher.children.veliEmpty')}</Text>;
   }
 
   return ids.map((veliId, index) => {
@@ -177,8 +179,8 @@ function renderVeliler(veliIds, veliMap) {
       return (
         <DetailRow
           key={veliId}
-          label={ids.length > 1 ? `Veli ${index + 1}` : 'Veli'}
-          value="Bulunamadı"
+          label={ids.length > 1 ? t('teacher.children.veliIndexLabel', { index: index + 1 }) : t('teacher.children.veliLabel')}
+          value={t('teacher.children.veliNotFound')}
         />
       );
     }
@@ -186,10 +188,10 @@ function renderVeliler(veliIds, veliMap) {
     return (
       <View key={veliId} style={index > 0 ? styles.veliGroupSpacing : null}>
         <DetailRow
-          label={ids.length > 1 ? `Veli ${index + 1}` : 'Veli Adı'}
+          label={ids.length > 1 ? t('teacher.children.veliIndexLabel', { index: index + 1 }) : t('teacher.children.veliNameLabel')}
           value={veli.ad || '—'}
         />
-        <DetailRow label="Telefon" value={veli.telefon || '—'} />
+        <DetailRow label={t('teacher.children.phoneLabel')} value={veli.telefon || '—'} />
       </View>
     );
   });
