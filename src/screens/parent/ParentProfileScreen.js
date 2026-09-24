@@ -16,6 +16,7 @@ import {
   Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Updates from 'expo-updates';
 import { ref as dbRef, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +44,7 @@ export default function ParentProfileScreen({ navigation }) {
     { code: 'ru', flag: '🇷🇺', label: 'Русский' },
     { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
     { code: 'fr', flag: '🇫🇷', label: 'Français' },
+    { code: 'ar', flag: '🇸🇦', label: 'العربية' },
   ];
 
   useEffect(() => {
@@ -60,7 +62,26 @@ export default function ParentProfileScreen({ navigation }) {
     if (lng === i18n.language || changingLang) return;
     setChangingLang(true);
     try {
-      await setAppLanguage(lng);
+      const { restartNeeded } = await setAppLanguage(lng);
+      if (restartNeeded) {
+        Alert.alert(
+          t('parent.profile.restartRequiredTitle'),
+          t('parent.profile.restartRequiredDesc'),
+          [
+            { text: t('parent.profile.restartLater'), style: 'cancel' },
+            {
+              text: t('parent.profile.restartNow'),
+              onPress: async () => {
+                try {
+                  await Updates.reloadAsync();
+                } catch (error) {
+                  console.warn('Yeniden başlatma başarısız (muhtemelen dev ortamı):', error?.message || error);
+                }
+              },
+            },
+          ],
+        );
+      }
     } finally {
       setChangingLang(false);
     }
