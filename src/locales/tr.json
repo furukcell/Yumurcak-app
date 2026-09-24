@@ -26,7 +26,10 @@
       "fri": "Cu",
       "sat": "Ct",
       "sun": "Pz"
-    }
+    },
+    "back": "Geri",
+    "childFallback": "Çocuk",
+    "loading": "Hazırlanıyor..."
   },
   "nav": {
     "summary": "Özet",
@@ -827,7 +830,121 @@
       "cancel": "Vazgeç",
       "remove": "Kaldır",
       "photoRemoved": "Profil fotoğrafı kaldırıldı",
-      "removeFailedDesc": "Fotoğraf kaldırılamadı."
+      "removeFailedDesc": "Fotoğraf kaldırılamadı.",
+      "restartRequiredTitle": "Yeniden Başlatma Gerekli",
+      "restartRequiredDesc": "Dil değişikliğinin tam olarak uygulanması için uygulamanın yeniden başlatılması gerekiyor.",
+      "restartNow": "Şimdi Yeniden Başlat",
+      "restartLater": "Daha Sonra"
+    }
+  },
+  "teacher": {
+    "dashboard": {
+      "institutionFallback": "Kurum",
+      "panelLabel": "Öğretmen Paneli",
+      "greeting": "Merhaba, {{name}} 👋",
+      "teacherFallback": "Öğretmen",
+      "classFallback": "Sınıfım",
+      "heroSub": "Bugünkü sınıf özeti",
+      "statChild": "Çocuk",
+      "statReport": "Rapor",
+      "statAttendance": "Yoklama",
+      "noClassTitle": "Sınıf ataması bulunamadı",
+      "noClassDesc": "Yönetici öğretmeni bir sınıfa bağladığında panel aktifleşir.",
+      "sectionTitle": "Sınıf İşlemleri",
+      "loading": "Öğretmen paneli hazırlanıyor...",
+      "menu": {
+        "children": {
+          "title": "Çocuklarım",
+          "desc": "Sınıfındaki çocuklar"
+        },
+        "attendance": {
+          "title": "Yoklama",
+          "desc": "Günlük yoklama gir"
+        },
+        "dailyReport": {
+          "title": "Günlük Rapor",
+          "desc": "Çocuk seç ve rapor gir"
+        },
+        "schedule": {
+          "title": "Ders Programı",
+          "desc": "Haftalık program"
+        },
+        "meals": {
+          "title": "Yemek Listesi",
+          "desc": "Kurum menüsü"
+        },
+        "dutyRoster": {
+          "title": "Nöbet Çizelgesi",
+          "desc": "Yöneticinin yayınladığı plan"
+        },
+        "messages": {
+          "title": "Mesajlar",
+          "desc": "Velilerle yazış"
+        },
+        "gallery": {
+          "title": "Galeri",
+          "desc": "Sınıf paylaşımları"
+        },
+        "announcements": {
+          "title": "Duyurular",
+          "desc": "Kurum duyuruları"
+        },
+        "events": {
+          "title": "Etkinlikler",
+          "desc": "Sınıf etkinlikleri"
+        },
+        "adaptation": {
+          "title": "Uyum Modülü",
+          "desc": "Yeni başlayan çocukların 30 günlük uyumu"
+        },
+        "weeklyStar": {
+          "title": "Haftanın Yıldızı",
+          "desc": "Cuma rozeti ver"
+        },
+        "medical": {
+          "title": "Medikal",
+          "desc": "Alerji, ilaç ve ilaç takip formları"
+        },
+        "birthdays": {
+          "title": "Doğum Günleri",
+          "desc": "Yaklaşan doğum günleri"
+        },
+        "physicalDevelopment": {
+          "title": "Fiziksel Gelişim",
+          "desc": "Boy ve kilo ölçümü gir"
+        },
+        "theme": {
+          "title": "Tema Ayarları",
+          "desc": "Sınıf temasını değiştir"
+        },
+        "profile": {
+          "title": "Profil",
+          "desc": "Bilgiler ve çıkış"
+        }
+      }
+    },
+    "children": {
+      "loadingReport": "Günlük rapor için çocuklar hazırlanıyor...",
+      "loading": "Çocuklar hazırlanıyor...",
+      "reportTitle": "Günlük Rapor",
+      "title": "Çocuklarım",
+      "reportSubtitle": "Çocuk seç ve rapor gir",
+      "classFallback": "Sınıfım",
+      "reportInfoTitle": "📝 Rapor girmek için çocuk seç",
+      "reportInfoText": "Çocuğa dokununca ruh hali, yemek, tuvalet ve öğretmen notu ekranı açılır.",
+      "emptyTitle": "Sınıfta çocuk yok",
+      "emptyDesc": "Yönetici çocukları sınıfa bağladığında burada görünecek.",
+      "ageSub": "Yaş: {{age}} • Doğum: {{birthDate}}",
+      "reportedBadge": "✓ Rapor girildi",
+      "ageLabel": "Yaş",
+      "birthDateLabel": "Doğum Tarihi",
+      "veliLoading": "Veli bilgileri yükleniyor...",
+      "veliEmpty": "Bu çocuğa bağlı veli yok.",
+      "veliLabel": "Veli",
+      "veliIndexLabel": "Veli {{index}}",
+      "veliNotFound": "Bulunamadı",
+      "veliNameLabel": "Veli Adı",
+      "phoneLabel": "Telefon"
     }
   }
 }
