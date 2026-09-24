@@ -26,7 +26,10 @@
       "fri": "Fr",
       "sat": "Sa",
       "sun": "Su"
-    }
+    },
+    "back": "Back",
+    "childFallback": "Child",
+    "loading": "Preparing..."
   },
   "nav": {
     "summary": "Summary",
@@ -827,7 +830,121 @@
       "cancel": "Cancel",
       "remove": "Remove",
       "photoRemoved": "Profile photo removed",
-      "removeFailedDesc": "The photo could not be removed."
+      "removeFailedDesc": "The photo could not be removed.",
+      "restartRequiredTitle": "Restart Required",
+      "restartRequiredDesc": "The app needs to restart for the language change to fully take effect.",
+      "restartNow": "Restart Now",
+      "restartLater": "Later"
+    }
+  },
+  "teacher": {
+    "dashboard": {
+      "institutionFallback": "Institution",
+      "panelLabel": "Teacher Panel",
+      "greeting": "Hello, {{name}} 👋",
+      "teacherFallback": "Teacher",
+      "classFallback": "My Class",
+      "heroSub": "Today's class summary",
+      "statChild": "Children",
+      "statReport": "Reports",
+      "statAttendance": "Attendance",
+      "noClassTitle": "No class assignment found",
+      "noClassDesc": "The panel becomes active once the administrator assigns you to a class.",
+      "sectionTitle": "Class Actions",
+      "loading": "Preparing the teacher panel...",
+      "menu": {
+        "children": {
+          "title": "My Children",
+          "desc": "Children in your class"
+        },
+        "attendance": {
+          "title": "Attendance",
+          "desc": "Enter daily attendance"
+        },
+        "dailyReport": {
+          "title": "Daily Report",
+          "desc": "Select a child and enter a report"
+        },
+        "schedule": {
+          "title": "Class Schedule",
+          "desc": "Weekly schedule"
+        },
+        "meals": {
+          "title": "Meal List",
+          "desc": "Institution menu"
+        },
+        "dutyRoster": {
+          "title": "Duty Roster",
+          "desc": "Plan published by the administrator"
+        },
+        "messages": {
+          "title": "Messages",
+          "desc": "Chat with parents"
+        },
+        "gallery": {
+          "title": "Gallery",
+          "desc": "Class posts"
+        },
+        "announcements": {
+          "title": "Announcements",
+          "desc": "Institution announcements"
+        },
+        "events": {
+          "title": "Events",
+          "desc": "Class events"
+        },
+        "adaptation": {
+          "title": "Adaptation Module",
+          "desc": "30-day adaptation tracking for new starters"
+        },
+        "weeklyStar": {
+          "title": "Star of the Week",
+          "desc": "Give the Friday badge"
+        },
+        "medical": {
+          "title": "Medical",
+          "desc": "Allergies, medications and medication tracking forms"
+        },
+        "birthdays": {
+          "title": "Birthdays",
+          "desc": "Upcoming birthdays"
+        },
+        "physicalDevelopment": {
+          "title": "Physical Development",
+          "desc": "Enter height and weight measurements"
+        },
+        "theme": {
+          "title": "Theme Settings",
+          "desc": "Change the class theme"
+        },
+        "profile": {
+          "title": "Profile",
+          "desc": "Info and logout"
+        }
+      }
+    },
+    "children": {
+      "loadingReport": "Preparing children for the daily report...",
+      "loading": "Preparing children...",
+      "reportTitle": "Daily Report",
+      "title": "My Children",
+      "reportSubtitle": "Select a child and enter a report",
+      "classFallback": "My Class",
+      "reportInfoTitle": "📝 Select a child to enter a report",
+      "reportInfoText": "Tapping a child opens the mood, meal, toilet and teacher note screen.",
+      "emptyTitle": "No children in the class",
+      "emptyDesc": "This will appear once the administrator adds children to the class.",
+      "ageSub": "Age: {{age}} • Born: {{birthDate}}",
+      "reportedBadge": "✓ Report entered",
+      "ageLabel": "Age",
+      "birthDateLabel": "Date of Birth",
+      "veliLoading": "Loading parent information...",
+      "veliEmpty": "No parent linked to this child.",
+      "veliLabel": "Parent",
+      "veliIndexLabel": "Parent {{index}}",
+      "veliNotFound": "Not found",
+      "veliNameLabel": "Parent Name",
+      "phoneLabel": "Phone"
     }
   }
 }
