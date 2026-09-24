@@ -26,7 +26,10 @@
       "fri": "Fr",
       "sat": "Sa",
       "sun": "So"
-    }
+    },
+    "back": "Zurück",
+    "childFallback": "Kind",
+    "loading": "Wird vorbereitet..."
   },
   "nav": {
     "summary": "Übersicht",
@@ -827,7 +830,121 @@
       "cancel": "Abbrechen",
       "remove": "Entfernen",
       "photoRemoved": "Profilfoto entfernt",
-      "removeFailedDesc": "Das Foto konnte nicht entfernt werden."
+      "removeFailedDesc": "Das Foto konnte nicht entfernt werden.",
+      "restartRequiredTitle": "Neustart erforderlich",
+      "restartRequiredDesc": "Damit die Sprachänderung vollständig wirksam wird, muss die App neu gestartet werden.",
+      "restartNow": "Jetzt neu starten",
+      "restartLater": "Später"
+    }
+  },
+  "teacher": {
+    "dashboard": {
+      "institutionFallback": "Einrichtung",
+      "panelLabel": "Lehrerbereich",
+      "greeting": "Hallo, {{name}} 👋",
+      "teacherFallback": "Lehrer",
+      "classFallback": "Meine Gruppe",
+      "heroSub": "Heutige Gruppenübersicht",
+      "statChild": "Kinder",
+      "statReport": "Berichte",
+      "statAttendance": "Anwesenheit",
+      "noClassTitle": "Keine Gruppenzuweisung gefunden",
+      "noClassDesc": "Der Bereich wird aktiv, sobald der Leiter dich einer Gruppe zuweist.",
+      "sectionTitle": "Gruppenaktionen",
+      "loading": "Lehrerbereich wird vorbereitet...",
+      "menu": {
+        "children": {
+          "title": "Meine Kinder",
+          "desc": "Kinder in deiner Gruppe"
+        },
+        "attendance": {
+          "title": "Anwesenheit",
+          "desc": "Tägliche Anwesenheit eintragen"
+        },
+        "dailyReport": {
+          "title": "Tagesbericht",
+          "desc": "Kind auswählen und Bericht eintragen"
+        },
+        "schedule": {
+          "title": "Stundenplan",
+          "desc": "Wochenplan"
+        },
+        "meals": {
+          "title": "Essensplan",
+          "desc": "Menü der Einrichtung"
+        },
+        "dutyRoster": {
+          "title": "Dienstplan",
+          "desc": "Vom Leiter veröffentlichter Plan"
+        },
+        "messages": {
+          "title": "Nachrichten",
+          "desc": "Mit Eltern chatten"
+        },
+        "gallery": {
+          "title": "Galerie",
+          "desc": "Beiträge der Gruppe"
+        },
+        "announcements": {
+          "title": "Ankündigungen",
+          "desc": "Ankündigungen der Einrichtung"
+        },
+        "events": {
+          "title": "Veranstaltungen",
+          "desc": "Veranstaltungen der Gruppe"
+        },
+        "adaptation": {
+          "title": "Eingewöhnungsmodul",
+          "desc": "30-tägige Eingewöhnungsverfolgung für neue Kinder"
+        },
+        "weeklyStar": {
+          "title": "Stern der Woche",
+          "desc": "Freitagsabzeichen vergeben"
+        },
+        "medical": {
+          "title": "Medizinisch",
+          "desc": "Allergien, Medikamente und Medikamenten-Nachverfolgung"
+        },
+        "birthdays": {
+          "title": "Geburtstage",
+          "desc": "Bevorstehende Geburtstage"
+        },
+        "physicalDevelopment": {
+          "title": "Körperliche Entwicklung",
+          "desc": "Größe und Gewicht eintragen"
+        },
+        "theme": {
+          "title": "Themeneinstellungen",
+          "desc": "Gruppenthema ändern"
+        },
+        "profile": {
+          "title": "Profil",
+          "desc": "Infos und Abmelden"
+        }
+      }
+    },
+    "children": {
+      "loadingReport": "Kinder für den Tagesbericht werden vorbereitet...",
+      "loading": "Kinder werden vorbereitet...",
+      "reportTitle": "Tagesbericht",
+      "title": "Meine Kinder",
+      "reportSubtitle": "Kind auswählen und Bericht eintragen",
+      "classFallback": "Meine Gruppe",
+      "reportInfoTitle": "📝 Kind für den Bericht auswählen",
+      "reportInfoText": "Tippen auf ein Kind öffnet den Bildschirm für Stimmung, Essen, Toilette und Lehrernotiz.",
+      "emptyTitle": "Keine Kinder in der Gruppe",
+      "emptyDesc": "Sie erscheinen hier, sobald der Leiter Kinder der Gruppe zuweist.",
+      "ageSub": "Alter: {{age}} • Geburt: {{birthDate}}",
+      "reportedBadge": "✓ Bericht erfasst",
+      "ageLabel": "Alter",
+      "birthDateLabel": "Geburtsdatum",
+      "veliLoading": "Elterninformationen werden geladen...",
+      "veliEmpty": "Diesem Kind ist kein Elternteil zugeordnet.",
+      "veliLabel": "Elternteil",
+      "veliIndexLabel": "Elternteil {{index}}",
+      "veliNotFound": "Nicht gefunden",
+      "veliNameLabel": "Name des Elternteils",
+      "phoneLabel": "Telefon"
     }
   }
 }
