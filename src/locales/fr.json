@@ -26,7 +26,10 @@
       "fri": "Ve",
       "sat": "Sa",
       "sun": "Di"
-    }
+    },
+    "back": "Retour",
+    "childFallback": "Enfant",
+    "loading": "Préparation..."
   },
   "nav": {
     "summary": "Résumé",
@@ -827,7 +830,121 @@
       "cancel": "Annuler",
       "remove": "Supprimer",
       "photoRemoved": "Photo de profil supprimée",
-      "removeFailedDesc": "La photo n'a pas pu être supprimée."
+      "removeFailedDesc": "La photo n'a pas pu être supprimée.",
+      "restartRequiredTitle": "Redémarrage nécessaire",
+      "restartRequiredDesc": "L'application doit redémarrer pour que le changement de langue soit pleinement appliqué.",
+      "restartNow": "Redémarrer maintenant",
+      "restartLater": "Plus tard"
+    }
+  },
+  "teacher": {
+    "dashboard": {
+      "institutionFallback": "Établissement",
+      "panelLabel": "Espace enseignant",
+      "greeting": "Bonjour, {{name}} 👋",
+      "teacherFallback": "Enseignant",
+      "classFallback": "Ma classe",
+      "heroSub": "Résumé de la classe aujourd'hui",
+      "statChild": "Enfants",
+      "statReport": "Rapports",
+      "statAttendance": "Présence",
+      "noClassTitle": "Aucune classe assignée",
+      "noClassDesc": "Le tableau de bord s'active une fois que l'administrateur vous assigne à une classe.",
+      "sectionTitle": "Actions de la classe",
+      "loading": "Préparation de l'espace enseignant...",
+      "menu": {
+        "children": {
+          "title": "Mes enfants",
+          "desc": "Les enfants de votre classe"
+        },
+        "attendance": {
+          "title": "Présence",
+          "desc": "Saisir la présence quotidienne"
+        },
+        "dailyReport": {
+          "title": "Rapport quotidien",
+          "desc": "Choisir un enfant et saisir un rapport"
+        },
+        "schedule": {
+          "title": "Emploi du temps",
+          "desc": "Programme hebdomadaire"
+        },
+        "meals": {
+          "title": "Menu des repas",
+          "desc": "Menu de l'établissement"
+        },
+        "dutyRoster": {
+          "title": "Planning de garde",
+          "desc": "Planning publié par l'administrateur"
+        },
+        "messages": {
+          "title": "Messages",
+          "desc": "Discuter avec les parents"
+        },
+        "gallery": {
+          "title": "Galerie",
+          "desc": "Publications de la classe"
+        },
+        "announcements": {
+          "title": "Annonces",
+          "desc": "Annonces de l'établissement"
+        },
+        "events": {
+          "title": "Événements",
+          "desc": "Événements de la classe"
+        },
+        "adaptation": {
+          "title": "Module d'adaptation",
+          "desc": "Suivi d'adaptation de 30 jours pour les nouveaux"
+        },
+        "weeklyStar": {
+          "title": "Étoile de la semaine",
+          "desc": "Attribuer le badge du vendredi"
+        },
+        "medical": {
+          "title": "Médical",
+          "desc": "Allergies, médicaments et formulaires de suivi"
+        },
+        "birthdays": {
+          "title": "Anniversaires",
+          "desc": "Anniversaires à venir"
+        },
+        "physicalDevelopment": {
+          "title": "Développement physique",
+          "desc": "Saisir la taille et le poids"
+        },
+        "theme": {
+          "title": "Paramètres du thème",
+          "desc": "Changer le thème de la classe"
+        },
+        "profile": {
+          "title": "Profil",
+          "desc": "Informations et déconnexion"
+        }
+      }
+    },
+    "children": {
+      "loadingReport": "Préparation des enfants pour le rapport quotidien...",
+      "loading": "Préparation des enfants...",
+      "reportTitle": "Rapport quotidien",
+      "title": "Mes enfants",
+      "reportSubtitle": "Choisir un enfant et saisir un rapport",
+      "classFallback": "Ma classe",
+      "reportInfoTitle": "📝 Choisissez un enfant pour saisir un rapport",
+      "reportInfoText": "Toucher un enfant ouvre l'écran humeur, repas, toilette et note de l'enseignant.",
+      "emptyTitle": "Aucun enfant dans la classe",
+      "emptyDesc": "Ils apparaîtront ici une fois que l'administrateur aura ajouté des enfants à la classe.",
+      "ageSub": "Âge : {{age}} • Naissance : {{birthDate}}",
+      "reportedBadge": "✓ Rapport saisi",
+      "ageLabel": "Âge",
+      "birthDateLabel": "Date de naissance",
+      "veliLoading": "Chargement des informations du parent...",
+      "veliEmpty": "Aucun parent associé à cet enfant.",
+      "veliLabel": "Parent",
+      "veliIndexLabel": "Parent {{index}}",
+      "veliNotFound": "Introuvable",
+      "veliNameLabel": "Nom du parent",
+      "phoneLabel": "Téléphone"
     }
   }
 }
