@@ -4,7 +4,7 @@
 // FAZ 11 v3: Uygulama ikonu varsayılana dönmüyordu — 'DEFAULT' geçersiz
 // alias adıydı, boş string ile düzeltildi
 // ============================================================
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
@@ -40,6 +40,21 @@ export function AuthProvider({ children }) {
 
   const isSigningOutRef = useRef(false);
   const restoringAuthRef = useRef(false);
+  // FAZ 12: analitikte şişme yapan tekrarlı "login" event'lerini engeller.
+  // onAuthStateChanged; token yenileme, restoreFirebaseSession'ın tetiklediği
+  // ikinci auth döngüsü ve app yeniden başlatmalarında da çalışabiliyor —
+  // aynı kullanıcı için art arda trackLogin() çağrılmasını burada keseriz.
+  const lastTrackedLoginUserIdRef = useRef(null);
+
+  const maybeTrackLogin = useMemo(
+    () => (userId) => {
+      if (!userId) return;
+      if (lastTrackedLoginUserIdRef.current === userId) return;
+      lastTrackedLoginUserIdRef.current = userId;
+      trackLogin();
+    },
+    []
+  );
 
   useEffect(() => {
     try {
@@ -91,6 +106,7 @@ export function AuthProvider({ children }) {
           setKullanici(null);
           setKres(null);
           setUsageUser(null);
+          lastTrackedLoginUserIdRef.current = null;
           setYukleniyor(false);
           return;
         }
@@ -115,7 +131,7 @@ export function AuthProvider({ children }) {
               setKullanici(userData);
               setKres(kresObj);
               setUsageUser(userData);
-              trackLogin();
+              maybeTrackLogin(legacyUserId);
 
               await AsyncStorage.setItem(USER_KEY, JSON.stringify(userData));
               if (kresObj) await AsyncStorage.setItem(KRES_KEY, JSON.stringify(kresObj));
@@ -180,13 +196,14 @@ export function AuthProvider({ children }) {
         setKullanici(freshUser);
         setKres(kresObj);
         setUsageUser(freshUser);
-        trackLogin();
+        maybeTrackLogin(legacyId);
         restoreFirebaseSession(freshUser).catch((error) => console.warn('Otomatik auth yenileme hatası:', error?.message || error));
       } else {
         await AsyncStorage.multiRemove([USER_KEY, KRES_KEY]);
         setKullanici(null);
         setKres(null);
         setUsageUser(null);
+        lastTrackedLoginUserIdRef.current = null;
       }
     } catch (error) {
       console.warn('Eski oturum kontrol hatası:', error);
@@ -216,13 +233,14 @@ export function AuthProvider({ children }) {
     setKullanici(normalizedUser);
     setKres(kresObj || null);
     setUsageUser(normalizedUser);
-    trackLogin();
+    maybeTrackLogin(normalizedUser.id || normalizedUser.uid);
     restoreFirebaseSession(normalizedUser).catch((error) => console.warn('Giriş sonrası auth yenileme hatası:', error?.message || error));
   };
 
   const cikisYap = async () => {
     trackLogout();
     isSigningOutRef.current = true;
+    lastTrackedLoginUserIdRef.current = null;
 
     setKullanici(null);
     setKres(null);
