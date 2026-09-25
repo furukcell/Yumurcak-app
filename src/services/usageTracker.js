@@ -6,10 +6,15 @@ const USAGE_LOG_PATH = 'hataLoglari/kullanimLoglari';
 let currentUser = null;
 let lastScreenKey = '';
 let lastScreenAt = 0;
+let lastAppOpenAt = 0;
 let foregroundTimer = null;
 let appStateSubscription = null;
 
 const SCREEN_DEBOUNCE_MS = 1500;
+// FAZ 12: her ön plana geçişte (kilit açma, app değiştirme) ayrı bir
+// "app_open" event'i düşmesin diye — aynı kullanıcı için bu pencere
+// içinde tekrar loglanmaz. Gerçek bir yeniden-oturum eşiği olarak düşün.
+const APP_OPEN_DEBOUNCE_MS = 15 * 60 * 1000;
 
 function clean(value, fallback = '') {
   return String(value ?? fallback).trim().slice(0, 120);
@@ -99,6 +104,9 @@ export function startUsageTracking(user) {
   const onActive = () => {
     if (foregroundTimer) clearTimeout(foregroundTimer);
     foregroundTimer = setTimeout(() => {
+      const now = Date.now();
+      if (now - lastAppOpenAt < APP_OPEN_DEBOUNCE_MS) return;
+      lastAppOpenAt = now;
       trackUsage({ action: 'app_open', module: 'Oturum', screen: 'App' });
     }, 0);
   };
@@ -116,6 +124,7 @@ export function startUsageTracking(user) {
     currentUser = null;
     lastScreenKey = '';
     lastScreenAt = 0;
+    lastAppOpenAt = 0;
   };
 }
 
@@ -127,4 +136,5 @@ export function stopUsageTracking() {
   currentUser = null;
   lastScreenKey = '';
   lastScreenAt = 0;
+  lastAppOpenAt = 0;
 }
