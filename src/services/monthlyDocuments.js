@@ -4,15 +4,22 @@
 // ============================================================
 import { ref, onValue, update, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../config/firebase';
+import i18n from '../i18n';
 
+// Not: MONTH_NAMES geriye dönük referans olarak Türkçe bırakıldı (dışarıdan
+// import eden başka bir yer varsa bozulmasın diye), ama getMonthLabel ve
+// getDaysOfMonth artık aşağıda i18n.t('common.months.<key>') kullanıyor —
+// aktif dile göre ay adı üretiyor.
 export const MONTH_NAMES = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const MONTH_KEYS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function monthName(monthIndex) { return i18n.t(`common.months.${MONTH_KEYS[monthIndex]}`); }
 export function pad2(value){return String(value).padStart(2,'0');}
 export function getMonthKey(date){return `${date.getFullYear()}-${pad2(date.getMonth()+1)}`;}
-export function getMonthLabel(date){return `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;}
+export function getMonthLabel(date){return `${monthName(date.getMonth())} ${date.getFullYear()}`;}
 export function shiftMonth(date,direction){return new Date(date.getFullYear(),date.getMonth()+direction,1);}
 export function parseMonthKey(monthKey){const [year,month]=String(monthKey||'').split('-').map(Number);if(!year||!month)return new Date();return new Date(year,month-1,1);}
 export function todayDateKey(){return new Date().toISOString().slice(0,10);}
-export function getDaysOfMonth(date){const year=date.getFullYear();const month=date.getMonth();const total=new Date(year,month+1,0).getDate();return Array.from({length:total},(_,index)=>{const day=index+1;return{day,dateKey:`${year}-${pad2(month+1)}-${pad2(day)}`,label:`${pad2(day)} ${MONTH_NAMES[month]}`,weekday:new Date(year,month,day).getDay()};});}
+export function getDaysOfMonth(date){const year=date.getFullYear();const month=date.getMonth();const total=new Date(year,month+1,0).getDate();return Array.from({length:total},(_,index)=>{const day=index+1;return{day,dateKey:`${year}-${pad2(month+1)}-${pad2(day)}`,label:`${pad2(day)} ${monthName(month)}`,weekday:new Date(year,month,day).getDay()};});}
 export function createInitialValues(days,emptyValueFactory){return days.reduce((acc,day)=>{acc[day.dateKey]=emptyValueFactory();return acc;},{});}
 
 export function fetchNodeSnapshotOnce(nodePath,kresId,onError){return new Promise((resolve)=>{if(!kresId){resolve({});return;}let unsub=null;const q=query(ref(database,nodePath),orderByChild('kresId'),equalTo(kresId));unsub=onValue(q,(snap)=>{if(unsub)unsub();resolve(snap.val()||{});},(error)=>{console.warn(`${nodePath} okunamadı:`,error?.code||error?.message||error);if(unsub)unsub();if(typeof onError==='function')onError(error);resolve({});});});}
