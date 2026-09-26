@@ -1199,10 +1199,20 @@
       "teacherFallback": "Öğretmen"
     },
     "medicationFormDetail": {
-      "loading": "Yükleniyor...",
-      "notFound": "Form bulunamadı.",
+      "teacherFallback": "Öğretmen",
+      "errorTitle": "Hata",
+      "logErrorDesc": "Kayıt eklenemedi.",
+      "deleteConfirmTitle": "Sil",
+      "deleteConfirmDesc": "Bu ilaç takip formu silinsin mi?",
+      "deleteCancelButton": "Vazgeç",
+      "deleteConfirmButton": "Sil",
+      "deleteErrorDesc": "Silinemedi.",
+      "exportErrorDesc": "Form oluşturulamadı.",
+      "loadingText": "Yükleniyor...",
+      "formNotFound": "Form bulunamadı.",
+      "doseLoggedToast": "Bugünkü doz kaydedildi",
       "doseLabel": "Doz",
-      "usageLabel": "Uygulama Şekli",
+      "methodLabel": "Uygulama Şekli",
       "startLabel": "Başlangıç",
       "endLabel": "Bitiş",
       "reminderTimeLabel": "Hatırlatma Saati",
@@ -1210,25 +1220,15 @@
       "approvalReceived": "✅ Alındı",
       "approvalPending": "⏳ Bekleniyor",
       "loggedToday": "✅ Bugün ({{date}}) doz verildi olarak işaretlendi.",
-      "todayDoseTitle": "Bugünün Dozu ({{date}})",
+      "todaysDoseTitle": "Bugünün Dozu ({{date}})",
       "notePlaceholder": "Not (opsiyonel)",
       "saving": "Kaydediliyor...",
-      "logButton": "✅ Bugün Verildi",
+      "logTodayButton": "✅ Bugün Verildi",
       "historyTitle": "Geçmiş Kayıtlar",
       "noHistory": "Henüz kayıt yok.",
       "printButton": "🖨️ Yazdır",
       "shareButton": "📤 Paylaş/İndir",
-      "exportingButton": "...",
-      "deleteButton": "Formu Sil",
-      "deleteConfirmTitle": "Sil",
-      "deleteConfirmMessage": "Bu ilaç takip formu silinsin mi?",
-      "cancelButton": "Vazgeç",
-      "confirmDeleteButton": "Sil",
-      "successToast": "Bugünkü doz kaydedildi",
-      "errorTitle": "Hata",
-      "logErrorDesc": "Kayıt eklenemedi.",
-      "deleteErrorDesc": "Silinemedi.",
-      "exportErrorDesc": "Form oluşturulamadı."
+      "deleteFormButton": "Formu Sil"
     },
     "medical": {
       "loading": "Medikal bilgiler hazırlanıyor...",
@@ -1270,6 +1270,135 @@
       "pendingBadge": "⏳ Onay Bekliyor — veliye onay isteği gönderildi",
       "reminderMeta": "⏰ Hatırlatma: {{time}}",
       "approvalReceived": "✅ Veli onayı alındı"
+    },
+    "weeklyStar": {
+      "loading": "Haftanın yıldızı hazırlanıyor...",
+      "title": "Haftanın Yıldızı",
+      "fridayLockAlertTitle": "Cuma günü aktif",
+      "fridayLockAlertDesc": "Haftanın Yıldızı rozetleri sadece cuma günleri verilebilir.",
+      "errorTitle": "Hata",
+      "noClassDesc": "Sınıf bilgisi bulunamadı.",
+      "missingInfoTitle": "Eksik Bilgi",
+      "selectChildFirstDesc": "Önce bir çocuk seçmelisin.",
+      "savedTitle": "Kaydedildi",
+      "savedDesc": "{{name}} için haftanın rozeti kaydedildi.",
+      "saveErrorDesc": "Rozet kaydedilemedi. Lütfen tekrar dene.",
+      "noClassTitle": "Sınıf bulunamadı",
+      "noClassEmptyDesc": "Rozet vermek için öğretmen hesabı bir sınıfa bağlı olmalı.",
+      "noChildrenTitle": "Çocuk yok",
+      "noChildrenDesc": "Sınıfa çocuk eklendiğinde rozet verilebilir.",
+      "heroTitle": "🌟 Haftanın Yıldızı",
+      "heroText": "Her cuma çocukların hafta boyunca öne çıkan güzel davranışlarını küçük bir rozetle kutlayabilirsin.",
+      "privacyTitle": "🔒 Gizlilik bilgisi",
+      "privacyText": "Verilen rozet sadece seçilen çocuğun velisinde görünür. Diğer öğrencilerin velileri bu rozeti göremez.",
+      "lockTitle": "⏳ Rozet seçimi cuma günü aktif olur",
+      "lockText": "Bugün çocukları gözlemleyebilirsin. Cuma günü çocuk seçip rozet ve kısa not kaydedebilirsin.",
+      "selectChildTitle": "Çocuk Seç",
+      "selectBadgeTitle": "Rozet Seç",
+      "noteTitle": "Kısa Not",
+      "noteHelpText": "Velinin göreceği pozitif ve kısa bir açıklama yazabilirsin.",
+      "notePlaceholder": "Örn: Arkadaşlarına oyuncakları toplarken yardım etti.",
+      "updateInfo": "Bu çocuk için bu hafta rozet verilmiş. Kaydedersen mevcut kayıt güncellenir.",
+      "updateButton": "Rozeti Güncelle",
+      "saveButton": "Rozeti Kaydet",
+      "thisWeekTitle": "Bu Haftanın Kayıtları",
+      "noRecordsThisWeek": "Bu hafta henüz rozet verilmedi.",
+      "historyTitle": "Sınıf Rozet Geçmişi",
+      "noHistory": "Henüz rozet geçmişi yok.",
+      "childFallback": "Çocuk",
+      "badgeFallback": "Rozet",
+      "badges": {
+        "yardimsever_kalp": {
+          "title": "Yardımsever Kalp",
+          "desc": "Arkadaşlarına destek oldu."
+        },
+        "paylasimci_minik": {
+          "title": "Paylaşımcı Minik",
+          "desc": "Oyuncaklarını ve materyallerini paylaştı."
+        },
+        "cesur_yurek": {
+          "title": "Cesur Yürek",
+          "desc": "Yeni bir etkinliğe cesaretle katıldı."
+        },
+        "merakli_kasif": {
+          "title": "Meraklı Kaşif",
+          "desc": "Yeni şeyler öğrenmeye merak gösterdi."
+        },
+        "yaratici_ressam": {
+          "title": "Yaratıcı Ressam",
+          "desc": "Sanat etkinliğinde güzel katılım gösterdi."
+        },
+        "neseli_gunes": {
+          "title": "Neşeli Güneş",
+          "desc": "Sınıfa pozitif enerji kattı."
+        },
+        "sorumluluk_sahibi": {
+          "title": "Sorumluluk Sahibi",
+          "desc": "Kendi eşyalarına ve sınıf düzenine dikkat etti."
+        },
+        "sabirli_minik": {
+          "title": "Sabırlı Minik",
+          "desc": "Sırasını bekledi ve sabır gösterdi."
+        },
+        "kitap_dostu": {
+          "title": "Kitap Dostu",
+          "desc": "Hikaye ve kitap saatine ilgi gösterdi."
+        },
+        "problem_cozucu": {
+          "title": "Problem Çözücü",
+          "desc": "Oyunda veya etkinlikte çözüm üretmeye çalıştı."
+        },
+        "guzel_iletisim": {
+          "title": "Güzel İletişim",
+          "desc": "Duygularını ve isteklerini güzel ifade etti."
+        },
+        "katilim_yildizi": {
+          "title": "Katılım Yıldızı",
+          "desc": "Etkinliklere istekle katıldı."
+        }
+      }
+    },
+    "support": {
+      "loading": "Destek hazırlanıyor...",
+      "title": "Bize Yazın",
+      "subtitle": "Süper Admin'e istek / şikayet / görüş",
+      "topics": {
+        "istek": "İstek",
+        "sikayet": "Şikayet",
+        "gorus": "Görüş",
+        "teknik": "Teknik Destek",
+        "diger": "Diğer"
+      },
+      "bannerTitle": "Yumurcak Destek",
+      "bannerText": "İstek, şikayet, görüş veya teknik destek konularında Süper Admin'e yazabilirsin.",
+      "topicLabel": "Konu",
+      "messageLabel": "Mesaj",
+      "messagePlaceholder": "Mesajını yaz...",
+      "sendButton": "Gönder",
+      "recentTitle": "Son Gönderiler",
+      "noMessagesTitle": "Henüz mesaj yok",
+      "noMessagesDesc": "Süper Admin'e yazdığın mesajlar burada görünecek.",
+      "replyLabel": "Yanıtla",
+      "replyPlaceholder": "Eklemek istediğin bir şey var mı?",
+      "replyButton": "Yanıt Gönder",
+      "replyButtonSending": "Gönderiliyor...",
+      "adminReplyName": "Yumurcak Destek",
+      "youFallback": "Sen",
+      "teacherFallback": "Öğretmen",
+      "missingInfoTitle": "Eksik Bilgi",
+      "emptyMessageDesc": "Mesaj alanı boş olamaz.",
+      "messageTooLongTitle": "Mesaj Uzun",
+      "messageTooLongDesc": "Mesaj en fazla {{max}} karakter olabilir.",
+      "errorTitle": "Hata",
+      "userInfoNotFoundDesc": "Kullanıcı bilgisi bulunamadı.",
+      "sendErrorDesc": "Mesaj gönderilemedi. Lütfen tekrar dene.",
+      "sentSuccess": "Mesajın gönderildi",
+      "emptyReplyDesc": "Yanıt alanı boş olamaz.",
+      "replyTooLongTitle": "Yanıt Uzun",
+      "replyTooLongDesc": "Yanıt en fazla {{max}} karakter olabilir.",
+      "replySentSuccess": "Yanıtın gönderildi",
+      "replyErrorDesc": "Yanıt gönderilemedi.",
+      "messageFallback": "Mesaj"
     }
   },
   "themes": {
