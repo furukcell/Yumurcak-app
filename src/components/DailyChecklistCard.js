@@ -15,6 +15,7 @@
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../config/firebase';
 
@@ -62,6 +63,7 @@ function useTodayGalleryCount(kresId, currentClass, classChildren) {
 }
 
 export default function DailyChecklistCard({ kresId, currentClass, classChildren, reports, attendance, meals, schedules, theme }) {
+  const { t } = useTranslation();
   const palette = theme || { primary: '#27500A', primarySoft: '#EAF5E4', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8' };
   const today = bugununTarihi();
   const childCount = classChildren.length;
@@ -106,41 +108,45 @@ export default function DailyChecklistCard({ kresId, currentClass, classChildren
 
   const galleryCount = useTodayGalleryCount(kresId, currentClass, classChildren);
 
+  const noChildrenLabel = t('components.dailyChecklistCard.noChildrenInClass');
+  const enteredLabel = t('components.dailyChecklistCard.entered');
+  const notEnteredLabel = t('components.dailyChecklistCard.notEntered');
+
   const maddeler = [
     {
       key: 'yoklama',
       icon: '✅',
-      label: 'Yoklama',
+      label: t('components.dailyChecklistCard.attendance'),
       tamam: childCount > 0 && attendanceCount >= childCount,
-      detay: childCount > 0 ? `${attendanceCount}/${childCount}` : 'Sınıfta çocuk yok',
+      detay: childCount > 0 ? `${attendanceCount}/${childCount}` : noChildrenLabel,
     },
     {
       key: 'rapor',
       icon: '📝',
-      label: 'Günlük Rapor',
+      label: t('components.dailyChecklistCard.dailyReport'),
       tamam: childCount > 0 && reportCount >= childCount,
-      detay: childCount > 0 ? `${reportCount}/${childCount}` : 'Sınıfta çocuk yok',
+      detay: childCount > 0 ? `${reportCount}/${childCount}` : noChildrenLabel,
     },
     {
       key: 'yemek',
       icon: '🍽️',
-      label: 'Yemek Listesi',
+      label: t('components.dailyChecklistCard.mealList'),
       tamam: hasTodayMeal,
-      detay: hasTodayMeal ? 'Girildi' : 'Girilmedi',
+      detay: hasTodayMeal ? enteredLabel : notEnteredLabel,
     },
     {
       key: 'etkinlik',
       icon: '📚',
-      label: 'Bugünün Etkinliği',
+      label: t('components.dailyChecklistCard.todaysActivity'),
       tamam: hasTodaySchedule,
-      detay: hasTodaySchedule ? 'Girildi' : 'Girilmedi',
+      detay: hasTodaySchedule ? enteredLabel : notEnteredLabel,
     },
     {
       key: 'galeri',
       icon: '🖼️',
-      label: 'Fotoğraf Galerisi',
+      label: t('components.dailyChecklistCard.photoGallery'),
       tamam: galleryCount > 0,
-      detay: galleryCount > 0 ? `${galleryCount} paylaşım` : 'Paylaşım yok',
+      detay: galleryCount > 0 ? t('components.dailyChecklistCard.sharesCount', { count: galleryCount }) : t('components.dailyChecklistCard.noShares'),
     },
   ];
 
@@ -149,7 +155,7 @@ export default function DailyChecklistCard({ kresId, currentClass, classChildren
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
       <View style={styles.headerRow}>
-        <Text style={[styles.title, { color: palette.text }]}>Bugünün Kontrol Listesi</Text>
+        <Text style={[styles.title, { color: palette.text }]}>{t('components.dailyChecklistCard.title')}</Text>
         <Text style={[styles.counter, { color: palette.primary }]}>{tamamlanan}/{maddeler.length}</Text>
       </View>
 
