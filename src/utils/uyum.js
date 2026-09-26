@@ -1,5 +1,7 @@
 export const UYUM_GUN = 30;
 
+import i18n from '../i18n';
+
 export function bugunKey(date = new Date()) {
   const pad = (v) => String(v).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -43,10 +45,10 @@ export function uyumEmoji(skor) {
 
 export function uyumYazi(skor) {
   const value = Number(skor || 0);
-  if (value >= 82) return 'Çok iyi gidiyor';
-  if (value >= 60) return 'İyi gidiyor';
-  if (value >= 40) return 'Destekle ilerliyor';
-  return 'Yakın takip gerekiyor';
+  if (value >= 82) return i18n.t('parent.adaptation.scoreVeryGood');
+  if (value >= 60) return i18n.t('parent.adaptation.scoreGood');
+  if (value >= 40) return i18n.t('parent.adaptation.scoreSupported');
+  return i18n.t('parent.adaptation.scoreNeedsAttention');
 }
 
 export function uyumSkoru(kayit = {}) {
