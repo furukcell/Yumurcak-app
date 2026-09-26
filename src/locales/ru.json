@@ -1199,36 +1199,36 @@
       "teacherFallback": "Учитель"
     },
     "medicationFormDetail": {
-      "loading": "Загрузка...",
-      "notFound": "Форма не найдена.",
+      "teacherFallback": "Воспитатель",
+      "errorTitle": "Ошибка",
+      "logErrorDesc": "Не удалось добавить запись.",
+      "deleteConfirmTitle": "Удалить",
+      "deleteConfirmDesc": "Удалить эту форму учёта лекарств?",
+      "deleteCancelButton": "Отмена",
+      "deleteConfirmButton": "Удалить",
+      "deleteErrorDesc": "Не удалось удалить.",
+      "exportErrorDesc": "Не удалось создать форму.",
+      "loadingText": "Загрузка...",
+      "formNotFound": "Форма не найдена.",
+      "doseLoggedToast": "Сегодняшняя доза зафиксирована",
       "doseLabel": "Доза",
-      "usageLabel": "Способ применения",
+      "methodLabel": "Способ применения",
       "startLabel": "Начало",
       "endLabel": "Окончание",
       "reminderTimeLabel": "Время напоминания",
       "parentApprovalLabel": "Согласие родителя",
       "approvalReceived": "✅ Получено",
       "approvalPending": "⏳ Ожидается",
-      "loggedToday": "✅ Сегодняшняя ({{date}}) доза отмечена как принятая.",
-      "todayDoseTitle": "Сегодняшняя доза ({{date}})",
+      "loggedToday": "✅ Сегодня ({{date}}) отмечено как «доза дана».",
+      "todaysDoseTitle": "Сегодняшняя доза ({{date}})",
       "notePlaceholder": "Заметка (необязательно)",
       "saving": "Сохранение...",
-      "logButton": "✅ Принято сегодня",
-      "historyTitle": "История",
+      "logTodayButton": "✅ Дано сегодня",
+      "historyTitle": "Предыдущие записи",
       "noHistory": "Записей пока нет.",
       "printButton": "🖨️ Печать",
       "shareButton": "📤 Поделиться/Скачать",
-      "exportingButton": "...",
-      "deleteButton": "Удалить форму",
-      "deleteConfirmTitle": "Удалить",
-      "deleteConfirmMessage": "Удалить эту форму контроля лекарств?",
-      "cancelButton": "Отмена",
-      "confirmDeleteButton": "Удалить",
-      "successToast": "Сегодняшняя доза сохранена",
-      "errorTitle": "Ошибка",
-      "logErrorDesc": "Не удалось добавить запись.",
-      "deleteErrorDesc": "Не удалось удалить.",
-      "exportErrorDesc": "Не удалось создать форму."
+      "deleteFormButton": "Удалить форму"
     },
     "medical": {
       "loading": "Подготовка медицинской информации...",
@@ -1270,6 +1270,135 @@
       "pendingBadge": "⏳ Ожидает одобрения — запрос на одобрение отправлен родителю",
       "reminderMeta": "⏰ Напоминание: {{time}}",
       "approvalReceived": "✅ Согласие родителя получено"
+    },
+    "weeklyStar": {
+      "loading": "Подготовка «Звезды недели»...",
+      "title": "Звезда недели",
+      "fridayLockAlertTitle": "Доступно по пятницам",
+      "fridayLockAlertDesc": "Значки «Звезда недели» можно выдавать только по пятницам.",
+      "errorTitle": "Ошибка",
+      "noClassDesc": "Информация о группе не найдена.",
+      "missingInfoTitle": "Недостаточно данных",
+      "selectChildFirstDesc": "Сначала выберите ребёнка.",
+      "savedTitle": "Сохранено",
+      "savedDesc": "Значок этой недели сохранён для {{name}}.",
+      "saveErrorDesc": "Не удалось сохранить значок. Попробуйте ещё раз.",
+      "noClassTitle": "Группа не найдена",
+      "noClassEmptyDesc": "Чтобы выдавать значки, аккаунт воспитателя должен быть привязан к группе.",
+      "noChildrenTitle": "Нет детей",
+      "noChildrenDesc": "Значки можно выдавать после добавления детей в группу.",
+      "heroTitle": "🌟 Звезда недели",
+      "heroText": "Каждую пятницу вы можете отметить хорошее поведение ребёнка за неделю небольшим значком.",
+      "privacyTitle": "🔒 О конфиденциальности",
+      "privacyText": "Выданный значок виден только родителю выбранного ребёнка. Родители других детей его не увидят.",
+      "lockTitle": "⏳ Выбор значка станет доступен в пятницу",
+      "lockText": "Сегодня вы можете наблюдать за детьми. В пятницу можно выбрать ребёнка и сохранить значок с короткой заметкой.",
+      "selectChildTitle": "Выбрать ребёнка",
+      "selectBadgeTitle": "Выбрать значок",
+      "noteTitle": "Короткая заметка",
+      "noteHelpText": "Вы можете написать короткое позитивное сообщение, которое увидит родитель.",
+      "notePlaceholder": "Например: помог друзьям убрать игрушки.",
+      "updateInfo": "Этому ребёнку уже выдан значок на этой неделе. При сохранении запись будет обновлена.",
+      "updateButton": "Обновить значок",
+      "saveButton": "Сохранить значок",
+      "thisWeekTitle": "Записи этой недели",
+      "noRecordsThisWeek": "На этой неделе значки ещё не выдавались.",
+      "historyTitle": "История значков группы",
+      "noHistory": "История значков пока пуста.",
+      "childFallback": "Ребёнок",
+      "badgeFallback": "Значок",
+      "badges": {
+        "yardimsever_kalp": {
+          "title": "Отзывчивое сердце",
+          "desc": "Поддерживал(а) друзей."
+        },
+        "paylasimci_minik": {
+          "title": "Малыш, который делится",
+          "desc": "Делился(ась) игрушками и материалами."
+        },
+        "cesur_yurek": {
+          "title": "Смелое сердце",
+          "desc": "Смело присоединился(ась) к новому занятию."
+        },
+        "merakli_kasif": {
+          "title": "Любопытный исследователь",
+          "desc": "Проявлял(а) интерес к новому."
+        },
+        "yaratici_ressam": {
+          "title": "Творческий художник",
+          "desc": "Прекрасно участвовал(а) в творческом занятии."
+        },
+        "neseli_gunes": {
+          "title": "Весёлое солнышко",
+          "desc": "Приносил(а) позитивную энергию в группу."
+        },
+        "sorumluluk_sahibi": {
+          "title": "Ответственный малыш",
+          "desc": "Следил(а) за своими вещами и порядком в группе."
+        },
+        "sabirli_minik": {
+          "title": "Терпеливый малыш",
+          "desc": "Ждал(а) своей очереди и проявлял(а) терпение."
+        },
+        "kitap_dostu": {
+          "title": "Друг книги",
+          "desc": "Проявлял(а) интерес к чтению и книжному часу."
+        },
+        "problem_cozucu": {
+          "title": "Решатель задач",
+          "desc": "Пытался(ась) находить решения в игре или на занятии."
+        },
+        "guzel_iletisim": {
+          "title": "Отличное общение",
+          "desc": "Хорошо выражал(а) чувства и пожелания."
+        },
+        "katilim_yildizi": {
+          "title": "Звезда активности",
+          "desc": "Охотно участвовал(а) в занятиях."
+        }
+      }
+    },
+    "support": {
+      "loading": "Подготовка поддержки...",
+      "title": "Написать нам",
+      "subtitle": "Запрос / жалоба / отзыв для супер-администратора",
+      "topics": {
+        "istek": "Запрос",
+        "sikayet": "Жалоба",
+        "gorus": "Отзыв",
+        "teknik": "Техподдержка",
+        "diger": "Другое"
+      },
+      "bannerTitle": "Поддержка Yumurcak",
+      "bannerText": "Вы можете написать супер-администратору по вопросам запросов, жалоб, отзывов или технической поддержки.",
+      "topicLabel": "Тема",
+      "messageLabel": "Сообщение",
+      "messagePlaceholder": "Напишите сообщение...",
+      "sendButton": "Отправить",
+      "recentTitle": "Последние сообщения",
+      "noMessagesTitle": "Сообщений пока нет",
+      "noMessagesDesc": "Сообщения, отправленные супер-администратору, появятся здесь.",
+      "replyLabel": "Ответить",
+      "replyPlaceholder": "Хотите что-то добавить?",
+      "replyButton": "Отправить ответ",
+      "replyButtonSending": "Отправка...",
+      "adminReplyName": "Поддержка Yumurcak",
+      "youFallback": "Вы",
+      "teacherFallback": "Воспитатель",
+      "missingInfoTitle": "Недостаточно данных",
+      "emptyMessageDesc": "Поле сообщения не может быть пустым.",
+      "messageTooLongTitle": "Сообщение слишком длинное",
+      "messageTooLongDesc": "Сообщение может содержать не более {{max}} символов.",
+      "errorTitle": "Ошибка",
+      "userInfoNotFoundDesc": "Информация о пользователе не найдена.",
+      "sendErrorDesc": "Не удалось отправить сообщение. Попробуйте ещё раз.",
+      "sentSuccess": "Ваше сообщение отправлено",
+      "emptyReplyDesc": "Поле ответа не может быть пустым.",
+      "replyTooLongTitle": "Ответ слишком длинный",
+      "replyTooLongDesc": "Ответ может содержать не более {{max}} символов.",
+      "replySentSuccess": "Ваш ответ отправлен",
+      "replyErrorDesc": "Не удалось отправить ответ.",
+      "messageFallback": "Сообщение"
     }
   },
   "themes": {
