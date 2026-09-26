@@ -10,6 +10,7 @@ import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, Touchable
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useRoute } from '@react-navigation/native';
 import { ref, push, update } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, EmptyState, getChildName } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -23,6 +24,7 @@ function getChildParentIds(child) {
 }
 
 export default function TeacherMedicationFormEditScreen({ navigation }) {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const route = useRoute();
@@ -39,21 +41,21 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
   const [successToast, setSuccessToast] = useState(false);
 
   const sortedChildren = useMemo(
-    () => [...classChildren].sort((a, b) => getChildName(a).localeCompare(getChildName(b), 'tr')),
+    () => [...classChildren].sort((a, b) => getChildName(a).localeCompare(getChildName(b))),
     [classChildren]
   );
 
   async function handleSave() {
     if (!cocukId) {
-      Alert.alert('Eksik Bilgi', 'Lütfen bir çocuk seç.');
+      Alert.alert(t('teacher.medicationFormEdit.missingInfoTitle'), t('teacher.medicationFormEdit.missingChildDesc'));
       return;
     }
     if (!ilacAdi.trim() || !baslangicTarihi.trim() || !bitisTarihi.trim()) {
-      Alert.alert('Eksik Bilgi', 'İlaç adı, başlangıç ve bitiş tarihi zorunludur.');
+      Alert.alert(t('teacher.medicationFormEdit.missingInfoTitle'), t('teacher.medicationFormEdit.missingFieldsDesc'));
       return;
     }
     if (hatirlaticiSaat.trim() && !normalizeTimeInput(hatirlaticiSaat)) {
-      Alert.alert('Geçersiz Saat', 'Hatırlatma saatini SS:DD formatında gir (örn: 14:30) ya da boş bırak.');
+      Alert.alert(t('teacher.medicationFormEdit.invalidTimeTitle'), t('teacher.medicationFormEdit.invalidTimeDesc'));
       return;
     }
     doSave();
@@ -89,6 +91,10 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
 
       const parentIds = getChildParentIds(child);
       if (parentIds.length > 0) {
+        // Not: bildirim başlığı/metni kalıcı olarak DB'ye yazılıyor ve veli
+        // tarafında olduğu gibi gösteriliyor — bildirimler henüz görüntüleyen
+        // kişinin diline göre değil, oluşturanın diline göre saklanıyor
+        // (uygulama genelinde henüz çözülmemiş, ayrı bir mimari konu).
         createNotification({
           kresId,
           hedefUserIds: parentIds,
@@ -102,7 +108,7 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
       }
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Form kaydedilemedi.');
+      Alert.alert(t('teacher.medicationFormEdit.errorTitle'), t('teacher.medicationFormEdit.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -110,17 +116,17 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast visible={successToast} message="İlaç takip formu oluşturuldu" onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={t('teacher.medicationFormEdit.successMessage')} onHide={() => setSuccessToast(false)} />
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Yeni İlaç Takip Formu" subtitle={currentClass?.ad || 'Sınıfım'} />
+        <ScreenHeader navigation={navigation} title={t('teacher.medicationFormEdit.title')} subtitle={currentClass?.ad || t('teacher.medicationFormEdit.classFallback')} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
-          <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Bu özellik için yönetici tarafından bir sınıfa atanman gerekir." />
+          <EmptyState icon="🏫" title={t('teacher.medicationFormEdit.noClassTitle')} desc={t('teacher.medicationFormEdit.noClassDesc')} />
         ) : (
           <>
-            <Text style={styles.fieldLabel}>Çocuk *</Text>
+            <Text style={styles.fieldLabel}>{t('teacher.medicationFormEdit.childLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4, marginBottom: 14 }}>
               {sortedChildren.map((child) => (
                 <TouchableOpacity
@@ -134,31 +140,31 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
               ))}
             </ScrollView>
 
-            <TextInput value={ilacAdi} onChangeText={setIlacAdi} placeholder="İlaç Adı *" placeholderTextColor={THEME.muted} style={styles.input} />
-            <TextInput value={doz} onChangeText={setDoz} placeholder="Doz (örn: 5 ml)" placeholderTextColor={THEME.muted} style={styles.input} />
-            <TextInput value={uygulamaSekli} onChangeText={setUygulamaSekli} placeholder="Uygulama Şekli (örn: Günde 2 kez, sabah-akşam)" placeholderTextColor={THEME.muted} style={styles.input} />
+            <TextInput value={ilacAdi} onChangeText={setIlacAdi} placeholder={t('teacher.medicationFormEdit.medicineNamePlaceholder')} placeholderTextColor={THEME.muted} style={styles.input} />
+            <TextInput value={doz} onChangeText={setDoz} placeholder={t('teacher.medicationFormEdit.dosePlaceholder')} placeholderTextColor={THEME.muted} style={styles.input} />
+            <TextInput value={uygulamaSekli} onChangeText={setUygulamaSekli} placeholder={t('teacher.medicationFormEdit.usagePlaceholder')} placeholderTextColor={THEME.muted} style={styles.input} />
 
             <View style={styles.row}>
-              <TextInput value={baslangicTarihi} onChangeText={setBaslangicTarihi} placeholder="Başlangıç * (15.09.2026)" placeholderTextColor={THEME.muted} style={[styles.input, styles.rowFlex]} />
-              <TextInput value={bitisTarihi} onChangeText={setBitisTarihi} placeholder="Bitiş * (20.09.2026)" placeholderTextColor={THEME.muted} style={[styles.input, styles.rowFlex]} />
+              <TextInput value={baslangicTarihi} onChangeText={setBaslangicTarihi} placeholder={t('teacher.medicationFormEdit.startDatePlaceholder')} placeholderTextColor={THEME.muted} style={[styles.input, styles.rowFlex]} />
+              <TextInput value={bitisTarihi} onChangeText={setBitisTarihi} placeholder={t('teacher.medicationFormEdit.endDatePlaceholder')} placeholderTextColor={THEME.muted} style={[styles.input, styles.rowFlex]} />
             </View>
 
             <TextInput
               value={hatirlaticiSaat}
               onChangeText={setHatirlaticiSaat}
-              placeholder="Hatırlatma Saati (opsiyonel, örn: 14:30)"
+              placeholder={t('teacher.medicationFormEdit.reminderPlaceholder')}
               placeholderTextColor={THEME.muted}
               style={styles.input}
               keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
             />
-            <Text style={styles.hintText}>⏰ Girilirse, o saatte hem öğretmene hem veliye hatırlatma bildirimi gönderilir.</Text>
+            <Text style={styles.hintText}>{t('teacher.medicationFormEdit.hintText')}</Text>
 
             <View style={styles.infoBox}>
-              <Text style={styles.infoBoxText}>ℹ️ Form oluşturulduğunda veliye onay isteği gönderilecek. Veli onaylamadan form aktif olmaz ve senin listende görünmez.</Text>
+              <Text style={styles.infoBoxText}>{t('teacher.medicationFormEdit.infoText')}</Text>
             </View>
 
             <TouchableOpacity disabled={saving} style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={handleSave} activeOpacity={0.85}>
-              <Text style={styles.saveButtonText}>{saving ? 'Gönderiliyor...' : 'Onay İsteği Gönder'}</Text>
+              <Text style={styles.saveButtonText}>{saving ? t('teacher.medicationFormEdit.sending') : t('teacher.medicationFormEdit.saveButton')}</Text>
             </TouchableOpacity>
           </>
         )}
