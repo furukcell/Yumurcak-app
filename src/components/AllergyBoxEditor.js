@@ -8,6 +8,7 @@
 // ============================================================
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 function toList(value) {
   const items = String(value || '')
@@ -21,7 +22,10 @@ function toValue(list) {
   return list.map((item) => (item || '').trim()).filter(Boolean).join('\n');
 }
 
-export default function AllergyBoxEditor({ value, onChange, accentColor = '#D92929', placeholder = 'Örn: Yumurta', addLabel = '+ Alerji Ekle' }) {
+export default function AllergyBoxEditor({ value, onChange, accentColor = '#D92929', placeholder, addLabel }) {
+  const { t } = useTranslation();
+  const effectivePlaceholder = placeholder || t('components.allergyBoxEditor.placeholder');
+  const effectiveAddLabel = addLabel || t('components.allergyBoxEditor.addLabel');
   const [list, setList] = useState(() => toList(value));
 
   // Dışarıdan (örn. Firebase'den ilk yükleme) değer değiştiğinde senkronize et.
@@ -62,7 +66,7 @@ export default function AllergyBoxEditor({ value, onChange, accentColor = '#D929
             style={[styles.input, { borderColor: `${accentColor}55` }]}
             value={item}
             onChangeText={(text) => updateAt(index, text)}
-            placeholder={placeholder}
+            placeholder={effectivePlaceholder}
             placeholderTextColor="#A2A5B6"
           />
           {list.length > 1 || item ? (
@@ -73,7 +77,7 @@ export default function AllergyBoxEditor({ value, onChange, accentColor = '#D929
         </View>
       ))}
       <TouchableOpacity style={[styles.addButton, { borderColor: `${accentColor}66` }]} onPress={addBox} activeOpacity={0.85}>
-        <Text style={[styles.addButtonText, { color: accentColor }]}>{addLabel}</Text>
+        <Text style={[styles.addButtonText, { color: accentColor }]}>{effectiveAddLabel}</Text>
       </TouchableOpacity>
     </View>
   );
