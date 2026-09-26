@@ -1724,5 +1724,76 @@
       "ozBakimBecerisi": "مهارات العناية الذاتية",
       "dengeVeKoordinasyon": "التوازن والتناسق"
     }
+  },
+  "components": {
+    "activityChipRow": {
+      "newLessonFallback": "درس جديد",
+      "addNewLesson": "+ إضافة درس جديد"
+    },
+    "mealChipListInput": {
+      "add": "إضافة",
+      "cancel": "إلغاء"
+    },
+    "monthlyCalendarView": {
+      "list": "قائمة",
+      "calendar": "التقويم"
+    },
+    "allergyBoxEditor": {
+      "placeholder": "مثال: بيض",
+      "addLabel": "+ إضافة حساسية"
+    },
+    "monthlyArchivePicker": {
+      "trigger": "🗂 الأرشيف",
+      "title": "الأشهر المنشورة",
+      "close": "إغلاق",
+      "empty": "لا يوجد شهر منشور بعد.",
+      "daysSuffix": "يوم"
+    },
+    "activityBalanceCard": {
+      "title": "📊 توازن الأنشطة — {{month}}",
+      "summaryWithCount": "تم تسجيل {{count}} نشاط هذا الشهر — اضغط للتفاصيل.",
+      "summaryEmpty": "لم يتم تسجيل أي نشاط هذا الشهر بعد.",
+      "noDataYet": "لا توجد أنشطة منشورة لهذا الشهر بعد — البيانات مطلوبة للتحليل.",
+      "missingCategories": "💡 الفئات غير المستخدمة هذا الشهر: {{list}}"
+    },
+    "dailyChecklistCard": {
+      "title": "قائمة اليوم",
+      "attendance": "الحضور",
+      "dailyReport": "التقرير اليومي",
+      "mealList": "قائمة الطعام",
+      "todaysActivity": "نشاط اليوم",
+      "photoGallery": "معرض الصور",
+      "noChildrenInClass": "لا يوجد أطفال في الصف",
+      "entered": "تم الإدخال",
+      "notEntered": "لم يتم الإدخال",
+      "sharesCount": "{{count}} مشاركة",
+      "noShares": "لا مشاركات"
+    },
+    "changePasswordCard": {
+      "errorTitle": "خطأ",
+      "fillAllFields": "يجب عليك ملء جميع الحقول.",
+      "passwordTooShort": "يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل.",
+      "passwordsDontMatch": "كلمتا المرور الجديدتان غير متطابقتين.",
+      "samePassword": "لا يمكن أن تكون كلمة المرور الجديدة مطابقة للقديمة.",
+      "sessionNotFound": "لم يتم العثور على بيانات الجلسة. يرجى تسجيل الخروج والدخول مرة أخرى.",
+      "successTitle": "تم بنجاح",
+      "successMessage": "تم تحديث كلمة مرورك.",
+      "wrongPassword": "كلمة المرور القديمة غير صحيحة.",
+      "tooManyRequests": "عدد كبير جدًا من المحاولات الفاشلة. يرجى المحاولة مرة أخرى لاحقًا.",
+      "requiresRecentLogin": "لأسباب أمنية، يجب عليك تسجيل الدخول مرة أخرى. سجل الخروج، ثم سجل الدخول مجددًا، وحاول مرة أخرى.",
+      "weakPassword": "كلمة المرور الجديدة ضعيفة جدًا. يجب أن تتكون من 6 أحرف على الأقل.",
+      "changeFailed": "تعذر تغيير كلمة المرور.",
+      "title": "🔒 تغيير كلمة المرور",
+      "hint": "تحقق من كلمة مرورك القديمة وحدد كلمة مرور جديدة.",
+      "oldPasswordLabel": "كلمة المرور القديمة",
+      "oldPasswordPlaceholder": "كلمة مرورك الحالية",
+      "newPasswordLabel": "كلمة المرور الجديدة",
+      "newPasswordPlaceholder": "6 أحرف على الأقل",
+      "newPasswordRepeatLabel": "كلمة المرور الجديدة (تكرار)",
+      "newPasswordRepeatPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+      "show": "إظهار",
+      "hide": "إخفاء",
+      "submitButton": "تحديث كلمة المرور"
+    }
   }
 }
