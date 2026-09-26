@@ -20,6 +20,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
 
 function toList(data) {
@@ -38,6 +39,7 @@ function formatDate(value) {
 }
 
 export default function TeacherPhysicalDevelopmentScreen() {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
@@ -93,17 +95,17 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
 
   const saveGrowth = async () => {
     if (!currentClass?.id) {
-      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
+      Alert.alert(t('teacher.physicalDevelopment.errorTitle'), t('teacher.physicalDevelopment.classNotFoundDesc'));
       return;
     }
 
     if (!selectedChild?.id) {
-      Alert.alert('Eksik Bilgi', 'Önce bir çocuk seçmelisin.');
+      Alert.alert(t('teacher.physicalDevelopment.missingInfoTitle'), t('teacher.physicalDevelopment.selectChildFirstDesc'));
       return;
     }
 
     if (!boy.trim() && !kilo.trim() && !basCevresi.trim()) {
-      Alert.alert('Eksik Bilgi', 'En az boy, kilo veya baş çevresi alanlarından birini gir.');
+      Alert.alert(t('teacher.physicalDevelopment.missingInfoTitle'), t('teacher.physicalDevelopment.atLeastOneFieldDesc'));
       return;
     }
 
@@ -130,21 +132,21 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
       setNot('');
       setTab('history');
 
-      Alert.alert('Başarılı', 'Fiziksel gelişim kaydı eklendi.');
+      Alert.alert(t('teacher.physicalDevelopment.successTitle'), t('teacher.physicalDevelopment.recordAddedSuccess'));
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Gelişim kaydı eklenemedi.');
+      Alert.alert(t('teacher.physicalDevelopment.errorTitle'), t('teacher.physicalDevelopment.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <LoadingState text="Fiziksel gelişim hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.physicalDevelopment.loading')} />;
 
   return (
     <SafeAreaView style={localStyles.safeArea}>
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Fiziksel Gelişim" subtitle={currentClass?.ad || 'Sınıfım'} />
+        <ScreenHeader navigation={navigation} title={t('teacher.physicalDevelopment.title')} subtitle={currentClass?.ad || t('teacher.physicalDevelopment.myClassFallback')} />
       </View>
 
       <KeyboardAvoidingView
@@ -154,24 +156,24 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
       >
         <ScrollView contentContainerStyle={localStyles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
-          <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Ölçüm girmek için öğretmen hesabı bir sınıfa bağlı olmalı." />
+          <EmptyState icon="🏫" title={t('teacher.physicalDevelopment.noClassTitle')} desc={t('teacher.physicalDevelopment.noClassDesc')} />
         ) : classChildren.length === 0 ? (
-          <EmptyState icon="👧" title="Çocuk yok" desc="Sınıfa çocuk eklendiğinde burada listelenecek." />
+          <EmptyState icon="👧" title={t('teacher.physicalDevelopment.noChildrenTitle')} desc={t('teacher.physicalDevelopment.noChildrenDesc')} />
         ) : (
           <>
             <View style={localStyles.tabRow}>
               <TouchableOpacity style={[localStyles.tabButton, tab === 'form' && localStyles.tabButtonActive]} onPress={() => setTab('form')} activeOpacity={0.85}>
-                <Text style={[localStyles.tabText, tab === 'form' && localStyles.tabTextActive]}>Kayıt Gir</Text>
+                <Text style={[localStyles.tabText, tab === 'form' && localStyles.tabTextActive]}>{t('teacher.physicalDevelopment.formTab')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[localStyles.tabButton, tab === 'history' && localStyles.tabButtonActive]} onPress={() => setTab('history')} activeOpacity={0.85}>
-                <Text style={[localStyles.tabText, tab === 'history' && localStyles.tabTextActive]}>Geçmiş</Text>
+                <Text style={[localStyles.tabText, tab === 'history' && localStyles.tabTextActive]}>{t('teacher.physicalDevelopment.historyTab')}</Text>
               </TouchableOpacity>
             </View>
 
             {tab === 'form' ? (
               <>
                 <View style={localStyles.card}>
-                  <Text style={localStyles.cardTitle}>Çocuk Seç</Text>
+                  <Text style={localStyles.cardTitle}>{t('teacher.physicalDevelopment.selectChildTitle')}</Text>
                   <View style={localStyles.childGrid}>
                     {classChildren.map((child) => {
                       const active = selectedChildId === child.id;
@@ -185,23 +187,27 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
                 </View>
 
                 <View style={localStyles.card}>
-                  <Text style={localStyles.cardTitle}>Ölçüm Bilgileri</Text>
-                  <Text style={localStyles.helpText}>{selectedChild ? `${getChildName(selectedChild)} için kayıt giriyorsun.` : 'Önce çocuk seç.'}</Text>
+                  <Text style={localStyles.cardTitle}>{t('teacher.physicalDevelopment.measurementInfoTitle')}</Text>
+                  <Text style={localStyles.helpText}>{selectedChild ? t('teacher.physicalDevelopment.enteringForChild', { name: getChildName(selectedChild) }) : t('teacher.physicalDevelopment.selectChildFirstHint')}</Text>
 
                   {selectedChildRecords.length > 0 ? (
                     <View style={localStyles.lastRecordBox}>
-                      <Text style={localStyles.lastRecordTitle}>Son kayıt: {formatDate(selectedChildRecords[0].tarih || selectedChildRecords[0].createdAt)}</Text>
-                      <Text style={localStyles.lastRecordText}>Boy: {selectedChildRecords[0].boy || '-'} cm · Kilo: {selectedChildRecords[0].kilo || '-'} kg · Baş: {selectedChildRecords[0].basCevresi || '-'} cm</Text>
+                      <Text style={localStyles.lastRecordTitle}>{t('teacher.physicalDevelopment.lastRecordLabel', { date: formatDate(selectedChildRecords[0].tarih || selectedChildRecords[0].createdAt) })}</Text>
+                      <Text style={localStyles.lastRecordText}>{t('teacher.physicalDevelopment.lastRecordSummary', {
+                        height: selectedChildRecords[0].boy || '-',
+                        weight: selectedChildRecords[0].kilo || '-',
+                        head: selectedChildRecords[0].basCevresi || '-',
+                      })}</Text>
                     </View>
                   ) : null}
 
-                  <TextInput style={localStyles.input} value={boy} onChangeText={setBoy} placeholder="Boy (cm)" placeholderTextColor="#999" keyboardType="decimal-pad" />
-                  <TextInput style={localStyles.input} value={kilo} onChangeText={setKilo} placeholder="Kilo (kg)" placeholderTextColor="#999" keyboardType="decimal-pad" />
-                  <TextInput style={localStyles.input} value={basCevresi} onChangeText={setBasCevresi} placeholder="Baş çevresi (cm) - opsiyonel" placeholderTextColor="#999" keyboardType="decimal-pad" />
-                  <TextInput style={[localStyles.input, localStyles.textArea]} value={not} onChangeText={setNot} placeholder="Not - opsiyonel" placeholderTextColor="#999" multiline />
+                  <TextInput style={localStyles.input} value={boy} onChangeText={setBoy} placeholder={t('teacher.physicalDevelopment.heightPlaceholder')} placeholderTextColor="#999" keyboardType="decimal-pad" />
+                  <TextInput style={localStyles.input} value={kilo} onChangeText={setKilo} placeholder={t('teacher.physicalDevelopment.weightPlaceholder')} placeholderTextColor="#999" keyboardType="decimal-pad" />
+                  <TextInput style={localStyles.input} value={basCevresi} onChangeText={setBasCevresi} placeholder={t('teacher.physicalDevelopment.headCircumferencePlaceholder')} placeholderTextColor="#999" keyboardType="decimal-pad" />
+                  <TextInput style={[localStyles.input, localStyles.textArea]} value={not} onChangeText={setNot} placeholder={t('teacher.physicalDevelopment.notePlaceholder')} placeholderTextColor="#999" multiline />
 
                   <TouchableOpacity style={[localStyles.saveButton, saving && localStyles.saveButtonDisabled]} onPress={saveGrowth} disabled={saving} activeOpacity={0.85}>
-                    {saving ? <ActivityIndicator color="#FFF" /> : <Text style={localStyles.saveText}>Kaydı Ekle</Text>}
+                    {saving ? <ActivityIndicator color="#FFF" /> : <Text style={localStyles.saveText}>{t('teacher.physicalDevelopment.saveButton')}</Text>}
                   </TouchableOpacity>
                 </View>
               </>
@@ -209,14 +215,14 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
               <View style={localStyles.card}>
                 <View style={localStyles.historyHeader}>
                   <View>
-                    <Text style={localStyles.cardTitle}>Sınıf Gelişim Geçmişi</Text>
-                    <Text style={localStyles.helpText}>{classRecords.length} kayıt</Text>
+                    <Text style={localStyles.cardTitle}>{t('teacher.physicalDevelopment.historyTitle')}</Text>
+                    <Text style={localStyles.helpText}>{t('teacher.physicalDevelopment.recordCount', { count: classRecords.length })}</Text>
                   </View>
                   <Text style={localStyles.historyIcon}>📈</Text>
                 </View>
 
                 {classRecords.length === 0 ? (
-                  <EmptyState icon="📈" title="Henüz kayıt yok" desc="Boy, kilo veya baş çevresi kaydı girildiğinde burada listelenecek." />
+                  <EmptyState icon="📈" title={t('teacher.physicalDevelopment.noRecordsTitle')} desc={t('teacher.physicalDevelopment.noRecordsDesc')} />
                 ) : (
                   classRecords.map((item) => (
                     <View key={item.id} style={localStyles.recordCard}>
@@ -225,9 +231,9 @@ const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}
                         <Text style={localStyles.recordDate}>{formatDate(item.tarih || item.createdAt)}</Text>
                       </View>
                       <View style={localStyles.metricRow}>
-                        <Metric label="Boy" value={item.boy ? `${item.boy} cm` : '-'} />
-                        <Metric label="Kilo" value={item.kilo ? `${item.kilo} kg` : '-'} />
-                        <Metric label="Baş" value={item.basCevresi ? `${item.basCevresi} cm` : '-'} />
+                        <Metric label={t('teacher.physicalDevelopment.heightLabel')} value={item.boy ? `${item.boy} cm` : '-'} />
+                        <Metric label={t('teacher.physicalDevelopment.weightLabel')} value={item.kilo ? `${item.kilo} kg` : '-'} />
+                        <Metric label={t('teacher.physicalDevelopment.headLabel')} value={item.basCevresi ? `${item.basCevresi} cm` : '-'} />
                       </View>
                       {item.not ? <Text style={localStyles.recordNote}>📝 {item.not}</Text> : null}
                     </View>

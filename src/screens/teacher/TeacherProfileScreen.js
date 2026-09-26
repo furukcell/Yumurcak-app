@@ -9,6 +9,7 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { launchSafeImagePicker } from '../../utils/safeImagePicker';
 import { showPickerFailureGuidance } from '../../utils/miuiAutostart';
@@ -21,6 +22,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import ChangePasswordCard from '../../components/ChangePasswordCard';
 
 export default function TeacherProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { loading, kullanici, teacherId, cikisYap, currentClass, kurum } = useTeacherData();
   const [photoUrl, setPhotoUrl] = useState(kullanici?.profilFotoUrl || '');
@@ -32,17 +34,17 @@ export default function TeacherProfileScreen() {
     setPhotoUrl(kullanici?.profilFotoUrl || '');
   }, [kullanici?.profilFotoUrl]);
 
-  if (loading) return <LoadingState text="Profil hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.profile.loading')} />;
 
   const showSuccess = (message) => setSuccessToast({ visible: true, message });
 
   const pickAndUploadPhoto = async () => {
-    if (!teacherId) return Alert.alert('Hata', 'Öğretmen hesabı bulunamadı.');
+    if (!teacherId) return Alert.alert(t('teacher.profile.errorTitle'), t('teacher.profile.accountNotFoundDesc'));
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Profil fotoğrafı seçmek için galeri izni vermen gerekiyor.');
+        Alert.alert(t('teacher.profile.permissionTitle'), t('teacher.profile.permissionDesc'));
         return;
       }
 
@@ -82,14 +84,14 @@ export default function TeacherProfileScreen() {
       });
 
       setPhotoUrl(downloadUrl);
-      showSuccess('Profil fotoğrafı yüklendi');
+      showSuccess(t('teacher.profile.photoUploadedSuccess'));
     } catch (err) {
       await logGalleryError({ stage: 'PROFILE_FLOW_ERROR', error: err, userId: teacherId, kresId: kullanici?.kresId || kurum?.id || '', mode: 'teacher_profile' });
       console.error(err);
       if (err?.code === 'PICKER_TIMEOUT') {
         showPickerFailureGuidance({ isTimeout: true });
       } else {
-        Alert.alert('Hata', 'Profil fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
+        Alert.alert(t('teacher.profile.errorTitle'), t('teacher.profile.uploadErrorDesc'));
       }
     } finally {
       setUploading(false);
@@ -97,12 +99,12 @@ export default function TeacherProfileScreen() {
   };
 
   const removePhoto = () => {
-    if (!teacherId) return Alert.alert('Hata', 'Öğretmen hesabı bulunamadı.');
+    if (!teacherId) return Alert.alert(t('teacher.profile.errorTitle'), t('teacher.profile.accountNotFoundDesc'));
 
-    Alert.alert('Profil Fotoğrafı', 'Fotoğrafı profilden kaldırmak istiyor musun?', [
-      { text: 'Vazgeç', style: 'cancel' },
+    Alert.alert(t('teacher.profile.removeConfirmTitle'), t('teacher.profile.removeConfirmDesc'), [
+      { text: t('teacher.profile.cancelButton'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('teacher.profile.removeButton'),
         style: 'destructive',
         onPress: async () => {
           setRemoving(true);
@@ -113,10 +115,10 @@ export default function TeacherProfileScreen() {
               updatedAt: Date.now(),
             });
             setPhotoUrl('');
-            showSuccess('Profil fotoğrafı kaldırıldı');
+            showSuccess(t('teacher.profile.photoRemovedSuccess'));
           } catch (err) {
             console.error(err);
-            Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
+            Alert.alert(t('teacher.profile.errorTitle'), t('teacher.profile.removeErrorDesc'));
           } finally {
             setRemoving(false);
           }
@@ -132,7 +134,7 @@ export default function TeacherProfileScreen() {
         message={successToast.message}
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
-      <ScreenHeader navigation={navigation} title="Profil" subtitle="Öğretmen bilgileri" />
+      <ScreenHeader navigation={navigation} title={t('teacher.profile.title')} subtitle={t('teacher.profile.subtitle')} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           {photoUrl ? (
@@ -141,30 +143,30 @@ export default function TeacherProfileScreen() {
             <Text style={styles.avatar}>👩‍🏫</Text>
           )}
           <Text style={styles.name} numberOfLines={1}>{getUserName(kullanici)}</Text>
-          <Text style={styles.sub} numberOfLines={1}>{currentClass?.ad || 'Sınıf atanmamış'}</Text>
+          <Text style={styles.sub} numberOfLines={1}>{currentClass?.ad || t('teacher.profile.classNotAssigned')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Profil Resmi</Text>
-          <Text style={styles.hintText}>Seçtiğin fotoğraf veli ekranlarında öğretmen bilgisi gösterilen yerlerde otomatik görünür.</Text>
+          <Text style={styles.cardTitle}>{t('teacher.profile.photoCardTitle')}</Text>
+          <Text style={styles.hintText}>{t('teacher.profile.photoHint')}</Text>
 
           <TouchableOpacity style={styles.primaryButton} onPress={pickAndUploadPhoto} disabled={uploading || removing} activeOpacity={0.85}>
-            {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Galeriden Fotoğraf Seç</Text>}
+            {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>{t('teacher.profile.pickPhotoButton')}</Text>}
           </TouchableOpacity>
 
           {photoUrl ? (
             <TouchableOpacity style={styles.removeButton} onPress={removePhoto} disabled={uploading || removing} activeOpacity={0.85}>
-              <Text style={styles.removeButtonText}>{removing ? 'Kaldırılıyor...' : 'Fotoğrafı Kaldır'}</Text>
+              <Text style={styles.removeButtonText}>{removing ? t('teacher.profile.removingLabel') : t('teacher.profile.removePhotoButton')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Öğretmen Bilgileri</Text>
-          <InfoRow icon="🏫" label="Kurum" value={kurum?.ad || '-'} />
-          <InfoRow icon="📚" label="Sınıf" value={currentClass?.ad || '-'} />
-          <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon || '-'} />
-          <InfoRow icon="👤" label="Kullanıcı Adı" value={kullanici?.kullaniciAdi || '-'} />
+          <Text style={styles.cardTitle}>{t('teacher.profile.infoCardTitle')}</Text>
+          <InfoRow icon="🏫" label={t('teacher.profile.infoInstitution')} value={kurum?.ad || '-'} />
+          <InfoRow icon="📚" label={t('teacher.profile.infoClass')} value={currentClass?.ad || '-'} />
+          <InfoRow icon="☎️" label={t('teacher.profile.infoPhone')} value={kullanici?.telefon || '-'} />
+          <InfoRow icon="👤" label={t('teacher.profile.infoUsername')} value={kullanici?.kullaniciAdi || '-'} />
         </View>
 
         <ChangePasswordCard userId={teacherId} primaryColor={THEME.primary} />
@@ -175,17 +177,17 @@ export default function TeacherProfileScreen() {
               <Text style={styles.legalIcon}>💬</Text>
             </View>
             <View style={styles.legalHeaderText}>
-              <Text style={styles.cardTitle}>Yumurcak Destek</Text>
+              <Text style={styles.cardTitle}>{t('teacher.profile.supportBannerTitle')}</Text>
               <Text style={styles.legalDesc}>
-                İstek, şikayet veya görüşlerini Süper Admin'e buradan iletebilirsin.
+                {t('teacher.profile.supportBannerDesc')}
               </Text>
             </View>
           </View>
 
           <LegalLink
             icon="✉️"
-            title="Bize Yazın"
-            desc="Süper Admin'e istek / şikayet gönder"
+            title={t('teacher.profile.supportLinkTitle')}
+            desc={t('teacher.profile.supportLinkDesc')}
             onPress={() => navigation.navigate('TeacherSupport')}
           />
         </View>
@@ -196,35 +198,35 @@ export default function TeacherProfileScreen() {
               <Text style={styles.legalIcon}>⚖️</Text>
             </View>
             <View style={styles.legalHeaderText}>
-              <Text style={styles.cardTitle}>Yasal Bilgiler</Text>
+              <Text style={styles.cardTitle}>{t('teacher.profile.legalTitle')}</Text>
               <Text style={styles.legalDesc}>
-                Kullanım şartları, gizlilik politikası ve KVKK metinlerine buradan ulaşabilirsiniz.
+                {t('teacher.profile.legalDesc')}
               </Text>
             </View>
           </View>
 
           <LegalLink
             icon="📄"
-            title="Kullanım Şartları"
-            desc="Uygulama kullanım kuralları"
+            title={t('teacher.profile.termsTitle')}
+            desc={t('teacher.profile.termsDesc')}
             onPress={() => navigation.navigate('LegalDocuments', { docKey: 'terms' })}
           />
           <LegalLink
             icon="🔐"
-            title="Gizlilik Politikası"
-            desc="Veri işleme ve gizlilik esasları"
+            title={t('teacher.profile.privacyTitle')}
+            desc={t('teacher.profile.privacyDesc')}
             onPress={() => navigation.navigate('LegalDocuments', { docKey: 'privacy' })}
           />
           <LegalLink
             icon="🛡️"
-            title="KVKK Aydınlatma Metni"
-            desc="Kişisel veriler hakkında bilgilendirme"
+            title={t('teacher.profile.kvkkTitle')}
+            desc={t('teacher.profile.kvkkDesc')}
             onPress={() => navigation.navigate('LegalDocuments', { docKey: 'kvkk' })}
           />
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={cikisYap} activeOpacity={0.85}>
-          <Text style={styles.logoutText}>↩ Çıkış Yap</Text>
+          <Text style={styles.logoutText}>↩ {t('teacher.profile.logoutButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -19,6 +19,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
@@ -53,6 +54,7 @@ function timeTextOf(item) {
 }
 
 export default function TeacherAnnouncementsScreen() {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
@@ -66,7 +68,7 @@ export default function TeacherAnnouncementsScreen() {
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [successToast, setSuccessToast] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('Duyuru yayınlandı');
+  const [successMessage, setSuccessMessage] = useState(t('teacher.announcements.publishedSuccess'));
 
   const visible = useMemo(() => {
     if (!currentClass?.id) return [];
@@ -99,7 +101,7 @@ export default function TeacherAnnouncementsScreen() {
     return { total: visible.length, classCount, schoolCount };
   }, [visible]);
 
-  if (loading) return <LoadingState text="Duyurular hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.announcements.loading')} />;
 
   const resetForm = () => {
     setBaslik('');
@@ -119,7 +121,7 @@ export default function TeacherAnnouncementsScreen() {
 
   const openEditForm = (item) => {
     if (item.olusturanRol !== 'ogretmen') {
-      Alert.alert('Bilgi', 'Kurum duyuruları öğretmen ekranından düzenlenemez.');
+      Alert.alert(t('teacher.announcements.infoTitle'), t('teacher.announcements.schoolAnnouncementsNoEditDesc'));
       return;
     }
     setEditingId(item.id);
@@ -129,8 +131,8 @@ export default function TeacherAnnouncementsScreen() {
   };
 
   const saveAnnouncement = async () => {
-    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
-    if (!baslik.trim() || !icerik.trim()) return Alert.alert('Eksik Bilgi', 'Başlık ve duyuru metni zorunludur.');
+    if (!currentClass?.id) return Alert.alert(t('teacher.announcements.errorTitle'), t('teacher.announcements.classNotFoundDesc'));
+    if (!baslik.trim() || !icerik.trim()) return Alert.alert(t('teacher.announcements.missingInfoTitle'), t('teacher.announcements.titleAndTextRequiredDesc'));
 
     setSaving(true);
     try {
@@ -142,7 +144,7 @@ export default function TeacherAnnouncementsScreen() {
           message: icerik.trim(),
           updatedAt: Date.now(),
         });
-        setSuccessMessage('Duyuru güncellendi');
+        setSuccessMessage(t('teacher.announcements.updatedSuccess'));
       } else {
         await push(ref(database, 'duyurular'), {
           kresId: kresId || currentClass.kresId || '',
@@ -161,7 +163,7 @@ export default function TeacherAnnouncementsScreen() {
           createdAt: Date.now(),
           updatedAt: Date.now(),
         });
-        setSuccessMessage('Duyuru sınıf velilerine gönderildi');
+        setSuccessMessage(t('teacher.announcements.sentToClassSuccess'));
       }
 
       resetForm();
@@ -169,7 +171,7 @@ export default function TeacherAnnouncementsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Duyuru kaydedilemedi.');
+      Alert.alert(t('teacher.announcements.errorTitle'), t('teacher.announcements.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -177,14 +179,14 @@ export default function TeacherAnnouncementsScreen() {
 
   const removeAnnouncement = (item) => {
     if (item.olusturanRol !== 'ogretmen') {
-      Alert.alert('Bilgi', 'Kurum duyuruları öğretmen ekranından kaldırılamaz.');
+      Alert.alert(t('teacher.announcements.infoTitle'), t('teacher.announcements.schoolAnnouncementsNoRemoveDesc'));
       return;
     }
 
-    Alert.alert('Duyuru kaldırılsın mı?', 'Bu duyuru veli ekranında artık görünmez.', [
-      { text: 'Vazgeç', style: 'cancel' },
+    Alert.alert(t('teacher.announcements.removeConfirmTitle'), t('teacher.announcements.removeConfirmDesc'), [
+      { text: t('teacher.announcements.cancelButton'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('teacher.announcements.removeButton'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -192,10 +194,10 @@ export default function TeacherAnnouncementsScreen() {
               aktif: false,
               updatedAt: Date.now(),
             });
-            setSuccessMessage('Duyuru kaldırıldı');
+            setSuccessMessage(t('teacher.announcements.removedSuccess'));
             setSuccessToast(true);
           } catch (err) {
-            Alert.alert('Hata', 'Duyuru kaldırılamadı.');
+            Alert.alert(t('teacher.announcements.errorTitle'), t('teacher.announcements.removeErrorDesc'));
           }
         },
       },
@@ -204,10 +206,10 @@ export default function TeacherAnnouncementsScreen() {
 
   const getBadgeText = (item) => {
     const targetRole = targetRoleOf(item);
-    if (item.olusturanRol === 'ogretmen') return 'Sınıf Velilerine';
-    if (targetRole === 'ogretmen') return 'Öğretmen Duyurusu';
-    if (targetRole === 'sinif') return 'Sınıf Duyurusu';
-    return 'Kurum Duyurusu';
+    if (item.olusturanRol === 'ogretmen') return t('teacher.announcements.badgeClassTeacher');
+    if (targetRole === 'ogretmen') return t('teacher.announcements.badgeTeacherAnnouncement');
+    if (targetRole === 'sinif') return t('teacher.announcements.badgeClassAnnouncement');
+    return t('teacher.announcements.badgeSchoolAnnouncement');
   };
 
   return (
@@ -216,49 +218,49 @@ export default function TeacherAnnouncementsScreen() {
       <View onLayout={onHeaderLayout}>
         <ScreenHeader
         navigation={navigation}
-        title="Duyurular"
-        subtitle={currentClass?.ad || 'Sınıfım'}
-        rightText={showForm ? 'Kapat' : '+ Ekle'}
+        title={t('teacher.announcements.title')}
+        subtitle={currentClass?.ad || t('teacher.announcements.myClassFallback')}
+        rightText={showForm ? t('teacher.announcements.closeButton') : t('teacher.announcements.addButton')}
         onRightPress={showForm ? () => { setShowForm(false); resetForm(); } : openCreateForm}
       />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.filterRow}>
-          <FilterChip active={filter === 'all'} label="📣 Tümü" onPress={() => setFilter('all')} />
-          <FilterChip active={filter === 'class'} label="👥 Sınıf" onPress={() => setFilter('class')} />
-          <FilterChip active={filter === 'school'} label="🏫 Kurum" onPress={() => setFilter('school')} />
-          <FilterChip active={filter === 'important'} label="★ Önemli" onPress={() => setFilter('important')} />
+          <FilterChip active={filter === 'all'} label={t('teacher.announcements.filterAll')} onPress={() => setFilter('all')} />
+          <FilterChip active={filter === 'class'} label={t('teacher.announcements.filterClass')} onPress={() => setFilter('class')} />
+          <FilterChip active={filter === 'school'} label={t('teacher.announcements.filterSchool')} onPress={() => setFilter('school')} />
+          <FilterChip active={filter === 'important'} label={t('teacher.announcements.filterImportant')} onPress={() => setFilter('important')} />
         </View>
 
         <View style={styles.infoBanner}>
           <View style={styles.bannerIconBox}><Text style={styles.bannerIcon}>🔔</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Duyuruları kolayca yönetin</Text>
-            <Text style={styles.bannerText}>Sınıfınıza duyuru ekleyebilir, kendi duyurularınızı düzenleyebilirsiniz.</Text>
+            <Text style={styles.bannerTitle}>{t('teacher.announcements.bannerTitle')}</Text>
+            <Text style={styles.bannerText}>{t('teacher.announcements.bannerText')}</Text>
           </View>
           <Text style={styles.bannerDecor}>📣</Text>
         </View>
 
         <View style={styles.statsRow}>
-          <StatBox value={stats.total} label="Toplam" icon="📣" />
-          <StatBox value={stats.classCount} label="Sınıf" icon="👥" />
-          <StatBox value={stats.schoolCount} label="Kurum" icon="🏫" />
+          <StatBox value={stats.total} label={t('teacher.announcements.statTotal')} icon="📣" />
+          <StatBox value={stats.classCount} label={t('teacher.announcements.statClass')} icon="👥" />
+          <StatBox value={stats.schoolCount} label={t('teacher.announcements.statSchool')} icon="🏫" />
         </View>
 
         {showForm ? (
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>{editingId ? 'Duyuruyu Düzenle' : 'Sınıf Velilerine Duyuru'}</Text>
-            <TextInput style={styles.input} value={baslik} onChangeText={setBaslik} placeholder="Duyuru başlığı" placeholderTextColor="#999" />
-            <TextInput style={[styles.input, styles.textArea]} value={icerik} onChangeText={setIcerik} placeholder="Duyuru metni" multiline placeholderTextColor="#999" />
+            <Text style={styles.formTitle}>{editingId ? t('teacher.announcements.formTitleEdit') : t('teacher.announcements.formTitleNew')}</Text>
+            <TextInput style={styles.input} value={baslik} onChangeText={setBaslik} placeholder={t('teacher.announcements.titlePlaceholder')} placeholderTextColor="#999" />
+            <TextInput style={[styles.input, styles.textArea]} value={icerik} onChangeText={setIcerik} placeholder={t('teacher.announcements.textPlaceholder')} multiline placeholderTextColor="#999" />
             <TouchableOpacity style={styles.saveButton} onPress={saveAnnouncement} disabled={saving} activeOpacity={0.85}>
-              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{editingId ? 'Duyuruyu Güncelle' : 'Duyuruyu Gönder'}</Text>}
+              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{editingId ? t('teacher.announcements.updateButton') : t('teacher.announcements.sendButton')}</Text>}
             </TouchableOpacity>
           </View>
         ) : null}
 
         {visible.length === 0 ? (
-          <EmptyState icon="📣" title="Duyuru yok" desc="Sınıfına duyuru eklediğinde burada görünür." />
+          <EmptyState icon="📣" title={t('teacher.announcements.emptyTitle')} desc={t('teacher.announcements.emptyDesc')} />
         ) : (
           visible.map((item) => {
             const role = targetRoleOf(item);
@@ -274,7 +276,7 @@ export default function TeacherAnnouncementsScreen() {
                   <Text style={[styles.typePill, isClass ? styles.classPill : styles.schoolPill]}>{isClass ? '👥 ' : '🏫 '}{getBadgeText(item)}</Text>
                   <View style={styles.topRightRow}>
                     <Text style={styles.date}>{dateText || '-'}</Text>
-                    {isImportant(item) ? <Text style={styles.importantPill}>★ ÖNEMLİ</Text> : null}
+                    {isImportant(item) ? <Text style={styles.importantPill}>{t('teacher.announcements.importantBadge')}</Text> : null}
                   </View>
                 </View>
                 <Text style={styles.title}>{titleOf(item)}</Text>
@@ -282,18 +284,18 @@ export default function TeacherAnnouncementsScreen() {
                 <View style={styles.bottomRow}>
                   <View style={[styles.dateIconBox, isClass ? styles.classDateIcon : styles.schoolDateIcon]}><Text style={styles.dateIcon}>📅</Text></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.dateText}>{dateText || 'Tarih yok'}</Text>
+                    <Text style={styles.dateText}>{dateText || t('teacher.announcements.noDateFallback')}</Text>
                     {timeText ? <Text style={styles.timeText}>{timeText}</Text> : null}
                     {item.senderName ? <Text style={styles.timeText}>{item.senderName}</Text> : null}
                   </View>
                   <TouchableOpacity style={styles.actionButtonSoft} onPress={() => setExpandedId(expanded ? null : item.id)} activeOpacity={0.85}>
-                    <Text style={styles.actionButtonSoftText}>{expanded ? 'Kapat' : 'Görüntüle'}</Text>
+                    <Text style={styles.actionButtonSoftText}>{expanded ? t('teacher.announcements.closeButton') : t('teacher.announcements.viewButton')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.editButton, !canEdit && styles.disabledAction]} onPress={() => openEditForm(item)} activeOpacity={0.85}>
-                    <Text style={styles.editButtonText}>Düzenle</Text>
+                    <Text style={styles.editButtonText}>{t('teacher.announcements.editButton')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.removeButton, !canEdit && styles.disabledAction]} onPress={() => removeAnnouncement(item)} activeOpacity={0.85}>
-                    <Text style={styles.removeButtonText}>Sil</Text>
+                    <Text style={styles.removeButtonText}>{t('teacher.announcements.deleteButton')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

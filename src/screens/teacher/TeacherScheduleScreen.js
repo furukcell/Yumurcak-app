@@ -8,6 +8,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
@@ -114,11 +115,12 @@ function formatDateKey(dateKey) {
 }
 
 export default function TeacherScheduleScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { loading, kresId, teacherId, currentClass, schedules } = useTeacherData();
 
   const sinifId = currentClass?.id || null;
-  const sinifAd = currentClass?.ad || 'Sınıfım';
+  const sinifAd = currentClass?.ad || t('teacher.schedule.myClassFallback');
 
   const [monthDate, setMonthDate] = useState(new Date());
   const days = useMemo(() => getDaysOfMonth(monthDate), [monthDate]);
@@ -251,7 +253,7 @@ export default function TeacherScheduleScreen() {
     return enSon.kazanimlar;
   }, [selectedItem?.etkinlik, selectedItem?.kazanimlar, selectedDateKey, schedules]);
 
-  if (loading) return <LoadingState text="Ders programı hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.schedule.loading')} />;
 
   function changeMonth(direction) {
     const next = shiftMonth(monthDate, direction);
@@ -342,7 +344,7 @@ export default function TeacherScheduleScreen() {
     try {
       const { values: copiedValues, found } = await copyFromPreviousMonth({ nodePath: NODE_PATH, kresId, kaynak: KAYNAK, currentMonthDate: monthDate, days, matchExtra: forClass(sinifId), valueMapper: mapRecordToValue });
       if (!found) {
-        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir ders programı bulunamadı.');
+        Alert.alert(t('teacher.schedule.notFoundTitle'), t('teacher.schedule.noPreviousMonthDesc'));
         return;
       }
       setValues((prev) => {
@@ -352,17 +354,17 @@ export default function TeacherScheduleScreen() {
         });
         return next;
       });
-      Alert.alert('Kopyalandı', `${found} günlük etkinlik geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+      Alert.alert(t('teacher.schedule.copiedTitle'), t('teacher.schedule.copiedDesc', { count: found }));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+      Alert.alert(t('teacher.schedule.errorTitle'), t('teacher.schedule.copyErrorDesc'));
     } finally { setCopying(false); }
   }
   function confirmPublish() {
-    if (!kresId || !sinifId) { Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.'); return; }
-    if (!hasAnyEntry) { Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne etkinlik gir.'); return; }
-    Alert.alert('Ayı Paylaş', `${sinifAd} sınıfının ${monthLabel} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.`, [
-      { text: 'Vazgeç', style: 'cancel' }, { text: 'Paylaş', onPress: doPublish },
+    if (!kresId || !sinifId) { Alert.alert(t('teacher.schedule.errorTitle'), t('teacher.schedule.classNotFoundDesc')); return; }
+    if (!hasAnyEntry) { Alert.alert(t('teacher.schedule.missingInfoTitle'), t('teacher.schedule.noEntryDesc')); return; }
+    Alert.alert(t('teacher.schedule.publishConfirmTitle'), t('teacher.schedule.publishConfirmDesc', { class: sinifAd, month: monthLabel }), [
+      { text: t('teacher.schedule.cancelButton'), style: 'cancel' }, { text: t('teacher.schedule.publishButton'), onPress: doPublish },
     ]);
   }
   async function doPublish() {
@@ -371,23 +373,23 @@ export default function TeacherScheduleScreen() {
       await publishMonth({ nodePath: NODE_PATH, kresId, monthKey, monthLabel, kaynak: KAYNAK, days, values, hasContent: hasScheduleContent, buildRecord: (args) => buildScheduleRecord({ ...args, sinifId }), matchExtra: forClass(sinifId) });
       await createNotification({ kresId, hedefRoller: ['veli'], hedefSinifIds: [sinifId], baslik: '📅 Ders programı güncellendi', mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`, tip: 'ders_programi', routeName: 'ParentSummary', createdBy: teacherId || '' });
       dirtyDatesRef.current.clear();
-      setSuccessMessage(`${monthLabel} ders programı yayınlandı`);
+      setSuccessMessage(t('teacher.schedule.publishedSuccess', { month: monthLabel }));
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Aylık ders programı yayınlanamadı.');
+      Alert.alert(t('teacher.schedule.errorTitle'), t('teacher.schedule.publishErrorDesc'));
     } finally { setSaving(false); }
   }
   function confirmUnpublish() {
     if (!kresId || !sinifId || publishedCount === 0) return;
-    Alert.alert('Yayından Kaldır', `${monthLabel} için yayınlanmış ders programı kaldırılsın mı?`, [
-      { text: 'Vazgeç', style: 'cancel' }, { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
+    Alert.alert(t('teacher.schedule.unpublishConfirmTitle'), t('teacher.schedule.unpublishConfirmDesc', { month: monthLabel }), [
+      { text: t('teacher.schedule.cancelButton'), style: 'cancel' }, { text: t('teacher.schedule.removeButton'), style: 'destructive', onPress: doUnpublish },
     ]);
   }
   async function doUnpublish() {
     setUnpublishing(true);
     try { await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) }); }
-    catch (error) { console.log(error); Alert.alert('Hata', 'Yayından kaldırılamadı.'); }
+    catch (error) { console.log(error); Alert.alert(t('teacher.schedule.errorTitle'), t('teacher.schedule.unpublishErrorDesc')); }
     finally { setUnpublishing(false); }
   }
   function selectDay(dateKey) {
@@ -404,41 +406,41 @@ export default function TeacherScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} ders programı yayınlandı`} onHide={() => setSuccessToast(false)} />
-      <ScreenHeader navigation={navigation} title="Ders Programı" subtitle={sinifAd} />
+      <AppSuccessToast visible={successToast} message={successMessage || t('teacher.schedule.publishedSuccess', { month: monthLabel })} onHide={() => setSuccessToast(false)} />
+      <ScreenHeader navigation={navigation} title={t('teacher.schedule.title')} subtitle={sinifAd} />
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {!currentClass ? (
-            <EmptyState icon="📚" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlanınca program görüntülenir." />
+            <EmptyState icon="📚" title={t('teacher.schedule.noClassTitle')} desc={t('teacher.schedule.noClassDesc')} />
           ) : (
             <>
               <View style={styles.todayCard}>
-                <Text style={styles.todayLabel}>Bugün</Text>
+                <Text style={styles.todayLabel}>{t('teacher.schedule.todayLabel')}</Text>
                 {todaySchedule && Array.isArray(todaySchedule.etkinlikler) && todaySchedule.etkinlikler.length > 0 ? (
                   <>
                     <Text style={styles.todayTitle}>{todaySchedule.etkinlikler.map((it) => it.etkinlik).filter(Boolean).join(', ')}</Text>
                     {todaySchedule.etkinlikler.some((it) => it.aciklama) ? <Text style={styles.todayDesc}>{todaySchedule.etkinlikler.map((it) => it.aciklama).filter(Boolean).join(' · ')}</Text> : null}
                   </>
-                ) : <Text style={styles.todayEmpty}>Bugün için yayınlanmış bir ders yok.</Text>}
+                ) : <Text style={styles.todayEmpty}>{t('teacher.schedule.todayEmptyLabel')}</Text>}
               </View>
               <View style={styles.monthCard}>
                 <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(-1)} activeOpacity={0.8}><Text style={styles.monthButtonText}>‹</Text></TouchableOpacity>
-                <View style={styles.monthCenter}><Text style={styles.monthLabel}>{monthLabel}</Text><Text style={styles.monthHint}>{days.length} günlük plan</Text></View>
+                <View style={styles.monthCenter}><Text style={styles.monthLabel}>{monthLabel}</Text><Text style={styles.monthHint}>{t('teacher.schedule.monthDaysHint', { count: days.length })}</Text></View>
                 <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}><Text style={styles.monthButtonText}>›</Text></TouchableOpacity>
               </View>
               {publishedCount > 0 ? (
                 <View style={styles.publishedCard}>
-                  <View style={{ flex: 1 }}><Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text><Text style={styles.publishedText}>Veliler şu an bu ayın programını görüyor.</Text></View>
-                  <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}><Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text></TouchableOpacity>
+                  <View style={{ flex: 1 }}><Text style={styles.publishedTitle}>{t('teacher.schedule.publishedLabel', { month: monthLabel })}</Text><Text style={styles.publishedText}>{t('teacher.schedule.publishedDesc')}</Text></View>
+                  <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}><Text style={styles.unpublishButtonText}>{unpublishing ? t('teacher.schedule.unpublishingLabel') : t('teacher.schedule.unpublishButton')}</Text></TouchableOpacity>
                 </View>
               ) : null}
               <View style={styles.utilityRow}>
-                <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}><Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text></TouchableOpacity>
+                <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}><Text style={styles.copyButtonText}>{copying ? t('teacher.schedule.copyingLabel') : t('teacher.schedule.copyPreviousMonthButton')}</Text></TouchableOpacity>
                 <MonthlyArchivePicker kresId={kresId} nodePath={NODE_PATH} kaynak={KAYNAK} matchExtra={forClass(sinifId)} currentMonthKey={monthKey} onSelectMonth={jumpToMonth} theme={THEME} />
               </View>
               <ActivityBalanceCard schedules={classSchedules} monthKey={monthKey} monthLabel={monthLabel} theme={THEME} />
-              <MonthlyCalendarView days={daysWithContent} view={view} onChangeView={setView} selectedDateKey={selectedDateKey} onSelectDay={selectDay} theme={THEME} renderDayPreview={(day) => { const preview = schedulePreview(values[day.dateKey]); return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>; }} />
-              <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}><Text style={styles.saveButtonText}>{saving ? 'Paylaşılıyor...' : `${monthLabel} Programını Paylaş`}</Text></TouchableOpacity>
+              <MonthlyCalendarView days={daysWithContent} view={view} onChangeView={setView} selectedDateKey={selectedDateKey} onSelectDay={selectDay} theme={THEME} renderDayPreview={(day) => { const preview = schedulePreview(values[day.dateKey]); return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('teacher.schedule.emptyPreview')}</Text>; }} />
+              <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}><Text style={styles.saveButtonText}>{saving ? t('teacher.schedule.publishingLabel') : t('teacher.schedule.publishMonthButton', { month: monthLabel })}</Text></TouchableOpacity>
               {publishedCount > 0 ? <View style={{ marginTop: 14 }}><MonthlyDocumentPdfBar kresId={kresId} nodePath={NODE_PATH} kaynak={KAYNAK} docType="ders" monthKey={monthKey} monthLabel={monthLabel} sinifId={sinifId} sinifAd={sinifAd} theme={THEME} /></View> : null}
             </>
           )}
@@ -448,27 +450,27 @@ export default function TeacherScheduleScreen() {
         <View style={styles.modalBackdrop}>
           <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeader}><Text style={styles.modalTitle}>{selectedDay?.label || ''}</Text><TouchableOpacity onPress={closeModal} activeOpacity={0.8} style={styles.modalCloseButton}><Text style={styles.modalCloseCheck}>✓</Text></TouchableOpacity></View>
-            {lastYearSchedule ? <TouchableOpacity style={styles.lastYearCard} onPress={useLastYearSchedule} activeOpacity={0.85}><Text style={styles.lastYearLabel}>📅 Geçen yıl bugün ({formatDateKey(lastYearSchedule.tarih)})</Text><Text style={styles.lastYearTitle}>{(lastYearSchedule.etkinlikler || []).map((it) => it.etkinlik).filter(Boolean).join(', ')}</Text><Text style={styles.lastYearHint}>Dokun, bu ayki güne kopyala (mevcut liste değişir)</Text></TouchableOpacity> : null}
+            {lastYearSchedule ? <TouchableOpacity style={styles.lastYearCard} onPress={useLastYearSchedule} activeOpacity={0.85}><Text style={styles.lastYearLabel}>{t('teacher.schedule.lastYearLabel', { date: formatDateKey(lastYearSchedule.tarih) })}</Text><Text style={styles.lastYearTitle}>{(lastYearSchedule.etkinlikler || []).map((it) => it.etkinlik).filter(Boolean).join(', ')}</Text><Text style={styles.lastYearHint}>{t('teacher.schedule.lastYearHint')}</Text></TouchableOpacity> : null}
             <ActivityChipRow items={selectedValue.etkinlikler} activeIndex={editingIndex} onSelect={(index) => { setCustomKazanimText(''); setEditingIndex(index); }} onAdd={() => addActivityItem(selectedDateKey)} onRemove={(index) => removeActivityItem(selectedDateKey, index)} theme={THEME} />
             {editingIndex >= 0 && selectedItem ? (
               <>
                 <View style={styles.libraryRow}><ActivityLibraryPicker yasGrubu={currentClass?.yasGrubu} initialKategori={selectedItem.kategori || ETKINLIK_KATEGORILERI[0].key} onSelect={(ad) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', ad)} theme={THEME} /></View>
-                <ActivityAutocompleteInput value={selectedItem.etkinlik} onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)} onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)} placeholder="Ders (örn: Parmak Boyası)" style={styles.modalInput} theme={THEME} />
-                {recentRepeat ? <View style={styles.repeatWarning}><Text style={styles.repeatWarningText}>🔁 Bu etkinlik son 10 gün içinde {recentRepeat.sayi} kez uygulanmış (en son: {formatDateKey(recentRepeat.enSonTarih)}).</Text></View> : null}
-                <Text style={styles.modalLabel}>Başlangıç Saati</Text>
+                <ActivityAutocompleteInput value={selectedItem.etkinlik} onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)} onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)} placeholder={t('teacher.schedule.activityPlaceholder')} style={styles.modalInput} theme={THEME} />
+                {recentRepeat ? <View style={styles.repeatWarning}><Text style={styles.repeatWarningText}>{t('teacher.schedule.repeatWarning', { count: recentRepeat.sayi, date: formatDateKey(recentRepeat.enSonTarih) })}</Text></View> : null}
+                <Text style={styles.modalLabel}>{t('teacher.schedule.startTimeLabel')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>{SAAT_SECENEKLERI.map((saat) => { const active = selectedItem.baslangicSaati === saat; return <TouchableOpacity key={saat} style={[styles.saatChip, active && styles.saatChipActive]} onPress={() => updateItemField(selectedDateKey, editingIndex, 'baslangicSaati', active ? '' : saat)} activeOpacity={0.85}><Text style={[styles.saatChipText, active && styles.saatChipTextActive]}>{saat}</Text></TouchableOpacity>; })}</ScrollView>
-                <Text style={styles.modalLabel}>Bitiş Saati</Text>
+                <Text style={styles.modalLabel}>{t('teacher.schedule.endTimeLabel')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>{SAAT_SECENEKLERI.map((saat) => { const active = selectedItem.bitisSaati === saat; return <TouchableOpacity key={saat} style={[styles.saatChip, active && styles.saatChipActive]} onPress={() => updateItemField(selectedDateKey, editingIndex, 'bitisSaati', active ? '' : saat)} activeOpacity={0.85}><Text style={[styles.saatChipText, active && styles.saatChipTextActive]}>{saat}</Text></TouchableOpacity>; })}</ScrollView>
-                <Text style={styles.modalLabel}>Kategori</Text>
+                <Text style={styles.modalLabel}>{t('teacher.schedule.categoryLabel')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>{ETKINLIK_KATEGORILERI.map((item) => { const active = selectedItem.kategori === item.key; return <TouchableOpacity key={item.key} style={[styles.kategoriChip, active && styles.kategoriChipActive]} onPress={() => updateItemField(selectedDateKey, editingIndex, 'kategori', active ? '' : item.key)} activeOpacity={0.85}><Text style={[styles.kategoriChipText, active && styles.kategoriChipTextActive]}>{item.emoji} {item.label}</Text></TouchableOpacity>; })}</ScrollView>
-                {kazanimOnerisi ? <TouchableOpacity style={styles.kazanimOneriCard} onPress={() => setKazanimlar(selectedDateKey, editingIndex, kazanimOnerisi)} activeOpacity={0.85}><Text style={styles.kazanimOneriLabel}>💡 Bu etkinlik için önceden kullanılan kazanımlar</Text><Text style={styles.kazanimOneriText}>{kazanimOnerisi.join(', ')}</Text><Text style={styles.kazanimOneriHint}>Dokun, kullan</Text></TouchableOpacity> : null}
-                <Text style={styles.modalLabel}>Kazanımlar</Text>
+                {kazanimOnerisi ? <TouchableOpacity style={styles.kazanimOneriCard} onPress={() => setKazanimlar(selectedDateKey, editingIndex, kazanimOnerisi)} activeOpacity={0.85}><Text style={styles.kazanimOneriLabel}>{t('teacher.schedule.suggestedOutcomesLabel')}</Text><Text style={styles.kazanimOneriText}>{kazanimOnerisi.join(', ')}</Text><Text style={styles.kazanimOneriHint}>{t('teacher.schedule.tapToUseHint')}</Text></TouchableOpacity> : null}
+                <Text style={styles.modalLabel}>{t('teacher.schedule.outcomesLabel')}</Text>
                 <View style={styles.kazanimGrid}>{KAZANIM_ONERILERI.map((etiket) => { const active = (selectedItem.kazanimlar || []).includes(etiket); return <TouchableOpacity key={etiket} style={[styles.kazanimChip, active && styles.kazanimChipActive]} onPress={() => toggleKazanim(selectedDateKey, editingIndex, etiket)} activeOpacity={0.85}><Text style={[styles.kazanimChipText, active && styles.kazanimChipTextActive]}>{etiket}</Text></TouchableOpacity>; })}</View>
-                <TextInput value={customKazanimText} onChangeText={setCustomKazanimText} placeholder="+ Özel kazanım ekle (yazıp Enter'a bas)" placeholderTextColor={THEME.muted} style={styles.modalInput} onSubmitEditing={() => { const metin = customKazanimText.trim(); if (!metin) return; const mevcut = selectedItem.kazanimlar || []; if (!mevcut.includes(metin)) setKazanimlar(selectedDateKey, editingIndex, [...mevcut, metin]); setCustomKazanimText(''); }} returnKeyType="done" />
-                <TextInput value={selectedItem.aciklama} onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'aciklama', text)} placeholder="Açıklama (opsiyonel)" placeholderTextColor={THEME.muted} style={styles.modalInput} multiline />
+                <TextInput value={customKazanimText} onChangeText={setCustomKazanimText} placeholder={t('teacher.schedule.customOutcomePlaceholder')} placeholderTextColor={THEME.muted} style={styles.modalInput} onSubmitEditing={() => { const metin = customKazanimText.trim(); if (!metin) return; const mevcut = selectedItem.kazanimlar || []; if (!mevcut.includes(metin)) setKazanimlar(selectedDateKey, editingIndex, [...mevcut, metin]); setCustomKazanimText(''); }} returnKeyType="done" />
+                <TextInput value={selectedItem.aciklama} onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'aciklama', text)} placeholder={t('teacher.schedule.notePlaceholder')} placeholderTextColor={THEME.muted} style={styles.modalInput} multiline />
               </>
             ) : null}
-            {hasScheduleContent(selectedValue) ? <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}><Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text></TouchableOpacity> : null}
+            {hasScheduleContent(selectedValue) ? <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}><Text style={styles.modalClearButtonText}>{t('teacher.schedule.clearDayButton')}</Text></TouchableOpacity> : null}
           </ScrollView>
         </View>
       </Modal>
