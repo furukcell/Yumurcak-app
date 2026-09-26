@@ -20,19 +20,14 @@ import {
   Platform,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useTranslation } from 'react-i18next';
 import { onValue, push, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getUserName } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
-const TOPICS = [
-  { key: 'istek', label: 'İstek' },
-  { key: 'sikayet', label: 'Şikayet' },
-  { key: 'gorus', label: 'Görüş' },
-  { key: 'teknik', label: 'Teknik Destek' },
-  { key: 'diger', label: 'Diğer' },
-];
+const TOPIC_KEYS = ['istek', 'sikayet', 'gorus', 'teknik', 'diger'];
 
 const MAX_LEN = 5000;
 
@@ -53,10 +48,12 @@ function formatDate(value) {
 }
 
 export default function TeacherSupportScreen() {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, kullanici, teacherId, kresId, kresAdi, currentClass } = useTeacherData();
+  const TOPICS = useMemo(() => TOPIC_KEYS.map((key) => ({ key, label: t(`teacher.support.topics.${key}`) })), [t]);
   const [topic, setTopic] = useState('istek');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -83,17 +80,17 @@ export default function TeacherSupportScreen() {
     return () => unsubscribe();
   }, [teacherId]);
 
-  const selectedTopicLabel = useMemo(() => TOPICS.find((item) => item.key === topic)?.label || 'İstek', [topic]);
+  const selectedTopicLabel = useMemo(() => TOPICS.find((item) => item.key === topic)?.label || t('teacher.support.topics.istek'), [TOPICS, topic, t]);
 
-  if (loading) return <LoadingState text="Destek hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.support.loading')} />;
 
   const showSuccess = (text) => setSuccessToast({ visible: true, message: text });
 
   const sendMessage = async () => {
     const clean = message.trim();
-    if (!clean) return Alert.alert('Eksik Bilgi', 'Mesaj alanı boş olamaz.');
-    if (clean.length > MAX_LEN) return Alert.alert('Mesaj Uzun', `Mesaj en fazla ${MAX_LEN} karakter olabilir.`);
-    if (!teacherId) return Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı.');
+    if (!clean) return Alert.alert(t('teacher.support.missingInfoTitle'), t('teacher.support.emptyMessageDesc'));
+    if (clean.length > MAX_LEN) return Alert.alert(t('teacher.support.messageTooLongTitle'), t('teacher.support.messageTooLongDesc', { max: MAX_LEN }));
+    if (!teacherId) return Alert.alert(t('teacher.support.errorTitle'), t('teacher.support.userInfoNotFoundDesc'));
 
     setSending(true);
     try {
@@ -109,7 +106,7 @@ export default function TeacherSupportScreen() {
         kresAdi: kresAdi || '',
         userId: teacherId,
         userRole: kullanici?.rol || 'ogretmen',
-        userName: teacherName || kullanici?.kullaniciAdi || 'Öğretmen',
+        userName: teacherName || kullanici?.kullaniciAdi || t('teacher.support.teacherFallback'),
         userPhone: kullanici?.telefon || '',
         userUsername: kullanici?.kullaniciAdi || '',
         sinifId: currentClass?.id || '',
@@ -120,10 +117,10 @@ export default function TeacherSupportScreen() {
 
       setMessage('');
       setTopic('istek');
-      showSuccess('Mesajın gönderildi');
+      showSuccess(t('teacher.support.sentSuccess'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Mesaj gönderilemedi. Lütfen tekrar dene.');
+      Alert.alert(t('teacher.support.errorTitle'), t('teacher.support.sendErrorDesc'));
     } finally {
       setSending(false);
     }
@@ -131,8 +128,8 @@ export default function TeacherSupportScreen() {
 
   const sendReply = async (item) => {
     const clean = String(replyText[item.id] || '').trim();
-    if (!clean) return Alert.alert('Eksik Bilgi', 'Yanıt alanı boş olamaz.');
-    if (clean.length > MAX_LEN) return Alert.alert('Yanıt Uzun', `Yanıt en fazla ${MAX_LEN} karakter olabilir.`);
+    if (!clean) return Alert.alert(t('teacher.support.missingInfoTitle'), t('teacher.support.emptyReplyDesc'));
+    if (clean.length > MAX_LEN) return Alert.alert(t('teacher.support.replyTooLongTitle'), t('teacher.support.replyTooLongDesc', { max: MAX_LEN }));
 
     setReplyingId(item.id);
     try {
@@ -143,7 +140,7 @@ export default function TeacherSupportScreen() {
           id: replyRef.key,
           mesaj: clean,
           authorId: teacherId,
-          authorName: teacherName || 'Öğretmen',
+          authorName: teacherName || t('teacher.support.teacherFallback'),
           authorRole: kullanici?.rol || 'ogretmen',
           createdAt: now,
         },
@@ -151,10 +148,10 @@ export default function TeacherSupportScreen() {
         [`destekMesajlari/${item.id}/updatedAt`]: now,
       });
       setReplyText((prev) => ({ ...prev, [item.id]: '' }));
-      showSuccess('Yanıtın gönderildi');
+      showSuccess(t('teacher.support.replySentSuccess'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Yanıt gönderilemedi.');
+      Alert.alert(t('teacher.support.errorTitle'), t('teacher.support.replyErrorDesc'));
     } finally {
       setReplyingId('');
     }
@@ -169,7 +166,7 @@ export default function TeacherSupportScreen() {
           const isAdmin = String(reply.authorRole || '').toLowerCase().includes('super');
           return (
             <View key={reply.id} style={[styles.replyItem, isAdmin && styles.adminReply]}>
-              <Text style={styles.replyAuthor}>{isAdmin ? 'Yumurcak Destek' : (reply.authorName || 'Sen')}</Text>
+              <Text style={styles.replyAuthor}>{isAdmin ? t('teacher.support.adminReplyName') : (reply.authorName || t('teacher.support.youFallback'))}</Text>
               <Text style={styles.replyText}>{reply.mesaj}</Text>
               <Text style={styles.replyDate}>{formatDate(reply.createdAt)}</Text>
             </View>
@@ -187,20 +184,20 @@ export default function TeacherSupportScreen() {
         onHide={() => setSuccessToast({ visible: false, message: '' })}
       />
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Bize Yazın" subtitle="Süper Admin'e istek / şikayet / görüş" />
+        <ScreenHeader navigation={navigation} title={t('teacher.support.title')} subtitle={t('teacher.support.subtitle')} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.infoBanner}>
             <View style={styles.bannerIconBox}><Text style={styles.bannerIcon}>💬</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bannerTitle}>Yumurcak Destek</Text>
-              <Text style={styles.bannerText}>İstek, şikayet, görüş veya teknik destek konularında Süper Admin'e yazabilirsin.</Text>
+              <Text style={styles.bannerTitle}>{t('teacher.support.bannerTitle')}</Text>
+              <Text style={styles.bannerText}>{t('teacher.support.bannerText')}</Text>
             </View>
           </View>
 
           <View style={styles.formCard}>
-            <Text style={styles.formLabel}>Konu</Text>
+            <Text style={styles.formLabel}>{t('teacher.support.topicLabel')}</Text>
             <View style={styles.topicWrap}>
               {TOPICS.map((item) => (
                 <TouchableOpacity key={item.key} style={[styles.topicButton, topic === item.key && styles.topicButtonActive]} onPress={() => setTopic(item.key)} activeOpacity={0.85}>
@@ -209,12 +206,12 @@ export default function TeacherSupportScreen() {
               ))}
             </View>
 
-            <Text style={styles.formLabel}>Mesaj</Text>
+            <Text style={styles.formLabel}>{t('teacher.support.messageLabel')}</Text>
             <TextInput
               style={styles.textArea}
               value={message}
               onChangeText={(text) => setMessage(text.slice(0, MAX_LEN))}
-              placeholder="Mesajını yaz..."
+              placeholder={t('teacher.support.messagePlaceholder')}
               placeholderTextColor="#999"
               multiline
               maxLength={MAX_LEN}
@@ -223,37 +220,37 @@ export default function TeacherSupportScreen() {
             <Text style={styles.counter}>{message.length}/{MAX_LEN}</Text>
 
             <TouchableOpacity style={[styles.saveButton, sending && styles.disabledAction]} onPress={sendMessage} disabled={sending} activeOpacity={0.85}>
-              {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Gönder</Text>}
+              {sending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{t('teacher.support.sendButton')}</Text>}
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionTitle}>Son Gönderiler</Text>
+          <Text style={styles.sectionTitle}>{t('teacher.support.recentTitle')}</Text>
           {messages.length === 0 ? (
-            <EmptyState icon="📭" title="Henüz mesaj yok" desc="Süper Admin'e yazdığın mesajlar burada görünecek." />
+            <EmptyState icon="📭" title={t('teacher.support.noMessagesTitle')} desc={t('teacher.support.noMessagesDesc')} />
           ) : (
             messages.map((item) => (
               <View key={item.id} style={styles.card}>
                 <View style={styles.cardTopRow}>
-                  <Text style={styles.typePill}>{item.konuBaslik || item.konu || 'Mesaj'}</Text>
+                  <Text style={styles.typePill}>{item.konuBaslik || item.konu || t('teacher.support.messageFallback')}</Text>
                   <Text style={styles.statusBadge}>{item.durum || 'yeni'}</Text>
                 </View>
                 <Text style={styles.body}>{item.mesaj}</Text>
                 <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
                 {renderReplies(item)}
 
-                <Text style={styles.formLabel}>Yanıtla</Text>
+                <Text style={styles.formLabel}>{t('teacher.support.replyLabel')}</Text>
                 <TextInput
                   style={styles.replyInput}
                   value={replyText[item.id] || ''}
                   onChangeText={(text) => setReplyText((prev) => ({ ...prev, [item.id]: text.slice(0, MAX_LEN) }))}
-                  placeholder="Eklemek istediğin bir şey var mı?"
+                  placeholder={t('teacher.support.replyPlaceholder')}
                   placeholderTextColor="#999"
                   multiline
                   maxLength={MAX_LEN}
                   textAlignVertical="top"
                 />
                 <TouchableOpacity style={[styles.replyButton, replyingId === item.id && styles.disabledAction]} disabled={replyingId === item.id} onPress={() => sendReply(item)} activeOpacity={0.85}>
-                  <Text style={styles.replyButtonText}>{replyingId === item.id ? 'Gönderiliyor...' : 'Yanıt Gönder'}</Text>
+                  <Text style={styles.replyButtonText}>{replyingId === item.id ? t('teacher.support.replyButtonSending') : t('teacher.support.replyButton')}</Text>
                 </TouchableOpacity>
               </View>
             ))
