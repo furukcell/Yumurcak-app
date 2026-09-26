@@ -1199,36 +1199,36 @@
       "teacherFallback": "Lehrer"
     },
     "medicationFormDetail": {
-      "loading": "Wird geladen...",
-      "notFound": "Formular nicht gefunden.",
+      "teacherFallback": "Erzieher/in",
+      "errorTitle": "Fehler",
+      "logErrorDesc": "Eintrag konnte nicht hinzugefügt werden.",
+      "deleteConfirmTitle": "Löschen",
+      "deleteConfirmDesc": "Dieses Medikamenten-Protokoll löschen?",
+      "deleteCancelButton": "Abbrechen",
+      "deleteConfirmButton": "Löschen",
+      "deleteErrorDesc": "Konnte nicht gelöscht werden.",
+      "exportErrorDesc": "Formular konnte nicht erstellt werden.",
+      "loadingText": "Wird geladen...",
+      "formNotFound": "Formular nicht gefunden.",
+      "doseLoggedToast": "Heutige Dosis wurde erfasst",
       "doseLabel": "Dosis",
-      "usageLabel": "Anwendung",
+      "methodLabel": "Anwendungsart",
       "startLabel": "Beginn",
       "endLabel": "Ende",
       "reminderTimeLabel": "Erinnerungszeit",
       "parentApprovalLabel": "Zustimmung der Eltern",
       "approvalReceived": "✅ Erhalten",
       "approvalPending": "⏳ Ausstehend",
-      "loggedToday": "✅ Die heutige ({{date}}) Dosis wurde als verabreicht markiert.",
-      "todayDoseTitle": "Heutige Dosis ({{date}})",
+      "loggedToday": "✅ Heute ({{date}}) als verabreicht markiert.",
+      "todaysDoseTitle": "Heutige Dosis ({{date}})",
       "notePlaceholder": "Notiz (optional)",
       "saving": "Wird gespeichert...",
-      "logButton": "✅ Heute verabreicht",
-      "historyTitle": "Verlauf",
+      "logTodayButton": "✅ Heute verabreicht",
+      "historyTitle": "Bisherige Einträge",
       "noHistory": "Noch keine Einträge.",
       "printButton": "🖨️ Drucken",
       "shareButton": "📤 Teilen/Herunterladen",
-      "exportingButton": "...",
-      "deleteButton": "Formular löschen",
-      "deleteConfirmTitle": "Löschen",
-      "deleteConfirmMessage": "Soll dieses Medikamenten-Nachverfolgungsformular gelöscht werden?",
-      "cancelButton": "Abbrechen",
-      "confirmDeleteButton": "Löschen",
-      "successToast": "Heutige Dosis gespeichert",
-      "errorTitle": "Fehler",
-      "logErrorDesc": "Der Eintrag konnte nicht hinzugefügt werden.",
-      "deleteErrorDesc": "Konnte nicht gelöscht werden.",
-      "exportErrorDesc": "Das Formular konnte nicht erstellt werden."
+      "deleteFormButton": "Formular löschen"
     },
     "medical": {
       "loading": "Medizinische Informationen werden vorbereitet...",
@@ -1270,6 +1270,135 @@
       "pendingBadge": "⏳ Zustimmung ausstehend — Zustimmungsanfrage an die Eltern gesendet",
       "reminderMeta": "⏰ Erinnerung: {{time}}",
       "approvalReceived": "✅ Zustimmung der Eltern erhalten"
+    },
+    "weeklyStar": {
+      "loading": "Stern der Woche wird vorbereitet...",
+      "title": "Stern der Woche",
+      "fridayLockAlertTitle": "Nur freitags aktiv",
+      "fridayLockAlertDesc": "Abzeichen für den Stern der Woche können nur freitags vergeben werden.",
+      "errorTitle": "Fehler",
+      "noClassDesc": "Klasseninformationen nicht gefunden.",
+      "missingInfoTitle": "Fehlende Angaben",
+      "selectChildFirstDesc": "Bitte zuerst ein Kind auswählen.",
+      "savedTitle": "Gespeichert",
+      "savedDesc": "Das Abzeichen dieser Woche wurde für {{name}} gespeichert.",
+      "saveErrorDesc": "Abzeichen konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "noClassTitle": "Keine Klasse gefunden",
+      "noClassEmptyDesc": "Das Lehrerkonto muss einer Klasse zugeordnet sein, um Abzeichen zu vergeben.",
+      "noChildrenTitle": "Keine Kinder",
+      "noChildrenDesc": "Abzeichen können vergeben werden, sobald Kinder zur Klasse hinzugefügt wurden.",
+      "heroTitle": "🌟 Stern der Woche",
+      "heroText": "Jeden Freitag kannst du ein positives Verhalten eines Kindes aus der Woche mit einem kleinen Abzeichen würdigen.",
+      "privacyTitle": "🔒 Hinweis zum Datenschutz",
+      "privacyText": "Ein vergebenes Abzeichen ist nur für die Eltern des ausgewählten Kindes sichtbar. Andere Eltern sehen es nicht.",
+      "lockTitle": "⏳ Abzeichenauswahl wird freitags aktiv",
+      "lockText": "Heute kannst du die Kinder beobachten. Am Freitag kannst du ein Kind auswählen und ein Abzeichen mit einer kurzen Notiz speichern.",
+      "selectChildTitle": "Kind auswählen",
+      "selectBadgeTitle": "Abzeichen auswählen",
+      "noteTitle": "Kurze Notiz",
+      "noteHelpText": "Du kannst eine kurze, positive Notiz schreiben, die die Eltern sehen.",
+      "notePlaceholder": "Z. B.: Hat Freunden beim Aufräumen der Spielsachen geholfen.",
+      "updateInfo": "Für dieses Kind wurde diese Woche bereits ein Abzeichen vergeben. Beim Speichern wird der bestehende Eintrag aktualisiert.",
+      "updateButton": "Abzeichen aktualisieren",
+      "saveButton": "Abzeichen speichern",
+      "thisWeekTitle": "Einträge dieser Woche",
+      "noRecordsThisWeek": "Diese Woche wurde noch kein Abzeichen vergeben.",
+      "historyTitle": "Abzeichenverlauf der Klasse",
+      "noHistory": "Noch kein Abzeichenverlauf vorhanden.",
+      "childFallback": "Kind",
+      "badgeFallback": "Abzeichen",
+      "badges": {
+        "yardimsever_kalp": {
+          "title": "Hilfsbereites Herz",
+          "desc": "Hat Freunden geholfen."
+        },
+        "paylasimci_minik": {
+          "title": "Teilfreudiger Wicht",
+          "desc": "Hat Spielzeug und Material geteilt."
+        },
+        "cesur_yurek": {
+          "title": "Mutiges Herz",
+          "desc": "Hat sich mutig an einer neuen Aktivität beteiligt."
+        },
+        "merakli_kasif": {
+          "title": "Neugieriger Entdecker",
+          "desc": "Hat Neugier beim Lernen neuer Dinge gezeigt."
+        },
+        "yaratici_ressam": {
+          "title": "Kreativer Künstler",
+          "desc": "Hat toll bei einer Kunstaktivität mitgemacht."
+        },
+        "neseli_gunes": {
+          "title": "Fröhliche Sonne",
+          "desc": "Hat positive Energie in die Klasse gebracht."
+        },
+        "sorumluluk_sahibi": {
+          "title": "Verantwortungsbewusst",
+          "desc": "Hat auf eigene Sachen und Klassenordnung geachtet."
+        },
+        "sabirli_minik": {
+          "title": "Geduldiger Wicht",
+          "desc": "Hat gewartet und Geduld gezeigt."
+        },
+        "kitap_dostu": {
+          "title": "Buchfreund",
+          "desc": "Hat Interesse an Geschichten- und Buchzeit gezeigt."
+        },
+        "problem_cozucu": {
+          "title": "Problemlöser",
+          "desc": "Hat versucht, beim Spielen oder bei Aktivitäten Lösungen zu finden."
+        },
+        "guzel_iletisim": {
+          "title": "Gute Kommunikation",
+          "desc": "Hat Gefühle und Wünsche schön ausgedrückt."
+        },
+        "katilim_yildizi": {
+          "title": "Teilnahmestern",
+          "desc": "Hat begeistert an Aktivitäten teilgenommen."
+        }
+      }
+    },
+    "support": {
+      "loading": "Support wird vorbereitet...",
+      "title": "Kontaktiere uns",
+      "subtitle": "Anliegen / Beschwerde / Feedback an den Super-Admin",
+      "topics": {
+        "istek": "Anliegen",
+        "sikayet": "Beschwerde",
+        "gorus": "Feedback",
+        "teknik": "Technischer Support",
+        "diger": "Sonstiges"
+      },
+      "bannerTitle": "Yumurcak-Support",
+      "bannerText": "Du kannst dem Super-Admin bei Anliegen, Beschwerden, Feedback oder technischem Support schreiben.",
+      "topicLabel": "Thema",
+      "messageLabel": "Nachricht",
+      "messagePlaceholder": "Schreib deine Nachricht...",
+      "sendButton": "Senden",
+      "recentTitle": "Letzte Nachrichten",
+      "noMessagesTitle": "Noch keine Nachrichten",
+      "noMessagesDesc": "Nachrichten an den Super-Admin erscheinen hier.",
+      "replyLabel": "Antworten",
+      "replyPlaceholder": "Möchtest du noch etwas hinzufügen?",
+      "replyButton": "Antwort senden",
+      "replyButtonSending": "Wird gesendet...",
+      "adminReplyName": "Yumurcak-Support",
+      "youFallback": "Du",
+      "teacherFallback": "Erzieher/in",
+      "missingInfoTitle": "Fehlende Angaben",
+      "emptyMessageDesc": "Das Nachrichtenfeld darf nicht leer sein.",
+      "messageTooLongTitle": "Nachricht zu lang",
+      "messageTooLongDesc": "Die Nachricht darf höchstens {{max}} Zeichen haben.",
+      "errorTitle": "Fehler",
+      "userInfoNotFoundDesc": "Benutzerinformationen nicht gefunden.",
+      "sendErrorDesc": "Die Nachricht konnte nicht gesendet werden. Bitte erneut versuchen.",
+      "sentSuccess": "Deine Nachricht wurde gesendet",
+      "emptyReplyDesc": "Das Antwortfeld darf nicht leer sein.",
+      "replyTooLongTitle": "Antwort zu lang",
+      "replyTooLongDesc": "Die Antwort darf höchstens {{max}} Zeichen haben.",
+      "replySentSuccess": "Deine Antwort wurde gesendet",
+      "replyErrorDesc": "Die Antwort konnte nicht gesendet werden.",
+      "messageFallback": "Nachricht"
     }
   },
   "themes": {
