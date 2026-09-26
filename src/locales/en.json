@@ -1724,5 +1724,76 @@
       "ozBakimBecerisi": "Self-Care Skills",
       "dengeVeKoordinasyon": "Balance and Coordination"
     }
+  },
+  "components": {
+    "activityChipRow": {
+      "newLessonFallback": "New Lesson",
+      "addNewLesson": "+ Add New Lesson"
+    },
+    "mealChipListInput": {
+      "add": "Add",
+      "cancel": "Cancel"
+    },
+    "monthlyCalendarView": {
+      "list": "List",
+      "calendar": "Calendar"
+    },
+    "allergyBoxEditor": {
+      "placeholder": "e.g. Egg",
+      "addLabel": "+ Add Allergy"
+    },
+    "monthlyArchivePicker": {
+      "trigger": "🗂 Archive",
+      "title": "Published Months",
+      "close": "Close",
+      "empty": "No published month yet.",
+      "daysSuffix": "days"
+    },
+    "activityBalanceCard": {
+      "title": "📊 Activity Balance — {{month}}",
+      "summaryWithCount": "{{count}} activities logged this month — tap for details.",
+      "summaryEmpty": "No activities logged this month yet.",
+      "noDataYet": "No published activities for this month yet — data is needed for analysis.",
+      "missingCategories": "💡 Categories not used this month: {{list}}"
+    },
+    "dailyChecklistCard": {
+      "title": "Today's Checklist",
+      "attendance": "Attendance",
+      "dailyReport": "Daily Report",
+      "mealList": "Meal List",
+      "todaysActivity": "Today's Activity",
+      "photoGallery": "Photo Gallery",
+      "noChildrenInClass": "No children in class",
+      "entered": "Entered",
+      "notEntered": "Not entered",
+      "sharesCount": "{{count}} shares",
+      "noShares": "No shares"
+    },
+    "changePasswordCard": {
+      "errorTitle": "Error",
+      "fillAllFields": "You need to fill in all fields.",
+      "passwordTooShort": "New password must be at least 6 characters.",
+      "passwordsDontMatch": "New passwords don't match.",
+      "samePassword": "New password can't be the same as the old one.",
+      "sessionNotFound": "Session info not found. Please sign out and sign in again.",
+      "successTitle": "Success",
+      "successMessage": "Your password has been updated.",
+      "wrongPassword": "Old password is incorrect.",
+      "tooManyRequests": "Too many failed attempts. Please try again shortly.",
+      "requiresRecentLogin": "You need to sign in again for security reasons. Sign out, sign back in, then try again.",
+      "weakPassword": "New password is too weak. Must be at least 6 characters.",
+      "changeFailed": "Password could not be changed.",
+      "title": "🔒 Change Password",
+      "hint": "Verify your old password and set a new one.",
+      "oldPasswordLabel": "Old Password",
+      "oldPasswordPlaceholder": "Your current password",
+      "newPasswordLabel": "New Password",
+      "newPasswordPlaceholder": "At least 6 characters",
+      "newPasswordRepeatLabel": "New Password (Repeat)",
+      "newPasswordRepeatPlaceholder": "Re-enter your new password",
+      "show": "Show",
+      "hide": "Hide",
+      "submitButton": "Update Password"
+    }
   }
 }
