@@ -15,6 +15,7 @@
 // ============================================================
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { ref as dbRef, update } from 'firebase/database';
@@ -23,6 +24,7 @@ import { auth, database } from '../config/firebase';
 const USER_KEY = 'yumurcak_kullanici'; // AuthContext.js ile birebir aynı olmalı
 
 export default function ChangePasswordCard({ userId, primaryColor = '#3C3489' }) {
+  const { t } = useTranslation();
   const [eskiSifre, setEskiSifre] = useState('');
   const [yeniSifre, setYeniSifre] = useState('');
   const [yeniSifreTekrar, setYeniSifreTekrar] = useState('');
@@ -31,26 +33,27 @@ export default function ChangePasswordCard({ userId, primaryColor = '#3C3489' })
   const [saving, setSaving] = useState(false);
 
   const handleChange = async () => {
+    const errorTitle = t('components.changePasswordCard.errorTitle');
     if (!eskiSifre.trim() || !yeniSifre.trim() || !yeniSifreTekrar.trim()) {
-      Alert.alert('Hata', 'Tüm alanları doldurman gerekiyor.');
+      Alert.alert(errorTitle, t('components.changePasswordCard.fillAllFields'));
       return;
     }
     if (yeniSifre.trim().length < 6) {
-      Alert.alert('Hata', 'Yeni şifre en az 6 karakter olmalı.');
+      Alert.alert(errorTitle, t('components.changePasswordCard.passwordTooShort'));
       return;
     }
     if (yeniSifre.trim() !== yeniSifreTekrar.trim()) {
-      Alert.alert('Hata', 'Yeni şifreler birbiriyle eşleşmiyor.');
+      Alert.alert(errorTitle, t('components.changePasswordCard.passwordsDontMatch'));
       return;
     }
     if (yeniSifre.trim() === eskiSifre.trim()) {
-      Alert.alert('Hata', 'Yeni şifre eski şifreyle aynı olamaz.');
+      Alert.alert(errorTitle, t('components.changePasswordCard.samePassword'));
       return;
     }
 
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
-      Alert.alert('Hata', 'Oturum bilgisi bulunamadı. Lütfen çıkış yapıp tekrar giriş yap.');
+      Alert.alert(errorTitle, t('components.changePasswordCard.sessionNotFound'));
       return;
     }
 
@@ -87,19 +90,19 @@ export default function ChangePasswordCard({ userId, primaryColor = '#3C3489' })
       setEskiSifre('');
       setYeniSifre('');
       setYeniSifreTekrar('');
-      Alert.alert('Başarılı', 'Şifren güncellendi.');
+      Alert.alert(t('components.changePasswordCard.successTitle'), t('components.changePasswordCard.successMessage'));
     } catch (error) {
       console.error(error);
       if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
-        Alert.alert('Hata', 'Eski şifre hatalı.');
+        Alert.alert(errorTitle, t('components.changePasswordCard.wrongPassword'));
       } else if (error?.code === 'auth/too-many-requests') {
-        Alert.alert('Hata', 'Çok fazla hatalı deneme yapıldı. Lütfen biraz sonra tekrar dene.');
+        Alert.alert(errorTitle, t('components.changePasswordCard.tooManyRequests'));
       } else if (error?.code === 'auth/requires-recent-login') {
-        Alert.alert('Hata', 'Güvenlik nedeniyle tekrar giriş yapman gerekiyor. Çıkış yapıp tekrar giriş yap, sonra tekrar dene.');
+        Alert.alert(errorTitle, t('components.changePasswordCard.requiresRecentLogin'));
       } else if (error?.code === 'auth/weak-password') {
-        Alert.alert('Hata', 'Yeni şifre çok zayıf. En az 6 karakter olmalı.');
+        Alert.alert(errorTitle, t('components.changePasswordCard.weakPassword'));
       } else {
-        Alert.alert('Hata', `Şifre değiştirilemedi.\n\n${error?.message || ''}`);
+        Alert.alert(errorTitle, `${t('components.changePasswordCard.changeFailed')}\n\n${error?.message || ''}`);
       }
     } finally {
       setSaving(false);
@@ -108,55 +111,55 @@ export default function ChangePasswordCard({ userId, primaryColor = '#3C3489' })
 
   return (
     <View style={s.card}>
-      <Text style={s.title}>🔒 Şifre Değiştir</Text>
-      <Text style={s.hint}>Eski şifreni doğrulayıp yeni bir şifre belirleyebilirsin.</Text>
+      <Text style={s.title}>{t('components.changePasswordCard.title')}</Text>
+      <Text style={s.hint}>{t('components.changePasswordCard.hint')}</Text>
 
       <View style={s.field}>
-        <Text style={s.label}>Eski Şifre</Text>
+        <Text style={s.label}>{t('components.changePasswordCard.oldPasswordLabel')}</Text>
         <View style={s.pwRow}>
           <TextInput
             style={s.pwInput}
             value={eskiSifre}
             onChangeText={setEskiSifre}
             secureTextEntry={!gosterEski}
-            placeholder="Mevcut şifren"
+            placeholder={t('components.changePasswordCard.oldPasswordPlaceholder')}
             placeholderTextColor="#999"
             autoCapitalize="none"
             autoCorrect={false}
           />
           <TouchableOpacity style={s.pwToggle} onPress={() => setGosterEski(!gosterEski)} activeOpacity={0.75}>
-            <Text style={[s.pwToggleText, { color: primaryColor }]}>{gosterEski ? 'Gizle' : 'Göster'}</Text>
+            <Text style={[s.pwToggleText, { color: primaryColor }]}>{gosterEski ? t('components.changePasswordCard.hide') : t('components.changePasswordCard.show')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={s.field}>
-        <Text style={s.label}>Yeni Şifre</Text>
+        <Text style={s.label}>{t('components.changePasswordCard.newPasswordLabel')}</Text>
         <View style={s.pwRow}>
           <TextInput
             style={s.pwInput}
             value={yeniSifre}
             onChangeText={setYeniSifre}
             secureTextEntry={!gosterYeni}
-            placeholder="En az 6 karakter"
+            placeholder={t('components.changePasswordCard.newPasswordPlaceholder')}
             placeholderTextColor="#999"
             autoCapitalize="none"
             autoCorrect={false}
           />
           <TouchableOpacity style={s.pwToggle} onPress={() => setGosterYeni(!gosterYeni)} activeOpacity={0.75}>
-            <Text style={[s.pwToggleText, { color: primaryColor }]}>{gosterYeni ? 'Gizle' : 'Göster'}</Text>
+            <Text style={[s.pwToggleText, { color: primaryColor }]}>{gosterYeni ? t('components.changePasswordCard.hide') : t('components.changePasswordCard.show')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={s.field}>
-        <Text style={s.label}>Yeni Şifre (Tekrar)</Text>
+        <Text style={s.label}>{t('components.changePasswordCard.newPasswordRepeatLabel')}</Text>
         <TextInput
           style={s.input}
           value={yeniSifreTekrar}
           onChangeText={setYeniSifreTekrar}
           secureTextEntry={!gosterYeni}
-          placeholder="Yeni şifreni tekrar gir"
+          placeholder={t('components.changePasswordCard.newPasswordRepeatPlaceholder')}
           placeholderTextColor="#999"
           autoCapitalize="none"
           autoCorrect={false}
@@ -169,7 +172,7 @@ export default function ChangePasswordCard({ userId, primaryColor = '#3C3489' })
         disabled={saving}
         activeOpacity={0.85}
       >
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Şifreyi Güncelle</Text>}
+        {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>{t('components.changePasswordCard.submitButton')}</Text>}
       </TouchableOpacity>
     </View>
   );
