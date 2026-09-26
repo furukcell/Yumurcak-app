@@ -1,20 +1,40 @@
-export const WEEKLY_BADGES = [
-  { id: 'yardimsever_kalp', emoji: '🤝', title: 'Yardımsever Kalp', desc: 'Arkadaşlarına destek oldu.' },
-  { id: 'paylasimci_minik', emoji: '🧸', title: 'Paylaşımcı Minik', desc: 'Oyuncaklarını ve materyallerini paylaştı.' },
-  { id: 'cesur_yurek', emoji: '🦁', title: 'Cesur Yürek', desc: 'Yeni bir etkinliğe cesaretle katıldı.' },
-  { id: 'merakli_kasif', emoji: '🔍', title: 'Meraklı Kaşif', desc: 'Yeni şeyler öğrenmeye merak gösterdi.' },
-  { id: 'yaratici_ressam', emoji: '🎨', title: 'Yaratıcı Ressam', desc: 'Sanat etkinliğinde güzel katılım gösterdi.' },
-  { id: 'neseli_gunes', emoji: '😊', title: 'Neşeli Güneş', desc: 'Sınıfa pozitif enerji kattı.' },
-  { id: 'sorumluluk_sahibi', emoji: '✅', title: 'Sorumluluk Sahibi', desc: 'Kendi eşyalarına ve sınıf düzenine dikkat etti.' },
-  { id: 'sabirli_minik', emoji: '🌱', title: 'Sabırlı Minik', desc: 'Sırasını bekledi ve sabır gösterdi.' },
-  { id: 'kitap_dostu', emoji: '📚', title: 'Kitap Dostu', desc: 'Hikaye ve kitap saatine ilgi gösterdi.' },
-  { id: 'problem_cozucu', emoji: '🧩', title: 'Problem Çözücü', desc: 'Oyunda veya etkinlikte çözüm üretmeye çalıştı.' },
-  { id: 'guzel_iletisim', emoji: '💬', title: 'Güzel İletişim', desc: 'Duygularını ve isteklerini güzel ifade etti.' },
-  { id: 'katilim_yildizi', emoji: '👏', title: 'Katılım Yıldızı', desc: 'Etkinliklere istekle katıldı.' },
+const BADGE_DEFS = [
+  { id: 'yardimsever_kalp', emoji: '🤝', trTitle: 'Yardımsever Kalp', trDesc: 'Arkadaşlarına destek oldu.' },
+  { id: 'paylasimci_minik', emoji: '🧸', trTitle: 'Paylaşımcı Minik', trDesc: 'Oyuncaklarını ve materyallerini paylaştı.' },
+  { id: 'cesur_yurek', emoji: '🦁', trTitle: 'Cesur Yürek', trDesc: 'Yeni bir etkinliğe cesaretle katıldı.' },
+  { id: 'merakli_kasif', emoji: '🔍', trTitle: 'Meraklı Kaşif', trDesc: 'Yeni şeyler öğrenmeye merak gösterdi.' },
+  { id: 'yaratici_ressam', emoji: '🎨', trTitle: 'Yaratıcı Ressam', trDesc: 'Sanat etkinliğinde güzel katılım gösterdi.' },
+  { id: 'neseli_gunes', emoji: '😊', trTitle: 'Neşeli Güneş', trDesc: 'Sınıfa pozitif enerji kattı.' },
+  { id: 'sorumluluk_sahibi', emoji: '✅', trTitle: 'Sorumluluk Sahibi', trDesc: 'Kendi eşyalarına ve sınıf düzenine dikkat etti.' },
+  { id: 'sabirli_minik', emoji: '🌱', trTitle: 'Sabırlı Minik', trDesc: 'Sırasını bekledi ve sabır gösterdi.' },
+  { id: 'kitap_dostu', emoji: '📚', trTitle: 'Kitap Dostu', trDesc: 'Hikaye ve kitap saatine ilgi gösterdi.' },
+  { id: 'problem_cozucu', emoji: '🧩', trTitle: 'Problem Çözücü', trDesc: 'Oyunda veya etkinlikte çözüm üretmeye çalıştı.' },
+  { id: 'guzel_iletisim', emoji: '💬', trTitle: 'Güzel İletişim', trDesc: 'Duygularını ve isteklerini güzel ifade etti.' },
+  { id: 'katilim_yildizi', emoji: '👏', trTitle: 'Katılım Yıldızı', trDesc: 'Etkinliklere istekle katıldı.' },
 ];
 
-export function getWeeklyBadgeById(id) {
-  return WEEKLY_BADGES.find((badge) => badge.id === id) || WEEKLY_BADGES[0];
+// Geriye dönük uyumluluk: t() fonksiyonuna erişimi olmayan yerler (ör. ekran dışı
+// yardımcı fonksiyonlar) için sabit Türkçe liste. Ekranlarda bunun yerine
+// getTranslatedWeeklyBadges(t) kullanılmalı.
+export const WEEKLY_BADGES = BADGE_DEFS.map((b) => ({ id: b.id, emoji: b.emoji, title: b.trTitle, desc: b.trDesc }));
+
+export function getTranslatedWeeklyBadges(t) {
+  return BADGE_DEFS.map((b) => ({
+    id: b.id,
+    emoji: b.emoji,
+    title: t ? t(`teacher.weeklyStar.badges.${b.id}.title`, b.trTitle) : b.trTitle,
+    desc: t ? t(`teacher.weeklyStar.badges.${b.id}.desc`, b.trDesc) : b.trDesc,
+  }));
+}
+
+export function getWeeklyBadgeById(id, t) {
+  const def = BADGE_DEFS.find((badge) => badge.id === id) || BADGE_DEFS[0];
+  return {
+    id: def.id,
+    emoji: def.emoji,
+    title: t ? t(`teacher.weeklyStar.badges.${def.id}.title`, def.trTitle) : def.trTitle,
+    desc: t ? t(`teacher.weeklyStar.badges.${def.id}.desc`, def.trDesc) : def.trDesc,
+  };
 }
 
 export function getMonday(date = new Date()) {
