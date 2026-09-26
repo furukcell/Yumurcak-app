@@ -8,9 +8,11 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ETKINLIK_KATEGORILERI } from '../constants';
+import { useTranslation } from 'react-i18next';
+import { getTranslatedEtkinlikKategorileri } from '../constants';
 
 export default function ActivityBalanceCard({ schedules, monthKey, monthLabel, theme }) {
+  const { t } = useTranslation();
   const palette = theme || { primary: '#27500A', primarySoft: '#EAF5E4', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8' };
   const [open, setOpen] = useState(false);
 
@@ -20,7 +22,7 @@ export default function ActivityBalanceCard({ schedules, monthKey, monthLabel, t
     // taşıyabildiği için önce tüm günlerin etkinlik listelerini düzleştiriyoruz.
     const buAyEtkinlikleri = buAyGunleri.flatMap((gun) => (Array.isArray(gun.etkinlikler) ? gun.etkinlikler : []));
 
-    const sayilar = ETKINLIK_KATEGORILERI.map((kat) => ({
+    const sayilar = getTranslatedEtkinlikKategorileri(t).map((kat) => ({
       ...kat,
       sayi: buAyEtkinlikleri.filter((item) => (item.kategori || 'diger') === kat.key).length,
     }));
@@ -33,23 +35,23 @@ export default function ActivityBalanceCard({ schedules, monthKey, monthLabel, t
       toplam: buAyEtkinlikleri.length,
       eksikKategoriler: sayilar.filter((k) => k.sayi === 0).map((k) => `${k.emoji} ${k.label}`),
     };
-  }, [schedules, monthKey]);
+  }, [schedules, monthKey, t]);
 
   return (
     <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
       <TouchableOpacity style={styles.headerRow} onPress={() => setOpen((v) => !v)} activeOpacity={0.85}>
-        <Text style={[styles.title, { color: palette.text }]}>📊 Etkinlik Dengesi — {monthLabel}</Text>
+        <Text style={[styles.title, { color: palette.text }]}>{t('components.activityBalanceCard.title', { month: monthLabel })}</Text>
         <Text style={[styles.chevron, { color: palette.primary }]}>{open ? '▲' : '▼'}</Text>
       </TouchableOpacity>
 
       {!open ? (
         <Text style={[styles.summary, { color: palette.muted }]}>
-          {toplam > 0 ? `Bu ay ${toplam} etkinlik girildi — detay için dokun.` : 'Bu ay henüz etkinlik girilmedi.'}
+          {toplam > 0 ? t('components.activityBalanceCard.summaryWithCount', { count: toplam }) : t('components.activityBalanceCard.summaryEmpty')}
         </Text>
       ) : (
         <>
           {toplam === 0 ? (
-            <Text style={[styles.summary, { color: palette.muted }]}>Bu ay için henüz yayınlanmış etkinlik yok, analiz için veri gerekiyor.</Text>
+            <Text style={[styles.summary, { color: palette.muted }]}>{t('components.activityBalanceCard.noDataYet')}</Text>
           ) : (
             <>
               {dagilim.map((kat) => (
@@ -65,7 +67,7 @@ export default function ActivityBalanceCard({ schedules, monthKey, monthLabel, t
               {eksikKategoriler.length > 0 ? (
                 <View style={[styles.suggestionBox, { backgroundColor: palette.primarySoft }]}>
                   <Text style={[styles.suggestionText, { color: palette.primary }]}>
-                    💡 Bu ay hiç girilmemiş kategoriler: {eksikKategoriler.join(', ')}
+                    {t('components.activityBalanceCard.missingCategories', { list: eksikKategoriler.join(', ') })}
                   </Text>
                 </View>
               ) : null}
