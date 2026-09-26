@@ -7,9 +7,11 @@
 // ============================================================
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MealAutocompleteInput from './MealAutocompleteInput';
 
 export default function MealChipListInput({ ogun, values, onChange, placeholder, theme }) {
+  const { t } = useTranslation();
   const palette = theme || { primary: '#6C3DEB', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8', bg: '#F7F6FB' };
   const list = Array.isArray(values) ? values : [];
 
@@ -56,15 +58,15 @@ export default function MealChipListInput({ ogun, values, onChange, placeholder,
             />
           </View>
           <TouchableOpacity style={[styles.addConfirm, { backgroundColor: palette.primary }]} onPress={() => commitDraft()} activeOpacity={0.85}>
-            <Text style={styles.addConfirmText}>Ekle</Text>
+            <Text style={styles.addConfirmText}>{t('components.mealChipListInput.add')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.addCancel} onPress={() => { setDraft(''); setAdding(false); }} activeOpacity={0.85}>
-            <Text style={[styles.addCancelText, { color: palette.muted }]}>Vazgeç</Text>
+            <Text style={[styles.addCancelText, { color: palette.muted }]}>{t('components.mealChipListInput.cancel')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity style={[styles.addButton, { borderColor: palette.border, backgroundColor: palette.bg }]} onPress={() => setAdding(true)} activeOpacity={0.85}>
-          <Text style={[styles.addButtonText, { color: palette.primary }]}>+ {placeholder || 'Ekle'}</Text>
+          <Text style={[styles.addButtonText, { color: palette.primary }]}>+ {placeholder || t('components.mealChipListInput.add')}</Text>
         </TouchableOpacity>
       )}
     </View>
