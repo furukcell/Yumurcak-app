@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ref, update, query, orderByChild, equalTo, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
@@ -37,11 +38,11 @@ function splitItems(value) {
     .filter(Boolean);
 }
 
-function getUpdatedLabel(value) {
-  if (!value) return 'Henüz güncellenmedi';
+function getUpdatedLabel(value, t, lang) {
+  if (!value) return t('teacher.medical.notUpdatedYet');
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Henüz güncellenmedi';
-  return date.toLocaleString('tr-TR');
+  if (Number.isNaN(date.getTime())) return t('teacher.medical.notUpdatedYet');
+  return date.toLocaleString(lang);
 }
 
 function formatDateTr(dateKey) {
@@ -51,6 +52,7 @@ function formatDateTr(dateKey) {
 }
 
 export default function TeacherMedicalScreen() {
+  const { t, i18n } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
@@ -61,7 +63,7 @@ export default function TeacherMedicalScreen() {
   const [drafts, setDrafts] = useState({});
   const [saving, setSaving] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('Bilgiler güncellendi');
+  const [successMessage, setSuccessMessage] = useState(t('teacher.medical.defaultSuccessMessage'));
 
   const [medicationForms, setMedicationForms] = useState([]);
   const [loadingForms, setLoadingForms] = useState(true);
@@ -151,27 +153,27 @@ export default function TeacherMedicalScreen() {
         updatedAt: Date.now(),
       });
 
-      setSuccessMessage(`${getChildName(selectedChild)} için bilgiler güncellendi`);
+      setSuccessMessage(t('teacher.medical.successMessageForChild', { name: getChildName(selectedChild) }));
       setSuccessToast(true);
     } catch (error) {
       console.error('Medikal bilgi kaydetme hatası:', error);
-      Alert.alert('Hata', 'Bilgiler kaydedilemedi.');
+      Alert.alert(t('teacher.medical.errorTitle'), t('teacher.medical.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <LoadingState text="Medikal bilgiler hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.medical.loading')} />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast visible={successToast} message={successMessage} onHide={() => setSuccessToast(false)} />
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Medikal" subtitle="Alerji, ilaç ve ilaç takip formları" />
+        <ScreenHeader navigation={navigation} title={t('teacher.medical.title')} subtitle={t('teacher.medical.subtitle')} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
         {classChildren.length === 0 ? (
-          <EmptyState icon="🩺" title="Çocuk yok" desc="Sınıfa çocuk bağlanınca medikal bilgiler görünür." />
+          <EmptyState icon="🩺" title={t('teacher.medical.noChildrenTitle')} desc={t('teacher.medical.noChildrenDesc')} />
         ) : (
           <>
             <ScrollView
@@ -202,10 +204,10 @@ export default function TeacherMedicalScreen() {
                 <View style={styles.heroIconBox}><Text style={styles.heroIcon}>🩺</Text></View>
                 <View style={styles.heroTextWrap}>
                   <Text style={styles.name} numberOfLines={1}>{selectedChild ? getChildName(selectedChild) : ''}</Text>
-                  <Text style={styles.subText} numberOfLines={1}>{currentClass?.ad || selectedChild?.sinifAdi || 'Sınıf bilgisi yok'}</Text>
+                  <Text style={styles.subText} numberOfLines={1}>{currentClass?.ad || selectedChild?.sinifAdi || t('teacher.medical.classFallback')}</Text>
                   <View style={styles.badgeRow}>
-                    <Text style={[styles.heroBadge, hasAllergy ? styles.alertBadge : styles.safeBadge]}>{hasAllergy ? '⚠️ Alerji Var' : '✅ Alerji Yok'}</Text>
-                    <Text style={[styles.heroBadge, styles.safeBadge]}>✅ Güncel</Text>
+                    <Text style={[styles.heroBadge, hasAllergy ? styles.alertBadge : styles.safeBadge]}>{hasAllergy ? t('teacher.medical.allergyBadge') : t('teacher.medical.noAllergyBadge')}</Text>
+                    <Text style={[styles.heroBadge, styles.safeBadge]}>{t('teacher.medical.currentBadge')}</Text>
                   </View>
                 </View>
               </View>
@@ -215,9 +217,9 @@ export default function TeacherMedicalScreen() {
                 activeKey={activeTab}
                 onChange={setActiveTab}
                 tabs={[
-                  { key: 'alerjiler', icon: '⚠️', label: 'Alerjiler' },
-                  { key: 'surekliIlaclar', icon: '💊', label: 'Sürekli İlaçlar', badge: medicineItems.length || null },
-                  { key: 'ilacTakip', icon: '📋', label: 'İlaç Takip', badge: childForms.length || null },
+                  { key: 'alerjiler', icon: '⚠️', label: t('teacher.medical.tabAllergies') },
+                  { key: 'surekliIlaclar', icon: '💊', label: t('teacher.medical.tabRegularMeds'), badge: medicineItems.length || null },
+                  { key: 'ilacTakip', icon: '📋', label: t('teacher.medical.tabMedicationTracking'), badge: childForms.length || null },
                 ]}
               />
 
@@ -227,8 +229,8 @@ export default function TeacherMedicalScreen() {
                     <View style={styles.sectionHeader}>
                       <View style={[styles.sectionIconBox, styles.redIconBox]}><Text style={styles.sectionIcon}>⚠️</Text></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sectionTitle}>Alerjiler</Text>
-                        <Text style={styles.sectionSubtitle}>Her alerji kendi kutusuna yazılır</Text>
+                        <Text style={styles.sectionTitle}>{t('teacher.medical.allergiesTitle')}</Text>
+                        <Text style={styles.sectionSubtitle}>{t('teacher.medical.allergiesSubtitle')}</Text>
                       </View>
                     </View>
                     <View style={styles.sectionBody}>
@@ -244,8 +246,8 @@ export default function TeacherMedicalScreen() {
                     <View style={styles.sectionHeader}>
                       <View style={[styles.sectionIconBox, styles.purpleIconBox]}><Text style={styles.sectionIcon}>📝</Text></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sectionTitle}>Genel Notlar</Text>
-                        <Text style={styles.sectionSubtitle}>Veli ve yönetici için özel notlar</Text>
+                        <Text style={styles.sectionTitle}>{t('teacher.medical.generalNotesTitle')}</Text>
+                        <Text style={styles.sectionSubtitle}>{t('teacher.medical.generalNotesSubtitle')}</Text>
                       </View>
                     </View>
                     <View style={styles.sectionBody}>
@@ -253,7 +255,7 @@ export default function TeacherMedicalScreen() {
                         style={styles.input}
                         value={draft.notlar}
                         onChangeText={(text) => setDraftValue('notlar', text)}
-                        placeholder="Veli ve yönetici için özel notlar..."
+                        placeholder={t('teacher.medical.generalNotesPlaceholder')}
                         placeholderTextColor={THEME.muted}
                         multiline
                       />
@@ -264,8 +266,8 @@ export default function TeacherMedicalScreen() {
                     <View style={styles.sectionHeader}>
                       <View style={[styles.sectionIconBox, styles.yellowIconBox]}><Text style={styles.sectionIcon}>🙂</Text></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sectionTitle}>Öğretmen Gözlem Notu</Text>
-                        <Text style={styles.sectionSubtitle}>Bugünkü gözlem veya hatırlatma notu</Text>
+                        <Text style={styles.sectionTitle}>{t('teacher.medical.teacherObservationTitle')}</Text>
+                        <Text style={styles.sectionSubtitle}>{t('teacher.medical.teacherObservationSubtitle')}</Text>
                       </View>
                     </View>
                     <View style={styles.sectionBody}>
@@ -274,7 +276,7 @@ export default function TeacherMedicalScreen() {
                           style={styles.teacherNoteInput}
                           value={draft.ogretmenNotu}
                           onChangeText={(text) => setDraftValue('ogretmenNotu', text)}
-                          placeholder="Bugünkü gözleminizi veya hatırlatmanızı yazın..."
+                          placeholder={t('teacher.medical.teacherObservationPlaceholder')}
                           placeholderTextColor="#9B7A29"
                           multiline
                         />
@@ -283,9 +285,9 @@ export default function TeacherMedicalScreen() {
                     </View>
                   </View>
 
-                  <Text style={styles.updatedText}>🕒 Son güncelleme: {getUpdatedLabel(info.updatedAt)}</Text>
+                  <Text style={styles.updatedText}>{t('teacher.medical.lastUpdated', { date: getUpdatedLabel(info.updatedAt, t, i18n.language) })}</Text>
                   <TouchableOpacity style={[styles.saveButton, saving && styles.disabledButton]} onPress={saveInfo} disabled={saving} activeOpacity={0.85}>
-                    <Text style={styles.saveButtonText}>{saving ? 'Kaydediliyor...' : '▣ Bilgileri Kaydet'}</Text>
+                    <Text style={styles.saveButtonText}>{saving ? t('teacher.medical.saving') : t('teacher.medical.saveButton')}</Text>
                   </TouchableOpacity>
                 </>
               ) : activeTab === 'surekliIlaclar' ? (
@@ -294,30 +296,30 @@ export default function TeacherMedicalScreen() {
                     <View style={styles.sectionHeader}>
                       <View style={[styles.sectionIconBox, styles.blueIconBox]}><Text style={styles.sectionIcon}>💊</Text></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sectionTitle}>Sürekli İlaçlar</Text>
-                        <Text style={styles.sectionSubtitle}>Tarihsiz, düzenli kullanılan ilaçlar (kür dışı)</Text>
+                        <Text style={styles.sectionTitle}>{t('teacher.medical.regularMedsTitle')}</Text>
+                        <Text style={styles.sectionSubtitle}>{t('teacher.medical.regularMedsSubtitle')}</Text>
                       </View>
                     </View>
                     <View style={styles.sectionBody}>
                       {medicineItems.length > 0 ? (
-                        <View style={styles.medicineList}>{medicineItems.map((item, medIndex) => <View key={`${item}-${medIndex}`} style={styles.medicineRow}><Text style={styles.medicineIcon}>{getMedicineIcon(item)}</Text><View style={{ flex: 1 }}><Text style={styles.medicineName}>{item}</Text><Text style={styles.medicineMeta}>Kayıtlı kullanım bilgisi</Text></View></View>)}</View>
+                        <View style={styles.medicineList}>{medicineItems.map((item, medIndex) => <View key={`${item}-${medIndex}`} style={styles.medicineRow}><Text style={styles.medicineIcon}>{getMedicineIcon(item)}</Text><View style={{ flex: 1 }}><Text style={styles.medicineName}>{item}</Text><Text style={styles.medicineMeta}>{t('teacher.medical.medicineUsageInfo')}</Text></View></View>)}</View>
                       ) : (
-                        <Text style={styles.emptyText}>Kayıtlı ilaç bilgisi yok.</Text>
+                        <Text style={styles.emptyText}>{t('teacher.medical.noMedicineInfo')}</Text>
                       )}
                       <TextInput
                         style={styles.input}
                         value={draft.ilaclar}
                         onChangeText={(text) => setDraftValue('ilaclar', text)}
-                        placeholder="Örn: Şurup - Sabah/Akşam 5 ml"
+                        placeholder={t('teacher.medical.medicinePlaceholder')}
                         placeholderTextColor={THEME.muted}
                         multiline
                       />
                     </View>
                   </View>
 
-                  <Text style={styles.updatedText}>🕒 Son güncelleme: {getUpdatedLabel(info.updatedAt)}</Text>
+                  <Text style={styles.updatedText}>{t('teacher.medical.lastUpdated', { date: getUpdatedLabel(info.updatedAt, t, i18n.language) })}</Text>
                   <TouchableOpacity style={[styles.saveButton, saving && styles.disabledButton]} onPress={saveInfo} disabled={saving} activeOpacity={0.85}>
-                    <Text style={styles.saveButtonText}>{saving ? 'Kaydediliyor...' : '▣ Bilgileri Kaydet'}</Text>
+                    <Text style={styles.saveButtonText}>{saving ? t('teacher.medical.saving') : t('teacher.medical.saveButton')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -327,13 +329,13 @@ export default function TeacherMedicalScreen() {
                     onPress={() => navigation.navigate('TeacherMedicationFormEdit', { cocukId: selectedChildId })}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.newFormButtonText}>+ Yeni İlaç Takip Formu</Text>
+                    <Text style={styles.newFormButtonText}>{t('teacher.medical.newFormButton')}</Text>
                   </TouchableOpacity>
 
                   {loadingForms ? (
                     <ActivityIndicator color={THEME.primary} style={{ marginTop: 20 }} />
                   ) : childForms.length === 0 ? (
-                    <EmptyState icon="💊" title="Aktif ilaç takip formu yok" desc="Bu çocuk için ilaç kürü başladığında buradan form oluşturabilirsin." />
+                    <EmptyState icon="💊" title={t('teacher.medical.noFormsTitle')} desc={t('teacher.medical.noFormsDesc')} />
                   ) : (
                     <>
                       {pendingChildForms.map((form) => (
@@ -341,7 +343,7 @@ export default function TeacherMedicalScreen() {
                           <View style={{ flex: 1 }}>
                             <Text style={styles.formCardTitle}>{getMedicineIcon(form.ilacAdi)} {form.ilacAdi}</Text>
                             <Text style={styles.formCardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
-                            <Text style={styles.formCardPendingBadge}>⏳ Onay Bekliyor — veliye onay isteği gönderildi</Text>
+                            <Text style={styles.formCardPendingBadge}>{t('teacher.medical.pendingBadge')}</Text>
                           </View>
                         </View>
                       ))}
@@ -356,8 +358,8 @@ export default function TeacherMedicalScreen() {
                           <View style={{ flex: 1 }}>
                             <Text style={styles.formCardTitle}>{getMedicineIcon(form.ilacAdi)} {form.ilacAdi}</Text>
                             <Text style={styles.formCardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
-                            {form.hatirlaticiSaat ? <Text style={styles.formCardMeta}>⏰ Hatırlatma: {form.hatirlaticiSaat}</Text> : null}
-                            <Text style={styles.formCardApproval}>✅ Veli onayı alındı</Text>
+                            {form.hatirlaticiSaat ? <Text style={styles.formCardMeta}>{t('teacher.medical.reminderMeta', { time: form.hatirlaticiSaat })}</Text> : null}
+                            <Text style={styles.formCardApproval}>{t('teacher.medical.approvalReceived')}</Text>
                           </View>
                           <Text style={styles.formCardArrow}>›</Text>
                         </TouchableOpacity>
