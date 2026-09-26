@@ -10,6 +10,7 @@ import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, Touchable
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, update } from 'firebase/database';
 import { useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -40,6 +41,7 @@ function nowTimeStr() {
 }
 
 export default function TeacherMedicationFormDetailScreen({ navigation }) {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const route = useRoute();
@@ -72,7 +74,7 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
   async function handleLogToday() {
     setLogging(true);
     try {
-      const teacherName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Öğretmen';
+      const teacherName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || t('teacher.medicationFormDetail.teacherFallback');
       await update(ref(database, `${NODE_PATH}/${formId}/kayitlar/${today}`), {
         verildi: true,
         saat: nowTimeStr(),
@@ -100,16 +102,16 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
       }
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Kayıt eklenemedi.');
+      Alert.alert(t('teacher.medicationFormDetail.errorTitle'), t('teacher.medicationFormDetail.logErrorDesc'));
     } finally {
       setLogging(false);
     }
   }
 
   function confirmDelete() {
-    Alert.alert('Sil', 'Bu ilaç takip formu silinsin mi?', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Sil', style: 'destructive', onPress: doDelete },
+    Alert.alert(t('teacher.medicationFormDetail.deleteConfirmTitle'), t('teacher.medicationFormDetail.deleteConfirmDesc'), [
+      { text: t('teacher.medicationFormDetail.deleteCancelButton'), style: 'cancel' },
+      { text: t('teacher.medicationFormDetail.deleteConfirmButton'), style: 'destructive', onPress: doDelete },
     ]);
   }
 
@@ -119,7 +121,7 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
       navigation.goBack();
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Silinemedi.');
+      Alert.alert(t('teacher.medicationFormDetail.errorTitle'), t('teacher.medicationFormDetail.deleteErrorDesc'));
     }
   }
 
@@ -132,57 +134,57 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
       else await shareMonthlyDocumentPdf(html, `Ilac Takip - ${record?.cocukAdi || ''}`);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Form oluşturulamadı.');
+      Alert.alert(t('teacher.medicationFormDetail.errorTitle'), t('teacher.medicationFormDetail.exportErrorDesc'));
     } finally {
       setExporting(false);
     }
   }
 
-  if (loading) return <LoadingState text="Yükleniyor..." />;
-  if (!record) return <LoadingState text="Form bulunamadı." />;
+  if (loading) return <LoadingState text={t('teacher.medicationFormDetail.loadingText')} />;
+  if (!record) return <LoadingState text={t('teacher.medicationFormDetail.formNotFound')} />;
 
   const kayitlar = Object.entries(record.kayitlar || {}).sort((a, b) => b[0].localeCompare(a[0]));
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast visible={successToast} message="Bugünkü doz kaydedildi" onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={t('teacher.medicationFormDetail.doseLoggedToast')} onHide={() => setSuccessToast(false)} />
       <View onLayout={onHeaderLayout}>
         <ScreenHeader navigation={navigation} title={record.ilacAdi} subtitle={record.cocukAdi} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.infoCard}>
-          <InfoRow label="Doz" value={record.doz} />
-          <InfoRow label="Uygulama Şekli" value={record.uygulamaSekli} />
-          <InfoRow label="Başlangıç" value={formatDateTr(record.baslangicTarihi)} />
-          <InfoRow label="Bitiş" value={formatDateTr(record.bitisTarihi)} />
-          <InfoRow label="Hatırlatma Saati" value={record.hatirlaticiSaat ? `⏰ ${record.hatirlaticiSaat}` : ''} />
-          <InfoRow label="Veli Onayı" value={record.veliOnayi ? '✅ Alındı' : '⏳ Bekleniyor'} />
+          <InfoRow label={t('teacher.medicationFormDetail.doseLabel')} value={record.doz} />
+          <InfoRow label={t('teacher.medicationFormDetail.methodLabel')} value={record.uygulamaSekli} />
+          <InfoRow label={t('teacher.medicationFormDetail.startLabel')} value={formatDateTr(record.baslangicTarihi)} />
+          <InfoRow label={t('teacher.medicationFormDetail.endLabel')} value={formatDateTr(record.bitisTarihi)} />
+          <InfoRow label={t('teacher.medicationFormDetail.reminderTimeLabel')} value={record.hatirlaticiSaat ? `⏰ ${record.hatirlaticiSaat}` : ''} />
+          <InfoRow label={t('teacher.medicationFormDetail.parentApprovalLabel')} value={record.veliOnayi ? t('teacher.medicationFormDetail.approvalReceived') : t('teacher.medicationFormDetail.approvalPending')} />
         </View>
 
         {todayLogged ? (
           <View style={styles.loggedCard}>
-            <Text style={styles.loggedText}>✅ Bugün ({formatDateTr(today)}) doz verildi olarak işaretlendi.</Text>
+            <Text style={styles.loggedText}>{t('teacher.medicationFormDetail.loggedToday', { date: formatDateTr(today) })}</Text>
           </View>
         ) : (
           <View style={styles.logCard}>
-            <Text style={styles.logTitle}>Bugünün Dozu ({formatDateTr(today)})</Text>
+            <Text style={styles.logTitle}>{t('teacher.medicationFormDetail.todaysDoseTitle', { date: formatDateTr(today) })}</Text>
             <TextInput
               value={note}
               onChangeText={setNote}
-              placeholder="Not (opsiyonel)"
+              placeholder={t('teacher.medicationFormDetail.notePlaceholder')}
               placeholderTextColor={THEME.muted}
               style={styles.input}
             />
             <TouchableOpacity disabled={logging} style={[styles.logButton, logging && { opacity: 0.6 }]} onPress={handleLogToday} activeOpacity={0.85}>
-              <Text style={styles.logButtonText}>{logging ? 'Kaydediliyor...' : '✅ Bugün Verildi'}</Text>
+              <Text style={styles.logButtonText}>{logging ? t('teacher.medicationFormDetail.saving') : t('teacher.medicationFormDetail.logTodayButton')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <Text style={styles.historyTitle}>Geçmiş Kayıtlar</Text>
+        <Text style={styles.historyTitle}>{t('teacher.medicationFormDetail.historyTitle')}</Text>
         {kayitlar.length === 0 ? (
-          <Text style={styles.emptyText}>Henüz kayıt yok.</Text>
+          <Text style={styles.emptyText}>{t('teacher.medicationFormDetail.noHistory')}</Text>
         ) : (
           kayitlar.map(([tarih, kayit]) => (
             <View key={tarih} style={styles.historyRow}>
@@ -197,15 +199,15 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
 
         <View style={styles.exportRow}>
           <TouchableOpacity disabled={exporting} style={[styles.exportButton, styles.exportFlex]} onPress={() => handleExport('print')} activeOpacity={0.85}>
-            <Text style={styles.exportButtonText}>{exporting ? '...' : '🖨️ Yazdır'}</Text>
+            <Text style={styles.exportButtonText}>{exporting ? '...' : t('teacher.medicationFormDetail.printButton')}</Text>
           </TouchableOpacity>
           <TouchableOpacity disabled={exporting} style={[styles.exportButton, styles.exportFlex]} onPress={() => handleExport('share')} activeOpacity={0.85}>
-            <Text style={styles.exportButtonText}>{exporting ? '...' : '📤 Paylaş/İndir'}</Text>
+            <Text style={styles.exportButtonText}>{exporting ? '...' : t('teacher.medicationFormDetail.shareButton')}</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete} activeOpacity={0.85}>
-          <Text style={styles.deleteButtonText}>Formu Sil</Text>
+          <Text style={styles.deleteButtonText}>{t('teacher.medicationFormDetail.deleteFormButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
      </KeyboardAvoidingView>
