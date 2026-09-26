@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { THEME_LIST } from '../../theme/themes';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
@@ -7,6 +8,7 @@ import { useTeacherData, LoadingState } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherThemeScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, currentClass } = useTeacherData();
   const themeData = useAppTheme();
   const theme = themeData.theme;
@@ -34,7 +36,7 @@ export default function TeacherThemeScreen({ navigation }) {
 
   async function handleSave() {
     if (!currentClass?.id) {
-      Alert.alert('Sınıf bulunamadı', 'Tema kaydetmek için öğretmenin bir sınıfa bağlı olması gerekir.');
+      Alert.alert(t('teacher.theme.noClassTitle'), t('teacher.theme.noClassDesc'));
       return;
     }
 
@@ -44,7 +46,7 @@ export default function TeacherThemeScreen({ navigation }) {
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Sınıf teması kaydedilemedi.');
+      Alert.alert(t('teacher.theme.errorTitle'), t('teacher.theme.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -67,43 +69,43 @@ export default function TeacherThemeScreen({ navigation }) {
             <View style={styles.fakeBox} />
           </View>
         </View>
-        <Text style={[styles.themeName, { color: item.text }]}>{item.name}</Text>
-        <Text style={[styles.themeSubtitle, { color: item.muted }]}>{item.subtitle}</Text>
+        <Text style={[styles.themeName, { color: item.text }]}>{t(`themes.${item.id}.name`)}</Text>
+        <Text style={[styles.themeSubtitle, { color: item.muted }]}>{t(`themes.${item.id}.subtitle`)}</Text>
         {active ? (
           <View style={[styles.activeBadge, { backgroundColor: item.primary }]}> 
-            <Text style={styles.activeText}>Seçili</Text>
+            <Text style={styles.activeText}>{t('teacher.theme.selectedBadge')}</Text>
           </View>
         ) : null}
       </TouchableOpacity>
     );
   }
 
-  if (loading) return <LoadingState text="Tema ayarları hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.theme.loading')} />;
 
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
         <AppSuccessToast
           visible={successToast}
-          message="Sınıf teması güncellendi"
+          message={t('teacher.theme.successMessage')}
           onHide={() => setSuccessToast(false)}
         />
 
         <View style={styles.container}>
           <View style={styles.headerRow}>
             <TouchableOpacity style={[styles.backButton, { borderColor: theme.border, backgroundColor: theme.card }]} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={[styles.backText, { color: theme.primary }]}>‹ Geri</Text>
+              <Text style={[styles.backText, { color: theme.primary }]}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.text }]}>Tema Ayarları</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{t('teacher.theme.title')}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
-          <Text style={[styles.subtitle, { color: theme.muted }]}>Bu seçim sadece {currentClass?.ad || 'bu sınıfa'} bağlı öğretmen ve velilere uygulanır.</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>{t('teacher.theme.subtitle', { className: currentClass?.ad || t('teacher.theme.classFallback') })}</Text>
 
           <View style={[styles.optionRow, { backgroundColor: theme.card, borderColor: theme.border }]}> 
             <View style={{ flex: 1 }}>
-              <Text style={[styles.optionTitle, { color: theme.text }]}>Arka plan figürleri</Text>
-              <Text style={[styles.optionDesc, { color: theme.muted }]}>Hayvan ve şekil desenleri sınıf ekranlarında hafif görünür.</Text>
+              <Text style={[styles.optionTitle, { color: theme.text }]}>{t('teacher.theme.patternTitle')}</Text>
+              <Text style={[styles.optionDesc, { color: theme.muted }]}>{t('teacher.theme.patternDesc')}</Text>
             </View>
             <Switch value={localPatternEnabled} onValueChange={setLocalPatternEnabled} />
           </View>
@@ -119,7 +121,7 @@ export default function TeacherThemeScreen({ navigation }) {
           />
 
           <TouchableOpacity disabled={saving} onPress={handleSave} style={[styles.saveButton, { backgroundColor: selectedTheme.primary, opacity: saving ? 0.6 : 1 }]}> 
-            <Text style={styles.saveText}>{saving ? 'Kaydediliyor...' : 'Bu Temayı Sınıfa Uygula'}</Text>
+            <Text style={styles.saveText}>{saving ? t('teacher.theme.saving') : t('teacher.theme.saveButton')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
