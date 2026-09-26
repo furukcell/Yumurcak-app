@@ -1199,36 +1199,36 @@
       "teacherFallback": "Enseignant"
     },
     "medicationFormDetail": {
-      "loading": "Chargement...",
-      "notFound": "Formulaire introuvable.",
+      "teacherFallback": "Enseignant(e)",
+      "errorTitle": "Erreur",
+      "logErrorDesc": "Impossible d'ajouter l'enregistrement.",
+      "deleteConfirmTitle": "Supprimer",
+      "deleteConfirmDesc": "Supprimer ce formulaire de suivi de médicament ?",
+      "deleteCancelButton": "Annuler",
+      "deleteConfirmButton": "Supprimer",
+      "deleteErrorDesc": "Impossible de supprimer.",
+      "exportErrorDesc": "Impossible de générer le formulaire.",
+      "loadingText": "Chargement...",
+      "formNotFound": "Formulaire introuvable.",
+      "doseLoggedToast": "La dose du jour a été enregistrée",
       "doseLabel": "Dose",
-      "usageLabel": "Mode d'administration",
+      "methodLabel": "Mode d'administration",
       "startLabel": "Début",
       "endLabel": "Fin",
       "reminderTimeLabel": "Heure de rappel",
       "parentApprovalLabel": "Accord du parent",
       "approvalReceived": "✅ Reçu",
       "approvalPending": "⏳ En attente",
-      "loggedToday": "✅ La dose d'aujourd'hui ({{date}}) a été marquée comme administrée.",
-      "todayDoseTitle": "Dose d'aujourd'hui ({{date}})",
+      "loggedToday": "✅ Aujourd'hui ({{date}}) marqué comme dose administrée.",
+      "todaysDoseTitle": "Dose du jour ({{date}})",
       "notePlaceholder": "Note (facultatif)",
       "saving": "Enregistrement...",
-      "logButton": "✅ Administrée aujourd'hui",
+      "logTodayButton": "✅ Administré aujourd'hui",
       "historyTitle": "Historique",
-      "noHistory": "Aucun enregistrement pour l'instant.",
+      "noHistory": "Aucun enregistrement pour le moment.",
       "printButton": "🖨️ Imprimer",
       "shareButton": "📤 Partager/Télécharger",
-      "exportingButton": "...",
-      "deleteButton": "Supprimer le formulaire",
-      "deleteConfirmTitle": "Supprimer",
-      "deleteConfirmMessage": "Supprimer ce formulaire de suivi des médicaments ?",
-      "cancelButton": "Annuler",
-      "confirmDeleteButton": "Supprimer",
-      "successToast": "Dose d'aujourd'hui enregistrée",
-      "errorTitle": "Erreur",
-      "logErrorDesc": "L'enregistrement n'a pas pu être ajouté.",
-      "deleteErrorDesc": "Impossible de supprimer.",
-      "exportErrorDesc": "Le formulaire n'a pas pu être généré."
+      "deleteFormButton": "Supprimer le formulaire"
     },
     "medical": {
       "loading": "Préparation des informations médicales...",
@@ -1270,6 +1270,135 @@
       "pendingBadge": "⏳ En attente d'accord — demande d'accord envoyée au parent",
       "reminderMeta": "⏰ Rappel : {{time}}",
       "approvalReceived": "✅ Accord du parent reçu"
+    },
+    "weeklyStar": {
+      "loading": "Préparation de l'Étoile de la semaine...",
+      "title": "Étoile de la semaine",
+      "fridayLockAlertTitle": "Actif le vendredi",
+      "fridayLockAlertDesc": "Les badges Étoile de la semaine ne peuvent être attribués que le vendredi.",
+      "errorTitle": "Erreur",
+      "noClassDesc": "Informations de classe introuvables.",
+      "missingInfoTitle": "Informations manquantes",
+      "selectChildFirstDesc": "Veuillez d'abord sélectionner un enfant.",
+      "savedTitle": "Enregistré",
+      "savedDesc": "Le badge de la semaine a été enregistré pour {{name}}.",
+      "saveErrorDesc": "Le badge n'a pas pu être enregistré. Veuillez réessayer.",
+      "noClassTitle": "Aucune classe trouvée",
+      "noClassEmptyDesc": "Le compte enseignant doit être associé à une classe pour attribuer des badges.",
+      "noChildrenTitle": "Aucun enfant",
+      "noChildrenDesc": "Les badges peuvent être attribués une fois des enfants ajoutés à la classe.",
+      "heroTitle": "🌟 Étoile de la semaine",
+      "heroText": "Chaque vendredi, tu peux célébrer le bon comportement d'un enfant durant la semaine avec un petit badge.",
+      "privacyTitle": "🔒 Confidentialité",
+      "privacyText": "Un badge attribué n'est visible que par le parent de l'enfant sélectionné. Les autres parents ne le voient pas.",
+      "lockTitle": "⏳ La sélection du badge s'active le vendredi",
+      "lockText": "Aujourd'hui, tu peux observer les enfants. Le vendredi, tu pourras choisir un enfant et enregistrer un badge avec une courte note.",
+      "selectChildTitle": "Choisir un enfant",
+      "selectBadgeTitle": "Choisir un badge",
+      "noteTitle": "Note courte",
+      "noteHelpText": "Tu peux écrire une note courte et positive que le parent verra.",
+      "notePlaceholder": "Ex : a aidé ses amis à ranger les jouets.",
+      "updateInfo": "Un badge a déjà été attribué à cet enfant cette semaine. L'enregistrement mettra à jour la fiche existante.",
+      "updateButton": "Mettre à jour le badge",
+      "saveButton": "Enregistrer le badge",
+      "thisWeekTitle": "Enregistrements de cette semaine",
+      "noRecordsThisWeek": "Aucun badge n'a encore été attribué cette semaine.",
+      "historyTitle": "Historique des badges de la classe",
+      "noHistory": "Aucun historique de badges pour le moment.",
+      "childFallback": "Enfant",
+      "badgeFallback": "Badge",
+      "badges": {
+        "yardimsever_kalp": {
+          "title": "Cœur serviable",
+          "desc": "A soutenu ses amis."
+        },
+        "paylasimci_minik": {
+          "title": "Petit partageur",
+          "desc": "A partagé ses jouets et son matériel."
+        },
+        "cesur_yurek": {
+          "title": "Cœur courageux",
+          "desc": "A participé courageusement à une nouvelle activité."
+        },
+        "merakli_kasif": {
+          "title": "Explorateur curieux",
+          "desc": "A montré de la curiosité pour apprendre de nouvelles choses."
+        },
+        "yaratici_ressam": {
+          "title": "Artiste créatif",
+          "desc": "A bien participé à une activité artistique."
+        },
+        "neseli_gunes": {
+          "title": "Soleil joyeux",
+          "desc": "A apporté de l'énergie positive à la classe."
+        },
+        "sorumluluk_sahibi": {
+          "title": "Responsable",
+          "desc": "A pris soin de ses affaires et de l'ordre de la classe."
+        },
+        "sabirli_minik": {
+          "title": "Petit patient",
+          "desc": "A attendu son tour et a fait preuve de patience."
+        },
+        "kitap_dostu": {
+          "title": "Ami des livres",
+          "desc": "A montré de l'intérêt pour l'heure du conte et des livres."
+        },
+        "problem_cozucu": {
+          "title": "Résolveur de problèmes",
+          "desc": "A essayé de trouver des solutions pendant le jeu ou l'activité."
+        },
+        "guzel_iletisim": {
+          "title": "Belle communication",
+          "desc": "A bien exprimé ses sentiments et ses envies."
+        },
+        "katilim_yildizi": {
+          "title": "Étoile de participation",
+          "desc": "A participé aux activités avec enthousiasme."
+        }
+      }
+    },
+    "support": {
+      "loading": "Préparation de l'assistance...",
+      "title": "Nous écrire",
+      "subtitle": "Demande / réclamation / avis pour le Super Admin",
+      "topics": {
+        "istek": "Demande",
+        "sikayet": "Réclamation",
+        "gorus": "Avis",
+        "teknik": "Support technique",
+        "diger": "Autre"
+      },
+      "bannerTitle": "Assistance Yumurcak",
+      "bannerText": "Tu peux écrire au Super Admin pour une demande, une réclamation, un avis ou une question technique.",
+      "topicLabel": "Sujet",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Écris ton message...",
+      "sendButton": "Envoyer",
+      "recentTitle": "Messages récents",
+      "noMessagesTitle": "Aucun message pour le moment",
+      "noMessagesDesc": "Les messages envoyés au Super Admin apparaîtront ici.",
+      "replyLabel": "Répondre",
+      "replyPlaceholder": "Souhaites-tu ajouter quelque chose ?",
+      "replyButton": "Envoyer la réponse",
+      "replyButtonSending": "Envoi en cours...",
+      "adminReplyName": "Assistance Yumurcak",
+      "youFallback": "Toi",
+      "teacherFallback": "Enseignant(e)",
+      "missingInfoTitle": "Informations manquantes",
+      "emptyMessageDesc": "Le champ du message ne peut pas être vide.",
+      "messageTooLongTitle": "Message trop long",
+      "messageTooLongDesc": "Le message peut contenir au maximum {{max}} caractères.",
+      "errorTitle": "Erreur",
+      "userInfoNotFoundDesc": "Informations utilisateur introuvables.",
+      "sendErrorDesc": "Le message n'a pas pu être envoyé. Veuillez réessayer.",
+      "sentSuccess": "Ton message a été envoyé",
+      "emptyReplyDesc": "Le champ de réponse ne peut pas être vide.",
+      "replyTooLongTitle": "Réponse trop longue",
+      "replyTooLongDesc": "La réponse peut contenir au maximum {{max}} caractères.",
+      "replySentSuccess": "Ta réponse a été envoyée",
+      "replyErrorDesc": "La réponse n'a pas pu être envoyée.",
+      "messageFallback": "Message"
     }
   },
   "themes": {
