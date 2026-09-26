@@ -9,8 +9,9 @@
 // ============================================================
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-const WEEKDAY_LABELS = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz'];
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function toMondayFirstIndex(jsWeekday) {
   return (jsWeekday + 6) % 7;
@@ -25,6 +26,8 @@ export default function MonthlyCalendarView({
   theme,
   renderDayPreview,
 }) {
+  const { t } = useTranslation();
+  const WEEKDAY_LABELS = WEEKDAY_KEYS.map((key) => t(`common.weekdaysShort.${key}`));
   const palette = theme || { primary: '#6C3DEB', primarySoft: '#EFE8FF', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8', bg: '#F8F6FF' };
   const leadingBlanks = days.length ? toMondayFirstIndex(days[0].weekday) : 0;
   const cells = [...Array(leadingBlanks).fill(null), ...days];
@@ -38,14 +41,14 @@ export default function MonthlyCalendarView({
           onPress={() => onChangeView('list')}
           activeOpacity={0.85}
         >
-          <Text style={[styles.toggleText, { color: palette.primary }, view === 'list' && styles.toggleTextActive]}>📋 Liste</Text>
+          <Text style={[styles.toggleText, { color: palette.primary }, view === 'list' && styles.toggleTextActive]}>📋 {t('components.monthlyCalendarView.list')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.toggleBtn, { backgroundColor: palette.bg, borderColor: palette.border }, view === 'calendar' && { backgroundColor: palette.primary, borderColor: palette.primary }]}
           onPress={() => onChangeView('calendar')}
           activeOpacity={0.85}
         >
-          <Text style={[styles.toggleText, { color: palette.primary }, view === 'calendar' && styles.toggleTextActive]}>🗓️ Takvim</Text>
+          <Text style={[styles.toggleText, { color: palette.primary }, view === 'calendar' && styles.toggleTextActive]}>🗓️ {t('components.monthlyCalendarView.calendar')}</Text>
         </TouchableOpacity>
       </View>
 
