@@ -8,11 +8,13 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, formatDate, todayString } from './teacherShared';
 import { parseChildBirthDate, normalizeChildBirthDate, formatChildBirthDate } from '../../utils/childDates';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherEventsScreen() {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
@@ -38,14 +40,14 @@ export default function TeacherEventsScreen() {
       .sort((a, b) => String(a.tarih || '').localeCompare(String(b.tarih || '')));
   }, [events, currentClass?.id, kresId]);
 
-  if (loading) return <LoadingState text="Etkinlikler hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.events.loading')} />;
 
   const save = async () => {
-    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
-    if (!baslik.trim() || !tarih.trim()) return Alert.alert('Eksik Bilgi', 'Başlık ve tarih zorunludur.');
+    if (!currentClass?.id) return Alert.alert(t('teacher.events.errorTitle'), t('teacher.events.classNotFoundDesc'));
+    if (!baslik.trim() || !tarih.trim()) return Alert.alert(t('teacher.events.missingInfoTitle'), t('teacher.events.missingFieldsDesc'));
 
     if (!parseChildBirthDate(tarih)) {
-      Alert.alert('Hata', 'Tarihi 25.06.2026 formatında gir.');
+      Alert.alert(t('teacher.events.errorTitle'), t('teacher.events.invalidDateDesc'));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function TeacherEventsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Etkinlik kaydedilemedi.');
+      Alert.alert(t('teacher.events.errorTitle'), t('teacher.events.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -82,16 +84,16 @@ export default function TeacherEventsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast
         visible={successToast}
-        message="Etkinlik sınıf velilerine eklendi"
+        message={t('teacher.events.successMessage')}
         onHide={() => setSuccessToast(false)}
       />
 
       <View onLayout={onHeaderLayout}>
         <ScreenHeader
         navigation={navigation}
-        title="Etkinlikler"
-        subtitle={currentClass?.ad || 'Sınıfım'}
-        rightText={showForm ? 'Kapat' : '+ Ekle'}
+        title={t('teacher.events.title')}
+        subtitle={currentClass?.ad || t('teacher.events.classFallback')}
+        rightText={showForm ? t('teacher.events.closeButton') : t('teacher.events.addButton')}
         onRightPress={() => setShowForm((v) => !v)}
       />
       </View>
@@ -99,26 +101,26 @@ export default function TeacherEventsScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {showForm ? (
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Sınıf Etkinliği</Text>
-            <TextInput style={styles.input} value={baslik} onChangeText={setBaslik} placeholder="Etkinlik başlığı" placeholderTextColor="#999" />
-            <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder="20.06.2026" placeholderTextColor="#999" />
-            <TextInput style={styles.input} value={saat} onChangeText={setSaat} placeholder="Saat (opsiyonel)" placeholderTextColor="#999" />
-            <TextInput style={[styles.input, styles.textArea]} value={aciklama} onChangeText={setAciklama} placeholder="Açıklama" multiline placeholderTextColor="#999" />
+            <Text style={styles.formTitle}>{t('teacher.events.formTitle')}</Text>
+            <TextInput style={styles.input} value={baslik} onChangeText={setBaslik} placeholder={t('teacher.events.titlePlaceholder')} placeholderTextColor="#999" />
+            <TextInput style={styles.input} value={tarih} onChangeText={setTarih} placeholder={t('teacher.events.datePlaceholder')} placeholderTextColor="#999" />
+            <TextInput style={styles.input} value={saat} onChangeText={setSaat} placeholder={t('teacher.events.timePlaceholder')} placeholderTextColor="#999" />
+            <TextInput style={[styles.input, styles.textArea]} value={aciklama} onChangeText={setAciklama} placeholder={t('teacher.events.descPlaceholder')} multiline placeholderTextColor="#999" />
             <TouchableOpacity style={styles.saveButton} onPress={save} disabled={saving}>
-              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Etkinliği Kaydet</Text>}
+              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{t('teacher.events.saveButton')}</Text>}
             </TouchableOpacity>
           </View>
         ) : null}
 
         {classEvents.length === 0 ? (
-          <EmptyState icon="🎉" title="Etkinlik yok" desc="Sınıf etkinliği eklendiğinde burada görünür." />
+          <EmptyState icon="🎉" title={t('teacher.events.emptyTitle')} desc={t('teacher.events.emptyDesc')} />
         ) : (
           classEvents.map((item) => (
             <View key={item.id} style={styles.card}>
               <Text style={styles.date}>📅 {formatDate(item.tarih)} {item.saat ? `· ${item.saat}` : ''}</Text>
-              <Text style={styles.title}>{item.baslik || 'Etkinlik'}</Text>
+              <Text style={styles.title}>{item.baslik || t('parent.events.defaultTitle')}</Text>
               {item.aciklama ? <Text style={styles.desc}>{item.aciklama}</Text> : null}
-              <Text style={styles.badge}>{item.sinifId ? 'Sınıf Etkinliği' : 'Genel Etkinlik'}</Text>
+              <Text style={styles.badge}>{item.sinifId ? t('parent.events.classEvent') : t('parent.events.generalEvent')}</Text>
             </View>
           ))
         )}
