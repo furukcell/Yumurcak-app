@@ -21,25 +21,26 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, push, get, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { MOOD_LISTESI } from '../../constants';
 import { THEME, ScreenHeader, getChildName, todayString, useTeacherData } from './teacherShared';
+import { translateMood } from '../../utils/moodLabel';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import { computeTodayMenuItems } from '../../utils/todayMenu';
 
-const MEAL_OPTIONS = [
-  { key: 'yemedi', label: 'Yemedi' },
-  { key: 'az_yedi', label: 'Az yedi' },
-  { key: 'bitirdi', label: 'Bitirdi' },
-];
-
+// Not: MEAL_OPTIONS/MEALS içindeki "key" alanları DB'ye yazılan ham
+// değerler (yemek.durum, öğün adları) — bunlara dokunulmuyor, sadece
+// ekranda gösterilen "label" metinleri t() ile çevriliyor.
+const MEAL_OPTIONS = ['yemedi', 'az_yedi', 'bitirdi'];
 const MEALS = [
-  { key: 'kahvalti', label: 'Kahvaltı', emoji: '🥐' },
-  { key: 'ogle', label: 'Öğle Yemeği', emoji: '🍲' },
-  { key: 'araOgun', label: 'Ara Öğün', emoji: '🍎' },
+  { key: 'kahvalti', emoji: '🥐' },
+  { key: 'ogle', emoji: '🍲' },
+  { key: 'araOgun', emoji: '🍎' },
 ];
 
 export default function ChildReportScreen() {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const route = useRoute();
@@ -127,15 +128,15 @@ export default function ChildReportScreen() {
   }, [child?.id]);
 
   const handleSave = async () => {
-    if (!child?.id) return Alert.alert('Hata', 'Çocuk bilgisi bulunamadı.');
+    if (!child?.id) return Alert.alert(t('teacher.childReport.errorTitle'), t('teacher.childReport.childNotFoundDesc'));
 
     if (!sleepDuration || !toiletCount) {
-      return Alert.alert('Eksik Bilgi', 'Uyku süresi ve tuvalet sayısı zorunludur.');
+      return Alert.alert(t('teacher.childReport.missingInfoTitle'), t('teacher.childReport.missingSleepToiletDesc'));
     }
 
     const anyMealSelected = MEALS.some((meal) => yemek[meal.key]?.durum);
     if (!anyMealSelected) {
-      return Alert.alert('Eksik Bilgi', 'En az bir öğün için yemek durumu seçmelisin.');
+      return Alert.alert(t('teacher.childReport.missingInfoTitle'), t('teacher.childReport.missingMealDesc'));
     }
 
     setSaving(true);
@@ -178,7 +179,7 @@ export default function ChildReportScreen() {
       }, 900);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Rapor kaydedilemedi.');
+      Alert.alert(t('teacher.childReport.errorTitle'), t('teacher.childReport.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -198,12 +199,12 @@ export default function ChildReportScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast
         visible={successToast}
-        message="Rapor kaydedildi"
+        message={t('teacher.childReport.successMessage')}
         onHide={() => setSuccessToast(false)}
       />
 
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Günlük Rapor" subtitle={getChildName(child)} />
+        <ScreenHeader navigation={navigation} title={t('teacher.childReport.title')} subtitle={getChildName(child)} />
       </View>
 
       <KeyboardAvoidingView
@@ -219,12 +220,12 @@ export default function ChildReportScreen() {
         {!checkingExisting && alreadyReportedToday ? (
           <View style={styles.warningBanner}>
             <Text style={styles.warningText}>
-              ⚠️ Bugün bu çocuk için zaten bir rapor girilmiş. Yine de yeni bir rapor kaydedebilirsin.
+              {t('teacher.childReport.alreadyReportedWarning')}
             </Text>
           </View>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Ruh Hali</Text>
+        <Text style={styles.sectionTitle}>{t('teacher.childReport.moodSectionTitle')}</Text>
         <View style={styles.moodContainer}>
           {MOOD_LISTESI.map((m) => (
             <TouchableOpacity
@@ -233,28 +234,28 @@ export default function ChildReportScreen() {
               onPress={() => setMood(m.label)}
             >
               <Text style={styles.moodEmoji}>{m.emoji}</Text>
-              <Text style={styles.moodLabel}>{m.label}</Text>
+              <Text style={styles.moodLabel}>{translateMood(m.label, t)}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Yemek Detayları</Text>
+        <Text style={styles.sectionTitle}>{t('teacher.childReport.mealSectionTitle')}</Text>
         {MEALS.map((meal) => (
           <View key={meal.key} style={styles.mealCard}>
-            <Text style={styles.mealTitle}>{meal.emoji} {meal.label}</Text>
+            <Text style={styles.mealTitle}>{meal.emoji} {t(`teacher.childReport.meals.${meal.key}`)}</Text>
             <View style={styles.mealOptions}>
-              {MEAL_OPTIONS.map((option) => {
-                const active = yemek[meal.key]?.durum === option.key;
+              {MEAL_OPTIONS.map((optionKey) => {
+                const active = yemek[meal.key]?.durum === optionKey;
 
                 return (
                   <TouchableOpacity
-                    key={option.key}
+                    key={optionKey}
                     style={[styles.mealOptionButton, active && styles.mealOptionActive]}
-                    onPress={() => setMealStatus(meal.key, option.key)}
+                    onPress={() => setMealStatus(meal.key, optionKey)}
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>
-                      {option.label}
+                      {t(`teacher.childReport.mealOptions.${optionKey}`)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -290,32 +291,32 @@ export default function ChildReportScreen() {
           </View>
         ))}
 
-        <Text style={styles.sectionTitle}>Uyku Süresi (saat)</Text>
+        <Text style={styles.sectionTitle}>{t('teacher.childReport.sleepSectionTitle')}</Text>
         <TextInput
           style={styles.input}
           value={sleepDuration}
           onChangeText={setSleepDuration}
-          placeholder="Örn: 2"
+          placeholder={t('teacher.childReport.sleepPlaceholder')}
           keyboardType="numeric"
           placeholderTextColor="#999"
         />
 
-        <Text style={styles.sectionTitle}>Tuvalet Sayısı</Text>
+        <Text style={styles.sectionTitle}>{t('teacher.childReport.toiletSectionTitle')}</Text>
         <TextInput
           style={styles.input}
           value={toiletCount}
           onChangeText={setToiletCount}
-          placeholder="Örn: 3"
+          placeholder={t('teacher.childReport.toiletPlaceholder')}
           keyboardType="numeric"
           placeholderTextColor="#999"
         />
 
-        <Text style={styles.sectionTitle}>Öğretmen Notu</Text>
+        <Text style={styles.sectionTitle}>{t('teacher.childReport.noteSectionTitle')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={note}
           onChangeText={setNote}
-          placeholder="Çocuk hakkında ek bilgiler..."
+          placeholder={t('teacher.childReport.notePlaceholder')}
           multiline
           numberOfLines={4}
           placeholderTextColor="#999"
@@ -329,7 +330,7 @@ export default function ChildReportScreen() {
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Raporu Kaydet</Text>
+            <Text style={styles.saveButtonText}>{t('teacher.childReport.saveButton')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
