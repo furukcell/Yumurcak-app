@@ -86,7 +86,11 @@
 
 - [x] Türkçe
 - [x] İngilizce
-
+- [x] Almanca
+- [x] Rusça
+- [x] Fransızca
+- [x] Arapça
+ 
 > İngilizce dil desteği şu anda **veli tarafında tamamlanmıştır.**
 
 ## Gelecek
