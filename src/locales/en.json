@@ -1199,36 +1199,36 @@
       "teacherFallback": "Teacher"
     },
     "medicationFormDetail": {
-      "loading": "Loading...",
-      "notFound": "Form not found.",
+      "teacherFallback": "Teacher",
+      "errorTitle": "Error",
+      "logErrorDesc": "Could not add the record.",
+      "deleteConfirmTitle": "Delete",
+      "deleteConfirmDesc": "Delete this medication tracking form?",
+      "deleteCancelButton": "Cancel",
+      "deleteConfirmButton": "Delete",
+      "deleteErrorDesc": "Could not delete.",
+      "exportErrorDesc": "Could not generate the form.",
+      "loadingText": "Loading...",
+      "formNotFound": "Form not found.",
+      "doseLoggedToast": "Today's dose has been logged",
       "doseLabel": "Dose",
-      "usageLabel": "Usage",
+      "methodLabel": "Method of Administration",
       "startLabel": "Start",
       "endLabel": "End",
       "reminderTimeLabel": "Reminder Time",
       "parentApprovalLabel": "Parent Approval",
       "approvalReceived": "✅ Received",
       "approvalPending": "⏳ Pending",
-      "loggedToday": "✅ Today's ({{date}}) dose has been marked as given.",
-      "todayDoseTitle": "Today's Dose ({{date}})",
+      "loggedToday": "✅ Today ({{date}}) marked as dose given.",
+      "todaysDoseTitle": "Today's Dose ({{date}})",
       "notePlaceholder": "Note (optional)",
       "saving": "Saving...",
-      "logButton": "✅ Given Today",
-      "historyTitle": "History",
+      "logTodayButton": "✅ Given Today",
+      "historyTitle": "Past Records",
       "noHistory": "No records yet.",
       "printButton": "🖨️ Print",
       "shareButton": "📤 Share/Download",
-      "exportingButton": "...",
-      "deleteButton": "Delete Form",
-      "deleteConfirmTitle": "Delete",
-      "deleteConfirmMessage": "Delete this medication tracking form?",
-      "cancelButton": "Cancel",
-      "confirmDeleteButton": "Delete",
-      "successToast": "Today's dose saved",
-      "errorTitle": "Error",
-      "logErrorDesc": "The record could not be added.",
-      "deleteErrorDesc": "Could not be deleted.",
-      "exportErrorDesc": "The form could not be generated."
+      "deleteFormButton": "Delete Form"
     },
     "medical": {
       "loading": "Preparing medical information...",
@@ -1270,6 +1270,135 @@
       "pendingBadge": "⏳ Awaiting Approval — approval request sent to parent",
       "reminderMeta": "⏰ Reminder: {{time}}",
       "approvalReceived": "✅ Parent approval received"
+    },
+    "weeklyStar": {
+      "loading": "Preparing Star of the Week...",
+      "title": "Star of the Week",
+      "fridayLockAlertTitle": "Active on Fridays",
+      "fridayLockAlertDesc": "Star of the Week badges can only be given on Fridays.",
+      "errorTitle": "Error",
+      "noClassDesc": "Class information not found.",
+      "missingInfoTitle": "Missing Information",
+      "selectChildFirstDesc": "Please select a child first.",
+      "savedTitle": "Saved",
+      "savedDesc": "This week's badge has been saved for {{name}}.",
+      "saveErrorDesc": "Could not save the badge. Please try again.",
+      "noClassTitle": "No class found",
+      "noClassEmptyDesc": "The teacher account must be linked to a class to give badges.",
+      "noChildrenTitle": "No children",
+      "noChildrenDesc": "Badges can be given once children are added to the class.",
+      "heroTitle": "🌟 Star of the Week",
+      "heroText": "Every Friday you can celebrate a child's standout good behavior from the week with a small badge.",
+      "privacyTitle": "🔒 Privacy note",
+      "privacyText": "A given badge is only visible to the selected child's parent. Other students' parents cannot see it.",
+      "lockTitle": "⏳ Badge selection opens on Friday",
+      "lockText": "Today you can observe the children. On Friday you can select a child and save a badge with a short note.",
+      "selectChildTitle": "Select Child",
+      "selectBadgeTitle": "Select Badge",
+      "noteTitle": "Short Note",
+      "noteHelpText": "You can write a short, positive note that the parent will see.",
+      "notePlaceholder": "e.g. Helped a friend tidy up the toys.",
+      "updateInfo": "A badge has already been given to this child this week. Saving will update the existing record.",
+      "updateButton": "Update Badge",
+      "saveButton": "Save Badge",
+      "thisWeekTitle": "This Week's Records",
+      "noRecordsThisWeek": "No badge has been given this week yet.",
+      "historyTitle": "Class Badge History",
+      "noHistory": "No badge history yet.",
+      "childFallback": "Child",
+      "badgeFallback": "Badge",
+      "badges": {
+        "yardimsever_kalp": {
+          "title": "Helpful Heart",
+          "desc": "Supported friends."
+        },
+        "paylasimci_minik": {
+          "title": "Sharing Star",
+          "desc": "Shared toys and materials."
+        },
+        "cesur_yurek": {
+          "title": "Brave Heart",
+          "desc": "Bravely joined a new activity."
+        },
+        "merakli_kasif": {
+          "title": "Curious Explorer",
+          "desc": "Showed curiosity to learn new things."
+        },
+        "yaratici_ressam": {
+          "title": "Creative Artist",
+          "desc": "Participated wonderfully in an art activity."
+        },
+        "neseli_gunes": {
+          "title": "Cheerful Sunshine",
+          "desc": "Brought positive energy to the class."
+        },
+        "sorumluluk_sahibi": {
+          "title": "Responsible One",
+          "desc": "Took care of belongings and classroom order."
+        },
+        "sabirli_minik": {
+          "title": "Patient Little One",
+          "desc": "Waited their turn and showed patience."
+        },
+        "kitap_dostu": {
+          "title": "Book Buddy",
+          "desc": "Showed interest in story and book time."
+        },
+        "problem_cozucu": {
+          "title": "Problem Solver",
+          "desc": "Tried to find solutions during play or activities."
+        },
+        "guzel_iletisim": {
+          "title": "Great Communicator",
+          "desc": "Expressed feelings and wishes nicely."
+        },
+        "katilim_yildizi": {
+          "title": "Participation Star",
+          "desc": "Joined activities eagerly."
+        }
+      }
+    },
+    "support": {
+      "loading": "Preparing support...",
+      "title": "Contact Us",
+      "subtitle": "Send a request / complaint / feedback to the Super Admin",
+      "topics": {
+        "istek": "Request",
+        "sikayet": "Complaint",
+        "gorus": "Feedback",
+        "teknik": "Technical Support",
+        "diger": "Other"
+      },
+      "bannerTitle": "Yumurcak Support",
+      "bannerText": "You can write to the Super Admin about requests, complaints, feedback, or technical support.",
+      "topicLabel": "Topic",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Write your message...",
+      "sendButton": "Send",
+      "recentTitle": "Recent Messages",
+      "noMessagesTitle": "No messages yet",
+      "noMessagesDesc": "Messages you send to the Super Admin will appear here.",
+      "replyLabel": "Reply",
+      "replyPlaceholder": "Anything you'd like to add?",
+      "replyButton": "Send Reply",
+      "replyButtonSending": "Sending...",
+      "adminReplyName": "Yumurcak Support",
+      "youFallback": "You",
+      "teacherFallback": "Teacher",
+      "missingInfoTitle": "Missing Information",
+      "emptyMessageDesc": "The message field cannot be empty.",
+      "messageTooLongTitle": "Message Too Long",
+      "messageTooLongDesc": "The message can be at most {{max}} characters.",
+      "errorTitle": "Error",
+      "userInfoNotFoundDesc": "User information not found.",
+      "sendErrorDesc": "The message could not be sent. Please try again.",
+      "sentSuccess": "Your message has been sent",
+      "emptyReplyDesc": "The reply field cannot be empty.",
+      "replyTooLongTitle": "Reply Too Long",
+      "replyTooLongDesc": "The reply can be at most {{max}} characters.",
+      "replySentSuccess": "Your reply has been sent",
+      "replyErrorDesc": "The reply could not be sent.",
+      "messageFallback": "Message"
     }
   },
   "themes": {
