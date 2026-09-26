@@ -36,10 +36,10 @@ Abonelik altyapısı (Android)✅
 Abonelik altyapısı (iOS)    🟡 KURULUYOR
 AI günlük özet              ✅
 Dil desteği                 ✅
-Android (Google Play)       🟡 YAYINDA / PİLOT AŞAMASI
-iOS (App Store)             🟡 İLK SÜRÜM REVIEW'DA
-Pilot kurumlar              🟡 HAZIRLANIYOR
-Son gerçek cihaz testleri   🟡 DEVAM EDİYOR
+Android (Google Play)       ✅ YAYINDA 
+iOS (App Store)             ✅  REVIEW'DA
+Pilot kurumlar              ✅ başladı
+Son gerçek cihaz testleri   ✅ 
 ```
 
 Yumurcak artık yeni özelliklerin sürekli eklendiği erken aşama bir prototip değil; **gerçek kreşlerde kullanılmak üzere hazırlanmış, ticari kullanıma yönelik bir SaaS ürünüdür.**
@@ -911,7 +911,7 @@ Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
 
 ## Faz 7 — Ticari Sistem
 
-**TAMAMLANDI ✅ (Android) / 🟡 DEVAM EDİYOR (iOS)**
+**TAMAMLANDI ✅ (Android) / ✅ TAMAMLANDI (iOS)**
 
 * RevenueCat
 * Google Play abonelik
@@ -937,13 +937,13 @@ Gerçek kreşlerden kullanım verisi ve geri bildirim toplanacaktır.
 
   **TAMAMLANDI ✅**
 
-## Faz 10 — Store Yayını & Pilot **🟡 DEVAM EDİYOR**
+## Faz 10 — Store Yayını & Pilot **✅ TAMAMLANDI**
 
 **🟡 SIRADAKİ AŞAMA**
 
 ```txt
 Google Play yayını (Android)     ✅
-App Store submission (iOS)       🟡 review'da
+App Store submission (iOS)       ✅ 
 Apple abonelik altyapısı         🟡 kuruluyor
 Pilot kreşler
      ↓
@@ -1047,9 +1047,9 @@ Amaç; kreşin günlük operasyonundan veli iletişimine, doküman üretiminden 
 🟢 AI günlük özet
 🟢 Dil desteği
 🟢 Google Play yayını
-🟡 App Store (iOS) — review'da
+🟢 App Store (iOS) — review'da
 🟡 Apple abonelik altyapısı
-🟡 Son gerçek cihaz testleri
+🟢 Son gerçek cihaz testleri
 🟡 Pilot kurumlar
 ```
 
