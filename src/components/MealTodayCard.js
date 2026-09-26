@@ -13,10 +13,9 @@ const COLORS = {
   border: '#EEEAF8',
 };
 
-// Not: title alanı geriye dönük uyumluluk için korunuyor — TeacherMealsScreen.js
-// bu diziyi import edip meal.title'ı doğrudan kullanıyor, o yüzden burada
-// hâlâ Türkçe duruyor. MealTodayCard'ın kendi render'ı aşağıda t() ile
-// ayrı bir çeviri kullanıyor (parent.mealCard.mealName.<key>).
+// Not: title alanı sadece dahili/geriye dönük referans olarak duruyor —
+// ekranlarda görüntülenen metin her yerde t('parent.mealCard.mealName.<key>')
+// üzerinden geliyor (bkz. TeacherMealsScreen.js, aşağıdaki render).
 const MEALS = [
   { key: 'kahvalti', title: 'Kahvaltı', icon: '🥐', accent: '#FFF4DE', border: '#FFE2A8' },
   { key: 'ogle', title: 'Öğle', icon: '🍲', accent: '#EAF7FF', border: '#BEEAFF' },
