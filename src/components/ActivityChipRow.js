@@ -7,6 +7,7 @@
 // ============================================================
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ETKINLIK_KATEGORILERI } from '../constants';
 
 function kategoriEmoji(key) {
@@ -15,6 +16,7 @@ function kategoriEmoji(key) {
 }
 
 export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, onRemove, theme }) {
+  const { t } = useTranslation();
   const palette = theme || { primary: '#6C3DEB', text: '#191A23', muted: '#707386', card: '#FFFFFF', border: '#EEEAF8', bg: '#F7F6FB' };
   const list = Array.isArray(items) ? items : [];
 
@@ -23,7 +25,7 @@ export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, o
       <View style={styles.chipRow}>
         {list.map((item, index) => {
           const active = index === activeIndex;
-          const label = String(item?.etkinlik || '').trim() || 'Yeni Ders';
+          const label = String(item?.etkinlik || '').trim() || t('components.activityChipRow.newLessonFallback');
           const saatPrefix = item?.baslangicSaati ? `${item.baslangicSaati}${item.bitisSaati ? '-' + item.bitisSaati : ''} ` : '';
           return (
             <TouchableOpacity
@@ -47,7 +49,7 @@ export default function ActivityChipRow({ items, activeIndex, onSelect, onAdd, o
       </View>
 
       <TouchableOpacity style={[styles.addButton, { borderColor: palette.border, backgroundColor: palette.bg }]} onPress={onAdd} activeOpacity={0.85}>
-        <Text style={[styles.addButtonText, { color: palette.primary }]}>+ Yeni Ders Ekle</Text>
+        <Text style={[styles.addButtonText, { color: palette.primary }]}>{t('components.activityChipRow.addNewLesson')}</Text>
       </TouchableOpacity>
     </View>
   );
