@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Platform, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, set, update, onValue, query, orderByChild, equalTo } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { useTeacherData, LoadingState, EmptyState, getChildName } from './teacherShared';
 import { bugunKey, tarihTr, uyumAktifMi, uyumEmoji, uyumGunNo, uyumKalanGun, uyumOzet, uyumSkoru, UYUM_GUN } from '../../utils/uyum';
@@ -15,22 +16,26 @@ const TEXT = '#141A35';
 const MUTED = '#727A94';
 const BORDER = '#E5EAFE';
 
-const OPTION = {
-  sabah: [
-    ['zorlandi', '😢 Zorlandı'], ['orta', '🙂 Orta'], ['iyi', '😊 İyi'],
-  ],
-  yemek: [
-    ['hic', 'Hiç yemedi'], ['az', 'Az yedi'], ['yarisi', 'Yarısını yedi'], ['hepsi', 'Hepsini yedi'],
-  ],
-  cikis: [
-    ['agladi', '😢 Ağladı'], ['huzunlu', '🙂 Biraz hüzünlü'], ['gulerek', '😊 Gülerek ayrıldı'],
-  ],
-  oyun: [
-    ['oynamadi', 'Oynamadı'], ['kismen', 'Kısmen'], ['aktif', 'Aktif'],
-  ],
-};
+function buildOptions(t) {
+  return {
+    sabah: [
+      ['zorlandi', t('teacher.adaptation.optSabahZorlandi')], ['orta', t('teacher.adaptation.optSabahOrta')], ['iyi', t('teacher.adaptation.optSabahIyi')],
+    ],
+    yemek: [
+      ['hic', t('teacher.adaptation.optYemekHic')], ['az', t('teacher.adaptation.optYemekAz')], ['yarisi', t('teacher.adaptation.optYemekYarisi')], ['hepsi', t('teacher.adaptation.optYemekHepsi')],
+    ],
+    cikis: [
+      ['agladi', t('teacher.adaptation.optCikisAgladi')], ['huzunlu', t('teacher.adaptation.optCikisHuzunlu')], ['gulerek', t('teacher.adaptation.optCikisGulerek')],
+    ],
+    oyun: [
+      ['oynamadi', t('teacher.adaptation.optOyunOynamadi')], ['kismen', t('teacher.adaptation.optOyunKismen')], ['aktif', t('teacher.adaptation.optOyunAktif')],
+    ],
+  };
+}
 
 export default function TeacherAdaptationTrackingScreen({ navigation }) {
+  const { t } = useTranslation();
+  const OPTION = buildOptions(t);
   const data = useTeacherData();
   const today = bugunKey();
   const [uyumKayitlari, setUyumKayitlari] = React.useState([]);
@@ -69,8 +74,8 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
     setForm(defaultForm());
   }, [selectedChild?.id, todayRecord?.id]);
 
-  if (data.loading) return <LoadingState text="Uyum takibi hazırlanıyor..." />;
-  if (!data.currentClass) return <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Öğretmen bir sınıfa bağlandığında uyum takibi aktifleşir." />;
+  if (data.loading) return <LoadingState text={t('teacher.adaptation.loading')} />;
+  if (!data.currentClass) return <EmptyState icon="🏫" title={t('teacher.adaptation.noClassTitle')} desc={t('teacher.adaptation.noClassDesc')} />;
 
   const enteredToday = activeChildren.filter((child) => uyumKayitlari.some((r) => r.tarih === today && String(r.cocukId) === String(child.id))).length;
   const pending = Math.max(0, activeChildren.length - enteredToday);
@@ -108,7 +113,7 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
         ogretmenNotu: form.ogretmenNotu || '',
         skor: score,
         kaydedenId: data.teacherId || '',
-        kaydedenAd: `${data.kullanici?.ad || ''} ${data.kullanici?.soyad || ''}`.trim() || data.kullanici?.kullaniciAdi || 'Öğretmen',
+        kaydedenAd: `${data.kullanici?.ad || ''} ${data.kullanici?.soyad || ''}`.trim() || data.kullanici?.kullaniciAdi || t('teacher.adaptation.teacherFallback'),
         updatedAt: Date.now(),
         createdAt: todayRecord?.createdAt || Date.now(),
       });
@@ -124,10 +129,10 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
       } else {
         await update(ref(database, `cocuklar/${selectedChild.id}`), { sonUyumSkoru: score, updatedAt: Date.now() });
       }
-      Alert.alert('Kaydedildi', 'Uyum kaydı ve skor güncellendi.');
+      Alert.alert(t('teacher.adaptation.savedTitle'), t('teacher.adaptation.savedDesc'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Uyum kaydı kaydedilemedi.');
+      Alert.alert(t('teacher.adaptation.errorTitle'), t('teacher.adaptation.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -139,22 +144,22 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹</Text></TouchableOpacity>
-          <Text style={styles.headerTitle}>Uyum Takibi</Text>
-          <Text style={styles.headerSub}>{data.currentClass?.ad || 'Sınıf'} · {tarihTr(today)}</Text>
+          <Text style={styles.headerTitle}>{t('teacher.adaptation.title')}</Text>
+          <Text style={styles.headerSub}>{data.currentClass?.ad || t('teacher.adaptation.classFallback')} · {tarihTr(today)}</Text>
         </View>
 
         <View style={styles.statsRow}>
-          <Stat title="Günlük Giriş" value={`${enteredToday}/${activeChildren.length}`} icon="✅" color={GREEN} />
-          <Stat title="Bekleyen" value={pending} icon="⏰" color={ORANGE} />
-          <Stat title="Ortalama Skor" value={`${avg}/100`} icon="⭐" color={BLUE} />
+          <Stat title={t('teacher.adaptation.statDailyEntry')} value={`${enteredToday}/${activeChildren.length}`} icon="✅" color={GREEN} />
+          <Stat title={t('teacher.adaptation.statPending')} value={pending} icon="⏰" color={ORANGE} />
+          <Stat title={t('teacher.adaptation.statAvgScore')} value={`${avg}/100`} icon="⭐" color={BLUE} />
         </View>
 
         {activeChildren.length === 0 ? (
-          <EmptyState icon="🌱" title="Aktif uyum çocuğu yok" desc="Admin çocuk eklerken yeni başlayan seçerse burada görünür." />
+          <EmptyState icon="🌱" title={t('teacher.adaptation.emptyTitle')} desc={t('teacher.adaptation.emptyDesc')} />
         ) : (
           <View style={styles.mainGrid}>
             <View style={styles.childPanel}>
-              <Text style={styles.sectionTitle}>Çocuklar ({activeChildren.length})</Text>
+              <Text style={styles.sectionTitle}>{t('teacher.adaptation.childrenSectionTitle', { count: activeChildren.length })}</Text>
               {activeChildren.map((child) => {
                 const list = uyumKayitlari.filter((r) => String(r.cocukId) === String(child.id));
                 const oz = uyumOzet(list);
@@ -166,8 +171,8 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
                     <View style={styles.childAvatar}><Text style={styles.childAvatarText}>👧</Text></View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.childName}>{getChildName(child)}</Text>
-                      <Text style={styles.childSub}>{day}. Gün / {UYUM_GUN}</Text>
-                      <Text style={styles.childEmoji}>{uyumEmoji(oz.skor)} {hasToday ? 'Giriş yapıldı' : 'Giriş bekliyor'}</Text>
+                      <Text style={styles.childSub}>{t('teacher.adaptation.dayOfTotal', { day, total: UYUM_GUN })}</Text>
+                      <Text style={styles.childEmoji}>{uyumEmoji(oz.skor)} {hasToday ? t('teacher.adaptation.entered') : t('teacher.adaptation.waitingEntry')}</Text>
                     </View>
                     <Text style={[styles.childScore, !hasToday && styles.pendingText]}>{hasToday ? oz.skor : '⏰'}</Text>
                   </TouchableOpacity>
@@ -178,30 +183,30 @@ export default function TeacherAdaptationTrackingScreen({ navigation }) {
             {selectedChild ? (
               <View style={styles.formPanel}>
                 <View style={styles.formHead}>
-                  <View><Text style={styles.formTitle}>{getChildName(selectedChild)}</Text><Text style={styles.formSub}>{uyumGunNo(selectedChild.uyumBaslangicTarihi, today)}. Gün · {uyumKalanGun(selectedChild.uyumBaslangicTarihi, today)} gün kaldı</Text></View>
+                  <View><Text style={styles.formTitle}>{getChildName(selectedChild)}</Text><Text style={styles.formSub}>{t('teacher.adaptation.dayCounter', { day: uyumGunNo(selectedChild.uyumBaslangicTarihi, today), remaining: uyumKalanGun(selectedChild.uyumBaslangicTarihi, today) })}</Text></View>
                   <View style={styles.scoreBox}><Text style={styles.scoreBig}>{liveScore}</Text><Text style={styles.scoreSmall}>/100</Text></View>
                 </View>
 
-                <Block title="1. Sabah nasıldı?">
+                <Block title={t('teacher.adaptation.q1Title')}>
                   <OptionRow options={OPTION.sabah} value={form.sabahDurumu} onChange={(v) => setForm({ ...form, sabahDurumu: v })} />
-                  <NumberControl label="Ağladı mı? Kaç dakika?" value={form.aglamaDakika} step={5} max={90} onChange={(v) => setForm({ ...form, aglamaDakika: v })} />
+                  <NumberControl label={t('teacher.adaptation.cryMinutesLabel')} value={form.aglamaDakika} step={5} max={90} onChange={(v) => setForm({ ...form, aglamaDakika: v })} />
                 </Block>
-                <Block title="2. Öğle yemeği"><OptionRow options={OPTION.yemek} value={form.yemekDurumu} onChange={(v) => setForm({ ...form, yemekDurumu: v })} /></Block>
-                <Block title="3. Akşam çıkışı"><OptionRow options={OPTION.cikis} value={form.cikisDurumu} onChange={(v) => setForm({ ...form, cikisDurumu: v })} /></Block>
-                <Block title="4. Uyku süresi"><NumberControl label="Uyku" value={form.uykuDakika} step={15} max={180} suffix="dk" onChange={(v) => setForm({ ...form, uykuDakika: v })} /></Block>
-                <Block title="5. Arkadaşlarla oyun"><OptionRow options={OPTION.oyun} value={form.oyunDurumu} onChange={(v) => setForm({ ...form, oyunDurumu: v })} /></Block>
-                <Block title="6. Dönüm noktaları">
-                  <Toggle label="İlk arkadaşlık" value={form.milestones.ilkArkadaslik} onPress={() => toggleMilestone(form, setForm, 'ilkArkadaslik')} />
-                  <Toggle label="İlk ayrılma" value={form.milestones.ilkAyrilik} onPress={() => toggleMilestone(form, setForm, 'ilkAyrilik')} />
-                  <Toggle label="Öğretmene güven" value={form.milestones.ogretmeneGuven} onPress={() => toggleMilestone(form, setForm, 'ogretmeneGuven')} />
-                  <Toggle label="Rahat vedalaşma" value={form.milestones.rahatVeda} onPress={() => toggleMilestone(form, setForm, 'rahatVeda')} />
+                <Block title={t('teacher.adaptation.q2Title')}><OptionRow options={OPTION.yemek} value={form.yemekDurumu} onChange={(v) => setForm({ ...form, yemekDurumu: v })} /></Block>
+                <Block title={t('teacher.adaptation.q3Title')}><OptionRow options={OPTION.cikis} value={form.cikisDurumu} onChange={(v) => setForm({ ...form, cikisDurumu: v })} /></Block>
+                <Block title={t('teacher.adaptation.q4Title')}><NumberControl label={t('teacher.adaptation.sleepLabel')} value={form.uykuDakika} step={15} max={180} suffix="dk" onChange={(v) => setForm({ ...form, uykuDakika: v })} /></Block>
+                <Block title={t('teacher.adaptation.q5Title')}><OptionRow options={OPTION.oyun} value={form.oyunDurumu} onChange={(v) => setForm({ ...form, oyunDurumu: v })} /></Block>
+                <Block title={t('teacher.adaptation.q6Title')}>
+                  <Toggle label={t('teacher.adaptation.milestoneFirstFriendship')} value={form.milestones.ilkArkadaslik} onPress={() => toggleMilestone(form, setForm, 'ilkArkadaslik')} />
+                  <Toggle label={t('teacher.adaptation.milestoneFirstSeparation')} value={form.milestones.ilkAyrilik} onPress={() => toggleMilestone(form, setForm, 'ilkAyrilik')} />
+                  <Toggle label={t('teacher.adaptation.milestoneTeacherTrust')} value={form.milestones.ogretmeneGuven} onPress={() => toggleMilestone(form, setForm, 'ogretmeneGuven')} />
+                  <Toggle label={t('teacher.adaptation.milestoneEasyGoodbye')} value={form.milestones.rahatVeda} onPress={() => toggleMilestone(form, setForm, 'rahatVeda')} />
                 </Block>
-                <Block title="7. Öğretmen notu">
-                  <TextInput style={styles.noteInput} value={form.ogretmenNotu} onChangeText={(v) => setForm({ ...form, ogretmenNotu: v })} multiline maxLength={300} placeholder="Bugünkü uyum notunu yaz..." placeholderTextColor={MUTED} />
+                <Block title={t('teacher.adaptation.q7Title')}>
+                  <TextInput style={styles.noteInput} value={form.ogretmenNotu} onChangeText={(v) => setForm({ ...form, ogretmenNotu: v })} multiline maxLength={300} placeholder={t('teacher.adaptation.notePlaceholder')} placeholderTextColor={MUTED} />
                   <Text style={styles.charCount}>{String(form.ogretmenNotu || '').length}/300</Text>
                 </Block>
                 <TouchableOpacity style={[styles.saveBtn, saving && styles.disabled]} onPress={save} disabled={saving}>
-                  {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Kaydet ve Skoru Güncelle · {liveScore}/100</Text>}
+                  {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>{t('teacher.adaptation.saveButton', { score: liveScore })}</Text>}
                 </TouchableOpacity>
               </View>
             ) : null}
