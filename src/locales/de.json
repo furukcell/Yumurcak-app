@@ -1724,5 +1724,76 @@
       "ozBakimBecerisi": "Selbstversorgungsfähigkeiten",
       "dengeVeKoordinasyon": "Gleichgewicht und Koordination"
     }
+  },
+  "components": {
+    "activityChipRow": {
+      "newLessonFallback": "Neue Stunde",
+      "addNewLesson": "+ Neue Stunde hinzufügen"
+    },
+    "mealChipListInput": {
+      "add": "Hinzufügen",
+      "cancel": "Abbrechen"
+    },
+    "monthlyCalendarView": {
+      "list": "Liste",
+      "calendar": "Kalender"
+    },
+    "allergyBoxEditor": {
+      "placeholder": "z. B. Ei",
+      "addLabel": "+ Allergie hinzufügen"
+    },
+    "monthlyArchivePicker": {
+      "trigger": "🗂 Archiv",
+      "title": "Veröffentlichte Monate",
+      "close": "Schließen",
+      "empty": "Noch kein veröffentlichter Monat.",
+      "daysSuffix": "Tage"
+    },
+    "activityBalanceCard": {
+      "title": "📊 Aktivitätsbalance — {{month}}",
+      "summaryWithCount": "{{count}} Aktivitäten diesen Monat erfasst — für Details tippen.",
+      "summaryEmpty": "Diesen Monat wurden noch keine Aktivitäten erfasst.",
+      "noDataYet": "Für diesen Monat gibt es noch keine veröffentlichten Aktivitäten — für die Analyse werden Daten benötigt.",
+      "missingCategories": "💡 Diesen Monat nicht genutzte Kategorien: {{list}}"
+    },
+    "dailyChecklistCard": {
+      "title": "Heutige Checkliste",
+      "attendance": "Anwesenheit",
+      "dailyReport": "Tagesbericht",
+      "mealList": "Speiseplan",
+      "todaysActivity": "Heutige Aktivität",
+      "photoGallery": "Fotogalerie",
+      "noChildrenInClass": "Keine Kinder in der Klasse",
+      "entered": "Eingetragen",
+      "notEntered": "Nicht eingetragen",
+      "sharesCount": "{{count}} Beiträge",
+      "noShares": "Keine Beiträge"
+    },
+    "changePasswordCard": {
+      "errorTitle": "Fehler",
+      "fillAllFields": "Du musst alle Felder ausfüllen.",
+      "passwordTooShort": "Das neue Passwort muss mindestens 6 Zeichen haben.",
+      "passwordsDontMatch": "Die neuen Passwörter stimmen nicht überein.",
+      "samePassword": "Das neue Passwort darf nicht mit dem alten übereinstimmen.",
+      "sessionNotFound": "Sitzungsinformationen nicht gefunden. Bitte abmelden und erneut anmelden.",
+      "successTitle": "Erfolgreich",
+      "successMessage": "Dein Passwort wurde aktualisiert.",
+      "wrongPassword": "Das alte Passwort ist falsch.",
+      "tooManyRequests": "Zu viele fehlgeschlagene Versuche. Bitte versuche es später erneut.",
+      "requiresRecentLogin": "Aus Sicherheitsgründen musst du dich erneut anmelden. Melde dich ab, wieder an und versuche es erneut.",
+      "weakPassword": "Das neue Passwort ist zu schwach. Mindestens 6 Zeichen erforderlich.",
+      "changeFailed": "Passwort konnte nicht geändert werden.",
+      "title": "🔒 Passwort ändern",
+      "hint": "Bestätige dein altes Passwort und lege ein neues fest.",
+      "oldPasswordLabel": "Altes Passwort",
+      "oldPasswordPlaceholder": "Dein aktuelles Passwort",
+      "newPasswordLabel": "Neues Passwort",
+      "newPasswordPlaceholder": "Mindestens 6 Zeichen",
+      "newPasswordRepeatLabel": "Neues Passwort (Wiederholen)",
+      "newPasswordRepeatPlaceholder": "Neues Passwort erneut eingeben",
+      "show": "Anzeigen",
+      "hide": "Verbergen",
+      "submitButton": "Passwort aktualisieren"
+    }
   }
 }
