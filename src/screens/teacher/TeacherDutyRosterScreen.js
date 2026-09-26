@@ -8,6 +8,7 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState } from './teacherShared';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import { getDaysOfMonth, getMonthKey, getMonthLabel, shiftMonth } from '../../services/monthlyDocuments';
@@ -25,6 +26,7 @@ function dutyPreview(value) {
 }
 
 export default function TeacherDutyRosterScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, kresId, dutyRoster } = useTeacherData();
 
   const [monthDate, setMonthDate] = useState(new Date());
@@ -58,14 +60,14 @@ export default function TeacherDutyRosterScreen({ navigation }) {
     setSelectedDateKey('');
   }
 
-  if (loading) return <LoadingState text="Nöbet çizelgesi hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.dutyRoster.loading')} />;
 
   const selectedDay = days.find((day) => day.dateKey === selectedDateKey) || null;
   const selectedValue = values[selectedDateKey] || { personel: '', not: '' };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader title="Nöbet Çizelgesi" subtitle="Yönetici tarafından yayınlanan plan" navigation={navigation} />
+      <ScreenHeader title={t('teacher.dutyRoster.title')} subtitle={t('teacher.dutyRoster.subtitle')} navigation={navigation} />
 
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.monthCard}>
@@ -74,7 +76,7 @@ export default function TeacherDutyRosterScreen({ navigation }) {
           </TouchableOpacity>
           <View style={styles.monthCenter}>
             <Text style={styles.monthLabel}>{monthLabel}</Text>
-            <Text style={styles.monthHint}>{publishedCount > 0 ? `${publishedCount} gün planlı` : 'Bu ay için plan yok'}</Text>
+            <Text style={styles.monthHint}>{publishedCount > 0 ? t('teacher.dutyRoster.daysPlanned', { count: publishedCount }) : t('teacher.dutyRoster.noPlanThisMonth')}</Text>
           </View>
           <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
             <Text style={styles.monthButtonText}>›</Text>
@@ -91,7 +93,7 @@ export default function TeacherDutyRosterScreen({ navigation }) {
             theme={THEME}
             renderDayPreview={(day) => {
               const preview = dutyPreview(values[day.dateKey]);
-              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('teacher.dutyRoster.emptyLabel')}</Text>;
             }}
           />
         )}
@@ -99,8 +101,8 @@ export default function TeacherDutyRosterScreen({ navigation }) {
         {publishedCount === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={styles.emptyTitle}>Bu ay için nöbet çizelgesi yayınlanmamış</Text>
-            <Text style={styles.emptyDesc}>Yönetici yayınladığında burada görünecek.</Text>
+            <Text style={styles.emptyTitle}>{t('teacher.dutyRoster.noPublishedTitle')}</Text>
+            <Text style={styles.emptyDesc}>{t('teacher.dutyRoster.noPublishedDesc')}</Text>
           </View>
         ) : null}
       </ScrollView>
@@ -111,25 +113,25 @@ export default function TeacherDutyRosterScreen({ navigation }) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{selectedDay?.label}</Text>
               <TouchableOpacity onPress={() => setSelectedDateKey('')} activeOpacity={0.8}>
-                <Text style={styles.modalClose}>Kapat</Text>
+                <Text style={styles.modalClose}>{t('teacher.dutyRoster.closeButton')}</Text>
               </TouchableOpacity>
             </View>
 
             {hasDutyContent(selectedValue) ? (
               <>
                 <View style={styles.modalRow}>
-                  <Text style={styles.modalRowLabel}>👤 Nöbetçi Personel</Text>
+                  <Text style={styles.modalRowLabel}>{t('teacher.dutyRoster.staffLabel')}</Text>
                   <Text style={styles.modalRowValue}>{selectedValue.personel || '-'}</Text>
                 </View>
                 {selectedValue.not ? (
                   <View style={styles.modalRow}>
-                    <Text style={styles.modalRowLabel}>📝 Not</Text>
+                    <Text style={styles.modalRowLabel}>{t('teacher.dutyRoster.noteLabel')}</Text>
                     <Text style={styles.modalRowValue}>{selectedValue.not}</Text>
                   </View>
                 ) : null}
               </>
             ) : (
-              <Text style={styles.modalEmptyText}>Bu gün için nöbetçi bilgisi girilmemiş.</Text>
+              <Text style={styles.modalEmptyText}>{t('teacher.dutyRoster.modalEmptyText')}</Text>
             )}
           </View>
         </View>
