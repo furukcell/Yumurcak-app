@@ -14,11 +14,12 @@ import {
 } from 'react-native';
 import { onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
 import {
-  WEEKLY_BADGES,
   buildWeeklyBadgeRecordId,
+  getTranslatedWeeklyBadges,
   getWeekKey,
   getWeekRange,
   isFriday,
@@ -31,10 +32,12 @@ function toList(data) {
 }
 
 export default function TeacherWeeklyStarScreen() {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, classChildren } = useTeacherData();
+  const WEEKLY_BADGES = useMemo(() => getTranslatedWeeklyBadges(t), [t]);
   const [records, setRecords] = useState([]);
 
   const [selectedChildId, setSelectedChildId] = useState('');
@@ -96,17 +99,17 @@ export default function TeacherWeeklyStarScreen() {
 
   const saveBadge = async () => {
     if (!fridayActive) {
-      Alert.alert('Cuma günü aktif', 'Haftanın Yıldızı rozetleri sadece cuma günleri verilebilir.');
+      Alert.alert(t('teacher.weeklyStar.fridayLockAlertTitle'), t('teacher.weeklyStar.fridayLockAlertDesc'));
       return;
     }
 
     if (!currentClass?.id) {
-      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
+      Alert.alert(t('teacher.weeklyStar.errorTitle'), t('teacher.weeklyStar.noClassDesc'));
       return;
     }
 
     if (!selectedChild?.id) {
-      Alert.alert('Eksik Bilgi', 'Önce bir çocuk seçmelisin.');
+      Alert.alert(t('teacher.weeklyStar.missingInfoTitle'), t('teacher.weeklyStar.selectChildFirstDesc'));
       return;
     }
 
@@ -143,53 +146,53 @@ export default function TeacherWeeklyStarScreen() {
         updatedAt: now,
       });
 
-      Alert.alert('Kaydedildi', `${getChildName(selectedChild)} için haftanın rozeti kaydedildi.`);
+      Alert.alert(t('teacher.weeklyStar.savedTitle'), t('teacher.weeklyStar.savedDesc', { name: getChildName(selectedChild) }));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Rozet kaydedilemedi. Lütfen tekrar dene.');
+      Alert.alert(t('teacher.weeklyStar.errorTitle'), t('teacher.weeklyStar.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <LoadingState text="Haftanın yıldızı hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.weeklyStar.loading')} />;
 
   return (
     <SafeAreaView style={local.safeArea}>
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Haftanın Yıldızı" subtitle={weekRange.label} />
+        <ScreenHeader navigation={navigation} title={t('teacher.weeklyStar.title')} subtitle={weekRange.label} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={local.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
-          <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Rozet vermek için öğretmen hesabı bir sınıfa bağlı olmalı." />
+          <EmptyState icon="🏫" title={t('teacher.weeklyStar.noClassTitle')} desc={t('teacher.weeklyStar.noClassEmptyDesc')} />
         ) : classChildren.length === 0 ? (
-          <EmptyState icon="👧" title="Çocuk yok" desc="Sınıfa çocuk eklendiğinde rozet verilebilir." />
+          <EmptyState icon="👧" title={t('teacher.weeklyStar.noChildrenTitle')} desc={t('teacher.weeklyStar.noChildrenDesc')} />
         ) : (
           <>
             <View style={local.heroCard}>
               <View style={{ flex: 1 }}>
-                <Text style={local.heroTitle}>🌟 Haftanın Yıldızı</Text>
-                <Text style={local.heroText}>Her cuma çocukların hafta boyunca öne çıkan güzel davranışlarını küçük bir rozetle kutlayabilirsin.</Text>
+                <Text style={local.heroTitle}>{t('teacher.weeklyStar.heroTitle')}</Text>
+                <Text style={local.heroText}>{t('teacher.weeklyStar.heroText')}</Text>
               </View>
               <Text style={local.heroIcon}>🏅</Text>
             </View>
 
             <View style={local.privacyCard}>
-              <Text style={local.privacyTitle}>🔒 Gizlilik bilgisi</Text>
-              <Text style={local.privacyText}>Verilen rozet sadece seçilen çocuğun velisinde görünür. Diğer öğrencilerin velileri bu rozeti göremez.</Text>
+              <Text style={local.privacyTitle}>{t('teacher.weeklyStar.privacyTitle')}</Text>
+              <Text style={local.privacyText}>{t('teacher.weeklyStar.privacyText')}</Text>
             </View>
 
             {!fridayActive ? (
               <View style={local.lockCard}>
-                <Text style={local.lockTitle}>⏳ Rozet seçimi cuma günü aktif olur</Text>
-                <Text style={local.lockText}>Bugün çocukları gözlemleyebilirsin. Cuma günü çocuk seçip rozet ve kısa not kaydedebilirsin.</Text>
+                <Text style={local.lockTitle}>{t('teacher.weeklyStar.lockTitle')}</Text>
+                <Text style={local.lockText}>{t('teacher.weeklyStar.lockText')}</Text>
               </View>
             ) : null}
 
             <View style={local.card}>
               <View style={local.cardHeaderRow}>
-                <Text style={local.cardTitle}>Çocuk Seç</Text>
+                <Text style={local.cardTitle}>{t('teacher.weeklyStar.selectChildTitle')}</Text>
                 <Text style={local.countPill}>{thisWeekRecords.length}/{classChildren.length}</Text>
               </View>
               <View style={local.childGrid}>
@@ -206,7 +209,7 @@ export default function TeacherWeeklyStarScreen() {
             </View>
 
             <View style={[local.card, !fridayActive && local.disabledSection]}>
-              <Text style={local.cardTitle}>Rozet Seç</Text>
+              <Text style={local.cardTitle}>{t('teacher.weeklyStar.selectBadgeTitle')}</Text>
               <View style={local.badgeGrid}>
                 {WEEKLY_BADGES.map((badge) => {
                   const active = selectedBadgeId === badge.id;
@@ -222,38 +225,38 @@ export default function TeacherWeeklyStarScreen() {
             </View>
 
             <View style={[local.card, !fridayActive && local.disabledSection]}>
-              <Text style={local.cardTitle}>Kısa Not</Text>
-              <Text style={local.helpText}>Velinin göreceği pozitif ve kısa bir açıklama yazabilirsin.</Text>
+              <Text style={local.cardTitle}>{t('teacher.weeklyStar.noteTitle')}</Text>
+              <Text style={local.helpText}>{t('teacher.weeklyStar.noteHelpText')}</Text>
               <TextInput
                 style={local.input}
                 value={note}
                 onChangeText={setNote}
                 editable={fridayActive}
-                placeholder="Örn: Arkadaşlarına oyuncakları toplarken yardım etti."
+                placeholder={t('teacher.weeklyStar.notePlaceholder')}
                 placeholderTextColor="#999"
                 multiline
               />
-              {existingForSelected ? <Text style={local.updateInfo}>Bu çocuk için bu hafta rozet verilmiş. Kaydedersen mevcut kayıt güncellenir.</Text> : null}
+              {existingForSelected ? <Text style={local.updateInfo}>{t('teacher.weeklyStar.updateInfo')}</Text> : null}
               <TouchableOpacity style={[local.saveButton, (!fridayActive || saving) && local.saveButtonDisabled]} onPress={saveBadge} disabled={!fridayActive || saving} activeOpacity={0.85}>
-                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={local.saveText}>{existingForSelected ? 'Rozeti Güncelle' : 'Rozeti Kaydet'}</Text>}
+                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={local.saveText}>{existingForSelected ? t('teacher.weeklyStar.updateButton') : t('teacher.weeklyStar.saveButton')}</Text>}
               </TouchableOpacity>
             </View>
 
             <View style={local.card}>
-              <Text style={local.cardTitle}>Bu Haftanın Kayıtları</Text>
+              <Text style={local.cardTitle}>{t('teacher.weeklyStar.thisWeekTitle')}</Text>
               {thisWeekRecords.length === 0 ? (
-                <Text style={local.emptyText}>Bu hafta henüz rozet verilmedi.</Text>
+                <Text style={local.emptyText}>{t('teacher.weeklyStar.noRecordsThisWeek')}</Text>
               ) : thisWeekRecords.map((item) => (
-                <RecordRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} />
+                <RecordRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} t={t} />
               ))}
             </View>
 
             <View style={local.card}>
-              <Text style={local.cardTitle}>Sınıf Rozet Geçmişi</Text>
+              <Text style={local.cardTitle}>{t('teacher.weeklyStar.historyTitle')}</Text>
               {classRecords.length === 0 ? (
-                <Text style={local.emptyText}>Henüz rozet geçmişi yok.</Text>
+                <Text style={local.emptyText}>{t('teacher.weeklyStar.noHistory')}</Text>
               ) : classRecords.slice(0, 10).map((item) => (
-                <RecordRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} />
+                <RecordRow key={item.id || `${item.weekKey}_${item.cocukId}`} item={item} t={t} />
               ))}
             </View>
           </>
@@ -264,12 +267,12 @@ export default function TeacherWeeklyStarScreen() {
   );
 }
 
-function RecordRow({ item }) {
+function RecordRow({ item, t }) {
   return (
     <View style={local.recordRow}>
       <Text style={local.recordEmoji}>{item.badgeEmoji || item.rozetEmoji || '🌟'}</Text>
       <View style={{ flex: 1 }}>
-        <Text style={local.recordTitle}>{item.cocukAdi || 'Çocuk'} · {item.badgeTitle || item.rozetAdi || 'Rozet'}</Text>
+        <Text style={local.recordTitle}>{item.cocukAdi || t('teacher.weeklyStar.childFallback')} · {item.badgeTitle || item.rozetAdi || t('teacher.weeklyStar.badgeFallback')}</Text>
         <Text style={local.recordSub}>{item.haftaLabel || `${item.haftaBaslangic || ''} - ${item.haftaBitis || ''}`}</Text>
         {item.note || item.not ? <Text style={local.recordNote}>{item.note || item.not}</Text> : null}
       </View>
