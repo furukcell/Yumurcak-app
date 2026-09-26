@@ -13,6 +13,7 @@ import { showPickerFailureGuidance } from '../../utils/miuiAutostart';
 import { logGalleryEvent, logGalleryError } from '../../utils/galleryErrorLogger';
 import { database, storage } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MealTodayCard, { MEALS, getMealText, getMealPhoto } from '../../components/MealTodayCard';
@@ -98,14 +99,6 @@ function getCurrentMonthKey() {
   const date = new Date();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   return `${date.getFullYear()}-${month}`;
-}
-
-function formatMonthLabel(monthKey) {
-  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-  const parts = String(monthKey || '').split('-');
-  const year = parts[0];
-  const monthIndex = Number(parts[1]) - 1;
-  return `${months[monthIndex] || 'Ay'} ${year || ''}`.trim();
 }
 
 function getMealDateKey(item) {
@@ -242,6 +235,7 @@ function buildEmptyMealTexts() {
 }
 
 export default function TeacherMealsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, meals } = useTeacherData();
 
@@ -309,8 +303,8 @@ export default function TeacherMealsScreen() {
       onError: (error) => {
         if (cancelled) return;
         Alert.alert(
-          'Liste okunamadı',
-          `Yayınlanmış aylık yemek listesi okunamadı (${error?.code || error?.message || 'bilinmeyen hata'}). Form boş görünüyor olabilir, veri kaybolmadı.`
+          t('teacher.meals.readErrorTitle'),
+          t('teacher.meals.readErrorDesc', { code: error?.code || error?.message || t('teacher.meals.unknownError') })
         );
       },
     }).then((loadedValues) => {
@@ -371,7 +365,7 @@ export default function TeacherMealsScreen() {
       });
 
       if (!found) {
-        Alert.alert('Bulunamadı', 'Geçen ay için sınıfına ait yayınlanmış bir yemek listesi bulunamadı.');
+        Alert.alert(t('teacher.meals.notFoundTitle'), t('teacher.meals.noPreviousMonthDesc'));
         return;
       }
 
@@ -383,10 +377,10 @@ export default function TeacherMealsScreen() {
         return next;
       });
 
-      Alert.alert('Kopyalandı', `${found} günlük yemek bilgisi geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+      Alert.alert(t('teacher.meals.copiedTitle'), t('teacher.meals.copiedDesc', { count: found }));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+      Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.copyErrorDesc'));
     } finally {
       setMonthlyCopying(false);
     }
@@ -394,19 +388,19 @@ export default function TeacherMealsScreen() {
 
   function confirmPublishMonthly() {
     if (!kresId || !currentClass?.id) {
-      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
+      Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.classNotFoundDesc'));
       return;
     }
     if (!hasAnyMonthlyMeal) {
-      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne yemek bilgisi gir.');
+      Alert.alert(t('teacher.meals.missingInfoTitle'), t('teacher.meals.noEntryDesc'));
       return;
     }
     Alert.alert(
-      'Ayı Paylaş',
-      `${monthLabel} yemek listesi ${currentClass.ad || 'sınıfın'} için yayınlansın mı? Sadece kendi sınıfının eski yayını pasife alınır, kurum geneli liste etkilenmez.`,
+      t('teacher.meals.publishConfirmTitle'),
+      t('teacher.meals.publishConfirmDesc', { month: monthLabel, class: currentClass.ad || t('teacher.meals.myClassFallback') }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Yayınla', onPress: doPublishMonthly },
+        { text: t('teacher.meals.cancelButton'), style: 'cancel' },
+        { text: t('teacher.meals.publishButton'), onPress: doPublishMonthly },
       ]
     );
   }
@@ -440,7 +434,7 @@ export default function TeacherMealsScreen() {
       setMonthlySuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Aylık yemek listesi yayınlanamadı.');
+      Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.publishErrorDesc'));
     } finally {
       setMonthlySaving(false);
     }
@@ -449,11 +443,11 @@ export default function TeacherMealsScreen() {
   function confirmUnpublishMonthly() {
     if (!kresId || !currentClass?.id || monthlyPublishedCount === 0) return;
     Alert.alert(
-      'Yayından Kaldır',
-      `${monthLabel} için ${currentClass.ad || 'sınıfının'} yayınlanmış yemek listesi kaldırılsın mı? Veliler artık bu ayın listesini göremeyecek.`,
+      t('teacher.meals.unpublishConfirmTitle'),
+      t('teacher.meals.unpublishConfirmDesc', { month: monthLabel, class: currentClass.ad || t('teacher.meals.myClassFallback') }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Kaldır', style: 'destructive', onPress: doUnpublishMonthly },
+        { text: t('teacher.meals.cancelButton'), style: 'cancel' },
+        { text: t('teacher.meals.removeButton'), style: 'destructive', onPress: doUnpublishMonthly },
       ]
     );
   }
@@ -464,7 +458,7 @@ export default function TeacherMealsScreen() {
       await unpublishMonth({ nodePath: MONTHLY_NODE_PATH, kresId, monthKey, kaynak: MONTHLY_KAYNAK, matchExtra: forTeacherClass(currentClass.id) });
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+      Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.unpublishErrorDesc'));
     } finally {
       setMonthlyUnpublishing(false);
     }
@@ -547,7 +541,7 @@ export default function TeacherMealsScreen() {
     setMealPhotos({ kahvalti: null, ogle: null, araOgun: null });
   }, [todayMeal?.dailySourceId, todayMeal?.monthlySourceId, todayMeal?.updatedAt, todayMeal?.createdAt]);
 
-  if (loading) return <LoadingState text="Yemek listesi hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.meals.loading')} />;
 
   const updateMealText = (mealKey, value) => {
     setMealTexts((prev) => ({ ...prev, [mealKey]: value }));
@@ -560,7 +554,7 @@ export default function TeacherMealsScreen() {
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', source === 'camera' ? 'Kamera kullanımı için izin vermelisin.' : 'Galeriden fotoğraf seçmek için izin vermelisin.');
+        Alert.alert(t('teacher.meals.permissionTitle'), source === 'camera' ? t('teacher.meals.cameraPermissionDesc') : t('teacher.meals.galleryPermissionDesc'));
         return;
       }
 
@@ -594,7 +588,7 @@ export default function TeacherMealsScreen() {
       if (err?.code === 'PICKER_TIMEOUT') {
         showPickerFailureGuidance({ isTimeout: true });
       } else {
-        Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+        Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.photoPickErrorDesc'));
       }
     }
   };
@@ -609,12 +603,12 @@ export default function TeacherMealsScreen() {
     if (!todayMeal?.dailySourceId) return;
 
     Alert.alert(
-      'Fotoğrafı Kaldır',
-      `${selectedMeal.title} fotoğrafı veli ekranından kaldırılsın mı?`,
+      t('teacher.meals.removePhotoConfirmTitle'),
+      t('teacher.meals.removePhotoConfirmDesc', { meal: selectedMeal.title }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('teacher.meals.cancelButton'), style: 'cancel' },
         {
-          text: 'Kaldır',
+          text: t('teacher.meals.removeButton'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -625,7 +619,7 @@ export default function TeacherMealsScreen() {
               });
             } catch (err) {
               console.error(err);
-              Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
+              Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.removePhotoErrorDesc'));
             }
           },
         },
@@ -634,13 +628,13 @@ export default function TeacherMealsScreen() {
   };
 
   const saveTodayMeals = async () => {
-    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı. Öğretmenin bir sınıfa bağlı olması gerekiyor.');
+    if (!currentClass?.id) return Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.noClassLinkedDesc'));
 
     const hasAnyText = MEALS.some((meal) => String(mealTexts[meal.key] || '').trim());
     const hasAnyPhoto = MEALS.some((meal) => mealPhotos[meal.key]) || MEALS.some((meal) => getMealPhoto(todayMeal?.ogunler?.[meal.key]));
 
     if (!hasAnyText && !hasAnyPhoto) {
-      return Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir öğün bilgisi veya fotoğraf girmelisin.');
+      return Alert.alert(t('teacher.meals.missingInfoTitle'), t('teacher.meals.noMealOrPhotoDesc'));
     }
 
     setSaving(true);
@@ -707,7 +701,7 @@ export default function TeacherMealsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error('Yemek listesi kaydedilemedi:', err?.code || err?.message || err);
-      Alert.alert('Hata', `Yemek listesi kaydedilemedi. ${err?.code || err?.message || 'İnternet bağlantısını kontrol et.'}`);
+      Alert.alert(t('teacher.meals.errorTitle'), t('teacher.meals.saveErrorDesc', { detail: err?.code || err?.message || t('teacher.meals.checkConnectionHint') }));
     } finally {
       setSaving(false);
     }
@@ -720,9 +714,9 @@ export default function TeacherMealsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppSuccessToast visible={successToast} message="Yemek listesi kaydedildi" onHide={() => setSuccessToast(false)} />
-      <AppSuccessToast visible={monthlySuccessToast} message={`${monthLabel} yemek listesi yayınlandı`} onHide={() => setMonthlySuccessToast(false)} />
-      <ScreenHeader navigation={navigation} title="Yemek Listesi" subtitle={currentClass?.ad || 'Sınıfım'} />
+      <AppSuccessToast visible={successToast} message={t('teacher.meals.savedSuccess')} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={monthlySuccessToast} message={t('teacher.meals.monthPublishedSuccess', { month: monthLabel })} onHide={() => setMonthlySuccessToast(false)} />
+      <ScreenHeader navigation={navigation} title={t('teacher.meals.title')} subtitle={currentClass?.ad || t('teacher.meals.myClassFallback')} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -736,21 +730,21 @@ export default function TeacherMealsScreen() {
         >
           <View style={styles.tabRow}>
             <TouchableOpacity style={[styles.tab, tab === 'today' && styles.tabActive]} onPress={() => setTab('today')} activeOpacity={0.85}>
-              <Text style={[styles.tabText, tab === 'today' && styles.tabTextActive]}>Bugün</Text>
+              <Text style={[styles.tabText, tab === 'today' && styles.tabTextActive]}>{t('teacher.meals.todayTab')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.tab, tab === 'monthly' && styles.tabActive]} onPress={() => setTab('monthly')} activeOpacity={0.85}>
-              <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>Aylık</Text>
+              <Text style={[styles.tabText, tab === 'monthly' && styles.tabTextActive]}>{t('teacher.meals.monthlyTab')}</Text>
             </TouchableOpacity>
           </View>
 
           {!currentClass ? (
-            <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Öğretmenin yemek listesi girebilmesi için yönetici tarafından bir sınıfa atanması gerekir." />
+            <EmptyState icon="🏫" title={t('teacher.meals.noClassTitle')} desc={t('teacher.meals.noClassDesc')} />
           ) : tab === 'today' ? (
             <>
-              <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title="Günlük Yemek Listesi" />
+              <MealTodayCard item={todayMeal} className={currentClass?.ad || ''} title={t('teacher.meals.dailyMealCardTitle')} />
               <View style={styles.editorCard}>
-                <Text style={styles.editorTitle}>🍽️ Bugünün yemek listesini gir</Text>
-                <Text style={styles.editorDesc}>Her öğün için ayrı fotoğraf seçebilirsin, hepsi "Kaydet"e basınca birlikte yüklenir ve veli ekranında sınıf listesi olarak görünür.</Text>
+                <Text style={styles.editorTitle}>{t('teacher.meals.editorTitle')}</Text>
+                <Text style={styles.editorDesc}>{t('teacher.meals.editorDesc')}</Text>
 
                 {MEALS.map((meal) => {
                   const mealHasPhoto = !!(mealPhotos[meal.key]?.uri || getMealPhoto(todayMeal?.ogunler?.[meal.key]));
@@ -759,7 +753,7 @@ export default function TeacherMealsScreen() {
                     <TouchableOpacity style={styles.mealInputHeader} onPress={() => setSelectedMealKey(meal.key)} activeOpacity={0.85}>
                       <Text style={styles.mealInputTitle}>{meal.icon} {meal.title}</Text>
                       <Text style={styles.mealInputHint}>
-                        {mealHasPhoto ? '📷 Foto eklendi' : selectedMealKey === meal.key ? 'Fotoğraf buraya eklenir' : 'Fotoğraf için seç'}
+                        {mealHasPhoto ? t('teacher.meals.photoAddedHint') : selectedMealKey === meal.key ? t('teacher.meals.photoHereHint') : t('teacher.meals.photoSelectHint')}
                       </Text>
                     </TouchableOpacity>
                     <MealAutocompleteInput
@@ -768,7 +762,7 @@ export default function TeacherMealsScreen() {
                       value={mealTexts[meal.key]}
                       onFocus={() => setSelectedMealKey(meal.key)}
                       onChangeText={(value) => updateMealText(meal.key, value)}
-                      placeholder={`${meal.title} yaz`}
+                      placeholder={t('teacher.meals.mealPlaceholder', { meal: meal.title })}
                       theme={THEME}
                     />
                   </View>
@@ -776,8 +770,8 @@ export default function TeacherMealsScreen() {
                 })}
 
                 <View style={styles.photoInfoCard}>
-                  <Text style={styles.photoInfoTitle}>{selectedMeal.icon} {selectedMeal.title} fotoğrafı</Text>
-                  <Text style={styles.photoInfoText}>Galeri veya kameradan seçilen fotoğraf bu öğüne eklenir.</Text>
+                  <Text style={styles.photoInfoTitle}>{t('teacher.meals.photoOfMealLabel', { icon: selectedMeal.icon, meal: selectedMeal.title })}</Text>
+                  <Text style={styles.photoInfoText}>{t('teacher.meals.photoInfoText')}</Text>
                 </View>
 
                 {previewPhoto ? (
@@ -785,11 +779,11 @@ export default function TeacherMealsScreen() {
                     <Image source={{ uri: previewPhoto }} style={styles.photoPreview} />
                     {selectedMealPhoto ? (
                       <TouchableOpacity style={styles.photoRemoveBtn} onPress={removePickedPhoto} activeOpacity={0.85}>
-                        <Text style={styles.photoRemoveBtnText}>Sil</Text>
+                        <Text style={styles.photoRemoveBtnText}>{t('teacher.meals.deleteButton')}</Text>
                       </TouchableOpacity>
                     ) : existingPhoto ? (
                       <TouchableOpacity style={styles.photoRemoveBtn} onPress={removePublishedPhoto} activeOpacity={0.85}>
-                        <Text style={styles.photoRemoveBtnText}>Yayından Kaldır</Text>
+                        <Text style={styles.photoRemoveBtnText}>{t('teacher.meals.unpublishPhotoButton')}</Text>
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -797,15 +791,15 @@ export default function TeacherMealsScreen() {
 
                 <View style={styles.photoButtonRow}>
                   <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('gallery')} activeOpacity={0.85}>
-                    <Text style={styles.photoButtonText}>🖼️ Galeri</Text>
+                    <Text style={styles.photoButtonText}>{t('teacher.meals.galleryButton')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.photoButton} onPress={() => pickMealPhoto('camera')} activeOpacity={0.85}>
-                    <Text style={styles.photoButtonText}>📷 Kamera</Text>
+                    <Text style={styles.photoButtonText}>{t('teacher.meals.cameraButton')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity style={styles.saveButton} onPress={saveTodayMeals} disabled={saving} activeOpacity={0.85}>
-                  {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Bugünün Listesini Kaydet</Text>}
+                  {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{t('teacher.meals.saveTodayButton')}</Text>}
                 </TouchableOpacity>
               </View>
             </>
@@ -817,7 +811,7 @@ export default function TeacherMealsScreen() {
                 </TouchableOpacity>
                 <View style={styles.monthCenter}>
                   <Text style={styles.monthLabel}>{monthLabel}</Text>
-                  <Text style={styles.monthHint}>{days.length} günlük plan</Text>
+                  <Text style={styles.monthHint}>{t('teacher.meals.monthDaysHint', { count: days.length })}</Text>
                 </View>
                 <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
                   <Text style={styles.monthButtonText}>›</Text>
@@ -827,18 +821,18 @@ export default function TeacherMealsScreen() {
               {monthlyPublishedCount > 0 ? (
                 <View style={styles.publishedCard}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                    <Text style={styles.publishedText}>Veliler şu an bu ayın listesini görüyor.</Text>
+                    <Text style={styles.publishedTitle}>{t('teacher.meals.publishedLabel', { month: monthLabel })}</Text>
+                    <Text style={styles.publishedText}>{t('teacher.meals.publishedDesc')}</Text>
                   </View>
                   <TouchableOpacity disabled={monthlyUnpublishing} style={[styles.unpublishButton, monthlyUnpublishing && { opacity: 0.6 }]} onPress={confirmUnpublishMonthly} activeOpacity={0.85}>
-                    <Text style={styles.unpublishButtonText}>{monthlyUnpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                    <Text style={styles.unpublishButtonText}>{monthlyUnpublishing ? t('teacher.meals.unpublishingLabel') : t('teacher.meals.unpublishButton')}</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
 
               <View style={styles.utilityRow}>
                 <TouchableOpacity disabled={monthlyCopying} style={[styles.copyButton, styles.utilityFlex, monthlyCopying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonthlyMonth} activeOpacity={0.85}>
-                  <Text style={styles.copyButtonText}>{monthlyCopying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+                  <Text style={styles.copyButtonText}>{monthlyCopying ? t('teacher.meals.copyingLabel') : t('teacher.meals.copyPreviousMonthButton')}</Text>
                 </TouchableOpacity>
                 <MonthlyArchivePicker
                   kresId={kresId}
@@ -860,12 +854,12 @@ export default function TeacherMealsScreen() {
                 theme={THEME}
                 renderDayPreview={(day) => {
                   const preview = monthlyMealPreview(monthlyValues[day.dateKey]);
-                  return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+                  return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('teacher.meals.emptyPreview')}</Text>;
                 }}
               />
 
               <TouchableOpacity disabled={monthlySaving} style={[styles.saveButton, { opacity: monthlySaving ? 0.6 : 1 }]} onPress={confirmPublishMonthly} activeOpacity={0.85}>
-                {monthlySaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{monthLabel} Listesini Yayınla</Text>}
+                {monthlySaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{t('teacher.meals.publishMonthButton', { month: monthLabel })}</Text>}
               </TouchableOpacity>
 
               <View style={{ marginTop: 14 }}>
@@ -900,36 +894,36 @@ export default function TeacherMealsScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalLabel}>Kahvaltı</Text>
+            <Text style={styles.modalLabel}>{t('teacher.meals.breakfastLabel')}</Text>
             <MealChipListInput
               ogun="kahvalti"
               values={monthlySelectedValue.kahvalti}
               onChange={(list) => updateMonthlyList(monthlySelectedDateKey, 'kahvalti', list)}
-              placeholder="Kahvaltı yemeği ekle"
+              placeholder={t('teacher.meals.breakfastPlaceholder')}
               theme={THEME}
             />
 
-            <Text style={styles.modalLabel}>Öğle Yemeği</Text>
+            <Text style={styles.modalLabel}>{t('teacher.meals.lunchLabel')}</Text>
             <MealChipListInput
               ogun="ogle"
               values={monthlySelectedValue.ogle}
               onChange={(list) => updateMonthlyList(monthlySelectedDateKey, 'ogle', list)}
-              placeholder="Öğle yemeği ekle"
+              placeholder={t('teacher.meals.lunchPlaceholder')}
               theme={THEME}
             />
 
-            <Text style={styles.modalLabel}>Ara Öğün</Text>
+            <Text style={styles.modalLabel}>{t('teacher.meals.snackLabel')}</Text>
             <MealChipListInput
               ogun="araOgun"
               values={monthlySelectedValue.araOgun}
               onChange={(list) => updateMonthlyList(monthlySelectedDateKey, 'araOgun', list)}
-              placeholder="Ara öğün ekle"
+              placeholder={t('teacher.meals.snackPlaceholder')}
               theme={THEME}
             />
 
             {hasMonthlyMealContent(monthlySelectedValue) ? (
               <TouchableOpacity style={styles.modalClearButton} onPress={() => clearMonthlyDay(monthlySelectedDateKey)} activeOpacity={0.85}>
-                <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
+                <Text style={styles.modalClearButtonText}>{t('teacher.meals.clearDayButton')}</Text>
               </TouchableOpacity>
             ) : null}
           </ScrollView>
