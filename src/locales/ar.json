@@ -1199,36 +1199,36 @@
       "teacherFallback": "المعلم"
     },
     "medicationFormDetail": {
-      "loading": "جاري التحميل...",
-      "notFound": "النموذج غير موجود.",
+      "teacherFallback": "المعلم",
+      "errorTitle": "خطأ",
+      "logErrorDesc": "تعذّرت إضافة السجل.",
+      "deleteConfirmTitle": "حذف",
+      "deleteConfirmDesc": "هل تريد حذف نموذج متابعة الدواء هذا؟",
+      "deleteCancelButton": "إلغاء",
+      "deleteConfirmButton": "حذف",
+      "deleteErrorDesc": "تعذّر الحذف.",
+      "exportErrorDesc": "تعذّر إنشاء النموذج.",
+      "loadingText": "جارٍ التحميل...",
+      "formNotFound": "النموذج غير موجود.",
+      "doseLoggedToast": "تم تسجيل جرعة اليوم",
       "doseLabel": "الجرعة",
-      "usageLabel": "طريقة الاستخدام",
-      "startLabel": "البداية",
-      "endLabel": "النهاية",
+      "methodLabel": "طريقة الإعطاء",
+      "startLabel": "تاريخ البدء",
+      "endLabel": "تاريخ الانتهاء",
       "reminderTimeLabel": "وقت التذكير",
-      "parentApprovalLabel": "موافقة الولي",
+      "parentApprovalLabel": "موافقة ولي الأمر",
       "approvalReceived": "✅ تم الاستلام",
       "approvalPending": "⏳ قيد الانتظار",
-      "loggedToday": "✅ تم تسجيل جرعة اليوم ({{date}}) كمُعطاة.",
-      "todayDoseTitle": "جرعة اليوم ({{date}})",
+      "loggedToday": "✅ تم اليوم ({{date}}) تحديد الجرعة كمُعطاة.",
+      "todaysDoseTitle": "جرعة اليوم ({{date}})",
       "notePlaceholder": "ملاحظة (اختياري)",
       "saving": "جارٍ الحفظ...",
-      "logButton": "✅ أُعطيت اليوم",
-      "historyTitle": "السجل",
+      "logTodayButton": "✅ أُعطيت اليوم",
+      "historyTitle": "السجلات السابقة",
       "noHistory": "لا توجد سجلات بعد.",
       "printButton": "🖨️ طباعة",
       "shareButton": "📤 مشاركة/تنزيل",
-      "exportingButton": "...",
-      "deleteButton": "حذف النموذج",
-      "deleteConfirmTitle": "حذف",
-      "deleteConfirmMessage": "هل تريد حذف نموذج متابعة الدواء هذا؟",
-      "cancelButton": "إلغاء",
-      "confirmDeleteButton": "حذف",
-      "successToast": "تم حفظ جرعة اليوم",
-      "errorTitle": "خطأ",
-      "logErrorDesc": "تعذر إضافة السجل.",
-      "deleteErrorDesc": "تعذر الحذف.",
-      "exportErrorDesc": "تعذر إنشاء النموذج."
+      "deleteFormButton": "حذف النموذج"
     },
     "medical": {
       "loading": "جارٍ تجهيز المعلومات الطبية...",
@@ -1270,6 +1270,135 @@
       "pendingBadge": "⏳ بانتظار الموافقة — تم إرسال طلب الموافقة إلى الولي",
       "reminderMeta": "⏰ تذكير: {{time}}",
       "approvalReceived": "✅ تم الحصول على موافقة الولي"
+    },
+    "weeklyStar": {
+      "loading": "جارٍ تجهيز نجمة الأسبوع...",
+      "title": "نجمة الأسبوع",
+      "fridayLockAlertTitle": "متاح يوم الجمعة",
+      "fridayLockAlertDesc": "يمكن منح أوسمة نجمة الأسبوع يوم الجمعة فقط.",
+      "errorTitle": "خطأ",
+      "noClassDesc": "لم يتم العثور على معلومات الفصل.",
+      "missingInfoTitle": "معلومات ناقصة",
+      "selectChildFirstDesc": "يرجى اختيار طفل أولاً.",
+      "savedTitle": "تم الحفظ",
+      "savedDesc": "تم حفظ وسام هذا الأسبوع لـ {{name}}.",
+      "saveErrorDesc": "تعذّر حفظ الوسام. يرجى المحاولة مرة أخرى.",
+      "noClassTitle": "لم يتم العثور على فصل",
+      "noClassEmptyDesc": "يجب ربط حساب المعلم بفصل لمنح الأوسمة.",
+      "noChildrenTitle": "لا يوجد أطفال",
+      "noChildrenDesc": "يمكن منح الأوسمة بعد إضافة أطفال إلى الفصل.",
+      "heroTitle": "🌟 نجمة الأسبوع",
+      "heroText": "كل يوم جمعة يمكنك الاحتفاء بسلوك جميل تميّز به أحد الأطفال خلال الأسبوع بوسام صغير.",
+      "privacyTitle": "🔒 ملاحظة خصوصية",
+      "privacyText": "يظهر الوسام الممنوح لولي أمر الطفل المحدد فقط. لا يمكن لأولياء أمور الأطفال الآخرين رؤيته.",
+      "lockTitle": "⏳ يتم تفعيل اختيار الوسام يوم الجمعة",
+      "lockText": "يمكنك اليوم ملاحظة الأطفال. يوم الجمعة يمكنك اختيار طفل وحفظ وسام مع ملاحظة قصيرة.",
+      "selectChildTitle": "اختر الطفل",
+      "selectBadgeTitle": "اختر الوسام",
+      "noteTitle": "ملاحظة قصيرة",
+      "noteHelpText": "يمكنك كتابة ملاحظة قصيرة وإيجابية سيراها ولي الأمر.",
+      "notePlaceholder": "مثال: ساعد أصدقاءه في ترتيب الألعاب.",
+      "updateInfo": "تم بالفعل منح وسام لهذا الطفل هذا الأسبوع. سيؤدي الحفظ إلى تحديث السجل الحالي.",
+      "updateButton": "تحديث الوسام",
+      "saveButton": "حفظ الوسام",
+      "thisWeekTitle": "سجلات هذا الأسبوع",
+      "noRecordsThisWeek": "لم يتم منح أي وسام هذا الأسبوع بعد.",
+      "historyTitle": "سجل أوسمة الفصل",
+      "noHistory": "لا يوجد سجل أوسمة بعد.",
+      "childFallback": "طفل",
+      "badgeFallback": "وسام",
+      "badges": {
+        "yardimsever_kalp": {
+          "title": "قلب متعاون",
+          "desc": "دعم أصدقاءه."
+        },
+        "paylasimci_minik": {
+          "title": "صغير يشارك",
+          "desc": "شارك ألعابه وأدواته."
+        },
+        "cesur_yurek": {
+          "title": "قلب شجاع",
+          "desc": "شارك بشجاعة في نشاط جديد."
+        },
+        "merakli_kasif": {
+          "title": "مستكشف فضولي",
+          "desc": "أظهر فضولاً لتعلّم أشياء جديدة."
+        },
+        "yaratici_ressam": {
+          "title": "رسام مبدع",
+          "desc": "شارك بشكل رائع في نشاط فني."
+        },
+        "neseli_gunes": {
+          "title": "شمس مرحة",
+          "desc": "أضفى طاقة إيجابية على الفصل."
+        },
+        "sorumluluk_sahibi": {
+          "title": "يتحمّل المسؤولية",
+          "desc": "اعتنى بأغراضه ونظام الفصل."
+        },
+        "sabirli_minik": {
+          "title": "صغير صبور",
+          "desc": "انتظر دوره وأظهر صبراً."
+        },
+        "kitap_dostu": {
+          "title": "صديق الكتاب",
+          "desc": "أظهر اهتماماً بوقت القصة والكتاب."
+        },
+        "problem_cozucu": {
+          "title": "حلّال المشكلات",
+          "desc": "حاول إيجاد حلول أثناء اللعب أو النشاط."
+        },
+        "guzel_iletisim": {
+          "title": "تواصل جميل",
+          "desc": "عبّر عن مشاعره ورغباته بشكل جميل."
+        },
+        "katilim_yildizi": {
+          "title": "نجمة المشاركة",
+          "desc": "شارك في الأنشطة برغبة."
+        }
+      }
+    },
+    "support": {
+      "loading": "جارٍ تجهيز الدعم...",
+      "title": "راسلنا",
+      "subtitle": "طلب / شكوى / رأي إلى المشرف العام",
+      "topics": {
+        "istek": "طلب",
+        "sikayet": "شكوى",
+        "gorus": "رأي",
+        "teknik": "دعم فني",
+        "diger": "أخرى"
+      },
+      "bannerTitle": "دعم Yumurcak",
+      "bannerText": "يمكنك مراسلة المشرف العام بخصوص الطلبات أو الشكاوى أو الآراء أو الدعم الفني.",
+      "topicLabel": "الموضوع",
+      "messageLabel": "الرسالة",
+      "messagePlaceholder": "اكتب رسالتك...",
+      "sendButton": "إرسال",
+      "recentTitle": "أحدث الرسائل",
+      "noMessagesTitle": "لا توجد رسائل بعد",
+      "noMessagesDesc": "ستظهر هنا الرسائل التي ترسلها إلى المشرف العام.",
+      "replyLabel": "الرد",
+      "replyPlaceholder": "هل تريد إضافة شيء؟",
+      "replyButton": "إرسال الرد",
+      "replyButtonSending": "جارٍ الإرسال...",
+      "adminReplyName": "دعم Yumurcak",
+      "youFallback": "أنت",
+      "teacherFallback": "المعلم",
+      "missingInfoTitle": "معلومات ناقصة",
+      "emptyMessageDesc": "لا يمكن ترك حقل الرسالة فارغًا.",
+      "messageTooLongTitle": "الرسالة طويلة جدًا",
+      "messageTooLongDesc": "يمكن أن تحتوي الرسالة على {{max}} حرفًا كحد أقصى.",
+      "errorTitle": "خطأ",
+      "userInfoNotFoundDesc": "لم يتم العثور على معلومات المستخدم.",
+      "sendErrorDesc": "تعذّر إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+      "sentSuccess": "تم إرسال رسالتك",
+      "emptyReplyDesc": "لا يمكن ترك حقل الرد فارغًا.",
+      "replyTooLongTitle": "الرد طويل جدًا",
+      "replyTooLongDesc": "يمكن أن يحتوي الرد على {{max}} حرفًا كحد أقصى.",
+      "replySentSuccess": "تم إرسال ردك",
+      "replyErrorDesc": "تعذّر إرسال الرد.",
+      "messageFallback": "رسالة"
     }
   },
   "themes": {
