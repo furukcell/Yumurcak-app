@@ -1724,5 +1724,76 @@
       "ozBakimBecerisi": "Навыки самообслуживания",
       "dengeVeKoordinasyon": "Равновесие и координация"
     }
+  },
+  "components": {
+    "activityChipRow": {
+      "newLessonFallback": "Новый урок",
+      "addNewLesson": "+ Добавить урок"
+    },
+    "mealChipListInput": {
+      "add": "Добавить",
+      "cancel": "Отмена"
+    },
+    "monthlyCalendarView": {
+      "list": "Список",
+      "calendar": "Календарь"
+    },
+    "allergyBoxEditor": {
+      "placeholder": "Напр.: Яйцо",
+      "addLabel": "+ Добавить аллергию"
+    },
+    "monthlyArchivePicker": {
+      "trigger": "🗂 Архив",
+      "title": "Опубликованные месяцы",
+      "close": "Закрыть",
+      "empty": "Пока нет опубликованных месяцев.",
+      "daysSuffix": "дн."
+    },
+    "activityBalanceCard": {
+      "title": "📊 Баланс активности — {{month}}",
+      "summaryWithCount": "В этом месяце добавлено активностей: {{count}} — нажмите для подробностей.",
+      "summaryEmpty": "В этом месяце ещё не добавлено ни одной активности.",
+      "noDataYet": "За этот месяц пока нет опубликованных активностей — нужны данные для анализа.",
+      "missingCategories": "💡 Категории, не использованные в этом месяце: {{list}}"
+    },
+    "dailyChecklistCard": {
+      "title": "Список дел на сегодня",
+      "attendance": "Посещаемость",
+      "dailyReport": "Дневной отчёт",
+      "mealList": "Меню",
+      "todaysActivity": "Сегодняшнее занятие",
+      "photoGallery": "Фотогалерея",
+      "noChildrenInClass": "В группе нет детей",
+      "entered": "Заполнено",
+      "notEntered": "Не заполнено",
+      "sharesCount": "Публикаций: {{count}}",
+      "noShares": "Нет публикаций"
+    },
+    "changePasswordCard": {
+      "errorTitle": "Ошибка",
+      "fillAllFields": "Заполните все поля.",
+      "passwordTooShort": "Новый пароль должен содержать не менее 6 символов.",
+      "passwordsDontMatch": "Новые пароли не совпадают.",
+      "samePassword": "Новый пароль не может совпадать со старым.",
+      "sessionNotFound": "Данные сессии не найдены. Выйдите и войдите снова.",
+      "successTitle": "Успешно",
+      "successMessage": "Ваш пароль обновлён.",
+      "wrongPassword": "Старый пароль неверен.",
+      "tooManyRequests": "Слишком много неудачных попыток. Повторите чуть позже.",
+      "requiresRecentLogin": "В целях безопасности нужно войти заново. Выйдите, войдите снова и повторите попытку.",
+      "weakPassword": "Новый пароль слишком слабый. Должен содержать не менее 6 символов.",
+      "changeFailed": "Не удалось изменить пароль.",
+      "title": "🔒 Изменить пароль",
+      "hint": "Подтвердите старый пароль и задайте новый.",
+      "oldPasswordLabel": "Старый пароль",
+      "oldPasswordPlaceholder": "Ваш текущий пароль",
+      "newPasswordLabel": "Новый пароль",
+      "newPasswordPlaceholder": "Не менее 6 символов",
+      "newPasswordRepeatLabel": "Новый пароль (повтор)",
+      "newPasswordRepeatPlaceholder": "Введите новый пароль ещё раз",
+      "show": "Показать",
+      "hide": "Скрыть",
+      "submitButton": "Обновить пароль"
+    }
   }
 }
