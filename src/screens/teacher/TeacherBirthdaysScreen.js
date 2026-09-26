@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { SafeAreaView, ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
 
 function parseDate(value) {
@@ -14,20 +15,20 @@ function parseDate(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function formatDate(value) {
+function formatDate(value, t) {
   const d = parseDate(value);
-  if (!d) return 'Belirtilmemiş';
+  if (!d) return t('teacher.birthdays.unspecifiedDate');
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
 }
 
-function getAge(value) {
+function getAge(value, t) {
   const birth = parseDate(value);
   if (!birth) return '';
   const now = new Date();
   let age = now.getFullYear() - birth.getFullYear();
   const thisYear = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
   if (thisYear > now) age -= 1;
-  return age >= 0 ? `${age} yaşında` : '';
+  return age >= 0 ? t('teacher.birthdays.ageSuffix', { age }) : '';
 }
 
 function getDaysLeft(value) {
@@ -41,10 +42,11 @@ function getDaysLeft(value) {
 }
 
 function getInitials(child) {
-  return getChildName(child).split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toLocaleUpperCase('tr-TR') || 'Ç';
+  return getChildName(child).split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || 'Ç';
 }
 
 export default function TeacherBirthdaysScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { loading, currentClass, classChildren } = useTeacherData();
 
@@ -62,52 +64,52 @@ export default function TeacherBirthdaysScreen() {
 
   const next30 = list.filter((child) => child.daysLeft <= 30).length;
 
-  if (loading) return <LoadingState text="Doğum günleri hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.birthdays.loading')} />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader navigation={navigation} title="Doğum Günleri" subtitle={currentClass?.ad || 'Sınıfım'} />
+      <ScreenHeader navigation={navigation} title={t('teacher.birthdays.title')} subtitle={currentClass?.ad || t('teacher.birthdays.classFallback')} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
-          <EmptyState icon="🏫" title="Sınıf bulunamadı" desc="Öğretmen hesabı bir sınıfa bağlı olmalı." />
+          <EmptyState icon="🏫" title={t('teacher.birthdays.noClassTitle')} desc={t('teacher.birthdays.noClassDesc')} />
         ) : list.length === 0 ? (
-          <EmptyState icon="🎂" title="Doğum tarihi yok" desc="Çocukların doğum tarihi eklendiğinde burada sıralanacak." />
+          <EmptyState icon="🎂" title={t('teacher.birthdays.emptyTitle')} desc={t('teacher.birthdays.emptyDesc')} />
         ) : (
           <>
             <View style={styles.heroCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.heroTitle}>Yaklaşan Doğum Günleri</Text>
-                <Text style={styles.heroText}>Sınıfınızdaki doğum günlerini en erkenden en geç olana doğru gösterir.</Text>
+                <Text style={styles.heroTitle}>{t('teacher.birthdays.heroTitle')}</Text>
+                <Text style={styles.heroText}>{t('teacher.birthdays.heroText')}</Text>
               </View>
               <Text style={styles.heroIcon}>🎂</Text>
             </View>
 
             <View style={styles.statsRow}>
-              <Stat icon="📅" label="Bu Ay" value={thisMonth} sub="çocuk" />
-              <Stat icon="🎁" label="Yaklaşan" value={next30} sub="30 gün" />
-              <Stat icon="🎉" label="Bu Yıl" value={list.length} sub="doğum günü" />
+              <Stat icon="📅" label={t('teacher.birthdays.statThisMonthLabel')} value={thisMonth} sub={t('teacher.birthdays.statThisMonthSub')} />
+              <Stat icon="🎁" label={t('teacher.birthdays.statUpcomingLabel')} value={next30} sub={t('teacher.birthdays.statUpcomingSub')} />
+              <Stat icon="🎉" label={t('teacher.birthdays.statYearLabel')} value={list.length} sub={t('teacher.birthdays.statYearSub')} />
             </View>
 
-            <Text style={styles.sectionTitle}>En erken doğum gününden en geç olana</Text>
+            <Text style={styles.sectionTitle}>{t('teacher.birthdays.sectionTitle')}</Text>
 
             {list.map((child) => (
               <View key={child.id} style={styles.childCard}>
                 <View style={styles.avatar}><Text style={styles.avatarText}>{getInitials(child)}</Text></View>
                 <View style={styles.childInfo}>
                   <Text style={styles.childName}>{getChildName(child)}</Text>
-                  <Text style={styles.birthText}>Doğum: {formatDate(child.dogumTarihi)}</Text>
-                  <Text style={styles.ageText}>{getAge(child.dogumTarihi) || 'Yaş hesaplanamadı'}</Text>
+                  <Text style={styles.birthText}>{t('teacher.birthdays.birthLabel', { date: formatDate(child.dogumTarihi, t) })}</Text>
+                  <Text style={styles.ageText}>{getAge(child.dogumTarihi, t) || t('teacher.birthdays.ageUnknown')}</Text>
                 </View>
                 <View style={[styles.daysBox, child.daysLeft === 0 && styles.todayBox]}>
                   <Text style={styles.daysNumber}>{child.daysLeft === 0 ? '🎉' : child.daysLeft}</Text>
-                  <Text style={styles.daysText}>{child.daysLeft === 0 ? 'Bugün' : 'gün sonra'}</Text>
+                  <Text style={styles.daysText}>{child.daysLeft === 0 ? t('teacher.birthdays.todayLabel') : t('teacher.birthdays.daysAfterLabel')}</Text>
                 </View>
               </View>
             ))}
 
             <View style={styles.infoCard}>
               <Text style={styles.infoIcon}>💡</Text>
-              <Text style={styles.infoText}>Günü geçmiş doğum günleri otomatik olarak bir sonraki yıl için hesaplanır.</Text>
+              <Text style={styles.infoText}>{t('teacher.birthdays.infoText')}</Text>
             </View>
           </>
         )}
