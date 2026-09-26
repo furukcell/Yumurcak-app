@@ -77,6 +77,9 @@ export const YAS_GRUPLARI = [
 
 // ============================================================
 // ETKİNLİK KATEGORİLERİ (FAZ 7 — Etkinlik Kütüphanesi)
+// Not: label alanı geriye dönük uyumluluk ve t() erişimi olmayan yerler
+// için sabit Türkçe olarak duruyor (bkz. weeklyBadges.js'teki AYNI desen).
+// Ekranlarda bunun yerine getTranslatedEtkinlikKategorileri(t) kullanılmalı.
 // ============================================================
 export const ETKINLIK_KATEGORILERI = [
   { key: 'sanat',      label: 'Sanat',      emoji: '🎨' },
@@ -88,6 +91,13 @@ export const ETKINLIK_KATEGORILERI = [
   { key: 'matematik',  label: 'Matematik',  emoji: '🔢' },
   { key: 'diger',      label: 'Diğer',      emoji: '✨' },
 ];
+
+export function getTranslatedEtkinlikKategorileri(t) {
+  return ETKINLIK_KATEGORILERI.map((kat) => ({
+    ...kat,
+    label: t ? t(`constants.categories.${kat.key}`, kat.label) : kat.label,
+  }));
+}
 
 // ============================================================
 // ETKİNLİK TEMALARI (opsiyonel, FAZ 7)
@@ -173,7 +183,12 @@ export const DUYURU_SABLONLARI = [
 // KAZANIM ÖNERİLERİ (FAZ 10 — Hazır Kazanımlar)
 // Sabit, hazır kazanım etiketleri — öğretmen bunlardan seçer veya
 // kendi metnini elle ekler. Kazanımlar dersProgramlari kaydına
-// 'kazanimlar' (string dizisi) olarak yazılır.
+// 'kazanimlar' (string dizisi) olarak yazılır — bu Türkçe metinler
+// CANONICAL/depolanan değerlerdir, değiştirilmemeli (mevcut kayıtlarla
+// eşleşme burada kırılır). Ekranda gösterilen etiket için bunun yerine
+// getTranslatedKazanimOnerileri(t) kullanılmalı — her öğe {value, label}
+// döner; value hep bu Türkçe metin (DB'ye yazılan/kontrol edilen), label
+// görüntülenen çeviridir.
 // ============================================================
 export const KAZANIM_ONERILERI = [
   'İnce Motor',
@@ -193,6 +208,32 @@ export const KAZANIM_ONERILERI = [
   'Öz Bakım Becerisi',
   'Denge ve Koordinasyon',
 ];
+
+const KAZANIM_KEY_MAP = {
+  'İnce Motor': 'inceMotor',
+  'Kaba Motor': 'kabaMotor',
+  'El-Göz Koordinasyonu': 'elGozKoordinasyonu',
+  'Renk Algısı': 'renkAlgisi',
+  'Şekil Algısı': 'sekilAlgisi',
+  'Yaratıcılık': 'yaraticilik',
+  'Dil Gelişimi': 'dilGelisimi',
+  'Kelime Dağarcığı': 'kelimeDagarcigi',
+  'Sosyal Beceri': 'sosyalBeceri',
+  'Duygusal Gelişim': 'duygusalGelisim',
+  'Dikkat / Odaklanma': 'dikkatOdaklanma',
+  'Problem Çözme': 'problemCozme',
+  'Sayı Kavramı': 'sayiKavrami',
+  'Grup İçinde Uyum': 'grupIcindeUyum',
+  'Öz Bakım Becerisi': 'ozBakimBecerisi',
+  'Denge ve Koordinasyon': 'dengeVeKoordinasyon',
+};
+
+export function getTranslatedKazanimOnerileri(t) {
+  return KAZANIM_ONERILERI.map((value) => ({
+    value,
+    label: t ? t(`constants.kazanimlar.${KAZANIM_KEY_MAP[value]}`, value) : value,
+  }));
+}
 
 // ============================================================
 // YARDIMCI: Zaman formatlama
