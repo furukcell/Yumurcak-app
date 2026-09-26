@@ -1724,5 +1724,76 @@
       "ozBakimBecerisi": "Öz Bakım Becerisi",
       "dengeVeKoordinasyon": "Denge ve Koordinasyon"
     }
+  },
+  "components": {
+    "activityChipRow": {
+      "newLessonFallback": "Yeni Ders",
+      "addNewLesson": "+ Yeni Ders Ekle"
+    },
+    "mealChipListInput": {
+      "add": "Ekle",
+      "cancel": "Vazgeç"
+    },
+    "monthlyCalendarView": {
+      "list": "Liste",
+      "calendar": "Takvim"
+    },
+    "allergyBoxEditor": {
+      "placeholder": "Örn: Yumurta",
+      "addLabel": "+ Alerji Ekle"
+    },
+    "monthlyArchivePicker": {
+      "trigger": "🗂 Arşiv",
+      "title": "Yayınlanmış Aylar",
+      "close": "Kapat",
+      "empty": "Henüz yayınlanmış bir ay yok.",
+      "daysSuffix": "gün"
+    },
+    "activityBalanceCard": {
+      "title": "📊 Etkinlik Dengesi — {{month}}",
+      "summaryWithCount": "Bu ay {{count}} etkinlik girildi — detay için dokun.",
+      "summaryEmpty": "Bu ay henüz etkinlik girilmedi.",
+      "noDataYet": "Bu ay için henüz yayınlanmış etkinlik yok, analiz için veri gerekiyor.",
+      "missingCategories": "💡 Bu ay hiç girilmemiş kategoriler: {{list}}"
+    },
+    "dailyChecklistCard": {
+      "title": "Bugünün Kontrol Listesi",
+      "attendance": "Yoklama",
+      "dailyReport": "Günlük Rapor",
+      "mealList": "Yemek Listesi",
+      "todaysActivity": "Bugünün Etkinliği",
+      "photoGallery": "Fotoğraf Galerisi",
+      "noChildrenInClass": "Sınıfta çocuk yok",
+      "entered": "Girildi",
+      "notEntered": "Girilmedi",
+      "sharesCount": "{{count}} paylaşım",
+      "noShares": "Paylaşım yok"
+    },
+    "changePasswordCard": {
+      "errorTitle": "Hata",
+      "fillAllFields": "Tüm alanları doldurman gerekiyor.",
+      "passwordTooShort": "Yeni şifre en az 6 karakter olmalı.",
+      "passwordsDontMatch": "Yeni şifreler birbiriyle eşleşmiyor.",
+      "samePassword": "Yeni şifre eski şifreyle aynı olamaz.",
+      "sessionNotFound": "Oturum bilgisi bulunamadı. Lütfen çıkış yapıp tekrar giriş yap.",
+      "successTitle": "Başarılı",
+      "successMessage": "Şifren güncellendi.",
+      "wrongPassword": "Eski şifre hatalı.",
+      "tooManyRequests": "Çok fazla hatalı deneme yapıldı. Lütfen biraz sonra tekrar dene.",
+      "requiresRecentLogin": "Güvenlik nedeniyle tekrar giriş yapman gerekiyor. Çıkış yapıp tekrar giriş yap, sonra tekrar dene.",
+      "weakPassword": "Yeni şifre çok zayıf. En az 6 karakter olmalı.",
+      "changeFailed": "Şifre değiştirilemedi.",
+      "title": "🔒 Şifre Değiştir",
+      "hint": "Eski şifreni doğrulayıp yeni bir şifre belirleyebilirsin.",
+      "oldPasswordLabel": "Eski Şifre",
+      "oldPasswordPlaceholder": "Mevcut şifren",
+      "newPasswordLabel": "Yeni Şifre",
+      "newPasswordPlaceholder": "En az 6 karakter",
+      "newPasswordRepeatLabel": "Yeni Şifre (Tekrar)",
+      "newPasswordRepeatPlaceholder": "Yeni şifreni tekrar gir",
+      "show": "Göster",
+      "hide": "Gizle",
+      "submitButton": "Şifreyi Güncelle"
+    }
   }
 }
