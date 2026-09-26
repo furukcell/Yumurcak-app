@@ -1724,5 +1724,76 @@
       "ozBakimBecerisi": "Compétences d'autonomie",
       "dengeVeKoordinasyon": "Équilibre et coordination"
     }
+  },
+  "components": {
+    "activityChipRow": {
+      "newLessonFallback": "Nouveau cours",
+      "addNewLesson": "+ Ajouter un cours"
+    },
+    "mealChipListInput": {
+      "add": "Ajouter",
+      "cancel": "Annuler"
+    },
+    "monthlyCalendarView": {
+      "list": "Liste",
+      "calendar": "Calendrier"
+    },
+    "allergyBoxEditor": {
+      "placeholder": "Ex. : Œuf",
+      "addLabel": "+ Ajouter une allergie"
+    },
+    "monthlyArchivePicker": {
+      "trigger": "🗂 Archives",
+      "title": "Mois publiés",
+      "close": "Fermer",
+      "empty": "Aucun mois publié pour l'instant.",
+      "daysSuffix": "jours"
+    },
+    "activityBalanceCard": {
+      "title": "📊 Équilibre des activités — {{month}}",
+      "summaryWithCount": "{{count}} activités enregistrées ce mois-ci — appuie pour les détails.",
+      "summaryEmpty": "Aucune activité enregistrée ce mois-ci pour l'instant.",
+      "noDataYet": "Aucune activité publiée ce mois-ci — des données sont nécessaires pour l'analyse.",
+      "missingCategories": "💡 Catégories non utilisées ce mois-ci : {{list}}"
+    },
+    "dailyChecklistCard": {
+      "title": "Liste du jour",
+      "attendance": "Présence",
+      "dailyReport": "Rapport quotidien",
+      "mealList": "Menu",
+      "todaysActivity": "Activité du jour",
+      "photoGallery": "Galerie photo",
+      "noChildrenInClass": "Aucun enfant dans la classe",
+      "entered": "Saisi",
+      "notEntered": "Non saisi",
+      "sharesCount": "{{count}} partages",
+      "noShares": "Aucun partage"
+    },
+    "changePasswordCard": {
+      "errorTitle": "Erreur",
+      "fillAllFields": "Tu dois remplir tous les champs.",
+      "passwordTooShort": "Le nouveau mot de passe doit contenir au moins 6 caractères.",
+      "passwordsDontMatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "samePassword": "Le nouveau mot de passe ne peut pas être identique à l'ancien.",
+      "sessionNotFound": "Informations de session introuvables. Déconnecte-toi puis reconnecte-toi.",
+      "successTitle": "Succès",
+      "successMessage": "Ton mot de passe a été mis à jour.",
+      "wrongPassword": "L'ancien mot de passe est incorrect.",
+      "tooManyRequests": "Trop de tentatives échouées. Réessaie un peu plus tard.",
+      "requiresRecentLogin": "Pour des raisons de sécurité, tu dois te reconnecter. Déconnecte-toi, reconnecte-toi, puis réessaie.",
+      "weakPassword": "Le nouveau mot de passe est trop faible. Il doit contenir au moins 6 caractères.",
+      "changeFailed": "Le mot de passe n'a pas pu être modifié.",
+      "title": "🔒 Changer le mot de passe",
+      "hint": "Confirme ton ancien mot de passe et choisis-en un nouveau.",
+      "oldPasswordLabel": "Ancien mot de passe",
+      "oldPasswordPlaceholder": "Ton mot de passe actuel",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "newPasswordPlaceholder": "Au moins 6 caractères",
+      "newPasswordRepeatLabel": "Nouveau mot de passe (répéter)",
+      "newPasswordRepeatPlaceholder": "Ressaisis ton nouveau mot de passe",
+      "show": "Afficher",
+      "hide": "Masquer",
+      "submitButton": "Mettre à jour le mot de passe"
+    }
   }
 }
