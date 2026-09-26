@@ -10,10 +10,11 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { onValue, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName, getUserName } from './teacherShared';
 import { safeUnread } from '../../utils/messageHelpers';
 
-function formatMessageTime(value) {
+function formatMessageTime(value, t, lang) {
   if (!value) return '';
   const date = new Date(Number(value));
   if (Number.isNaN(date.getTime())) return '';
@@ -22,16 +23,17 @@ function formatMessageTime(value) {
   const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const startYesterday = startToday - 24 * 60 * 60 * 1000;
 
-  if (date.getTime() >= startToday) return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  if (date.getTime() >= startYesterday) return 'Dün';
-  return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+  if (date.getTime() >= startToday) return date.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
+  if (date.getTime() >= startYesterday) return t('parent.messages.yesterday');
+  return date.toLocaleDateString(lang, { day: '2-digit', month: '2-digit' });
 }
 
 function normalizeText(value) {
-  return String(value || '').toLocaleLowerCase('tr-TR');
+  return String(value || '').toLowerCase();
 }
 
 export default function TeacherMessagesScreen() {
+  const { t, i18n } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const navigation = useNavigation();
@@ -98,7 +100,7 @@ export default function TeacherMessagesScreen() {
         const meta = conversations[conversationId] || {};
         const title = getUserName(veli);
         const childName = getChildName(child);
-        const desc = meta.sonMesaj || 'Henüz mesaj yok';
+        const desc = meta.sonMesaj || t('teacher.messages.noMessageYet');
 
         list.push({
           type: 'parent',
@@ -119,7 +121,7 @@ export default function TeacherMessagesScreen() {
     return list
       .sort((a, b) => Number(b.sonMesajAt || 0) - Number(a.sonMesajAt || 0) || a.title.localeCompare(b.title, 'tr'))
       .slice(0, 40);
-  }, [classChildren, users, conversations, teacherId]);
+  }, [classChildren, users, conversations, teacherId, t]);
 
   const filteredContacts = useMemo(() => {
     const search = normalizeText(query);
@@ -139,11 +141,11 @@ export default function TeacherMessagesScreen() {
     return adminUnread + parentContacts.reduce((sum, item) => sum + Number(item.unread || 0), 0);
   }, [adminUnread, parentContacts]);
 
-  if (loading) return <LoadingState text="Mesajlar hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.messages.loading')} />;
 
   const openAdminChat = async () => {
     if (!teacherId || !adminId) {
-      Alert.alert('Eksik Bilgi', 'Yönetici bilgisi bulunamadı.');
+      Alert.alert(t('teacher.messages.missingInfoTitle'), t('teacher.messages.missingAdminDesc'));
       return;
     }
 
@@ -175,8 +177,8 @@ export default function TeacherMessagesScreen() {
     navigation.navigate('MessageDetail', {
       conversationId,
       conversationMeta,
-      title: kurum?.yoneticiAd || 'Yönetim',
-      subtitle: kurum?.ad || 'Kurum yönetimi',
+      title: kurum?.yoneticiAd || t('teacher.messages.adminTitleFallback'),
+      subtitle: kurum?.ad || t('teacher.messages.adminSubtitleFallback'),
     });
 
     try {
@@ -188,7 +190,7 @@ export default function TeacherMessagesScreen() {
 
   const openParentChat = async (contact) => {
     if (!teacherId || !contact?.veliId || !contact?.child?.id) {
-      Alert.alert('Eksik Bilgi', 'Veli veya çocuk bilgisi bulunamadı.');
+      Alert.alert(t('teacher.messages.missingInfoTitle'), t('teacher.messages.missingParentChildDesc'));
       return;
     }
 
@@ -232,7 +234,7 @@ export default function TeacherMessagesScreen() {
       conversationId,
       conversationMeta,
       title: getUserName(contact.veli),
-      subtitle: `${getChildName(contact.child)} velisi`,
+      subtitle: t('teacher.messages.parentSubtitle', { childName: getChildName(contact.child) }),
     });
 
     try {
@@ -245,7 +247,7 @@ export default function TeacherMessagesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View onLayout={onHeaderLayout}>
-        <ScreenHeader navigation={navigation} title="Mesajlar" subtitle={currentClass?.ad || 'Sınıfım'} rightText="✎ Yeni" onRightPress={() => setNewMessageOpen(true)} />
+        <ScreenHeader navigation={navigation} title={t('teacher.messages.title')} subtitle={currentClass?.ad || t('teacher.messages.classFallback')} rightText={t('teacher.messages.newButton')} onRightPress={() => setNewMessageOpen(true)} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -255,7 +257,7 @@ export default function TeacherMessagesScreen() {
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
-            placeholder="Kişi veya çocuk ara..."
+            placeholder={t('teacher.messages.searchPlaceholder')}
             placeholderTextColor="#8A8EA3"
           />
           {query ? (
@@ -266,18 +268,18 @@ export default function TeacherMessagesScreen() {
         </View>
 
         <View style={styles.filterRow}>
-          <FilterChip active={filter === 'all'} label="Tümü" onPress={() => setFilter('all')} />
-          <FilterChip active={filter === 'unread'} label={`Okunmamış${unreadTotal ? ` ${unreadTotal}` : ''}`} onPress={() => setFilter('unread')} />
-          <FilterChip active={filter === 'parents'} label="Veliler" onPress={() => setFilter('parents')} />
-          <FilterChip active={filter === 'management'} label="Yönetim" onPress={() => setFilter('management')} />
+          <FilterChip active={filter === 'all'} label={t('teacher.messages.filterAll')} onPress={() => setFilter('all')} />
+          <FilterChip active={filter === 'unread'} label={`${t('teacher.messages.filterUnread')}${unreadTotal ? ` ${unreadTotal}` : ''}`} onPress={() => setFilter('unread')} />
+          <FilterChip active={filter === 'parents'} label={t('teacher.messages.filterParents')} onPress={() => setFilter('parents')} />
+          <FilterChip active={filter === 'management'} label={t('teacher.messages.filterManagement')} onPress={() => setFilter('management')} />
         </View>
 
         {showInfo ? (
           <View style={styles.infoBanner}>
             <View style={styles.infoIconBox}><Text style={styles.infoIcon}>💬</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoTitle}>Mesajlaşmayı kolaylaştırın</Text>
-              <Text style={styles.infoText}>Kurum yönetimi ve sınıf velileriyle hızlıca iletişim kurabilirsiniz.</Text>
+              <Text style={styles.infoTitle}>{t('teacher.messages.infoTitle')}</Text>
+              <Text style={styles.infoText}>{t('teacher.messages.infoText')}</Text>
             </View>
             <TouchableOpacity onPress={() => setShowInfo(false)} activeOpacity={0.85}>
               <Text style={styles.closeInfo}>×</Text>
@@ -288,24 +290,24 @@ export default function TeacherMessagesScreen() {
         {filter !== 'parents' && filter !== 'unread' ? (
           <ContactCard
             icon="🏫"
-            title="Kurum Yönetimi"
-            desc={adminMeta.sonMesaj || kurum?.ad || 'Yönetim ile yazış'}
-            sub="İdari ve sınıf konuları"
+            title={t('teacher.messages.adminCardTitle')}
+            desc={adminMeta.sonMesaj || kurum?.ad || t('teacher.messages.adminCardDesc')}
+            sub={t('teacher.messages.adminCardSub')}
             unread={adminUnread}
-            time={formatMessageTime(adminMeta.sonMesajAt || adminMeta.updatedAt)}
-            tag="Resmi"
+            time={formatMessageTime(adminMeta.sonMesajAt || adminMeta.updatedAt, t, i18n.language)}
+            tag={t('teacher.messages.officialTag')}
             highlight
             onPress={openAdminChat}
           />
         ) : null}
 
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Sınıf Velileri</Text>
-          <Text style={styles.sectionAction}>{filteredContacts.length} kişi</Text>
+          <Text style={styles.sectionTitle}>{t('teacher.messages.sectionTitle')}</Text>
+          <Text style={styles.sectionAction}>{filteredContacts.length} {t('teacher.messages.peopleCountSuffix')}</Text>
         </View>
 
         {filteredContacts.length === 0 ? (
-          <EmptyState icon="👨‍👩‍👧" title="Mesaj bulunamadı" desc="Arama veya filtreyi değiştirerek tekrar deneyebilirsin." />
+          <EmptyState icon="👨‍👩‍👧" title={t('teacher.messages.emptyTitle')} desc={t('teacher.messages.emptyDesc')} />
         ) : (
           <View style={styles.parentListWrap}>
             {filteredContacts.map((contact) => (
@@ -314,9 +316,9 @@ export default function TeacherMessagesScreen() {
                 icon="👨‍👩‍👧"
                 title={contact.title}
                 desc={contact.desc}
-                sub={`${contact.childName} velisi`}
+                sub={t('teacher.messages.parentSubtitle', { childName: contact.childName })}
                 unread={contact.unread}
-                time={formatMessageTime(contact.sonMesajAt)}
+                time={formatMessageTime(contact.sonMesajAt, t, i18n.language)}
                 onPress={() => openParentChat(contact)}
               />
             ))}
@@ -326,8 +328,8 @@ export default function TeacherMessagesScreen() {
         <View style={styles.securityCard}>
           <View style={styles.securityIconBox}><Text style={styles.securityIcon}>🔒</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.securityTitle}>Güvenli İletişim</Text>
-            <Text style={styles.securityText}>Mesajlar sadece ilgili kurum, öğretmen ve veli hesapları arasında görüntülenir.</Text>
+            <Text style={styles.securityTitle}>{t('teacher.messages.securityTitle')}</Text>
+            <Text style={styles.securityText}>{t('teacher.messages.securityText')}</Text>
           </View>
         </View>
       </ScrollView>
@@ -340,8 +342,8 @@ export default function TeacherMessagesScreen() {
             <View style={styles.drawerHandle} />
             <View style={styles.drawerHeader}>
               <View>
-                <Text style={styles.drawerTitle}>Yeni Mesaj Başlat</Text>
-                <Text style={styles.drawerSubtitle}>Veli seç, sohbete direkt başla</Text>
+                <Text style={styles.drawerTitle}>{t('teacher.messages.drawerTitle')}</Text>
+                <Text style={styles.drawerSubtitle}>{t('teacher.messages.drawerSubtitle')}</Text>
               </View>
               <TouchableOpacity style={styles.drawerCloseButton} onPress={() => setNewMessageOpen(false)} activeOpacity={0.85}>
                 <Text style={styles.drawerCloseText}>×</Text>
@@ -351,23 +353,23 @@ export default function TeacherMessagesScreen() {
             <TouchableOpacity style={styles.drawerAdminCard} onPress={openAdminChat} activeOpacity={0.85}>
               <View style={styles.drawerIconBox}><Text style={styles.drawerIcon}>🏫</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.drawerContactTitle}>Kurum Yönetimi</Text>
-                <Text style={styles.drawerContactSub}>İdari ve sınıf konuları</Text>
+                <Text style={styles.drawerContactTitle}>{t('teacher.messages.adminCardTitle')}</Text>
+                <Text style={styles.drawerContactSub}>{t('teacher.messages.adminCardSub')}</Text>
               </View>
               <Text style={styles.drawerArrow}>›</Text>
             </TouchableOpacity>
 
             <View style={styles.drawerSectionRow}>
-              <Text style={styles.drawerSectionTitle}>Sınıf Velileri</Text>
-              <Text style={styles.drawerCount}>{parentContacts.length} kişi</Text>
+              <Text style={styles.drawerSectionTitle}>{t('teacher.messages.sectionTitle')}</Text>
+              <Text style={styles.drawerCount}>{parentContacts.length} {t('teacher.messages.peopleCountSuffix')}</Text>
             </View>
 
             <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false}>
               {parentContacts.length === 0 ? (
                 <View style={styles.drawerEmpty}>
                   <Text style={styles.drawerEmptyIcon}>👨‍👩‍👧</Text>
-                  <Text style={styles.drawerEmptyTitle}>Veli bulunamadı</Text>
-                  <Text style={styles.drawerEmptyText}>Sınıfına henüz veli bağlanmamış.</Text>
+                  <Text style={styles.drawerEmptyTitle}>{t('teacher.messages.drawerEmptyTitle')}</Text>
+                  <Text style={styles.drawerEmptyText}>{t('teacher.messages.drawerEmptyText')}</Text>
                 </View>
               ) : (
                 parentContacts.map((contact) => (
@@ -375,7 +377,7 @@ export default function TeacherMessagesScreen() {
                     <View style={styles.drawerParentIconBox}><Text style={styles.drawerParentIcon}>👨‍👩‍👧</Text></View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.drawerContactTitle} numberOfLines={1}>{contact.title}</Text>
-                      <Text style={styles.drawerContactSub} numberOfLines={1}>{contact.childName} velisi</Text>
+                      <Text style={styles.drawerContactSub} numberOfLines={1}>{t('teacher.messages.parentSubtitle', { childName: contact.childName })}</Text>
                     </View>
                     {contact.unread > 0 ? <Text style={styles.drawerUnread}>{contact.unread > 99 ? '99+' : contact.unread}</Text> : null}
                     <Text style={styles.drawerArrow}>›</Text>
