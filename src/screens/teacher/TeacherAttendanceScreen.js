@@ -9,10 +9,12 @@ import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet, Ale
 import { ref, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName, todayString } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function TeacherAttendanceScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { loading, teacherId, kresId, currentClass, classChildren, attendance } = useTeacherData();
   const [saving, setSaving] = useState(false);
@@ -42,18 +44,18 @@ export default function TeacherAttendanceScreen() {
     return childIds.some((id) => (localStatus[id] || '') !== (initialStatus[id] || ''));
   }, [classChildren, localStatus, initialStatus]);
 
-  if (loading) return <LoadingState text="Yoklama hazırlanıyor..." />;
+  if (loading) return <LoadingState text={t('teacher.attendance.loading')} />;
 
   const selectStatus = (child, status) => {
     setLocalStatus((prev) => ({ ...prev, [child.id]: status }));
   };
 
   const saveAll = async () => {
-    if (!currentClass?.id) return Alert.alert('Hata', 'Sınıf bulunamadı.');
+    if (!currentClass?.id) return Alert.alert(t('teacher.attendance.errorTitle'), t('teacher.attendance.classNotFoundDesc'));
 
     const selectedChildren = classChildren.filter((child) => localStatus[child.id]);
     if (selectedChildren.length === 0) {
-      Alert.alert('Eksik Bilgi', 'En az bir çocuk için yoklama seçmelisin.');
+      Alert.alert(t('teacher.attendance.missingInfoTitle'), t('teacher.attendance.missingSelectionDesc'));
       return;
     }
 
@@ -82,7 +84,7 @@ export default function TeacherAttendanceScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Yoklama kaydedilemedi.');
+      Alert.alert(t('teacher.attendance.errorTitle'), t('teacher.attendance.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -92,19 +94,19 @@ export default function TeacherAttendanceScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast
         visible={successToast}
-        message="Yoklama kaydedildi"
+        message={t('teacher.attendance.successMessage')}
         onHide={() => setSuccessToast(false)}
       />
 
-      <ScreenHeader navigation={navigation} title="Yoklama" subtitle={today} />
+      <ScreenHeader navigation={navigation} title={t('teacher.attendance.title')} subtitle={today} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {classChildren.length === 0 ? (
-          <EmptyState icon="✅" title="Çocuk bulunamadı" desc="Sınıfa çocuk bağlanınca yoklama alınabilir." />
+          <EmptyState icon="✅" title={t('teacher.attendance.emptyTitle')} desc={t('teacher.attendance.emptyDesc')} />
         ) : (
           <>
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Bugünkü Yoklama</Text>
-              <Text style={styles.infoDesc}>Seçimleri yap, sonra alttaki Kaydet butonuna bas.</Text>
+              <Text style={styles.infoTitle}>{t('teacher.attendance.infoTitle')}</Text>
+              <Text style={styles.infoDesc}>{t('teacher.attendance.infoDesc')}</Text>
             </View>
 
             {classChildren.map((child) => {
@@ -118,14 +120,14 @@ export default function TeacherAttendanceScreen() {
                     <Text style={styles.childName}>{getChildName(child)}</Text>
                     {alreadySaved ? (
                       <View style={styles.savedBadge}>
-                        <Text style={styles.savedBadgeText}>✓ Yoklaması alındı</Text>
+                        <Text style={styles.savedBadgeText}>{t('teacher.attendance.savedBadge')}</Text>
                       </View>
                     ) : null}
                   </View>
                   <View style={styles.buttons}>
-                    {renderButton(child, 'geldi', 'Geldi', status)}
-                    {renderButton(child, 'gelmedi', 'Gelmedi', status)}
-                    {renderButton(child, 'gec', 'Geç', status)}
+                    {renderButton(child, 'geldi', t('teacher.attendance.statusGeldi'), status)}
+                    {renderButton(child, 'gelmedi', t('teacher.attendance.statusGelmedi'), status)}
+                    {renderButton(child, 'gec', t('teacher.attendance.statusGec'), status)}
                   </View>
                 </View>
               );
@@ -133,10 +135,10 @@ export default function TeacherAttendanceScreen() {
 
             {hasChanges ? (
               <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveAll} disabled={saving} activeOpacity={0.85}>
-                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Yoklamayı Kaydet</Text>}
+                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{t('teacher.attendance.saveButton')}</Text>}
               </TouchableOpacity>
             ) : (
-              <Text style={styles.savedInfo}>Bugünkü seçimlerde kaydedilmemiş değişiklik yok.</Text>
+              <Text style={styles.savedInfo}>{t('teacher.attendance.noChangesInfo')}</Text>
             )}
           </>
         )}
