@@ -12,6 +12,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ref, query, orderByChild, equalTo, onValue } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 import { database } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, EmptyState, getChildName } from './teacherShared';
 
@@ -22,6 +23,7 @@ function formatDateTr(dateKey) {
 }
 
 export default function TeacherMedicationFormListScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loading, currentClass, kresId, classChildren } = useTeacherData();
   const [forms, setForms] = useState([]);
   const [loadingForms, setLoadingForms] = useState(true);
@@ -45,14 +47,14 @@ export default function TeacherMedicationFormListScreen({ navigation }) {
     return () => unsub();
   }, [kresId, classChildren]);
 
-  if (loading) return <LoadingState text="Yükleniyor..." />;
+  if (loading) return <LoadingState text={t('teacher.medicationFormList.loading')} />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader navigation={navigation} title="İlaç Takip Formları" subtitle={currentClass?.ad || 'Sınıfım'} />
+      <ScreenHeader navigation={navigation} title={t('teacher.medicationFormList.title')} subtitle={currentClass?.ad || t('teacher.medicationFormList.classFallback')} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {!currentClass ? (
-          <EmptyState icon="🏫" title="Sınıf ataması yok" desc="Bu özellik için yönetici tarafından bir sınıfa atanman gerekir." />
+          <EmptyState icon="🏫" title={t('teacher.medicationFormList.noClassTitle')} desc={t('teacher.medicationFormList.noClassDesc')} />
         ) : (
           <>
             <TouchableOpacity
@@ -60,13 +62,13 @@ export default function TeacherMedicationFormListScreen({ navigation }) {
               onPress={() => navigation.navigate('TeacherMedicationFormEdit', {})}
               activeOpacity={0.85}
             >
-              <Text style={styles.newButtonText}>+ Yeni İlaç Takip Formu</Text>
+              <Text style={styles.newButtonText}>{t('teacher.medicationFormList.newButton')}</Text>
             </TouchableOpacity>
 
             {loadingForms ? (
               <ActivityIndicator color={THEME.primary} style={{ marginTop: 30 }} />
             ) : forms.length === 0 ? (
-              <EmptyState icon="💊" title="Aktif ilaç takip formu yok" desc="Bir çocuk için ilaç kürü başladığında buradan form oluşturabilirsin." />
+              <EmptyState icon="💊" title={t('teacher.medicationFormList.emptyTitle')} desc={t('teacher.medicationFormList.emptyDesc')} />
             ) : (
               forms.map((form) => (
                 <TouchableOpacity
@@ -78,7 +80,7 @@ export default function TeacherMedicationFormListScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>💊 {form.ilacAdi} — {form.cocukAdi}</Text>
                     <Text style={styles.cardMeta}>{formatDateTr(form.baslangicTarihi)} - {formatDateTr(form.bitisTarihi)}</Text>
-                    <Text style={styles.cardApproval}>{form.veliOnayi ? '✅ Veli onayı alındı' : '⏳ Veli onayı bekleniyor'}</Text>
+                    <Text style={styles.cardApproval}>{form.veliOnayi ? t('teacher.medicationFormList.approvalReceived') : t('teacher.medicationFormList.approvalPending')}</Text>
                   </View>
                   <Text style={styles.cardArrow}>›</Text>
                 </TouchableOpacity>
