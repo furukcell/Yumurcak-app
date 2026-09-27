@@ -17,12 +17,14 @@ import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { ROLLER } from '../../constants';
 import { deleteKullaniciHesabi } from '../../utils/userDelete';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function AdminVehicleFormScreen() {
+  const { t } = useTranslation();
   const headerHeight = useHeaderHeight();
   const route = useRoute();
   const { kullanici } = useAuth();
@@ -73,11 +75,11 @@ export default function AdminVehicleFormScreen() {
 
   const handleSave = async () => {
     if (!plaka.trim() || !ad.trim()) {
-      Alert.alert('Hata', 'Plaka ve servis adı zorunludur');
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.vehicleForm.missingVehicleFieldsDesc'));
       return;
     }
     if (!kullaniciAdi.trim() || !servisciAd.trim()) {
-      Alert.alert('Hata', 'Servis görevlisinin kullanıcı adı ve ad soyadı zorunludur');
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.vehicleForm.missingStaffFieldsDesc'));
       return;
     }
 
@@ -89,7 +91,7 @@ export default function AdminVehicleFormScreen() {
 
       const kaydedilenSifre = sifre.trim() || oldServisci?.sifre || '123456';
       if (kaydedilenSifre.length < 6) {
-        Alert.alert('Hata', 'Şifre en az 6 karakter olmalı');
+        Alert.alert(t('teacher.theme.errorTitle'), t('admin.veliForm.passwordTooShortDesc'));
         setLoading(false);
         return;
       }
@@ -155,10 +157,10 @@ export default function AdminVehicleFormScreen() {
     } catch (error) {
       console.error(error);
       if (error?.code === 'auth/email-already-in-use') {
-        Alert.alert('Auth Hatası', 'Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı deneyin.');
+        Alert.alert(t('admin.veliForm.authErrorTitle'), t('admin.vehicleForm.authErrorDesc'));
         return;
       }
-      Alert.alert('Hata', `Servis aracı kaydedilemedi.\n\n${error?.code || error?.message || ''}`);
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.vehicleForm.saveFailedDesc', { detail: error?.code || error?.message || '' }));
     } finally {
       setLoading(false);
     }
@@ -172,12 +174,12 @@ export default function AdminVehicleFormScreen() {
   const handleDelete = () => {
     if (!vehicleId) return;
     Alert.alert(
-      'Servis Aracını Sil',
-      `${ad || 'Bu servis'} (${plaka || 'plaka yok'}) kalıcı olarak silinecek. Bu işlem geri alınamaz: araç kaydı ve varsa bağlı servis görevlisi hesabı tamamen silinir.`,
+      t('admin.vehicleList.deleteTitle'),
+      t('admin.vehicleForm.deleteDesc', { name: ad || t('admin.vehicleForm.defaultVehicleFallback'), plaka: plaka || t('admin.vehicleForm.noPlateFallback') }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('admin.veliForm.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('admin.veliForm.delete'),
           style: 'destructive',
           onPress: async () => {
             setDeleting(true);
@@ -189,7 +191,7 @@ export default function AdminVehicleFormScreen() {
               navigation.goBack();
             } catch (error) {
               console.error(error);
-              Alert.alert('Hata', `Servis aracı silinemedi.\n\n${error?.message || ''}`);
+              Alert.alert(t('teacher.theme.errorTitle'), t('admin.vehicleForm.deleteFailedDesc', { detail: error?.message || '' }));
             } finally {
               setDeleting(false);
             }
@@ -203,7 +205,7 @@ export default function AdminVehicleFormScreen() {
 
   return (
     <View style={styles.screen}>
-      <AppSuccessToast visible={successToast} message={vehicleId ? 'Servis aracı güncellendi' : 'Servis aracı oluşturuldu'} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={vehicleId ? t('admin.vehicleForm.updatedToast') : t('admin.vehicleForm.createdToast')} onHide={() => setSuccessToast(false)} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -211,41 +213,41 @@ export default function AdminVehicleFormScreen() {
       >
       <ScrollView style={styles.container}>
         <View style={styles.form}>
-          <Text style={styles.sectionTitle}>Araç Bilgileri</Text>
+          <Text style={styles.sectionTitle}>{t('admin.vehicleForm.vehicleInfoTitle')}</Text>
           <View style={styles.field}>
-            <Text style={styles.label}>Servis Adı *</Text>
-            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder="Örn: 1 Nolu Servis / Sabah Turu" placeholderTextColor="#999" />
+            <Text style={styles.label}>{t('admin.vehicleForm.vehicleNameLabel')} *</Text>
+            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder={t('admin.vehicleForm.vehicleNamePlaceholder')} placeholderTextColor="#999" />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Plaka *</Text>
-            <TextInput style={styles.input} value={plaka} onChangeText={setPlaka} placeholder="Örn: 48 AB 123" placeholderTextColor="#999" autoCapitalize="characters" />
+            <Text style={styles.label}>{t('admin.vehicleForm.plateLabel')} *</Text>
+            <TextInput style={styles.input} value={plaka} onChangeText={setPlaka} placeholder={t('admin.vehicleForm.platePlaceholder')} placeholderTextColor="#999" autoCapitalize="characters" />
           </View>
 
-          <Text style={styles.sectionTitle}>Servis Görevlisi</Text>
-          <Text style={styles.sectionNotu}>Bu araca atanan görevli, kendi hesabıyla giriş yapıp çocukları alındı/bırakıldı olarak işaretleyebilir. Şoför için ayrı hesap açmanıza gerek yok.</Text>
+          <Text style={styles.sectionTitle}>{t('admin.vehicleForm.staffSectionTitle')}</Text>
+          <Text style={styles.sectionNotu}>{t('admin.vehicleForm.staffSectionNote')}</Text>
           <View style={styles.field}>
-            <Text style={styles.label}>Kullanıcı Adı *</Text>
-            <TextInput style={styles.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder="Örn: servis1" placeholderTextColor="#999" autoCapitalize="none" />
+            <Text style={styles.label}>{t('admin.veliForm.usernameLabel')} *</Text>
+            <TextInput style={styles.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder={t('admin.vehicleForm.usernamePlaceholder')} placeholderTextColor="#999" autoCapitalize="none" />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Ad Soyad *</Text>
-            <TextInput style={styles.input} value={servisciAd} onChangeText={setServisciAd} placeholder="Örn: Ayşe Yılmaz" placeholderTextColor="#999" />
+            <Text style={styles.label}>{t('admin.veliForm.nameLabel')} *</Text>
+            <TextInput style={styles.input} value={servisciAd} onChangeText={setServisciAd} placeholder={t('admin.vehicleForm.staffNamePlaceholder')} placeholderTextColor="#999" />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Şifre {!oldServisciId && '*'}</Text>
+            <Text style={styles.label}>{t('admin.veliForm.passwordLabel')} {!oldServisciId && '*'}</Text>
             <View style={styles.passwordRow}>
-              <TextInput style={styles.passwordInput} value={sifre} onChangeText={setSifre} placeholder={oldServisciId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
-              <TouchableOpacity style={styles.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={styles.passwordToggleText}>{sifreGoster ? 'Gizle' : 'Göster'}</Text></TouchableOpacity>
+              <TextInput style={styles.passwordInput} value={sifre} onChangeText={setSifre} placeholder={oldServisciId ? t('admin.veliForm.passwordPlaceholderEdit') : t('admin.veliForm.passwordPlaceholderNew')} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
+              <TouchableOpacity style={styles.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={styles.passwordToggleText}>{sifreGoster ? t('admin.veliForm.hideButton') : t('admin.veliForm.showButton')}</Text></TouchableOpacity>
             </View>
-            <Text style={styles.sifreNotu}>{oldServisciId ? 'Boş bırakılırsa mevcut şifre korunur.' : 'Boş bırakılırsa varsayılan şifre 123456 olur.'}</Text>
+            <Text style={styles.sifreNotu}>{oldServisciId ? t('admin.vehicleForm.passwordNoteEdit') : t('admin.vehicleForm.passwordNoteNew')}</Text>
           </View>
 
           <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{vehicleId ? 'Güncelle' : 'Oluştur'}</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{vehicleId ? t('admin.veliForm.updateButton') : t('admin.veliForm.createButton')}</Text>}
           </TouchableOpacity>
           {vehicleId && (
             <TouchableOpacity style={[styles.deleteButton, deleting && styles.saveButtonDisabled]} onPress={handleDelete} disabled={deleting}>
-              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={styles.deleteButtonText}>Servis Aracını Sil</Text>}
+              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={styles.deleteButtonText}>{t('admin.vehicleList.deleteTitle')}</Text>}
             </TouchableOpacity>
           )}
         </View>
