@@ -21,6 +21,7 @@ import { ref, onValue, push, update, remove, query, orderByChild, equalTo } from
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { useTranslation } from 'react-i18next';
 
 const THEME = {
   primary: '#3C3489',
@@ -144,7 +145,7 @@ export default function PollManagementScreen() {
       },
       () => {
         setPolls([]);
-        setErrorText('Anket kayıtları okunamadı.');
+        setErrorText(t('admin.pollManagement.loadFailed'));
         setLoading(false);
       }
     );
@@ -164,7 +165,7 @@ export default function PollManagementScreen() {
 
   const removeOption = (id) => {
     if (optionInputs.length <= 2) {
-      Alert.alert('Uyarı', 'Anket için en az 2 seçenek olmalı.');
+      Alert.alert(t('admin.pollManagement.warning'), t('admin.pollManagement.minOptions'));
       return;
     }
     setOptionInputs((prev) => prev.filter((item) => item.id !== id));
@@ -174,8 +175,8 @@ export default function PollManagementScreen() {
     const title = baslik.trim();
     const options = cleanOptions(optionInputs.map((item) => item.value));
 
-    if (!title) return Alert.alert('Eksik bilgi', 'Anket başlığı yazmalısın.');
-    if (options.length < 2) return Alert.alert('Eksik bilgi', 'En az 2 seçenek olmalı.');
+    if (!title) return Alert.alert(t('admin.pollManagement.missing'), t('admin.pollManagement.titleRequired'));
+    if (options.length < 2) return Alert.alert(t('admin.pollManagement.missing'), t('admin.pollManagement.minOptions'));
 
     setSaving(true);
     try {
@@ -201,7 +202,7 @@ export default function PollManagementScreen() {
       ]);
       setSuccessToast(true);
     } catch (e) {
-      Alert.alert('Hata', 'Anket oluşturulamadı.');
+      Alert.alert(t('admin.pollManagement.error'), t('admin.pollManagement.createFailed'));
     } finally {
       setSaving(false);
     }
@@ -216,7 +217,7 @@ export default function PollManagementScreen() {
         updatedAt: Date.now(),
       });
     } catch (e) {
-      Alert.alert('Hata', 'Anket durumu güncellenemedi.');
+      Alert.alert(t('admin.pollManagement.error'), t('admin.pollManagement.statusFailed'));
     } finally {
       setBusyId(null);
     }
@@ -225,19 +226,19 @@ export default function PollManagementScreen() {
   async function deletePoll(item) {
     if (!item?.id || busyId) return;
     Alert.alert(
-      'Anket silinsin mi?',
-      'Bu işlem anketi ve cevaplarını tamamen siler.',
+      t('admin.pollManagement.deleteTitle'),
+      t('admin.pollManagement.deleteMessage'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             setBusyId(item.id);
             try {
               await remove(ref(database, `anketler/${item.id}`));
             } catch (e) {
-              Alert.alert('Hata', 'Anket silinemedi.');
+              Alert.alert(t('admin.pollManagement.error'), t('admin.pollManagement.deleteFailed'));
             } finally {
               setBusyId(null);
             }
@@ -278,7 +279,7 @@ export default function PollManagementScreen() {
     <SafeAreaView style={styles.safe}>
       <AppSuccessToast
         visible={successToast}
-        message="Anket velilere açıldı"
+        message={t('admin.pollManagement.published')}
         onHide={() => setSuccessToast(false)}
       />
      <KeyboardAvoidingView
@@ -290,36 +291,36 @@ export default function PollManagementScreen() {
         {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
 
         <View style={styles.summaryRow}>
-          <StatCard icon="👥" value={polls.length} label="Toplam Anket" color={THEME.primary} />
-          <StatCard icon="✅" value={toplamAktif} label="Aktif" color={THEME.green} />
-          <StatCard icon="💬" value={toplamCevap} label="Cevap" color={THEME.orange} />
+          <StatCard icon="👥" value={polls.length} label={t('admin.pollManagement.totalPolls')} color={THEME.primary} />
+          <StatCard icon="✅" value={toplamAktif} label={t('common.active')} color={THEME.green} />
+          <StatCard icon="💬" value={toplamCevap} label={t('admin.pollManagement.answers')} color={THEME.orange} />
         </View>
 
         <View style={styles.formCard}>
           <View style={styles.formHeader}>
             <View style={styles.formIconCircle}><Text style={styles.formIcon}>🗳️</Text></View>
-            <Text style={styles.formTitle}>Yeni Anket Oluştur</Text>
+            <Text style={styles.formTitle}>{t('admin.pollManagement.newPoll')}</Text>
           </View>
 
-          <Text style={styles.label}>Başlık *</Text>
+          <Text style={styles.label}>{t('admin.pollManagement.title')} *</Text>
           <View style={styles.inputShell}>
             <TextInput
               style={styles.input}
               value={baslik}
               onChangeText={setBaslik}
-              placeholder="Örn: Yıl sonu gösterisi hangi gün olsun?"
+              placeholder={t('admin.pollManagement.titlePlaceholder')}
               placeholderTextColor="#A5A3B8"
             />
             <Text style={styles.inputIcon}>T</Text>
           </View>
 
-          <Text style={styles.label}>Açıklama</Text>
+          <Text style={styles.label}>{t('admin.pollManagement.description')}</Text>
           <View style={[styles.inputShell, styles.textAreaShell]}>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={aciklama}
               onChangeText={setAciklama}
-              placeholder="Velilere kısa açıklama"
+              placeholder={t('admin.pollManagement.descriptionPlaceholder')}
               placeholderTextColor="#A5A3B8"
               multiline
             />
@@ -327,8 +328,8 @@ export default function PollManagementScreen() {
           </View>
 
           <View style={styles.optionsHeaderRow}>
-            <Text style={styles.labelNoMargin}>Seçenekler *</Text>
-            <Text style={styles.helpInline}>Her seçeneği ayrı kutuya yaz.</Text>
+            <Text style={styles.labelNoMargin}>{t('admin.pollManagement.options')} *</Text>
+            <Text style={styles.helpInline}>{t('admin.pollManagement.optionsHelp')}</Text>
             <Text style={styles.helpCircle}>?</Text>
           </View>
 
@@ -341,7 +342,7 @@ export default function PollManagementScreen() {
                     style={styles.optionInput}
                     value={item.value}
                     onChangeText={(value) => updateOption(item.id, value)}
-                    placeholder={`Seçenek ${index + 1}`}
+                    placeholder={t('admin.pollManagement.optionPlaceholder', { index: index + 1 })}
                     placeholderTextColor="#A5A3B8"
                   />
                 </View>
@@ -352,14 +353,14 @@ export default function PollManagementScreen() {
             ))}
 
             <TouchableOpacity style={styles.addOptionBox} onPress={addOption} activeOpacity={0.85}>
-              <Text style={styles.addOptionText}>＋ Seçenek ekle</Text>
+              <Text style={styles.addOptionText}>{t('admin.pollManagement.addOption')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.settingsRow}>
-            <SettingCard icon="👥" label="Hedef Kitle" value="Kurum Geneli" />
-            <SettingCard icon="📅" label="Bitiş Süresi" value="2 gün aktif" />
-            <SettingCard icon="🛡️" label="Durum" value="Aktif" />
+            <SettingCard icon="👥" label={t('admin.pollManagement.audience')} value={t('admin.pollManagement.institutionWide')} />
+            <SettingCard icon="📅" label={t('admin.pollManagement.endDuration')} value={t('admin.pollManagement.twoDays')} />
+            <SettingCard icon="🛡️" label={t('common.status')} value={t('common.active')} />
           </View>
 
           <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={createPoll} disabled={saving} activeOpacity={0.85}>
@@ -368,15 +369,15 @@ export default function PollManagementScreen() {
         </View>
 
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Anketler</Text>
-          <View style={styles.filterPill}><Text style={styles.filterText}>Tümü⌄</Text></View>
+          <Text style={styles.sectionTitle}>{t('admin.pollManagement.polls')}</Text>
+          <View style={styles.filterPill}><Text style={styles.filterText}>{t('admin.pollManagement.all')}⌄</Text></View>
         </View>
 
         {polls.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>🗳️</Text>
-            <Text style={styles.emptyTitle}>Henüz anket yok</Text>
-            <Text style={styles.emptyDesc}>İlk anketi yukarıdan oluştur.</Text>
+            <Text style={styles.emptyTitle}>{t('admin.pollManagement.emptyTitle')}</Text>
+            <Text style={styles.emptyDesc}>{t('admin.pollManagement.emptyDesc')}</Text>
           </View>
         ) : (
           polls.map((item) => {
@@ -390,13 +391,13 @@ export default function PollManagementScreen() {
                   <View style={styles.pollIconCircle}><Text style={styles.pollIcon}>▮▮▮</Text></View>
                   <View style={{ flex: 1 }}>
                     <View style={styles.pollTitleRow}>
-                      <Text style={styles.pollTitle}>{item.baslik || 'Anket'}</Text>
+                      <Text style={styles.pollTitle}>{item.baslik || t('admin.pollManagement.poll')}</Text>
                       <View style={[styles.statusBadge, { backgroundColor: active ? '#E8F9EF' : '#F1F1F4' }]}> 
-                        <Text style={[styles.statusText, { color: active ? THEME.green : THEME.muted }]}>{active ? 'Aktif' : 'Pasif'}</Text>
+                        <Text style={[styles.statusText, { color: active ? THEME.green : THEME.muted }]}>{active ? t('common.active') : t('common.passive')}</Text>
                       </View>
                     </View>
                     {item.aciklama ? <Text style={styles.pollDesc}>{item.aciklama}</Text> : null}
-                    <Text style={styles.pollMeta}>📅 {formatDate(item.createdAt)} · 💬 {cevapSayisi} cevap</Text>
+                    <Text style={styles.pollMeta}>📅 {formatDate(item.createdAt)} · 💬 {cevapSayisi} {t('admin.pollManagement.answerLabel')}</Text>
                   </View>
                 </View>
 
@@ -404,10 +405,10 @@ export default function PollManagementScreen() {
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity style={styles.outlineActionBtn} activeOpacity={0.85}>
-                    <Text style={[styles.outlineActionText, { color: THEME.purple }]}>▮ Sonuçlar</Text>
+                    <Text style={[styles.outlineActionText, { color: THEME.purple }]}{`▮ ${t('admin.pollManagement.results')}`}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.outlineActionBtn} activeOpacity={0.85}>
-                    <Text style={[styles.outlineActionText, { color: THEME.blue }]}>✎ Düzenle</Text>
+                    <Text style={[styles.outlineActionText, { color: THEME.blue }]}{`✎ ${t('common.edit')}`}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.outlineActionBtn, busy && { opacity: 0.6 }]}
@@ -415,12 +416,12 @@ export default function PollManagementScreen() {
                     disabled={busy}
                     activeOpacity={0.85}
                   >
-                    <Text style={[styles.outlineActionText, { color: active ? THEME.red : THEME.green }]}>{active ? '⏸ Pasif Yap' : '✓ Aktif Et'}</Text>
+                    <Text style={[styles.outlineActionText, { color: active ? THEME.red : THEME.green }]}>{active ? `⏸ ${t('admin.pollManagement.makePassive')}` : `✓ ${t('admin.pollManagement.makeActive')}`}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity style={styles.deleteTextButton} onPress={() => deletePoll(item)} disabled={busy} activeOpacity={0.85}>
-                  <Text style={styles.deleteText}>Anketi tamamen sil</Text>
+                  <Text style={styles.deleteText}>{t('admin.pollManagement.deletePoll')}</Text>
                 </TouchableOpacity>
               </View>
             );
