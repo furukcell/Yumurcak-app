@@ -20,10 +20,10 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import AnnouncementTemplatePicker from '../../components/AnnouncementTemplatePicker';
 
 const TARGET_OPTIONS = [
-  { key: 'all', label: t('admin.announcementForm.all'), icon: '🏫' },
-  { key: 'veli', label: t('admin.announcementForm.parents'), icon: '👨‍👩‍👧' },
-  { key: 'ogretmen', label: t('admin.announcementForm.teachers'), icon: '👩‍🏫' },
-  { key: 'sinif', label: t('admin.announcementForm.class'), icon: '📚' },
+  { key: 'all', labelKey: 'admin.announcementForm.all', icon: '🏫' },
+  { key: 'veli', labelKey: 'admin.announcementForm.parents', icon: '👨‍👩‍👧' },
+  { key: 'ogretmen', labelKey: 'admin.announcementForm.teachers', icon: '👩‍🏫' },
+  { key: 'sinif', labelKey: 'admin.announcementForm.class', icon: '📚' },
 ];
 
 export default function AnnouncementFormScreen() {
@@ -62,7 +62,7 @@ export default function AnnouncementFormScreen() {
 
         setClasses(list);
       } catch (err) {
-        console.warn('{t('admin.announcementForm.class')}lar yüklenemedi:', err);
+        console.warn('Sınıflar yüklenemedi:', err);
       }
     };
 
@@ -101,10 +101,10 @@ export default function AnnouncementFormScreen() {
   }, [announcementId]);
 
   const getTargetText = () => {
-    if (targetRole === 'veli') return 'Bu duyuru sadece velilere gönderilecek.';
-    if (targetRole === 'ogretmen') return 'Bu duyuru sadece öğretmenlere gönderilecek.';
-    if (targetRole === 'sinif') return 'Bu duyuru seçilen sınıfa bağlı kişilere gönderilecek.';
-    return 'Bu duyuru tüm kuruma gönderilecek.';
+    if (targetRole === 'veli') return t('admin.announcementForm.targetParents');
+    if (targetRole === 'ogretmen') return t('admin.announcementForm.targetTeachers');
+    if (targetRole === 'sinif') return t('admin.announcementForm.targetClass');
+    return t('admin.announcementForm.targetAll');
   };
 
   // FAZ 11 — Veli kısmı artık Cloud Function'da (getParentIdsForSiniflar),
@@ -119,7 +119,7 @@ export default function AnnouncementFormScreen() {
         : [];
       return [...new Set(ogretmenIds.filter(Boolean))];
     } catch (err) {
-      console.warn('{t('admin.announcementForm.class')} öğretmenleri okunamadı:', err);
+      console.warn('Sınıf öğretmenleri okunamadı:', err);
       return [];
     }
   };
@@ -131,14 +131,14 @@ export default function AnnouncementFormScreen() {
     }
 
     if (targetRole === 'sinif' && !selectedClassId) {
-      Alert.alert('Hata', '{t('admin.announcementForm.class')} bazlı duyuru için bir sınıf seçmelisin.');
+      Alert.alert(t('common.error'), t('admin.announcementForm.selectClass'));
       return;
     }
 
     setLoading(true);
 
        try {
-      const senderName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
+      const senderName = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || t('admin.announcementForm.admin');
       const data = {
         title: title.trim(),
         baslik: title.trim(),
@@ -222,7 +222,7 @@ export default function AnnouncementFormScreen() {
     <View style={styles.screen}>
       <AppSuccessToast
         visible={successToast}
-        message={announcementId ? 'Duyuru güncellendi' : 'Duyuru gönderildi'}
+        message={announcementId ? t('admin.announcementForm.updated') : t('admin.announcementForm.sent')}
         onHide={() => setSuccessToast(false)}
       />
      <KeyboardAvoidingView
@@ -247,7 +247,7 @@ export default function AnnouncementFormScreen() {
               style={styles.input}
               value={title}
               onChangeText={setTitle}
-              placeholder=t('admin.announcementForm.titlePlaceholder')
+              placeholder={t('admin.announcementForm.titlePlaceholder')}
               placeholderTextColor="#999"
             />
           </View>
@@ -258,7 +258,7 @@ export default function AnnouncementFormScreen() {
               style={[styles.input, styles.textArea]}
               value={message}
               onChangeText={setMessage}
-              placeholder=t('admin.announcementForm.messagePlaceholder')
+              placeholder={t('admin.announcementForm.messagePlaceholder')}
               multiline
               numberOfLines={4}
               placeholderTextColor="#999"
@@ -281,7 +281,7 @@ export default function AnnouncementFormScreen() {
                   >
                     <Text style={styles.targetIcon}>{item.icon}</Text>
                     <Text style={[styles.targetText, active && styles.targetTextActive]}>
-                      {item.label}
+                      {t(item.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -293,7 +293,7 @@ export default function AnnouncementFormScreen() {
 
           {targetRole === 'sinif' && (
             <View style={styles.field}>
-              <Text style={styles.label}>{t('admin.announcementForm.class')} Seç</Text>
+              <Text style={styles.label}>{t('admin.announcementForm.class')} {t('admin.announcementForm.select')}</Text>
 
               {classes.length === 0 ? (
                 <Text style={styles.emptyText}>{t('admin.announcementForm.noClasses')}</Text>
@@ -341,7 +341,7 @@ export default function AnnouncementFormScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.saveButtonText}>
-                {announcementId ? 'Güncelle' : 'Gönder'}
+                {announcementId ? t('common.update') : t('admin.announcementForm.send')}
               </Text>
             )}
           </TouchableOpacity>
