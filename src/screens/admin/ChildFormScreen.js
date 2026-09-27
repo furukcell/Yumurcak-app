@@ -146,7 +146,7 @@ export default function ChildFormScreen() {
         adresKonum: adres.trim() !== (existing?.adres || '') ? null : (existing?.adresKonum || null),
         veliIds: seciliVeliIds,
         yeniBaslayan,
-        uyumTakibi{t('admin.childForm.active')}: uyum{t('admin.childForm.active')},
+        uyumTakibi: 'aktif', uyum: 'aktif',
         uyumBaslangicTarihi: yeniBaslayan ? uyumBaslangicTarihi : (existing?.uyumBaslangicTarihi || ''),
         uyumSureGun: 30,
         uyumDurumu: yeniBaslayan ? (uyumDurumu === 'tamamlandi' ? 'tamamlandi' : 'aktif') : 'pasif',
@@ -240,7 +240,7 @@ export default function ChildFormScreen() {
         <View style={styles.form}>
           <View style={styles.field}>
             <Text style={styles.label}>{t('admin.childForm.nameLabel')}</Text>
-            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder=t('admin.childForm.namePlaceholder') placeholderTextColor="#999" />
+            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder={t('admin.childForm.namePlaceholder')} placeholderTextColor="#999" />
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>{t('admin.childForm.birthLabel')}</Text>
