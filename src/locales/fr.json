@@ -2020,6 +2020,23 @@
       "completedPlural": "Terminées",
       "emptyTitle": "Aucune notification de la sonnette de l'établissement",
       "emptyDesc": "Elles apparaîtront ici lorsque les parents diront « J'arrive » ou « À la porte »."
+    },
+    "service": {
+      "title": "Liste du service",
+      "childrenUsingService": "{{count}} enfants utilisent le service",
+      "print": "Imprimer",
+      "shareDownload": "Partager/Télécharger",
+      "noChildren": "Aucun enfant enregistré.",
+      "noClass": "Aucune classe",
+      "noVehicle": "Aucun véhicule de service n'a encore été ajouté. Touchez pour en ajouter un.",
+      "pickupTimePlaceholder": "Heure de prise en charge (ex. 08:00)",
+      "dropoffTimePlaceholder": "Heure de retour (ex. 16:30)",
+      "notePlaceholder": "Note (ex. plaque du véhicule, nom du chauffeur)",
+      "saveFailed": "Les informations du service n'ont pas pu être enregistrées.",
+      "emptyListTitle": "Liste vide",
+      "emptyListDesc": "Aucun enfant n'utilise le service.",
+      "exportFailed": "La liste du service n'a pas pu être créée.",
+      "updatedToast": "Informations du service mises à jour"
     }
   }
 }
