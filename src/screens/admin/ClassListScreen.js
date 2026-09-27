@@ -4,6 +4,7 @@
 // kresSiniflari index'i üzerinden veri çekilir (veri sızıntısı düzeltmesi)
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -35,6 +36,7 @@ const THEME = {
 };
 
 export default function ClassListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kullanici, kres } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
@@ -79,7 +81,7 @@ export default function ClassListScreen() {
         setClasses(classesArray);
         setLoading(false);
 
-        // Sınıf listesindeki çocuk sayısı, siniflar/{id} üzerindeki
+        // {t('admin.classList.class')} listesindeki çocuk sayısı, siniflar/{id} üzerindeki
         // (hiç güncellenmeyen) ogrenciSayisi/cocukSayisi alanları yerine,
         // ClassFormScreen'in de kullandığı gerçek sinifCocuklari/{id}
         // index'inden sayılıyor — 0 gösterme hatasının kök nedeni buydu.
@@ -93,10 +95,10 @@ export default function ClassListScreen() {
         ).then((entries) => {
           setChildCounts(Object.fromEntries(entries));
         }).catch((error) => {
-          console.warn('Sınıf çocuk sayısı çekme hatası:', error);
+          console.warn('{t('admin.classList.class')} çocuk sayısı çekme hatası:', error);
         });
       }).catch((error) => {
-        console.warn('Sınıf listesi çekme hatası:', error);
+        console.warn('{t('admin.classList.class')} listesi çekme hatası:', error);
         setClasses([]);
         setLoading(false);
       });
@@ -126,7 +128,7 @@ export default function ClassListScreen() {
 
           <View style={styles.classMainInfo}>
             <Text style={styles.className} numberOfLines={1} ellipsizeMode="tail">
-              {item.ad || 'İsimsiz Sınıf'}
+              {item.ad || 'İsimsiz {t('admin.classList.class')}'}
             </Text>
             <Text style={styles.classSubText} numberOfLines={1} ellipsizeMode="tail">
               {item.yasGrubu || 'Yaş grubu belirtilmemiş'}
@@ -139,12 +141,12 @@ export default function ClassListScreen() {
         <View style={styles.infoRow}>
           <View style={[styles.infoPill, styles.teacherPill]}>
             <Text style={styles.infoEmoji}>👩‍🏫</Text>
-            <Text style={styles.infoText}>{teacherCount} Öğretmen</Text>
+            <Text style={styles.infoText}>{teacherCount} {t('admin.classList.teacher')}</Text>
           </View>
 
           <View style={[styles.infoPill, styles.studentPill]}>
             <Text style={styles.infoEmoji}>👶</Text>
-            <Text style={styles.infoText}>{studentCount} Çocuk</Text>
+            <Text style={styles.infoText}>{studentCount} {t('admin.classList.child')}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -156,7 +158,7 @@ export default function ClassListScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={THEME.primary} />
-          <Text style={styles.loadingText}>Sınıflar yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('admin.classList.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -175,8 +177,8 @@ export default function ClassListScreen() {
             <View style={styles.headerCard}>
               <View style={styles.headerTopRow}>
                 <View>
-                  <Text style={styles.screenTitle}>Sınıflar</Text>
-                  <Text style={styles.screenSubtitle}>Kurumdaki sınıfları ve öğretmen eşleşmelerini yönetin.</Text>
+                  <Text style={styles.screenTitle}>{t('admin.classList.title')}</Text>
+                  <Text style={styles.screenSubtitle}>{t('admin.classList.subtitle')}</Text>
                 </View>
 
                 <TouchableOpacity
@@ -184,21 +186,21 @@ export default function ClassListScreen() {
                   onPress={() => navigation.navigate('ClassForm')}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.headerAddText}>+ Ekle</Text>
+                  <Text style={styles.headerAddText}>{t('admin.classList.add')}</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNumber}>{classes.length}</Text>
-                  <Text style={styles.summaryLabel}>Sınıf</Text>
+                  <Text style={styles.summaryLabel}>{t('admin.classList.class')}</Text>
                 </View>
 
                 <View style={styles.summaryDivider} />
 
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNumber}>{toplamOgretmen}</Text>
-                  <Text style={styles.summaryLabel}>Öğretmen Ataması</Text>
+                  <Text style={styles.summaryLabel}>{t('admin.classList.teacher')} Ataması</Text>
                 </View>
               </View>
             </View>
@@ -206,15 +208,15 @@ export default function ClassListScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🏫</Text>
-              <Text style={styles.emptyText}>Henüz sınıf eklenmemiş</Text>
-              <Text style={styles.emptySubtext}>İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.</Text>
+              <Text style={styles.emptyText}>{t('admin.classList.empty')}</Text>
+              <Text style={styles.emptySubtext}>{t('admin.classList.emptyDesc')}</Text>
 
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => navigation.navigate('ClassForm')}
                 activeOpacity={0.85}
               >
-                <Text style={styles.emptyButtonText}>+ Sınıf Ekle</Text>
+                <Text style={styles.emptyButtonText}>+ {t('admin.classList.class')} Ekle</Text>
               </TouchableOpacity>
             </View>
           }
