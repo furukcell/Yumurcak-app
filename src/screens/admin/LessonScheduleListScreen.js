@@ -10,6 +10,7 @@ import {
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { getMonthKey } from '../../services/monthlyDocuments';
 
@@ -25,6 +26,7 @@ const THEME = {
 };
 
 export default function LessonScheduleListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kres, kullanici } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
@@ -49,7 +51,7 @@ export default function LessonScheduleListScreen() {
       const currentMonthKey = getMonthKey(new Date());
       const liste = Object.entries(sinifData).map(([id, s]) => ({
         id,
-        ad: s?.ad || 'İsimsiz Sınıf',
+        ad: s?.ad || null,
         yasGrubu: s?.yasGrubu || null,
         // Yeni model: dersProgramlari artık gün-bazlı kayıtlardan oluşuyor
         // (dersProgramlari/{randomId}), tek bir dersProgramlari/{sinifId} yok.
@@ -97,29 +99,32 @@ export default function LessonScheduleListScreen() {
     };
   }, [kresId]);
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('AdminMonthlySchedule', { sinifId: item.id, sinifAd: item.ad })}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardLeft}>
-        <Text style={styles.sinifAd}>🏫 {item.ad}</Text>
-        {item.yasGrubu ? <Text style={styles.altSatir}>{item.yasGrubu}</Text> : null}
-      </View>
-      <View style={[
-        styles.badge,
-        { backgroundColor: item.programVarMi ? '#E8F9EF' : '#FFF6E8' }
-      ]}>
-        <Text style={[
-          styles.badgeText,
-          { color: item.programVarMi ? THEME.green : '#FF9F1C' }
+  const renderItem = ({ item }) => {
+    const className = item.ad || t('admin.lessonSchedule.unnamedClass');
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('AdminMonthlySchedule', { sinifId: item.id, sinifAd: className })}
+        activeOpacity={0.8}
+      >
+        <View style={styles.cardLeft}>
+          <Text style={styles.sinifAd}>🏫 {className}</Text>
+          {item.yasGrubu ? <Text style={styles.altSatir}>{item.yasGrubu}</Text> : null}
+        </View>
+        <View style={[
+          styles.badge,
+          { backgroundColor: item.programVarMi ? '#E8F9EF' : '#FFF6E8' }
         ]}>
-          {item.programVarMi ? 'Program Var' : 'Program Yok'}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+          <Text style={[
+            styles.badgeText,
+            { color: item.programVarMi ? THEME.green : '#FF9F1C' }
+          ]}>
+            {item.programVarMi ? t('admin.lessonSchedule.programAvailable') : t('admin.lessonSchedule.programMissing')}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -134,8 +139,8 @@ export default function LessonScheduleListScreen() {
       <View style={styles.container}>
         {siniflar.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Henüz sınıf eklenmemiş</Text>
-            <Text style={styles.emptySubtext}>Önce Sınıflar ekranından sınıf oluşturmalısın</Text>
+            <Text style={styles.emptyText}>{t('admin.lessonSchedule.emptyText')}</Text>
+            <Text style={styles.emptySubtext}>{t('admin.lessonSchedule.emptySubtext')}</Text>
           </View>
         ) : (
           <FlatList
