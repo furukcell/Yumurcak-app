@@ -366,14 +366,14 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
               <TextInput
                 value={selectedValue.personel}
                 onChangeText={(text) => updateField(selectedDateKey, 'personel', text)}
-                placeholder="{t('admin.monthly.duty.personnelPlaceholder')}"
+                placeholder={t('admin.monthly.duty.personnelPlaceholder')}
                 placeholderTextColor={theme.muted}
                 style={styles.modalInput}
               />
               <TextInput
                 value={selectedValue.not}
                 onChangeText={(text) => updateField(selectedDateKey, 'not', text)}
-                placeholder="{t('admin.monthly.optionalNote')}"
+                placeholder={t('admin.monthly.optionalNote')}
                 placeholderTextColor={theme.muted}
                 style={styles.modalInput}
                 multiline
