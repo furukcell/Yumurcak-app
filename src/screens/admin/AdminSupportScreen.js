@@ -20,6 +20,7 @@ import {
 import { onValue, push, ref, update } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -32,13 +33,7 @@ const THEME = {
   red: '#FF4D6D',
 };
 
-const TOPICS = [
-  { key: 'istek', label: 'İstek' },
-  { key: 'sorun', label: 'Teknik Sorun' },
-  { key: 'abonelik', label: 'Abonelik' },
-  { key: 'hesap', label: 'Hesap / Kullanıcı' },
-  { key: 'diger', label: 'Diğer' },
-];
+const TOPICS = ['istek', 'sorun', 'abonelik', 'hesap', 'diger'];
 
 const MAX_LEN = 5000;
 
@@ -51,10 +46,10 @@ function isSuper(item) {
   return String(item?.authorRole || item?.senderRole || '').toLowerCase().includes('super');
 }
 
-function date(value) {
+function date(value, locale = 'tr-TR') {
   const d = new Date(Number(value));
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleString('tr-TR', {
+  return d.toLocaleString(locale, {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
@@ -68,6 +63,7 @@ function getUserName(user) {
 
 export default function AdminSupportScreen({ navigation }) {
   const { kullanici } = useAuth();
+  const { t, i18n } = useTranslation();
   const userId = kullanici?.uid || kullanici?.id || kullanici?.authUid || '';
   const kresId = kullanici?.kresId || '';
 
@@ -143,7 +139,7 @@ export default function AdminSupportScreen({ navigation }) {
     const clean = reply.trim();
     if (!selected || !clean) return;
     if (clean.length > MAX_LEN) {
-      Alert.alert('Mesaj Uzun', `Yanıt en fazla ${MAX_LEN} karakter olabilir.`);
+      Alert.alert(t('admin.support.alertTitle'), t('admin.support.replyTooLong', { max: MAX_LEN }));
       return;
     }
 
@@ -167,7 +163,7 @@ export default function AdminSupportScreen({ navigation }) {
       setReply('');
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Yanıt gönderilemedi.');
+      Alert.alert(t('common.error'), t('admin.support.replyFailed'));
     } finally {
       setSending(false);
     }
@@ -176,22 +172,22 @@ export default function AdminSupportScreen({ navigation }) {
   const createTicket = async () => {
     const clean = message.trim();
     if (!clean) {
-      Alert.alert('Eksik Bilgi', 'Mesaj alanı boş olamaz.');
+      Alert.alert(t('admin.support.missingInfo'), t('admin.support.messageRequired'));
       return;
     }
     if (!kresId || !userId) {
-      Alert.alert('Hata', 'Kurum veya kullanıcı bilgisi bulunamadı.');
+      Alert.alert(t('common.error'), t('admin.support.identityMissing'));
       return;
     }
     if (clean.length > MAX_LEN) {
-      Alert.alert('Mesaj Uzun', `Mesaj en fazla ${MAX_LEN} karakter olabilir.`);
+      Alert.alert(t('admin.support.alertTitle'), t('admin.support.messageTooLong', { max: MAX_LEN }));
       return;
     }
 
     setCreating(true);
     try {
       const now = Date.now();
-      const selectedLabel = TOPICS.find((item) => item.key === topic)?.label || 'İstek';
+      const selectedLabel = t(`admin.support.topics.${topic}`);
       const newRef = push(ref(database, 'destekMesajlari'));
       await update(newRef, {
         id: newRef.key,
@@ -216,7 +212,7 @@ export default function AdminSupportScreen({ navigation }) {
       setSelectedId(newRef.key);
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Destek talebi gönderilemedi.');
+      Alert.alert(t('common.error'), t('admin.support.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -230,7 +226,7 @@ export default function AdminSupportScreen({ navigation }) {
         updatedAt: Date.now(),
       });
     } catch (error) {
-      Alert.alert('Hata', 'Destek talebi kapatılamadı.');
+      Alert.alert(t('common.error'), t('admin.support.closeFailed'));
     }
   };
 
@@ -239,7 +235,7 @@ export default function AdminSupportScreen({ navigation }) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={THEME.primary} />
-          <Text style={styles.loadingText}>Destek hazırlanıyor...</Text>
+          <Text style={styles.loadingText}>{t('admin.support.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -252,8 +248,8 @@ export default function AdminSupportScreen({ navigation }) {
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>💬 Destek Merkezi</Text>
-          <Text style={styles.headerSubtitle}>Yumurcak destek ekibiyle sohbet</Text>
+          <Text style={styles.headerTitle}>💬 {t('admin.support.title')}</Text>
+          <Text style={styles.headerSubtitle}>{t('admin.support.subtitle')}</Text>
         </View>
         {unreadCount > 0 ? (
           <View style={styles.headerBadge}><Text style={styles.headerBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
@@ -261,26 +257,26 @@ export default function AdminSupportScreen({ navigation }) {
       </View>
 
       <View style={styles.toolbar}>
-        <Text style={styles.toolbarText}>{tickets.length ? `${tickets.length} görüşme` : 'Henüz görüşme yok'}</Text>
+        <Text style={styles.toolbarText}>{tickets.length ? t('admin.support.ticketCount', { count: tickets.length }) : t('admin.support.noTickets')}</Text>
         <TouchableOpacity style={styles.newButton} onPress={() => setNewOpen((v) => !v)} activeOpacity={0.85}>
-          <Text style={styles.newButtonText}>＋ Yeni Talep</Text>
+          <Text style={styles.newButtonText}>＋ {t('admin.support.newTicket')}</Text>
         </TouchableOpacity>
       </View>
 
       {newOpen ? (
         <View style={styles.newCard}>
-          <Text style={styles.sectionTitle}>Yeni Destek Talebi</Text>
+          <Text style={styles.sectionTitle}>{t('admin.support.newTicketTitle')}</Text>
           <View style={styles.topicWrap}>
             {TOPICS.map((item) => (
-              <TouchableOpacity key={item.key} style={[styles.topicButton, topic === item.key && styles.topicButtonActive]} onPress={() => setTopic(item.key)} activeOpacity={0.85}>
-                <Text style={[styles.topicText, topic === item.key && styles.topicTextActive]}>{item.label}</Text>
+              <TouchableOpacity key={item} style={[styles.topicButton, topic === item && styles.topicButtonActive]} onPress={() => setTopic(item)} activeOpacity={0.85}>
+                <Text style={[styles.topicText, topic === item && styles.topicTextActive]}>{t(`admin.support.topics.${item}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <TextInput style={styles.subjectInput} value={subject} onChangeText={setSubject} placeholder="Konu başlığı (isteğe bağlı)" placeholderTextColor="#999" maxLength={120} />
-          <TextInput style={styles.newInput} value={message} onChangeText={(text) => setMessage(text.slice(0, MAX_LEN))} placeholder="Mesajınızı yazın..." placeholderTextColor="#999" multiline textAlignVertical="top" />
+          <TextInput style={styles.subjectInput} value={subject} onChangeText={setSubject} placeholder="{t('admin.support.subjectPlaceholder')}" placeholderTextColor="#999" maxLength={120} />
+          <TextInput style={styles.newInput} value={message} onChangeText={(text) => setMessage(text.slice(0, MAX_LEN))} placeholder="{t('admin.support.messagePlaceholder')}" placeholderTextColor="#999" multiline textAlignVertical="top" />
           <TouchableOpacity style={[styles.primaryButton, creating && styles.disabled]} onPress={createTicket} disabled={creating} activeOpacity={0.85}>
-            {creating ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Gönder</Text>}
+            {creating ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>{t('admin.support.send')}</Text>}
           </TouchableOpacity>
         </View>
       ) : null}
@@ -291,8 +287,8 @@ export default function AdminSupportScreen({ navigation }) {
             {tickets.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyIcon}>📭</Text>
-                <Text style={styles.emptyTitle}>Henüz destek görüşmeniz yok</Text>
-                <Text style={styles.emptyText}>Süper Admin'den gelen mesajlar ve açtığınız talepler burada görünür.</Text>
+                <Text style={styles.emptyTitle}>{t('admin.support.noTicketsTitle')}</Text>
+                <Text style={styles.emptyText}>{t('admin.support.noTicketsDesc')}</Text>
               </View>
             ) : tickets.map((item) => {
               const readAt = Number(item.okunduBy?.[userId] || 0);
@@ -302,11 +298,11 @@ export default function AdminSupportScreen({ navigation }) {
                   <View style={styles.ticketIcon}><Text>💬</Text></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={styles.ticketTop}>
-                      <Text style={[styles.ticketTitle, hasUnread && styles.ticketTitleUnread]} numberOfLines={1}>{item.konuBaslik || item.konu || 'Destek'}</Text>
+                      <Text style={[styles.ticketTitle, hasUnread && styles.ticketTitleUnread]} numberOfLines={1}>{item.konuBaslik || item.konu || t('admin.support.ticketFallback')}</Text>
                       {hasUnread ? <View style={styles.dot} /> : null}
                     </View>
-                    <Text style={styles.ticketMessage} numberOfLines={2}>{item.mesaj || 'Mesaj'}</Text>
-                    <Text style={styles.ticketDate}>{date(item.updatedAt || item.createdAt)}</Text>
+                    <Text style={styles.ticketMessage} numberOfLines={2}>{item.mesaj || t('admin.support.messageFallback')}</Text>
+                    <Text style={styles.ticketDate}>{date(item.updatedAt || item.createdAt, i18n.language)}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -320,18 +316,18 @@ export default function AdminSupportScreen({ navigation }) {
               <View style={styles.chatHeader}>
                 <View style={styles.chatAvatar}><Text style={{ fontSize: 20 }}>🛟</Text></View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.chatTitle}>{selected.konuBaslik || 'Yumurcak Destek'}</Text>
-                  <Text style={styles.chatSubtitle}>Yumurcak Destek Ekibi</Text>
+                  <Text style={styles.chatTitle}>{selected.konuBaslik || t('admin.support.chatFallback')}</Text>
+                  <Text style={styles.chatSubtitle}>{t('admin.support.team')}</Text>
                 </View>
-                {selected.durum !== 'kapandi' ? <TouchableOpacity onPress={closeTicket} style={styles.closeButton}><Text style={styles.closeButtonText}>Kapat</Text></TouchableOpacity> : <Text style={styles.closedText}>Kapandı</Text>}
+                {selected.durum !== 'kapandi' ? <TouchableOpacity onPress={closeTicket} style={styles.closeButton}><Text style={styles.closeButtonText}>{t('admin.support.close')}</Text></TouchableOpacity> : <Text style={styles.closedText}>{t('admin.support.closed')}</Text>}
               </View>
 
               <ScrollView style={styles.messages} contentContainerStyle={{ padding: 14, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
                 <View style={styles.messageRow}>
                   <View style={[styles.bubble, styles.userBubble]}>
-                    <Text style={styles.senderName}>Siz</Text>
+                    <Text style={styles.senderName}>{t('admin.support.you')}</Text>
                     <Text style={styles.bubbleText}>{selected.mesaj}</Text>
-                    <Text style={styles.bubbleDate}>{date(selected.createdAt)}</Text>
+                    <Text style={styles.bubbleDate}>{date(selected.createdAt, i18n.language)}</Text>
                   </View>
                 </View>
                 {replies.map((item) => {
@@ -339,9 +335,9 @@ export default function AdminSupportScreen({ navigation }) {
                   return (
                     <View key={item.id} style={[styles.messageRow, admin ? styles.left : styles.right]}>
                       <View style={[styles.bubble, admin ? styles.adminBubble : styles.userBubble]}>
-                        <Text style={styles.senderName}>{admin ? 'Yumurcak Destek' : (item.authorName || 'Siz')}</Text>
+                        <Text style={styles.senderName}>{admin ? t('admin.support.team') : (item.authorName || t('admin.support.you'))}</Text>
                         <Text style={styles.bubbleText}>{item.mesaj}</Text>
-                        <Text style={styles.bubbleDate}>{date(item.createdAt)}</Text>
+                        <Text style={styles.bubbleDate}>{date(item.createdAt, i18n.language)}</Text>
                       </View>
                     </View>
                   );
@@ -350,7 +346,7 @@ export default function AdminSupportScreen({ navigation }) {
 
               {selected.durum !== 'kapandi' ? (
                 <View style={styles.composer}>
-                  <TextInput style={styles.replyInput} value={reply} onChangeText={(text) => setReply(text.slice(0, MAX_LEN))} placeholder="Mesajınızı yazın..." placeholderTextColor="#999" multiline maxLength={MAX_LEN} />
+                  <TextInput style={styles.replyInput} value={reply} onChangeText={(text) => setReply(text.slice(0, MAX_LEN))} placeholder="{t('admin.support.messagePlaceholder')}" placeholderTextColor="#999" multiline maxLength={MAX_LEN} />
                   <TouchableOpacity style={[styles.sendButton, sending && styles.disabled]} onPress={sendReply} disabled={sending} activeOpacity={0.85}>
                     {sending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.sendText}>➤</Text>}
                   </TouchableOpacity>
@@ -360,8 +356,8 @@ export default function AdminSupportScreen({ navigation }) {
           ) : (
             <View style={styles.chatEmpty}>
               <Text style={styles.emptyIcon}>💬</Text>
-              <Text style={styles.emptyTitle}>Bir görüşme seçin</Text>
-              <Text style={styles.emptyText}>Soldaki destek talebine dokunarak sohbeti açın.</Text>
+              <Text style={styles.emptyTitle}>{t('admin.support.selectTicket')}</Text>
+              <Text style={styles.emptyText}>{t('admin.support.selectTicketDesc')}</Text>
             </View>
           )}
         </View>
