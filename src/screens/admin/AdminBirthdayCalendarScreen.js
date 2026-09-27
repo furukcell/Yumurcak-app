@@ -12,6 +12,7 @@ import { ref, onValue, get, query, orderByChild, equalTo } from 'firebase/databa
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import ThemedBackground from '../../components/ThemedBackground';
 import { getMonthKey, getMonthLabel, shiftMonth } from '../../services/monthlyDocuments';
 import {
@@ -22,6 +23,7 @@ import {
 } from '../../services/documentPdf';
 
 export default function AdminBirthdayCalendarScreen({ navigation }) {
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -110,10 +112,10 @@ export default function AdminBirthdayCalendarScreen({ navigation }) {
       const kres = await fetchInstitutionInfo(kresId);
       const html = buildBirthdayCalendarHtml({ kres, monthLabel, records: birthdays });
       if (mode === 'print') await printMonthlyDocument(html);
-      else await shareMonthlyDocumentPdf(html, `Doğum Günü Takvimi - ${monthLabel}`);
+      else await shareMonthlyDocumentPdf(html, t('admin.birthdayCalendar.shareTitle', { monthLabel }));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Takvim oluşturulamadı.');
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.birthdayCalendar.exportFailedDesc'));
     } finally {
       setExporting(false);
     }
@@ -125,11 +127,11 @@ export default function AdminBirthdayCalendarScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Doğum Günü Takvimi</Text>
-              <Text style={styles.subtitle}>Çocukların kayıtlı doğum tarihinden otomatik hesaplanır</Text>
+              <Text style={styles.title}>{t('admin.birthdayCalendar.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.birthdayCalendar.subtitle')}</Text>
             </View>
           </View>
 
@@ -139,7 +141,7 @@ export default function AdminBirthdayCalendarScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.monthCenter}>
               <Text style={styles.monthLabel}>{monthLabel}</Text>
-              <Text style={styles.monthHint}>{birthdays.length} doğum günü</Text>
+              <Text style={styles.monthHint}>{t('admin.birthdayCalendar.monthHint', { count: birthdays.length })}</Text>
             </View>
             <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
               <Text style={styles.monthButtonText}>›</Text>
@@ -148,17 +150,17 @@ export default function AdminBirthdayCalendarScreen({ navigation }) {
 
           <View style={styles.exportRow}>
             <TouchableOpacity disabled={exporting} style={[styles.exportButton, styles.exportFlex]} onPress={() => handleExport('print')} activeOpacity={0.85}>
-              <Text style={styles.exportButtonText}>{exporting ? '...' : '🖨️ Yazdır'}</Text>
+              <Text style={styles.exportButtonText}>{exporting ? '...' : `🖨️ ${t('admin.birthdayCalendar.printButton')}`}</Text>
             </TouchableOpacity>
             <TouchableOpacity disabled={exporting} style={[styles.exportButton, styles.exportFlex]} onPress={() => handleExport('share')} activeOpacity={0.85}>
-              <Text style={styles.exportButtonText}>{exporting ? '...' : '📤 Paylaş/İndir'}</Text>
+              <Text style={styles.exportButtonText}>{exporting ? '...' : `📤 ${t('admin.birthdayCalendar.shareButton')}`}</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <ActivityIndicator color={theme.primary} style={{ marginTop: 30 }} />
           ) : birthdays.length === 0 ? (
-            <Text style={styles.emptyText}>Bu ay doğum günü olan çocuk yok.</Text>
+            <Text style={styles.emptyText}>{t('admin.birthdayCalendar.emptyText')}</Text>
           ) : (
             birthdays.map((item) => (
               <View key={item.id} style={styles.card}>
@@ -167,7 +169,7 @@ export default function AdminBirthdayCalendarScreen({ navigation }) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.childName}>🎂 {item.ad}</Text>
-                  <Text style={styles.childMeta}>{item.sinifAd} · {item.yasOlacak} yaşına giriyor</Text>
+                  <Text style={styles.childMeta}>{item.sinifAd} · {t('admin.birthdayCalendar.turningAge', { age: item.yasOlacak })}</Text>
                 </View>
               </View>
             ))
