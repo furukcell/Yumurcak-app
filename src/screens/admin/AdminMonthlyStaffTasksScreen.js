@@ -200,7 +200,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           kaynak,
           ayKey: mKey,
           tarih: `${mKey}-01`,
-          baslik: baslik.trim() || {t('admin.monthly.staff.defaultTitle', { month: monthLabel })},
+          baslik: baslik.trim() || t('admin.monthly.staff.defaultTitle', { month: monthLabel }),
           bolumler: bolumler
             .filter((s) => s.baslik.trim() || s.icerik.trim())
             .map((s) => ({ baslik: s.baslik.trim(), icerik: s.icerik.trim() })),
