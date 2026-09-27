@@ -47,7 +47,7 @@ export default function VeliListScreen() {
   const { kullanici, kres } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
 
-  const [veliler, set{t('admin.veliList.title')}] = useState([]);
+  const [veliler, setVeliler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [siniflar, setSiniflar] = useState([]);
   const [seciliSinifId, setSeciliSinifId] = useState(null);
@@ -92,7 +92,7 @@ export default function VeliListScreen() {
 
   useEffect(() => {
     if (!kresId) {
-      set{t('admin.veliList.title')}([]);
+      setVeliler([]);
       setLoading(false);
       return;
     }
@@ -175,11 +175,11 @@ export default function VeliListScreen() {
           })
           .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
 
-        set{t('admin.veliList.title')}(liste);
+        setVeliler(liste);
         setLoading(false);
       } catch (error) {
         console.warn('Veli listesi çekme hatası:', error);
-        set{t('admin.veliList.title')}([]);
+        setVeliler([]);
         setLoading(false);
       }
     }
@@ -207,7 +207,7 @@ export default function VeliListScreen() {
   const aktifVeliSayisi = veliler.filter((v) => v.aktif).length;
   const cocukBagliVeliSayisi = veliler.filter((v) => v.cocuklar.length > 0).length;
 
-  const filtreli{t('admin.veliList.title')} = useMemo(() => {
+  const filtreliVeliler = useMemo(() => {
     if (!seciliSinifId) return veliler;
     return veliler.filter((v) => v.sinifIdler.includes(seciliSinifId));
   }, [veliler, seciliSinifId]);
@@ -227,7 +227,7 @@ export default function VeliListScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.container}>
         <FlatList
-          data={filtreli{t('admin.veliList.title')}}
+          data={filtreliVeliler}
           keyExtractor={(item) => item.id}
           contentContainerStyle={s.liste}
           showsVerticalScrollIndicator={false}
