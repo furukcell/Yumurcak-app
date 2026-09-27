@@ -20,6 +20,7 @@ import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth'
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { usernameToEmail } from '../../utils/authHelpers';
 
 const THEME = {
@@ -37,6 +38,7 @@ const THEME = {
 
 export default function AdminAuthMigrationScreen({ navigation }) {
   const { kullanici } = useAuth();
+  const { t } = useTranslation();
   const kresId = kullanici?.kresId || 'kres001';
 
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       setUsers(list);
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Kullanıcılar yüklenemedi.');
+      Alert.alert(t('common.error'), t('admin.authMigration.usersLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -158,10 +160,10 @@ export default function AdminAuthMigrationScreen({ navigation }) {
 
       await signOut(secondaryAuth).catch(() => {});
       await loadUsers();
-      Alert.alert('Tamamlandı', 'Firebase Auth geçiş denemesi tamamlandı.');
+      Alert.alert(t('admin.authMigration.completedTitle'), t('admin.authMigration.completedDesc'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Auth geçiş işlemi başlatılamadı.');
+      Alert.alert(t('common.error'), t('admin.authMigration.startFailed'));
     } finally {
       setRunning(false);
     }
@@ -171,7 +173,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Auth geçiş ekranı hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('admin.authMigration.loading')}</Text>
       </View>
     );
   }
@@ -181,12 +183,12 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       <View style={styles.customHeader}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
           <Text style={styles.backArrow}>‹</Text>
-          <Text style={styles.backText}>Geri</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
 
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>Firebase Auth</Text>
-          <Text style={styles.headerSub}>Yumurcak Geçiş Paneli</Text>
+          <Text style={styles.headerTitle}>{t('admin.authMigration.title')}</Text>
+          <Text style={styles.headerSub}>{t('admin.authMigration.subtitle')}</Text>
         </View>
 
         <View style={styles.headerRight} />
@@ -195,8 +197,8 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>🔐</Text>
-          <Text style={styles.heroTitle}>Güvenli Giriş Geçişi</Text>
-          <Text style={styles.heroDesc}>Kullanıcıları Firebase Auth sistemine taşı ve üretim güvenliğine hazırla.</Text>
+          <Text style={styles.heroTitle}>{t('admin.authMigration.heroTitle')}</Text>
+          <Text style={styles.heroDesc}>{t('admin.authMigration.heroDesc')}</Text>
         </View>
 
         <View style={styles.statsRow}>
@@ -206,23 +208,23 @@ export default function AdminAuthMigrationScreen({ navigation }) {
         </View>
 
         <View style={styles.warningCard}>
-          <Text style={styles.warningTitle}>Önemli Not</Text>
+          <Text style={styles.warningTitle}>{t('admin.authMigration.warningTitle')}</Text>
           <Text style={styles.warningText}>
             Production rules'a geçmeden önce tüm kullanıcıların authUid alması ve 3 rolün giriş testinden geçmesi gerekir.
           </Text>
         </View>
 
         <TouchableOpacity style={[styles.runButton, running && { opacity: 0.6 }]} onPress={runMigration} disabled={running}>
-          {running ? <ActivityIndicator color="#FFF" /> : <Text style={styles.runText}>Auth Geçişini Başlat</Text>}
+          {running ? <ActivityIndicator color="#FFF" /> : <Text style={styles.runText}>{t('admin.authMigration.start')}</Text>}
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Kullanıcılar</Text>
+        <Text style={styles.sectionTitle}>{t('admin.authMigration.users')}</Text>
         {users.map((user) => (
           <View key={user.id} style={styles.userCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.userName}>{getUserName(user)}</Text>
               <Text style={styles.userMeta}>{user.rol || '-'} · {user.kullaniciAdi || user.email || user.id}</Text>
-              <Text style={styles.userMeta}>{user.authUid ? `authUid: ${shortUid(user.authUid)}` : 'Auth bekliyor'}</Text>
+              <Text style={styles.userMeta}>{user.authUid ? `authUid: ${shortUid(user.authUid)}` : t('admin.authMigration.authPending')}</Text>
             </View>
             <Text style={[styles.statusBadge, user.authUid ? styles.doneBadge : styles.waitBadge]}>
               {user.authUid ? 'Tamam' : 'Bekliyor'}
@@ -230,9 +232,9 @@ export default function AdminAuthMigrationScreen({ navigation }) {
           </View>
         ))}
 
-        <Text style={styles.sectionTitle}>Log</Text>
+        <Text style={styles.sectionTitle}>{t('admin.authMigration.log')}</Text>
         {logs.length === 0 ? (
-          <View style={styles.logEmpty}><Text style={styles.logText}>Henüz işlem yok.</Text></View>
+          <View style={styles.logEmpty}><Text style={styles.logText}>{t('admin.authMigration.noLog')}</Text></View>
         ) : (
           logs.map((line, index) => (
             <View key={`${line}_${index}`} style={styles.logLine}>
