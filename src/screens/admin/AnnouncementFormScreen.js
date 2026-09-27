@@ -4,6 +4,7 @@
 // Hedef seçimi: tüm kurum / veliler / öğretmenler / sınıf
 // ============================================================
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator, Switch, Platform
@@ -19,13 +20,14 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import AnnouncementTemplatePicker from '../../components/AnnouncementTemplatePicker';
 
 const TARGET_OPTIONS = [
-  { key: 'all', label: 'Tüm Kurum', icon: '🏫' },
-  { key: 'veli', label: 'Veliler', icon: '👨‍👩‍👧' },
-  { key: 'ogretmen', label: 'Öğretmenler', icon: '👩‍🏫' },
-  { key: 'sinif', label: 'Sınıf', icon: '📚' },
+  { key: 'all', label: t('admin.announcementForm.all'), icon: '🏫' },
+  { key: 'veli', label: t('admin.announcementForm.parents'), icon: '👨‍👩‍👧' },
+  { key: 'ogretmen', label: t('admin.announcementForm.teachers'), icon: '👩‍🏫' },
+  { key: 'sinif', label: t('admin.announcementForm.class'), icon: '📚' },
 ];
 
 export default function AnnouncementFormScreen() {
+  const { t } = useTranslation();
   const headerHeight = useHeaderHeight();
   const route = useRoute();
   const { kullanici } = useAuth();
@@ -60,7 +62,7 @@ export default function AnnouncementFormScreen() {
 
         setClasses(list);
       } catch (err) {
-        console.warn('Sınıflar yüklenemedi:', err);
+        console.warn('{t('admin.announcementForm.class')}lar yüklenemedi:', err);
       }
     };
 
@@ -117,19 +119,19 @@ export default function AnnouncementFormScreen() {
         : [];
       return [...new Set(ogretmenIds.filter(Boolean))];
     } catch (err) {
-      console.warn('Sınıf öğretmenleri okunamadı:', err);
+      console.warn('{t('admin.announcementForm.class')} öğretmenleri okunamadı:', err);
       return [];
     }
   };
 
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
-      Alert.alert('Hata', 'Başlık ve mesaj alanları boş olamaz.');
+      Alert.alert('Hata', t('admin.announcementForm.required'));
       return;
     }
 
     if (targetRole === 'sinif' && !selectedClassId) {
-      Alert.alert('Hata', 'Sınıf bazlı duyuru için bir sınıf seçmelisin.');
+      Alert.alert('Hata', '{t('admin.announcementForm.class')} bazlı duyuru için bir sınıf seçmelisin.');
       return;
     }
 
@@ -201,7 +203,7 @@ export default function AnnouncementFormScreen() {
         navigation.goBack();
       }, 900);
     } catch (err) {
-      Alert.alert('Hata', 'Bir sorun oluştu.');
+      Alert.alert('Hata', t('admin.announcementForm.failed'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -240,23 +242,23 @@ export default function AnnouncementFormScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Başlık *</Text>
+            <Text style={styles.label}>{t('admin.announcementForm.titleLabel')}</Text>
             <TextInput
               style={styles.input}
               value={title}
               onChangeText={setTitle}
-              placeholder="Duyuru başlığı"
+              placeholder=t('admin.announcementForm.titlePlaceholder')
               placeholderTextColor="#999"
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Mesaj *</Text>
+            <Text style={styles.label}>{t('admin.announcementForm.messageLabel')}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={message}
               onChangeText={setMessage}
-              placeholder="Duyuru mesajı"
+              placeholder=t('admin.announcementForm.messagePlaceholder')
               multiline
               numberOfLines={4}
               placeholderTextColor="#999"
@@ -264,7 +266,7 @@ export default function AnnouncementFormScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Duyuru Hedefi</Text>
+            <Text style={styles.label}>{t('admin.announcementForm.targetLabel')}</Text>
 
             <View style={styles.targetGrid}>
               {TARGET_OPTIONS.map((item) => {
@@ -291,10 +293,10 @@ export default function AnnouncementFormScreen() {
 
           {targetRole === 'sinif' && (
             <View style={styles.field}>
-              <Text style={styles.label}>Sınıf Seç</Text>
+              <Text style={styles.label}>{t('admin.announcementForm.class')} Seç</Text>
 
               {classes.length === 0 ? (
-                <Text style={styles.emptyText}>Henüz sınıf bulunamadı.</Text>
+                <Text style={styles.emptyText}>{t('admin.announcementForm.noClasses')}</Text>
               ) : (
                 <View style={styles.classGrid}>
                   {classes.map((item) => {
@@ -308,7 +310,7 @@ export default function AnnouncementFormScreen() {
                         activeOpacity={0.85}
                       >
                         <Text style={[styles.classText, active && styles.classTextActive]}>
-                          {item.ad || item.name || 'Sınıf'}
+                          {item.ad || item.name || t('admin.announcementForm.class')}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -320,7 +322,7 @@ export default function AnnouncementFormScreen() {
 
           <View style={styles.field}>
             <View style={styles.switchRow}>
-              <Text style={styles.label}>Acil Duyuru</Text>
+              <Text style={styles.label}>{t('admin.announcementForm.urgent')}</Text>
               <Switch
                 value={isUrgent}
                 onValueChange={setIsUrgent}
