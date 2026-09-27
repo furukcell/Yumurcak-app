@@ -2213,7 +2213,8 @@
         "endTime": "End Time",
         "category": "Category",
         "descriptionPlaceholder": "Description (optional)"
-      }
+      },
+      "publishing": "Wird veröffentlicht..."
     },
     "authMigration": {
       "usersLoadFailed": "Users could not be loaded.",
@@ -2230,7 +2231,18 @@
       "users": "Users",
       "authPending": "Auth pending",
       "log": "Log",
-      "noLog": "No operation yet."
+      "noLog": "No operation yet.",
+      "confirmTitle": "Firebase-Auth-Migration",
+      "confirmDesc": "Für Benutzer ohne authUid wird ein Firebase-Auth-Konto erstellt. Fortfahren?",
+      "noUsers": "Keine Benutzer zum Migrieren.",
+      "skippedPassword": "Übersprungen: Das Passwort von {{username}} muss mindestens 6 Zeichen haben.",
+      "migrated": "Migriert",
+      "alreadyExists": "Bereits vorhanden: {{username}}. Die E-Mail existiert in der Firebase Console; eine manuelle Zuordnung kann erforderlich sein.",
+      "userError": "Fehler: {{username}} -> {{error}}",
+      "total": "Gesamt",
+      "waiting": "Ausstehend",
+      "warningText": "Vor dem Wechsel zu den Production Rules müssen alle Benutzer authUid haben und alle 3 Rollen die Anmeldetests bestehen.",
+      "done": "Fertig"
     },
     "institutionSettings": {
       "loadFailed": "Institution information could not be loaded.",
@@ -2346,7 +2358,9 @@
       "empty": "Ödeme kaydı yok",
       "emptyDesc": "Yeni ödeme oluşturmak için + Kayıt butonuna bas",
       "create": "+ Ödeme Kaydı Oluştur",
-      "updateFailed": "Ödeme durumu güncellenemedi."
+      "updateFailed": "Ödeme durumu güncellenemedi.",
+      "openAmount": "Offener Betrag",
+      "thisMonth": "Diesen Monat"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2363,7 +2377,15 @@
       "targetLabel": "Duyuru Hedefi",
       "noClasses": "Henüz sınıf bulunamadı.",
       "selectClass": "Sınıf Seç",
-      "urgent": "Acil Duyuru"
+      "urgent": "Acil Duyuru",
+      "targetParents": "Diese Ankündigung wird nur an Eltern gesendet.",
+      "targetTeachers": "Diese Ankündigung wird nur an Lehrkräfte gesendet.",
+      "targetClass": "Diese Ankündigung wird an Personen der ausgewählten Klasse gesendet.",
+      "targetAll": "Diese Ankündigung wird an die gesamte Einrichtung gesendet.",
+      "admin": "Administrator",
+      "updated": "Ankündigung aktualisiert",
+      "sent": "Ankündigung gesendet",
+      "send": "Senden"
     },
     "classList": {
       "teacher": "Öğretmen",
