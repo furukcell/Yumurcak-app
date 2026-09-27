@@ -30,7 +30,9 @@
     "back": "رجوع",
     "childFallback": "طفل",
     "loading": "جارٍ التحضير...",
-    "error": "خطأ"
+    "error": "خطأ",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ..."
   },
   "nav": {
     "summary": "ملخص",
