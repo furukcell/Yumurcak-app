@@ -64,7 +64,7 @@ function getPlanLabel(subscription) {
   const plan = String(subscription.plan || '');
   const period = subscription.planPeriod || (plan.includes('yillik') ? 'yillik' : plan.includes('aylik') ? 'aylik' : '');
   if (!period || period === 'demo') return subscription.plan === 'demo' ? `${tier.title} / Demo` : (subscription.plan || tier.title);
-  return `${tier.title} / ${period === 'yillik' ? '{i18n.t('admin.subscription.yearly')}' : '{i18n.t('admin.subscription.monthly')}'}`;
+  return `${tier.title} / ${period === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`;
 }
 
 export default function AdminSubscriptionScreen() {
