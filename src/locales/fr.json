@@ -29,7 +29,8 @@
     },
     "back": "Retour",
     "childFallback": "Enfant",
-    "loading": "Préparation..."
+    "loading": "Préparation...",
+    "error": "Erreur"
   },
   "nav": {
     "summary": "Résumé",
@@ -1999,6 +2000,26 @@
       "passwordNoteEdit": "Laissez vide pour conserver le mot de passe actuel.",
       "passwordNoteNew": "Laissez vide et le mot de passe par défaut sera 123456.",
       "defaultVehicleFallback": "Ce véhicule"
+    },
+    "bell": {
+      "noTime": "Aucune heure",
+      "dropOff": "Je dépose l'enfant",
+      "pickUp": "Je récupère l'enfant",
+      "deliveryInfoMissing": "Informations de remise indisponibles",
+      "atDoor": "À la porte",
+      "onTheWay": "J'arrive",
+      "completed": "Terminé",
+      "notification": "Notification",
+      "markReadFailed": "La notification n'a pas pu être marquée comme lue.",
+      "markCompleteFailed": "La notification n'a pas pu être terminée.",
+      "parentFallback": "Parent",
+      "read": "Lu",
+      "loading": "Chargement des notifications de l'établissement...",
+      "active": "Actif",
+      "unread": "Non lu",
+      "completedPlural": "Terminées",
+      "emptyTitle": "Aucune notification de la sonnette de l'établissement",
+      "emptyDesc": "Elles apparaîtront ici lorsque les parents diront « J'arrive » ou « À la porte »."
     }
   }
 }
