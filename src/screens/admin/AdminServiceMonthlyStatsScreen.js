@@ -14,6 +14,7 @@ import { ActivityIndicator, Platform, SafeAreaView, ScrollView, StatusBar, Style
 import { ref, get, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
 import { database } from '../../config/firebase';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
@@ -38,6 +39,7 @@ const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temm
 
 export default function AdminServiceMonthlyStatsScreen({ navigation }) {
   const { kullanici } = useAuth();
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const kresId = kullanici?.kresId;
@@ -181,9 +183,9 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>{t('admin.serviceMonthlyStats.back')}</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Aylık Servis İstatistikleri</Text>
+            <Text style={styles.title}>{t('admin.serviceMonthlyStats.title')}</Text>
           </View>
 
           <View style={styles.monthNav}>
@@ -207,21 +209,21 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
             <>
               {cokBinmeyenler.length > 0 ? (
                 <View style={styles.warningCard}>
-                  <Text style={styles.warningTitle}>⚠️ Servis Kullanıp Sık Binmeyenler</Text>
+                  <Text style={styles.warningTitle}>{t('admin.serviceMonthlyStats.warningTitle')}</Text>
                   {cokBinmeyenler.map((c) => {
                     const child = childrenMap[c.id];
                     return (
                       <View key={c.id} style={styles.warningRow}>
                         <Text style={styles.warningChildName}>{child ? `${child.ad} ${child.soyad}` : '...'}</Text>
                         <Text style={styles.warningDetail}>
-                          Alınma: {c.alinma}/{c.gunSayisi} · Bırakılma: {c.birakilma}/{c.gunSayisi}
+                          {t('admin.serviceMonthlyStats.warningCounts', { pickup: c.alinma, days: c.gunSayisi, dropoff: c.birakilma })}
                         </Text>
                       </View>
                     );
                   })}
                 </View>
               ) : (
-                <Text style={styles.emptyText}>Bu ay için henüz kayıt yok ya da tüm çocuklar düzenli kullanmış.</Text>
+                <Text style={styles.emptyText}>{t('admin.serviceMonthlyStats.empty')}</Text>
               )}
 
               {vehicles.map((vehicle) => {
@@ -241,15 +243,15 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
                     <View style={styles.statsRow}>
                       <View style={styles.statBox}>
                         <Text style={styles.statValue}>{vs.gunSayisi}</Text>
-                        <Text style={styles.statLabel}>Sefer Günü</Text>
+                        <Text style={styles.statLabel}>{t('admin.serviceMonthlyStats.tripDays')}</Text>
                       </View>
                       <View style={styles.statBox}>
                         <Text style={styles.statValue}>{formatDuration(ortSefer)}</Text>
-                        <Text style={styles.statLabel}>Ort. Sabah Süresi</Text>
+                        <Text style={styles.statLabel}>{t('admin.serviceMonthlyStats.avgMorning')}</Text>
                       </View>
                       <View style={styles.statBox}>
                         <Text style={styles.statValue}>{formatDuration(ortDonus)}</Text>
-                        <Text style={styles.statLabel}>Ort. Dönüş Süresi</Text>
+                        <Text style={styles.statLabel}>{t('admin.serviceMonthlyStats.avgReturn')}</Text>
                       </View>
                     </View>
 
@@ -260,7 +262,7 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
                         <View key={c.id} style={styles.childRow}>
                           <Text style={styles.childName}>{child ? `${child.ad} ${child.soyad}` : '...'}</Text>
                           <Text style={styles.childCount}>
-                            {counts.alinma}/{vs.gunSayisi} alındı · {counts.birakilma}/{vs.gunSayisi} bırakıldı
+                            {t('admin.serviceMonthlyStats.childCounts', { pickup: counts.alinma, days: vs.gunSayisi, dropoff: counts.birakilma })}
                           </Text>
                         </View>
                       );
