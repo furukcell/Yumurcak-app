@@ -2020,6 +2020,23 @@
       "completedPlural": "مكتمل",
       "emptyTitle": "لا توجد إشعارات من جرس المؤسسة بعد",
       "emptyDesc": "ستظهر هنا عندما يقول أولياء الأمور «أنا في الطريق» أو «عند الباب»."
+    },
+    "service": {
+      "title": "قائمة النقل",
+      "childrenUsingService": "{{count}} طفل يستخدمون خدمة النقل",
+      "print": "طباعة",
+      "shareDownload": "مشاركة/تنزيل",
+      "noChildren": "لا يوجد أطفال مسجلون.",
+      "noClass": "لا يوجد صف",
+      "noVehicle": "لم تتم إضافة مركبة نقل بعد. اضغط لإضافة مركبة.",
+      "pickupTimePlaceholder": "وقت الاستلام (مثال: 08:00)",
+      "dropoffTimePlaceholder": "وقت العودة (مثال: 16:30)",
+      "notePlaceholder": "ملاحظة (مثال: لوحة المركبة، اسم السائق)",
+      "saveFailed": "تعذر حفظ معلومات النقل.",
+      "emptyListTitle": "القائمة فارغة",
+      "emptyListDesc": "لا يوجد أطفال يستخدمون خدمة النقل.",
+      "exportFailed": "تعذر إنشاء قائمة النقل.",
+      "updatedToast": "تم تحديث معلومات النقل"
     }
   }
 }
