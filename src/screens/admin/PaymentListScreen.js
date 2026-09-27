@@ -282,7 +282,7 @@ export default function PaymentListScreen() {
           </TouchableOpacity>
           {item.durum !== 'odendi' ? (
             <TouchableOpacity style={[styles.odendiBtn, busy && { opacity: 0.6 }]} onPress={() => odendiYap(item)} disabled={busy} activeOpacity={0.85}>
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.odendiBtnText}>{t('admin.paymentList.paid')} Yap</Text>}
+              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.odendiBtnText}>{t('admin.paymentList.paid')}</Text>}
             </TouchableOpacity>
           ) : null}
         </View>
@@ -312,8 +312,8 @@ export default function PaymentListScreen() {
       </View>
 
       <View style={styles.summaryGrid}>
-        <SummaryBox title="Açık {t('admin.paymentList.amount')}" value={formatMoney(stats.acik{t('admin.paymentList.amount')})} color={THEME.red} />
-        <SummaryBox title="Bu Ay" value={formatMoney(stats.buAy{t('admin.paymentList.amount')})} color={THEME.primary} />
+        <SummaryBox title={t('admin.paymentList.openAmount')} value={formatMoney(stats.acikTutar)} color={THEME.red} />
+        <SummaryBox title={t('admin.paymentList.thisMonth')} value={formatMoney(stats.buAyTutar)} color={THEME.primary} />
         <SummaryBox title=t('admin.paymentList.paid') value={String(stats.odendi)} color={THEME.green} />
         <SummaryBox title="Geciken" value={String(stats.gecikti)} color={THEME.red} />
       </View>
