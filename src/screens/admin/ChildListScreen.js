@@ -3,6 +3,7 @@
 // FAZ 19: Sadece kendi kreşinin verisi index üzerinden çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -43,6 +44,7 @@ function asArray(value) {
 }
 
 export default function ChildListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kullanici, kres } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
@@ -71,7 +73,7 @@ export default function ChildListScreen() {
       try {
         const cocukIds = Object.keys(idsData);
 
-        // ── Çocukları çek ──────────────────────────────────
+        // ── {t('admin.childList.title')}ı çek ──────────────────────────────────
         const cocukResults = await Promise.all(
           cocukIds.map((id) =>
             get(ref(database, `cocuklar/${id}`)).then((s) =>
@@ -197,14 +199,14 @@ export default function ChildListScreen() {
 
         <View style={styles.infoGrid}>
           <View style={[styles.infoPill, styles.infoPillBlue]}>
-            <Text style={styles.infoLabel}>Doğum</Text>
+            <Text style={styles.infoLabel}>{t('admin.childList.birth')}</Text>
             <Text style={styles.infoValue} numberOfLines={1}>
               {formatChildBirthDate(item.dogumTarihi)}
             </Text>
           </View>
 
           <View style={[styles.infoPill, styles.infoPillGreen]}>
-            <Text style={styles.infoLabel}>Öğretmen</Text>
+            <Text style={styles.infoLabel}>{t('admin.childList.teacher')}</Text>
             <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">
               {item.ogretmenAd || 'Atanmamış'}
             </Text>
@@ -212,7 +214,7 @@ export default function ChildListScreen() {
         </View>
 
         <View style={styles.parentBox}>
-          <Text style={styles.parentLabel}>Veli Bilgisi</Text>
+          <Text style={styles.parentLabel}>{t('admin.childList.parentInfo')}</Text>
           <Text style={styles.parentName} numberOfLines={2} ellipsizeMode="tail">
             {veliText}
           </Text>
@@ -229,7 +231,7 @@ export default function ChildListScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={THEME.primary} />
-          <Text style={styles.loadingText}>Çocuk listesi yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('admin.childList.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -240,8 +242,8 @@ export default function ChildListScreen() {
       <View style={styles.container}>
         <View style={styles.headerCard}>
           <View>
-            <Text style={styles.headerTitle}>Çocuklar</Text>
-            <Text style={styles.headerSub}>{children.length} kayıtlı çocuk</Text>
+            <Text style={styles.headerTitle}>{t('admin.childList.title')}</Text>
+            <Text style={styles.headerSub}>{children.length} {t('admin.childList.registered')}</Text>
           </View>
           <View style={styles.headerIcon}>
             <Text style={styles.headerIconText}>🌈</Text>
@@ -251,14 +253,14 @@ export default function ChildListScreen() {
         {children.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>👶</Text>
-            <Text style={styles.emptyText}>Henüz çocuk eklenmemiş</Text>
-            <Text style={styles.emptySubtext}>İlk kaydı ekleyerek sınıf ve veli takibini başlat.</Text>
+            <Text style={styles.emptyText}>{t('admin.childList.empty')}</Text>
+            <Text style={styles.emptySubtext}>{t('admin.childList.emptyDesc')}</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
               onPress={() => navigation.navigate('ChildForm')}
               activeOpacity={0.84}
             >
-              <Text style={styles.emptyBtnText}>+ Çocuk Ekle</Text>
+              <Text style={styles.emptyBtnText}>{t('admin.childList.create')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
