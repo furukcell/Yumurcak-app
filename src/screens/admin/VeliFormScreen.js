@@ -13,11 +13,13 @@ import { database, firebaseConfig } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { usernameToEmail, normalizeUsername } from '../../utils/authHelpers';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { deleteKullaniciHesabi } from '../../utils/userDelete';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function VeliFormScreen() {
+  const { t } = useTranslation();
   const headerHeight = useHeaderHeight();
   const route = useRoute();
   const { kullanici } = useAuth();
@@ -49,13 +51,13 @@ export default function VeliFormScreen() {
       .catch((error) => {
         console.error(error);
         setFetching(false);
-        Alert.alert('Hata', 'Veli bilgileri yüklenemedi');
+        Alert.alert(t('teacher.theme.errorTitle'), t('admin.veliForm.fetchErrorDesc'));
       });
   }, [veliId]);
 
   const handleSave = async () => {
     if (!kullaniciAdi.trim() || !ad.trim()) {
-      Alert.alert('Hata', 'Kullanıcı adı ve ad soyad zorunludur');
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.veliForm.missingFieldsDesc'));
       return;
     }
 
@@ -68,13 +70,13 @@ export default function VeliFormScreen() {
       const kaydedilenSifre = sifre.trim() || oldVeli.sifre || '123456';
 
       if (kaydedilenSifre.length < 6) {
-        Alert.alert('Hata', 'Şifre en az 6 karakter olmalı');
+        Alert.alert(t('teacher.theme.errorTitle'), t('admin.veliForm.passwordTooShortDesc'));
         setLoading(false);
         return;
       }
 
       if (veliId && oldVeli.authUid && sifre.trim()) {
-        Alert.alert('Şifre Değiştirilemez', 'Bu veli Firebase Auth hesabına bağlı. Mevcut kullanıcı şifresi bu ekrandan değiştirilemez.');
+        Alert.alert(t('admin.veliForm.passwordLockedTitle'), t('admin.veliForm.passwordLockedDesc'));
         setLoading(false);
         return;
       }
@@ -130,10 +132,10 @@ export default function VeliFormScreen() {
     } catch (error) {
       console.error(error);
       if (error?.code === 'auth/email-already-in-use') {
-        Alert.alert('Auth Hatası', 'Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı dene veya Auth Geçiş ekranından eşleştirme kontrolü yap.');
+        Alert.alert(t('admin.veliForm.authErrorTitle'), t('admin.veliForm.authErrorDesc'));
         return;
       }
-      Alert.alert('Hata', `Veli kaydedilemedi.\n\n${error?.code || error?.message || ''}`);
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.veliForm.saveFailedDesc', { detail: error?.code || error?.message || '' }));
     } finally {
       setLoading(false);
     }
@@ -145,12 +147,12 @@ export default function VeliFormScreen() {
   const handleDelete = () => {
     if (!veliId) return;
     Alert.alert(
-      'Veliyi Sil',
-      `${ad || 'Bu veli'} kalıcı olarak silinecek. Bu işlem geri alınamaz: hesap, Firebase Auth girişi ve çocuk bağlantıları tamamen silinir.`,
+      t('admin.veliForm.deleteTitle'),
+      t('admin.veliForm.deleteDesc', { name: ad || t('admin.veliForm.defaultParentName') }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('admin.veliForm.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('admin.veliForm.delete'),
           style: 'destructive',
           onPress: async () => {
             setDeleting(true);
@@ -159,7 +161,7 @@ export default function VeliFormScreen() {
               navigation.goBack();
             } catch (error) {
               console.error(error);
-              Alert.alert('Hata', `Veli silinemedi.\n\n${error?.message || ''}`);
+              Alert.alert(t('teacher.theme.errorTitle'), t('admin.veliForm.deleteFailedDesc', { detail: error?.message || '' }));
             } finally {
               setDeleting(false);
             }
@@ -173,27 +175,27 @@ export default function VeliFormScreen() {
 
   return (
     <View style={s.screen}>
-      <AppSuccessToast visible={successToast} message={veliId ? 'Veli güncellendi' : 'Veli kaydedildi'} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={veliId ? t('admin.veliForm.updatedToast') : t('admin.veliForm.createdToast')} onHide={() => setSuccessToast(false)} />
        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
       <ScrollView style={s.container}>
         <View style={s.form}>
-          <View style={s.field}><Text style={s.label}>Kullanıcı Adı *</Text><TextInput style={s.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder="Örn: veli1" placeholderTextColor="#999" autoCapitalize="none" /></View>
-          <View style={s.field}><Text style={s.label}>Ad Soyad *</Text><TextInput style={s.input} value={ad} onChangeText={setAd} placeholder="Örn: Mehmet Yılmaz" placeholderTextColor="#999" /></View>
-          <View style={s.field}><Text style={s.label}>Telefon</Text><TextInput style={s.input} value={telefon} onChangeText={setTelefon} placeholder="05xx xxx xx xx" placeholderTextColor="#999" keyboardType="phone-pad" /></View>
+          <View style={s.field}><Text style={s.label}>{t('admin.veliForm.usernameLabel')} *</Text><TextInput style={s.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder={t('admin.veliForm.usernamePlaceholder')} placeholderTextColor="#999" autoCapitalize="none" /></View>
+          <View style={s.field}><Text style={s.label}>{t('admin.veliForm.nameLabel')} *</Text><TextInput style={s.input} value={ad} onChangeText={setAd} placeholder={t('admin.veliForm.namePlaceholder')} placeholderTextColor="#999" /></View>
+          <View style={s.field}><Text style={s.label}>{t('admin.veliForm.phoneLabel')}</Text><TextInput style={s.input} value={telefon} onChangeText={setTelefon} placeholder={t('admin.veliForm.phonePlaceholder')} placeholderTextColor="#999" keyboardType="phone-pad" /></View>
           <View style={s.field}>
-            <Text style={s.label}>Şifre {!veliId && '*'}</Text>
+            <Text style={s.label}>{t('admin.veliForm.passwordLabel')} {!veliId && '*'}</Text>
             <View style={s.passwordRow}>
-              <TextInput style={s.passwordInput} value={sifre} onChangeText={setSifre} placeholder={veliId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
-              <TouchableOpacity style={s.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={s.passwordToggleText}>{sifreGoster ? 'Gizle' : 'Göster'}</Text></TouchableOpacity>
+              <TextInput style={s.passwordInput} value={sifre} onChangeText={setSifre} placeholder={veliId ? t('admin.veliForm.passwordPlaceholderEdit') : t('admin.veliForm.passwordPlaceholderNew')} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
+              <TouchableOpacity style={s.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={s.passwordToggleText}>{sifreGoster ? t('admin.veliForm.hideButton') : t('admin.veliForm.showButton')}</Text></TouchableOpacity>
             </View>
-            <Text style={s.sifreNotu}>{veliId ? 'Boş bırakırsan mevcut şifre korunur.' : 'Boş bırakırsan varsayılan şifre 123456 olur.'}</Text>
+            <Text style={s.sifreNotu}>{veliId ? t('admin.veliForm.passwordNoteEdit') : t('admin.veliForm.passwordNoteNew')}</Text>
           </View>
           <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleSave} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnYazi}>{veliId ? 'Güncelle' : 'Oluştur'}</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnYazi}>{veliId ? t('admin.veliForm.updateButton') : t('admin.veliForm.createButton')}</Text>}
           </TouchableOpacity>
           {veliId && (
             <TouchableOpacity style={[s.deleteBtn, deleting && s.btnDisabled]} onPress={handleDelete} disabled={deleting}>
-              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={s.deleteBtnYazi}>Veliyi Sil</Text>}
+              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={s.deleteBtnYazi}>{t('admin.veliForm.deleteButton')}</Text>}
             </TouchableOpacity>
           )}
         </View>
