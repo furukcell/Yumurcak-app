@@ -307,7 +307,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           <TextInput
             value={baslik}
             onChangeText={setBaslik}
-            placeholder={{t('admin.monthly.staff.defaultTitle', { month: monthLabel })}}
+            placeholder={t('admin.monthly.staff.defaultTitle', { month: monthLabel })}
             placeholderTextColor={theme.muted}
             style={styles.titleInput}
           />
@@ -323,14 +323,14 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
               <TextInput
                 value={section.baslik}
                 onChangeText={(text) => updateSection(section.id, 'baslik', text)}
-                placeholder="{t('admin.monthly.staff.sectionTitlePlaceholder')}"
+                placeholder={t('admin.monthly.staff.sectionTitlePlaceholder')}
                 placeholderTextColor={theme.muted}
                 style={styles.sectionTitleInput}
               />
               <TextInput
                 value={section.icerik}
                 onChangeText={(text) => updateSection(section.id, 'icerik', text)}
-                placeholder="{t('admin.monthly.staff.contentPlaceholder')}"
+                placeholder={t('admin.monthly.staff.contentPlaceholder')}
                 placeholderTextColor={theme.muted}
                 style={styles.sectionContentInput}
                 multiline
