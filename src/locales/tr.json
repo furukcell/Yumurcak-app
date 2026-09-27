@@ -2020,6 +2020,23 @@
       "completedPlural": "Tamamlanan",
       "emptyTitle": "Henüz kurum zili bildirimi yok",
       "emptyDesc": "Veliler “Geliyorum” veya “Kapıdayım” dediğinde burada görünecek."
+    },
+    "service": {
+      "title": "Servis Listesi",
+      "childrenUsingService": "{{count}} çocuk servis kullanıyor",
+      "print": "Yazdır",
+      "shareDownload": "Paylaş/İndir",
+      "noChildren": "Kayıtlı çocuk yok.",
+      "noClass": "Sınıf yok",
+      "noVehicle": "Henüz servis aracı eklenmedi. Araç eklemek için dokun.",
+      "pickupTimePlaceholder": "Alış saati (örn: 08:00)",
+      "dropoffTimePlaceholder": "Bırakış saati (örn: 16:30)",
+      "notePlaceholder": "Not (örn: Servis plakası, sürücü adı)",
+      "saveFailed": "Servis bilgisi kaydedilemedi.",
+      "emptyListTitle": "Liste Boş",
+      "emptyListDesc": "Servis kullanan çocuk kaydı yok.",
+      "exportFailed": "Servis listesi oluşturulamadı.",
+      "updatedToast": "Servis bilgisi güncellendi"
     }
   }
 }
