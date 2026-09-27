@@ -153,7 +153,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
           if (error?.code === 'auth/email-already-in-use') {
             addLog(t('admin.authMigration.alreadyExists', { username }));
           } else {
-            addLog(t('admin.authMigration.userError', { username, error: error?.code || error?.message || t('common.unknownError') }));
+            addLog(t('admin.authMigration.userError', { username, error: error?.code || error?.message || 'unknown error' }));
           }
         }
       }
