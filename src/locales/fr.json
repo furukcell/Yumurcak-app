@@ -32,7 +32,10 @@
     "loading": "Préparation...",
     "error": "Erreur",
     "save": "Enregistrer",
-    "saving": "Enregistrement..."
+    "saving": "Enregistrement...",
+    "info": "Information",
+    "success": "Réussi",
+    "missingInfo": "Informations manquantes"
   },
   "nav": {
     "summary": "Résumé",
@@ -2265,6 +2268,55 @@
       "noteLabel": "Additional Note",
       "notePlaceholder": "Transport, registration, meeting note...",
       "save": "Save Institution Information"
+    },
+    "serviceMonthlyStats": {
+      "back": "Retour",
+      "title": "Statistiques mensuelles du transport",
+      "warningTitle": "⚠️ Enfants utilisant rarement le transport",
+      "empty": "Aucun enregistrement pour ce mois ou tous les enfants utilisent régulièrement le transport.",
+      "tripDays": "Jours de trajet",
+      "avgMorning": "Durée matinale moy.",
+      "avgReturn": "Durée de retour moy.",
+      "warningCounts": "Pris: {{pickup}}/{{days}} · Déposés: {{dropoff}}/{{days}}",
+      "childCounts": "{{pickup}}/{{days}} pris · {{dropoff}}/{{days}} déposés"
+    },
+    "statistics": {
+      "title": "Statistiques de l'établissement",
+      "subtitle": "Tendances générales, utilisation par les enseignants et analyse des risques par enfant",
+      "loading": "Préparation des statistiques...",
+      "overview": "État général",
+      "attendance": "📅 Présences du jour",
+      "payments": "💰 Paiements du mois",
+      "parentEngagement": "🔔 Interaction des parents",
+      "teacherUsage": "Utilisation enseignants / classes",
+      "childRisk": "Développement et risques des enfants",
+      "noRisk": "Aucun risque notable",
+      "riskList": "Liste des risques",
+      "teacherLogs": "Connexions des enseignants"
+    },
+    "subscription": {
+      "loading": "Préparation des informations d'abonnement...",
+      "title": "Abonnement / Paiement",
+      "usageTitle": "Utilisation des élèves",
+      "usageDesc": "Le nombre d'élèves inscrits est suivi par rapport à la limite du forfait.",
+      "startTrial": "Commencer le premier mois gratuit",
+      "paymentPeriod": "Période de paiement",
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "twoMonthsFree": "2 mois gratuits",
+      "packagesTitle": "Forfaits selon le nombre d'élèves",
+      "specialTitle": "100+ élèves",
+      "specialDesc": "Les grandes institutions bénéficient d'une offre personnalisée.",
+      "restore": "Restaurer l'achat",
+      "paymentWarning": "Les informations de paiement Google Play n'ont pas pu être récupérées. Vous pouvez continuer avec une démo ou un code promo.",
+      "promoTitle": "Code promo",
+      "promoPlaceholder": "Code promo",
+      "applyPromo": "Appliquer le code",
+      "specialOffer": "Offre spéciale",
+      "subscriptionNotFound": "Abonnement introuvable",
+      "codeUsed": "Code déjà utilisé",
+      "invalidCode": "Code invalide",
+      "limitReached": "Limite atteinte"
     }
   }
 }
