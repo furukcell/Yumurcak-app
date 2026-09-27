@@ -396,7 +396,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 <Text style={styles.publishedText}>Veliler şu an bu ayın listesini görüyor.</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? '{t('admin.monthly.unpublishing')}' : t('admin.monthly.unpublishTitle')}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublishTitle')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -455,7 +455,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
           />
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : {t('admin.monthly.meal.publishButton', { month: monthLabel })}}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('admin.monthly.publishing') : t('admin.monthly.meal.publishButton', { month: monthLabel })}</Text>
           </TouchableOpacity>
 
           <View style={{ marginTop: 14 }}>
