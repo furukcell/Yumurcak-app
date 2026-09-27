@@ -405,10 +405,10 @@ export default function PollManagementScreen() {
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity style={styles.outlineActionBtn} activeOpacity={0.85}>
-                    <Text style={[styles.outlineActionText, { color: THEME.purple }]}{`▮ ${t('admin.pollManagement.results')}`}</Text>
+                    <Text style={[styles.outlineActionText, { color: THEME.purple }]}>{`▮ ${t('admin.pollManagement.results')}`}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.outlineActionBtn} activeOpacity={0.85}>
-                    <Text style={[styles.outlineActionText, { color: THEME.blue }]}{`✎ ${t('common.edit')}`}</Text>
+                    <Text style={[styles.outlineActionText, { color: THEME.blue }]}>{`✎ ${t('common.edit')}`}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.outlineActionBtn, busy && { opacity: 0.6 }]}
