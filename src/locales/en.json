@@ -2648,7 +2648,8 @@
       "yearlyActive": "Annual subscription active",
       "monthlyActive": "Monthly subscription active",
       "demoActive": "Demo active",
-      "subscriptionCheck": "Subscription status needs to be checked"
+      "subscriptionCheck": "Subscription status needs to be checked",
+      "notifications": "Notifications"
     }
   }
 }
