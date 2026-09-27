@@ -2648,7 +2648,8 @@
       "yearlyActive": "Годовая подписка активна",
       "monthlyActive": "Месячная подписка активна",
       "demoActive": "Демо активно",
-      "subscriptionCheck": "Проверьте статус подписки"
+      "subscriptionCheck": "Проверьте статус подписки",
+      "notifications": "Уведомления"
     }
   }
 }
