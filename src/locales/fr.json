@@ -2648,7 +2648,8 @@
       "yearlyActive": "Abonnement annuel actif",
       "monthlyActive": "Abonnement mensuel actif",
       "demoActive": "Démo active",
-      "subscriptionCheck": "Vérifiez le statut de l’abonnement"
+      "subscriptionCheck": "Vérifiez le statut de l’abonnement",
+      "notifications": "Notifications"
     }
   }
 }
