@@ -2648,7 +2648,8 @@
       "yearlyActive": "الاشتراك السنوي نشط",
       "monthlyActive": "الاشتراك الشهري نشط",
       "demoActive": "العرض التجريبي نشط",
-      "subscriptionCheck": "يجب التحقق من حالة الاشتراك"
+      "subscriptionCheck": "يجب التحقق من حالة الاشتراك",
+      "notifications": "الإشعارات"
     }
   }
 }
