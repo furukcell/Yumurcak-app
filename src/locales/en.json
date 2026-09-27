@@ -29,7 +29,8 @@
     },
     "back": "Back",
     "childFallback": "Child",
-    "loading": "Preparing..."
+    "loading": "Preparing...",
+    "error": "Error"
   },
   "nav": {
     "summary": "Summary",
@@ -1999,6 +2000,26 @@
       "passwordNoteEdit": "Leave it blank to keep the current password.",
       "passwordNoteNew": "Leave it blank and the default password will be 123456.",
       "defaultVehicleFallback": "This vehicle"
+    },
+    "bell": {
+      "noTime": "No time",
+      "dropOff": "I'll drop off",
+      "pickUp": "I'll pick up",
+      "deliveryInfoMissing": "Delivery information unavailable",
+      "atDoor": "At the door",
+      "onTheWay": "On the way",
+      "completed": "Completed",
+      "notification": "Notification",
+      "markReadFailed": "Notification could not be marked as read.",
+      "markCompleteFailed": "Notification could not be completed.",
+      "parentFallback": "Parent",
+      "read": "Read",
+      "loading": "Loading institution bell...",
+      "active": "Active",
+      "unread": "Unread",
+      "completedPlural": "Completed",
+      "emptyTitle": "No institution bell notifications yet",
+      "emptyDesc": "They will appear here when parents say “On the way” or “At the door”."
     }
   }
 }
