@@ -30,7 +30,9 @@
     "back": "Zurück",
     "childFallback": "Kind",
     "loading": "Wird vorbereitet...",
-    "error": "Fehler"
+    "error": "Fehler",
+    "save": "Speichern",
+    "saving": "Wird gespeichert..."
   },
   "nav": {
     "summary": "Übersicht",
