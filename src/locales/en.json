@@ -2182,7 +2182,8 @@
         "publishedDesc": "Staff can currently see this month's duty roster.",
         "publishButton": "Publish {{month}} Roster",
         "personnelPlaceholder": "Duty Person (e.g. Teacher Ayşe)"
-      }
+      },
+      "unpublishFailed": "Could not be unpublished."
     }
   }
 }
