@@ -12,6 +12,7 @@ import { onValue, ref, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import ThemedBackground from '../../components/ThemedBackground';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
@@ -104,6 +105,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
   const route = useRoute();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   // Sınıf bazlı: ClassList'ten "bu sınıfın programını düzenle" ile gelinir.
@@ -341,7 +343,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       });
 
       if (!found) {
-        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir ders programı bulunamadı.');
+        Alert.alert(t('admin.monthly.notFound'), t('admin.monthly.schedule.previousNotFound'));
         return;
       }
 
@@ -353,10 +355,10 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         return next;
       });
 
-      Alert.alert('Kopyalandı', `${found} günlük etkinlik geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+      Alert.alert(t('admin.monthly.copied'), t('admin.monthly.schedule.copiedDesc', { count: found }));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.copyFailed'));
     } finally {
       setCopying(false);
     }
@@ -364,11 +366,11 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
 
   function confirmPublish() {
     if (!kresId || !sinifId) {
-      Alert.alert('Hata', 'Sınıf bilgisi bulunamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.schedule.classMissing'));
       return;
     }
     if (!hasAnyEntry) {
-      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne etkinlik gir.');
+      Alert.alert(t('admin.monthly.missingInfo'), t('admin.monthly.schedule.publishRequired'));
       return;
     }
     Alert.alert(
@@ -412,7 +414,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Aylık ders programı yayınlanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.schedule.publishFailed'));
     } finally {
       setSaving(false);
     }
@@ -421,7 +423,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
   function confirmUnpublish() {
     if (!kresId || !sinifId || publishedCount === 0) return;
     Alert.alert(
-      'Yayından Kaldır',
+      t('admin.monthly.unpublish'),
       `${monthLabel} için yayınlanmış ders programı kaldırılsın mı?`,
       [
         { text: 'Vazgeç', style: 'cancel' },
@@ -436,7 +438,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK, matchExtra: forClass(sinifId) });
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.unpublishFailed'));
     } finally {
       setUnpublishing(false);
     }
@@ -453,11 +455,11 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Aylık Ders Programı</Text>
-              <Text style={styles.subtitle}>{sinifAd} — ay bazlı, gün gün etkinlik planı</Text>
+              <Text style={styles.title}>{t('admin.monthly.schedule.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.monthly.schedule.subtitle', { className: sinifAd })}</Text>
             </View>
           </View>
 
@@ -467,7 +469,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.monthCenter}>
               <Text style={styles.monthLabel}>{monthLabel}</Text>
-              <Text style={styles.monthHint}>{days.length} günlük plan</Text>
+              <Text style={styles.monthHint}>{t('admin.monthly.dayPlan', { count: days.length })}</Text>
             </View>
             <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
               <Text style={styles.monthButtonText}>›</Text>
@@ -477,18 +479,18 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
           {publishedCount > 0 ? (
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                <Text style={styles.publishedText}>Veliler şu an bu ayın programını görüyor.</Text>
+                <Text style={styles.publishedTitle}>✅ {t('admin.monthly.published', { month: monthLabel })}</Text>
+                <Text style={styles.publishedText}>{t('admin.monthly.schedule.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublish')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
           <View style={styles.utilityRow}>
             <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
-              <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+              <Text style={styles.copyButtonText}>{copying ? t('admin.monthly.copying') : t('admin.monthly.copyPrevious')}</Text>
             </TouchableOpacity>
             <MonthlyArchivePicker
               kresId={kresId}
@@ -519,7 +521,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
           />
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Programını Yayınla`}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('admin.monthly.schedule.publishing') : t('admin.monthly.schedule.publishButton', { month: monthLabel })}</Text>
           </TouchableOpacity>
 
           {publishedCount > 0 ? (
@@ -567,7 +569,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                   <View style={styles.libraryRow}>
                     <ActivityLibraryPicker
                       yasGrubu={yasGrubu}
-                      initialKategori={selectedValue.etkinlikler[editingIndex].kategori || ETKINLIK_KATEGORILERI[0].key}
+                      initial{t('admin.monthly.schedule.category')}={selectedValue.etkinlikler[editingIndex].kategori || ETKINLIK_KATEGORILERI[0].key}
                       onSelect={(ad) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', ad)}
                       theme={theme}
                     />
@@ -577,12 +579,12 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                     value={selectedValue.etkinlikler[editingIndex].etkinlik}
                     onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', text)}
                     onSelectSuggestion={(item) => handleActivitySuggestion(selectedDateKey, editingIndex, item)}
-                    placeholder="Ders (örn: Parmak Boyası)"
+                    placeholder={t('admin.monthly.schedule.lessonPlaceholder')}
                     style={styles.modalInput}
                     theme={theme}
                   />
 
-                  <Text style={styles.modalLabel}>Başlangıç Saati</Text>
+                  <Text style={styles.modalLabel}>{t('admin.monthly.schedule.startTime')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                     {SAAT_SECENEKLERI.map((saat) => {
                       const active = selectedValue.etkinlikler[editingIndex].baslangicSaati === saat;
@@ -599,7 +601,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                     })}
                   </ScrollView>
 
-                  <Text style={styles.modalLabel}>Bitiş Saati</Text>
+                  <Text style={styles.modalLabel}>{t('admin.monthly.schedule.endTime')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                     {SAAT_SECENEKLERI.map((saat) => {
                       const active = selectedValue.etkinlikler[editingIndex].bitisSaati === saat;
@@ -616,7 +618,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                     })}
                   </ScrollView>
 
-                  <Text style={styles.modalLabel}>Kategori</Text>
+                  <Text style={styles.modalLabel}>{t('admin.monthly.schedule.category')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                     {ETKINLIK_KATEGORILERI.map((item) => {
                       const active = selectedValue.etkinlikler[editingIndex].kategori === item.key;
@@ -636,7 +638,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                   <TextInput
                     value={selectedValue.etkinlikler[editingIndex].aciklama}
                     onChangeText={(text) => updateItemField(selectedDateKey, editingIndex, 'aciklama', text)}
-                    placeholder="Açıklama (opsiyonel)"
+                    placeholder={t('admin.monthly.schedule.descriptionPlaceholder')}
                     placeholderTextColor={theme.muted}
                     style={styles.modalInput}
                     multiline
@@ -646,7 +648,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
 
               {hasScheduleContent(selectedValue) ? (
                 <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>
-                  <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
+                  <Text style={styles.modalClearButtonText}>{t('admin.monthly.clearDay')}</Text>
                 </TouchableOpacity>
               ) : null}
             </ScrollView>
