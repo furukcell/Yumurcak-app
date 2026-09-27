@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -124,8 +125,8 @@ export default function AdminStatisticsScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerCard}>
           <Text style={styles.headerEmoji}>📊</Text>
-          <Text style={styles.headerTitle}>Kurum İstatistikleri</Text>
-          <Text style={styles.headerSub}>Genel gidişat, öğretmen kullanımı ve çocuk bazlı risk analizi</Text>
+          <Text style={styles.headerTitle}>{t('admin.statistics.title')}</Text>
+          <Text style={styles.headerSub}>{t('admin.statistics.subtitle')}</Text>
         </View>
 
         <View style={styles.tabRow}>
@@ -144,7 +145,7 @@ export default function AdminStatisticsScreen() {
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={THEME.primary} />
-            <Text style={styles.loadingText}>İstatistikler hazırlanıyor...</Text>
+            <Text style={styles.loadingText}>{t('admin.statistics.loading')}</Text>
           </View>
         ) : (
           <>
@@ -163,7 +164,7 @@ export default function AdminStatisticsScreen() {
 function GeneralTab({ stats }) {
   return (
     <>
-      <Text style={styles.sectionTitle}>Kurum Genel Durum</Text>
+      <Text style={styles.sectionTitle}>{t('admin.statistics.overview')}</Text>
       <View style={styles.grid}>
         <StatCard icon="👶" value={stats.totalChildren} label="Toplam çocuk" color={THEME.orange} />
         <StatCard icon="👨‍🏫" value={stats.totalTeachers} label="Öğretmen" color={THEME.primary} />
@@ -172,14 +173,14 @@ function GeneralTab({ stats }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>📅 Bugünkü Yoklama</Text>
+        <Text style={styles.cardTitle}>{t('admin.statistics.attendance')}</Text>
         <ProgressLine label={`${stats.todayPresent} gelen / ${stats.todayAttendanceTotal} kayıt`} percent={stats.todayAttendanceRate} color={THEME.green} />
         <Text style={styles.cardText}>Bugün gelmeyen çocuk: {stats.todayAbsent}</Text>
         <Text style={styles.cardText}>Bugün girilen günlük rapor: {stats.todayReportCount}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>💰 Bu Ay Ödeme Durumu</Text>
+        <Text style={styles.cardTitle}>{t('admin.statistics.payments')}</Text>
         <ProgressLine label={`Tahsilat oranı: %${stats.paymentCollectionRate}`} percent={stats.paymentCollectionRate} color={THEME.gold} />
         <Text style={styles.cardText}>Ödenen: {formatTL(stats.paidAmount)}</Text>
         <Text style={styles.cardText}>Bekleyen / geciken: {formatTL(stats.pendingAmount)}</Text>
@@ -187,7 +188,7 @@ function GeneralTab({ stats }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🔔 Veli Etkileşimi</Text>
+        <Text style={styles.cardTitle}>{t('admin.statistics.parentEngagement')}</Text>
         <ProgressLine label={`Anket cevabı: ${stats.pollAnswerCount}`} percent={Math.min(100, stats.pollAnswerCount * 10)} color={THEME.purple} />
         <Text style={styles.cardText}>Aktif anket: {stats.activePollCount}</Text>
         <Text style={styles.cardText}>Kurum zili bildirimi: {stats.bellCount}</Text>
@@ -202,7 +203,7 @@ function TeacherTab({ teachers }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Öğretmen / Sınıf Kullanımı</Text>
+      <Text style={styles.sectionTitle}>{t('admin.statistics.teacherUsage')}</Text>
       {teachers.map((teacher) => (
         <View key={teacher.id} style={styles.card}>
           <View style={styles.rowBetween}>
@@ -227,7 +228,7 @@ function ChildrenTab({ children }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Çocuk Bazlı Gelişim ve Risk</Text>
+      <Text style={styles.sectionTitle}>{t('admin.statistics.childRisk')}</Text>
       {children.map((child) => (
         <View key={child.id} style={styles.card}>
           <View style={styles.rowBetween}>
@@ -247,7 +248,7 @@ function ChildrenTab({ children }) {
           <Text style={styles.cardText}>Yorum: {child.comment}</Text>
 
           <View style={styles.riskChipRow}>
-            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{risk}</Text>) : <Text style={styles.okChip}>Belirgin risk yok</Text>}
+            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{risk}</Text>) : <Text style={styles.okChip}>{t('admin.statistics.noRisk')}</Text>}
           </View>
         </View>
       ))}
@@ -266,7 +267,7 @@ function RiskTab({ riskGroups }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Risk Listesi</Text>
+      <Text style={styles.sectionTitle}>{t('admin.statistics.riskList')}</Text>
       {groupList.map((group) => (
         <View key={group.key} style={styles.card}>
           <Text style={styles.cardTitle}>{group.title}</Text>
@@ -520,7 +521,7 @@ function ActivityTab({ entries }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Öğretmen Giriş Kayıtları</Text>
+      <Text style={styles.sectionTitle}>{t('admin.statistics.teacherLogs')}</Text>
       <Text style={[styles.cardText, { marginBottom: 12 }]}>Hangi öğretmenin hangi bilgiyi hangi saatte girdiğini gösterir (son {entries.length} kayıt).</Text>
       <View style={styles.card}>
         {entries.map((entry, index) => (
