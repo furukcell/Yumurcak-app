@@ -3,6 +3,7 @@
 // FAZ 19: Sadece kendi kreşinin velileri index üzerinden çekilir
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -41,11 +42,12 @@ function asArray(value) {
 }
 
 export default function VeliListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kullanici, kres } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
 
-  const [veliler, setVeliler] = useState([]);
+  const [veliler, set{t('admin.veliList.title')}] = useState([]);
   const [loading, setLoading] = useState(true);
   const [siniflar, setSiniflar] = useState([]);
   const [seciliSinifId, setSeciliSinifId] = useState(null);
@@ -90,7 +92,7 @@ export default function VeliListScreen() {
 
   useEffect(() => {
     if (!kresId) {
-      setVeliler([]);
+      set{t('admin.veliList.title')}([]);
       setLoading(false);
       return;
     }
@@ -173,11 +175,11 @@ export default function VeliListScreen() {
           })
           .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
 
-        setVeliler(liste);
+        set{t('admin.veliList.title')}(liste);
         setLoading(false);
       } catch (error) {
         console.warn('Veli listesi çekme hatası:', error);
-        setVeliler([]);
+        set{t('admin.veliList.title')}([]);
         setLoading(false);
       }
     }
@@ -205,7 +207,7 @@ export default function VeliListScreen() {
   const aktifVeliSayisi = veliler.filter((v) => v.aktif).length;
   const cocukBagliVeliSayisi = veliler.filter((v) => v.cocuklar.length > 0).length;
 
-  const filtreliVeliler = useMemo(() => {
+  const filtreli{t('admin.veliList.title')} = useMemo(() => {
     if (!seciliSinifId) return veliler;
     return veliler.filter((v) => v.sinifIdler.includes(seciliSinifId));
   }, [veliler, seciliSinifId]);
@@ -215,7 +217,7 @@ export default function VeliListScreen() {
       <SafeAreaView style={s.safeArea}>
         <View style={s.center}>
           <ActivityIndicator size="large" color={THEME.primary} />
-          <Text style={s.loadingText}>Veliler yükleniyor...</Text>
+          <Text style={s.loadingText}>{t('admin.veliList.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -225,7 +227,7 @@ export default function VeliListScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.container}>
         <FlatList
-          data={filtreliVeliler}
+          data={filtreli{t('admin.veliList.title')}}
           keyExtractor={(item) => item.id}
           contentContainerStyle={s.liste}
           showsVerticalScrollIndicator={false}
@@ -237,15 +239,15 @@ export default function VeliListScreen() {
                     <Text style={s.headerIcon}>👨‍👩‍👧</Text>
                   </View>
                   <View style={s.headerTextBlock}>
-                    <Text style={s.headerTitle}>Veliler</Text>
-                    <Text style={s.headerSubtitle}>Veli hesapları ve bağlı çocuklar</Text>
+                    <Text style={s.headerTitle}>{t('admin.veliList.title')}</Text>
+                    <Text style={s.headerSubtitle}>{t('admin.veliList.subtitle')}</Text>
                   </View>
                 </View>
 
                 <View style={s.statsRow}>
                   <View style={s.statBox}>
                     <Text style={s.statValue}>{veliler.length}</Text>
-                    <Text style={s.statLabel}>Toplam Veli</Text>
+                    <Text style={s.statLabel}>{t('admin.veliList.total')}</Text>
                   </View>
                   <View style={s.statDivider} />
                   <View style={s.statBox}>
@@ -255,7 +257,7 @@ export default function VeliListScreen() {
                   <View style={s.statDivider} />
                   <View style={s.statBox}>
                     <Text style={s.statValue}>{cocukBagliVeliSayisi}</Text>
-                    <Text style={s.statLabel}>Çocuk Bağlı</Text>
+                    <Text style={s.statLabel}>{t('admin.veliList.withChildren')}</Text>
                   </View>
                 </View>
               </View>
@@ -273,7 +275,7 @@ export default function VeliListScreen() {
                     activeOpacity={0.85}
                   >
                     <Text style={[s.sinifChipText, !seciliSinifId && s.sinifChipTextActive]}>
-                      Tümü
+                      {t('common.all')}
                     </Text>
                   </TouchableOpacity>
 
@@ -305,12 +307,12 @@ export default function VeliListScreen() {
             <View style={s.emptyCard}>
               <Text style={s.emptyIcon}>👨‍👩‍👧</Text>
               <Text style={s.emptyTitle}>
-                {seciliSinifId ? 'Bu sınıfta veli bulunamadı' : 'Henüz veli eklenmemiş'}
+                {seciliSinifId ? '{t('admin.veliList.noParentInClass')}' : '{t('admin.veliList.emptyTitle')}'}
               </Text>
               <Text style={s.emptyDesc}>
                 {seciliSinifId
-                  ? 'Farklı bir sınıf seçebilir veya "Tümü" ile filtreyi kaldırabilirsin.'
-                  : 'Velileri ekleyerek çocuklarla ilişkilendirebilirsiniz.'}
+                  ? 'Farklı bir sınıf seçebilir veya "{t('common.all')}" ile filtreyi kaldırabilirsin.'
+                  : '{t('admin.veliList.title')}i ekleyerek çocuklarla ilişkilendirebilirsiniz.'}
               </Text>
               {!seciliSinifId && (
                 <TouchableOpacity
@@ -318,7 +320,7 @@ export default function VeliListScreen() {
                   onPress={() => navigation.navigate('VeliForm')}
                   activeOpacity={0.85}
                 >
-                  <Text style={s.emptyButtonText}>+ Veli Ekle</Text>
+                  <Text style={s.emptyButtonText}>+ {t('admin.veliList.addParent')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -345,24 +347,24 @@ export default function VeliListScreen() {
 
                 <View style={[s.statusPill, item.aktif ? s.statusActive : s.statusPassive]}>
                   <Text style={[s.statusText, item.aktif ? s.statusTextActive : s.statusTextPassive]}>
-                    {item.aktif ? 'Aktif' : 'Pasif'}
+                    {item.aktif ? t('common.active') : t('common.passive')}
                   </Text>
                 </View>
               </View>
 
               <View style={s.infoGrid}>
-                <InfoItem icon="📞" label="Telefon" value={item.telefon || '-'} />
-                <InfoItem icon="✉️" label="E-posta" value={item.email || '-'} />
+                <InfoItem icon="📞" label={t('admin.veliList.phone')} value={item.telefon || '-'} />
+                <InfoItem icon="✉️" label={t('admin.veliList.email')} value={item.email || '-'} />
               </View>
 
               <View style={s.childrenBox}>
                 <View style={s.childrenHeader}>
-                  <Text style={s.childrenTitle}>Bağlı Çocuklar</Text>
+                  <Text style={s.childrenTitle}>{t('admin.veliList.children')}</Text>
                   <Text style={s.childrenCount}>{item.cocuklar.length}</Text>
                 </View>
 
                 {item.cocuklar.length === 0 ? (
-                  <Text style={s.noChild}>👶 Bağlı çocuk yok</Text>
+                  <Text style={s.noChild}>👶 {t('admin.veliList.noChildren')}</Text>
                 ) : (
                   item.cocuklar.slice(0, 3).map((c) => (
                     <View key={c.id} style={s.childRow}>
@@ -370,14 +372,14 @@ export default function VeliListScreen() {
                         👶 {c.ad}
                       </Text>
                       <Text style={s.className} numberOfLines={1} ellipsizeMode="tail">
-                        🏫 {c.sinifAd || 'Sınıf yok'}
+                        🏫 {c.sinifAd || '{t('admin.veliList.noClass')}'}
                       </Text>
                     </View>
                   ))
                 )}
 
                 {item.cocuklar.length > 3 ? (
-                  <Text style={s.moreText}>+{item.cocuklar.length - 3} çocuk daha</Text>
+                  <Text style={s.moreText}>+{item.cocuklar.length - 3} {t('admin.veliList.moreChildren')}</Text>
                 ) : null}
               </View>
             </TouchableOpacity>
