@@ -2182,7 +2182,8 @@
         "publishedDesc": "Le personnel peut voir le planning de ce mois.",
         "publishButton": "Publier le planning de {{month}}",
         "personnelPlaceholder": "Personne de garde (ex. enseignante Ayşe)"
-      }
+      },
+      "unpublishFailed": "La publication n'a pas pu être retirée."
     }
   }
 }
