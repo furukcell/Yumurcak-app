@@ -217,8 +217,8 @@ export default function PaymentListScreen() {
       odendi: odemeler.filter((o) => o.durum === 'odendi').length,
       bekliyor: odemeler.filter((o) => o.durum === 'bekliyor').length,
       gecikti: odemeler.filter((o) => o.durum === 'gecikti').length,
-      acik{t('admin.paymentList.amount')}: bekleyenler.reduce((sum, o) => sum + o.tutarNumber, 0),
-      buAy{t('admin.paymentList.amount')}: odemeler.filter((o) => o.monthKey === buAy).reduce((sum, o) => sum + o.tutarNumber, 0),
+      acikTutar: bekleyenler.reduce((sum, o) => sum + o.tutarNumber, 0),
+      buAyTutar: odemeler.filter((o) => o.monthKey === buAy).reduce((sum, o) => sum + o.tutarNumber, 0),
     };
   }, [odemeler]);
 
