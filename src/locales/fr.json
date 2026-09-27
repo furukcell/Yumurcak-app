@@ -30,7 +30,9 @@
     "back": "Retour",
     "childFallback": "Enfant",
     "loading": "Préparation...",
-    "error": "Erreur"
+    "error": "Erreur",
+    "save": "Enregistrer",
+    "saving": "Enregistrement..."
   },
   "nav": {
     "summary": "Résumé",
