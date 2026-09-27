@@ -29,7 +29,8 @@
     },
     "back": "رجوع",
     "childFallback": "طفل",
-    "loading": "جارٍ التحضير..."
+    "loading": "جارٍ التحضير...",
+    "error": "خطأ"
   },
   "nav": {
     "summary": "ملخص",
@@ -1999,6 +2000,26 @@
       "passwordNoteEdit": "اتركه فارغًا للاحتفاظ بكلمة المرور الحالية.",
       "passwordNoteNew": "اتركه فارغًا وستكون كلمة المرور الافتراضية 123456.",
       "defaultVehicleFallback": "هذه المركبة"
+    },
+    "bell": {
+      "noTime": "لا يوجد وقت",
+      "dropOff": "سأُوصل الطفل",
+      "pickUp": "سأصطحب الطفل",
+      "deliveryInfoMissing": "لا توجد معلومات عن التسليم",
+      "atDoor": "عند الباب",
+      "onTheWay": "أنا في الطريق",
+      "completed": "تم",
+      "notification": "إشعار",
+      "markReadFailed": "تعذر وضع الإشعار كمقروء.",
+      "markCompleteFailed": "تعذر إكمال الإشعار.",
+      "parentFallback": "ولي الأمر",
+      "read": "مقروء",
+      "loading": "جارٍ تحميل إشعارات جرس المؤسسة...",
+      "active": "نشط",
+      "unread": "غير مقروء",
+      "completedPlural": "مكتمل",
+      "emptyTitle": "لا توجد إشعارات من جرس المؤسسة بعد",
+      "emptyDesc": "ستظهر هنا عندما يقول أولياء الأمور «أنا في الطريق» أو «عند الباب»."
     }
   }
 }
