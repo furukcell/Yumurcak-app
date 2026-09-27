@@ -2213,7 +2213,8 @@
         "endTime": "End Time",
         "category": "Category",
         "descriptionPlaceholder": "Description (optional)"
-      }
+      },
+      "publishing": "جارٍ النشر..."
     },
     "authMigration": {
       "usersLoadFailed": "Users could not be loaded.",
@@ -2230,7 +2231,18 @@
       "users": "Users",
       "authPending": "Auth pending",
       "log": "Log",
-      "noLog": "No operation yet."
+      "noLog": "No operation yet.",
+      "confirmTitle": "ترحيل Firebase Auth",
+      "confirmDesc": "سيتم إنشاء حساب Firebase Auth للمستخدمين الذين لا يملكون authUid. هل تريد المتابعة؟",
+      "noUsers": "لا يوجد مستخدمون للترحيل.",
+      "skippedPassword": "تم التخطي: يجب أن تتكون كلمة مرور {{username}} من 6 أحرف على الأقل.",
+      "migrated": "تم الترحيل",
+      "alreadyExists": "موجود بالفعل: {{username}}. البريد موجود في Firebase Console؛ قد يلزم الربط يدويًا.",
+      "userError": "خطأ: {{username}} -> {{error}}",
+      "total": "الإجمالي",
+      "waiting": "قيد الانتظار",
+      "warningText": "قبل الانتقال إلى قواعد الإنتاج، يجب أن يحصل جميع المستخدمين على authUid وأن تنجح أدوار الدخول الثلاثة في الاختبار.",
+      "done": "تم"
     },
     "institutionSettings": {
       "loadFailed": "Institution information could not be loaded.",
@@ -2346,7 +2358,9 @@
       "empty": "Ödeme kaydı yok",
       "emptyDesc": "Yeni ödeme oluşturmak için + Kayıt butonuna bas",
       "create": "+ Ödeme Kaydı Oluştur",
-      "updateFailed": "Ödeme durumu güncellenemedi."
+      "updateFailed": "Ödeme durumu güncellenemedi.",
+      "openAmount": "المبلغ المفتوح",
+      "thisMonth": "هذا الشهر"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2363,7 +2377,15 @@
       "targetLabel": "Duyuru Hedefi",
       "noClasses": "Henüz sınıf bulunamadı.",
       "selectClass": "Sınıf Seç",
-      "urgent": "Acil Duyuru"
+      "urgent": "Acil Duyuru",
+      "targetParents": "سيتم إرسال هذا الإعلان إلى أولياء الأمور فقط.",
+      "targetTeachers": "سيتم إرسال هذا الإعلان إلى المعلمين فقط.",
+      "targetClass": "سيتم إرسال هذا الإعلان إلى الأشخاص المرتبطين بالفصل المحدد.",
+      "targetAll": "سيتم إرسال هذا الإعلان إلى المؤسسة بالكامل.",
+      "admin": "المدير",
+      "updated": "تم تحديث الإعلان",
+      "sent": "تم إرسال الإعلان",
+      "send": "إرسال"
     },
     "classList": {
       "teacher": "Öğretmen",
