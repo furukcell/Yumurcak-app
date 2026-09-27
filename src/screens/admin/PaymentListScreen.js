@@ -314,7 +314,7 @@ export default function PaymentListScreen() {
       <View style={styles.summaryGrid}>
         <SummaryBox title={t('admin.paymentList.openAmount')} value={formatMoney(stats.acikTutar)} color={THEME.red} />
         <SummaryBox title={t('admin.paymentList.thisMonth')} value={formatMoney(stats.buAyTutar)} color={THEME.primary} />
-        <SummaryBox title=t('admin.paymentList.paid') value={String(stats.odendi)} color={THEME.green} />
+        <SummaryBox title={t('admin.paymentList.paid')} value={String(stats.odendi)} color={THEME.green} />
         <SummaryBox title="Geciken" value={String(stats.gecikti)} color={THEME.red} />
       </View>
 
