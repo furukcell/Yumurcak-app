@@ -7,6 +7,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ref, onValue, get, update, remove, query, orderByChild, equalTo } from 'firebase/database';
+import { useTranslation } from 'react-i18next';
 
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +15,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
 
 export default function AdminVehicleListScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -41,7 +43,7 @@ export default function AdminVehicleListScreen({ navigation }) {
       );
       setServisciMap(Object.fromEntries(servisciResults.filter(Boolean)));
 
-      list.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
+      list.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', i18n.language));
       setVehicles(list);
       setLoading(false);
     }, () => setLoading(false));
@@ -51,12 +53,12 @@ export default function AdminVehicleListScreen({ navigation }) {
 
   function handleDelete(vehicle) {
     Alert.alert(
-      'Servis Aracını Sil',
-      `"${vehicle.ad || vehicle.plaka}" silinsin mi? Bu araca atanmış çocukların servis ataması kaldırılmayacak, ayrıca kontrol edip yeniden atamanız gerekir.`,
+      t('admin.vehicleList.deleteTitle'),
+      t('admin.vehicleList.deleteDesc', { name: vehicle.ad || vehicle.plaka }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('admin.vehicleList.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('admin.vehicleList.delete'),
           style: 'destructive',
           onPress: async () => {
             setDeletingId(vehicle.id);
@@ -64,7 +66,7 @@ export default function AdminVehicleListScreen({ navigation }) {
               await remove(ref(database, `servisler/${vehicle.id}`));
             } catch (error) {
               console.log(error);
-              Alert.alert('Hata', 'Araç silinemedi.');
+              Alert.alert(t('admin.vehicleList.errorTitle'), t('admin.vehicleList.deleteFailedDesc'));
             } finally {
               setDeletingId(null);
             }
@@ -80,11 +82,11 @@ export default function AdminVehicleListScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Servis Araçları</Text>
-              <Text style={styles.subtitle}>{vehicles.length} araç kayıtlı</Text>
+              <Text style={styles.title}>{t('admin.vehicleList.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.vehicleList.subtitle', { count: vehicles.length })}</Text>
             </View>
           </View>
 
@@ -93,13 +95,13 @@ export default function AdminVehicleListScreen({ navigation }) {
             onPress={() => navigation.navigate('AdminVehicleForm')}
             activeOpacity={0.85}
           >
-            <Text style={styles.addButtonText}>+ Yeni Servis Aracı Ekle</Text>
+            <Text style={styles.addButtonText}>{t('admin.vehicleList.addButton')}</Text>
           </TouchableOpacity>
 
           {loading ? (
             <ActivityIndicator color={theme.primary} style={{ marginTop: 30 }} />
           ) : vehicles.length === 0 ? (
-            <Text style={styles.emptyText}>Henüz servis aracı eklenmedi.</Text>
+            <Text style={styles.emptyText}>{t('admin.vehicleList.emptyText')}</Text>
           ) : (
             vehicles.map((vehicle) => {
               const servisci = servisciMap[vehicle.servisciId];
@@ -112,8 +114,8 @@ export default function AdminVehicleListScreen({ navigation }) {
                 >
                   <View style={styles.cardHeaderRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.vehicleName}>{vehicle.ad || 'İsimsiz Servis'}</Text>
-                      <Text style={styles.vehiclePlaka}>{vehicle.plaka || 'Plaka girilmemiş'}</Text>
+                      <Text style={styles.vehicleName}>{vehicle.ad || t('admin.vehicleList.unnamedVehicle')}</Text>
+                      <Text style={styles.vehiclePlaka}>{vehicle.plaka || t('admin.vehicleList.plateNotEntered')}</Text>
                     </View>
                     <TouchableOpacity
                       disabled={deletingId === vehicle.id}
@@ -125,7 +127,7 @@ export default function AdminVehicleListScreen({ navigation }) {
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.servisciText}>
-                    {servisci ? `👤 ${servisci.ad || servisci.kullaniciAdi}` : '⚠️ Görevli hesabı bulunamadı'}
+                    {servisci ? `👤 ${servisci.ad || servisci.kullaniciAdi}` : `⚠️ ${t('admin.vehicleList.staffNotFound')}`}
                   </Text>
                 </TouchableOpacity>
               );
