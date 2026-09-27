@@ -1976,6 +1976,29 @@
       "noChildAssigned": "لا يوجد أطفال معينون لهذه المركبة.",
       "arrivedAt": "وصل الساعة {{time}}",
       "notArrivedYet": "لم يصل بعد"
+    },
+    "vehicleForm": {
+      "missingVehicleFieldsDesc": "رقم اللوحة واسم المركبة مطلوبان",
+      "missingStaffFieldsDesc": "اسم المستخدم والاسم الكامل للمسؤول عن الخدمة مطلوبان",
+      "authErrorDesc": "يوجد بالفعل حساب Firebase Auth بهذا اسم المستخدم. جرّب اسمًا آخر.",
+      "saveFailedDesc": "تعذّر حفظ مركبة الخدمة.\n\n{{detail}}",
+      "deleteDesc": "سيتم حذف {{name}} ({{plaka}}) نهائيًا. لا يمكن التراجع عن هذا الإجراء: سيتم حذف سجل المركبة وأي حساب مرتبط بالمسؤول بالكامل.",
+      "noPlateFallback": "لا توجد لوحة",
+      "deleteFailedDesc": "تعذّر حذف مركبة الخدمة.\n\n{{detail}}",
+      "updatedToast": "تم تحديث مركبة الخدمة",
+      "createdToast": "تم إنشاء مركبة الخدمة",
+      "vehicleInfoTitle": "معلومات المركبة",
+      "vehicleNameLabel": "اسم المركبة",
+      "vehicleNamePlaceholder": "مثال: المركبة رقم 1 / رحلة الصباح",
+      "plateLabel": "رقم اللوحة",
+      "platePlaceholder": "مثال: 48 AB 123",
+      "staffSectionTitle": "المسؤول عن الخدمة",
+      "staffSectionNote": "يمكن للمسؤول المعيّن لهذه المركبة تسجيل الدخول بحسابه الخاص وتحديد الأطفال كمُصطحَبين/تم إنزالهم. لا حاجة لإنشاء حساب منفصل للسائق.",
+      "usernamePlaceholder": "مثال: service1",
+      "staffNamePlaceholder": "مثال: فاطمة أحمد",
+      "passwordNoteEdit": "اتركه فارغًا للاحتفاظ بكلمة المرور الحالية.",
+      "passwordNoteNew": "اتركه فارغًا وستكون كلمة المرور الافتراضية 123456.",
+      "defaultVehicleFallback": "هذه المركبة"
     }
   }
 }
