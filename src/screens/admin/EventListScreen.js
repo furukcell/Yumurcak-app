@@ -10,6 +10,7 @@ import {
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 
 const THEME = {
@@ -25,6 +26,7 @@ const THEME = {
 };
 
 export default function EventListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kres, kullanici } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
@@ -53,7 +55,7 @@ export default function EventListScreen() {
 
         return {
           id,
-          baslik: e.baslik || 'İsimsiz Etkinlik',
+          baslik: e.baslik || null,
           tarih: e.tarih || null,
           saat: e.saat || null,
           aciklama: e.aciklama || null,
@@ -113,7 +115,7 @@ export default function EventListScreen() {
       activeOpacity={0.8}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.baslik}>{item.baslik}</Text>
+        <Text style={styles.baslik}>{item.baslik || t('admin.eventList.unnamedEvent')}</Text>
         <View style={[
           styles.badge,
           { backgroundColor: item.aktif ? '#E8F9EF' : '#FFE8EC' }
@@ -122,7 +124,7 @@ export default function EventListScreen() {
             styles.badgeText,
             { color: item.aktif ? THEME.green : THEME.red }
           ]}>
-            {item.aktif ? 'Aktif' : 'Pasif'}
+            {item.aktif ? t('admin.eventList.activeLabel') : t('admin.eventList.inactiveLabel')}
           </Text>
         </View>
       </View>
@@ -132,7 +134,7 @@ export default function EventListScreen() {
       </Text>
 
       <Text style={styles.satir}>
-        🏫 {item.sinifAdlari.length > 0 ? item.sinifAdlari.join(', ') : 'Sınıf seçilmemiş'}
+        🏫 {item.sinifAdlari.length > 0 ? item.sinifAdlari.join(', ') : t('admin.eventList.noClassSelected')}
       </Text>
 
       {item.aciklama ? (
@@ -154,8 +156,8 @@ export default function EventListScreen() {
       <View style={styles.container}>
         {etkinlikler.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Henüz etkinlik eklenmemiş</Text>
-            <Text style={styles.emptySubtext}>İlk etkinliği ekleyerek başla!</Text>
+            <Text style={styles.emptyText}>{t('admin.eventList.emptyText')}</Text>
+            <Text style={styles.emptySubtext}>{t('admin.eventList.emptySubtext')}</Text>
           </View>
         ) : (
           <FlatList
