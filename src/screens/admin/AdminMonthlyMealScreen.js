@@ -499,7 +499,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 ogun="ogle"
                 values={selectedValue.ogle}
                 onChange={(list) => updateMealList(selectedDateKey, 'ogle', list)}
-                placeholder="{t('admin.monthly.meal.lunchPlaceholder')}"
+                placeholder={t('admin.monthly.meal.lunchPlaceholder')}
                 theme={theme}
               />
 
@@ -508,7 +508,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 ogun="araOgun"
                 values={selectedValue.araOgun}
                 onChange={(list) => updateMealList(selectedDateKey, 'araOgun', list)}
-                placeholder="{t('admin.monthly.meal.snackPlaceholder')}"
+                placeholder={t('admin.monthly.meal.snackPlaceholder')}
                 theme={theme}
               />
 
