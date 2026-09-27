@@ -32,7 +32,10 @@
     "loading": "جارٍ التحضير...",
     "error": "خطأ",
     "save": "حفظ",
-    "saving": "جارٍ الحفظ..."
+    "saving": "جارٍ الحفظ...",
+    "info": "معلومات",
+    "success": "تم بنجاح",
+    "missingInfo": "معلومات ناقصة"
   },
   "nav": {
     "summary": "ملخص",
@@ -2265,6 +2268,55 @@
       "noteLabel": "Additional Note",
       "notePlaceholder": "Transport, registration, meeting note...",
       "save": "Save Institution Information"
+    },
+    "serviceMonthlyStats": {
+      "back": "رجوع",
+      "title": "إحصاءات النقل الشهرية",
+      "warningTitle": "⚠️ الأطفال الذين يستخدمون النقل بشكل نادر",
+      "empty": "لا توجد سجلات لهذا الشهر بعد أو أن جميع الأطفال استخدموا النقل بانتظام.",
+      "tripDays": "أيام الرحلات",
+      "avgMorning": "متوسط مدة الصباح",
+      "avgReturn": "متوسط مدة العودة",
+      "warningCounts": "الاستلام: {{pickup}}/{{days}} · التوصيل: {{dropoff}}/{{days}}",
+      "childCounts": "تم الاستلام {{pickup}}/{{days}} · تم التوصيل {{dropoff}}/{{days}}"
+    },
+    "statistics": {
+      "title": "إحصاءات المؤسسة",
+      "subtitle": "الاتجاه العام واستخدام المعلمين وتحليل مخاطر الأطفال",
+      "loading": "جارٍ إعداد الإحصاءات...",
+      "overview": "الحالة العامة للمؤسسة",
+      "attendance": "📅 حضور اليوم",
+      "payments": "💰 مدفوعات هذا الشهر",
+      "parentEngagement": "🔔 تفاعل أولياء الأمور",
+      "teacherUsage": "استخدام المعلمين / الفصول",
+      "childRisk": "تطور الأطفال والمخاطر",
+      "noRisk": "لا توجد مخاطر ملحوظة",
+      "riskList": "قائمة المخاطر",
+      "teacherLogs": "سجلات دخول المعلمين"
+    },
+    "subscription": {
+      "loading": "جارٍ إعداد معلومات الاشتراك...",
+      "title": "الاشتراك / الدفع",
+      "usageTitle": "استخدام الطلاب",
+      "usageDesc": "يتم تتبع عدد الطلاب المسجلين مقارنة بحد الباقة.",
+      "startTrial": "بدء أول شهر تجريبي مجاني",
+      "paymentPeriod": "فترة الدفع",
+      "monthly": "شهري",
+      "yearly": "سنوي",
+      "twoMonthsFree": "شهران مجانًا",
+      "packagesTitle": "الباقات حسب عدد الطلاب",
+      "specialTitle": "أكثر من 100 طالب",
+      "specialDesc": "للمؤسسات الكبيرة يتم تقديم عرض مخصص.",
+      "restore": "استعادة عملية الشراء",
+      "paymentWarning": "تعذر الحصول على معلومات الدفع من Google Play. يمكنك المتابعة باستخدام العرض التجريبي أو رمز ترويجي.",
+      "promoTitle": "رمز ترويجي",
+      "promoPlaceholder": "الرمز الترويجي",
+      "applyPromo": "تطبيق الرمز",
+      "specialOffer": "عرض خاص",
+      "subscriptionNotFound": "لم يتم العثور على الاشتراك",
+      "codeUsed": "تم استخدام الرمز",
+      "invalidCode": "رمز غير صالح",
+      "limitReached": "تم الوصول إلى الحد"
     }
   }
 }
