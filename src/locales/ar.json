@@ -2182,7 +2182,8 @@
         "publishedDesc": "يمكن للموظفين رؤية جدول هذا الشهر حالياً.",
         "publishButton": "نشر جدول {{month}}",
         "personnelPlaceholder": "موظف المناوبة (مثال: المعلمة عائشة)"
-      }
+      },
+      "unpublishFailed": "تعذر إلغاء النشر."
     }
   }
 }
