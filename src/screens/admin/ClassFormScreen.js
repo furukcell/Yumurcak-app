@@ -5,6 +5,7 @@
 // çocukların listesi gösteriliyor (sinifCocuklari index'i üzerinden).
 // ============================================================
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator, Platform
@@ -32,6 +33,7 @@ export default function ClassFormScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { kullanici } = useAuth();
+  const { t } = useTranslation();
   const { classId } = route.params || {};
 
   const [ad, setAd] = useState('');
@@ -58,7 +60,7 @@ export default function ClassFormScreen() {
       }).catch((error) => {
         console.error(error);
         setFetching(false);
-        Alert.alert('Hata', 'Sınıf bilgileri yüklenemedi');
+        Alert.alert(t('admin.classForm.error'), t('admin.classForm.loadFailed'));
       });
     }
   }, [classId]);
@@ -102,7 +104,7 @@ export default function ClassFormScreen() {
       setSiniftakiCocuklar(liste);
       setCocuklarYukleniyor(false);
     } catch (error) {
-      console.warn('Sınıf çocukları çekme hatası:', error);
+      console.warn(t('admin.classForm.childrenLoadError'), error);
       setSiniftakiCocuklar([]);
       setCocuklarYukleniyor(false);
     }
@@ -114,7 +116,7 @@ export default function ClassFormScreen() {
 
   const handleSave = async () => {
     if (!ad.trim() || !yasGrubu.trim()) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
+      Alert.alert(t('admin.classForm.error'), t('admin.classForm.fillAll'));
       return;
     }
 
@@ -160,7 +162,7 @@ export default function ClassFormScreen() {
         navigation.goBack();
       }, 900);
     } catch (error) {
-      Alert.alert('Hata', 'Sınıf kaydedilemedi');
+      Alert.alert(t('admin.classForm.error'), t('admin.classForm.saveFailed'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -179,7 +181,7 @@ export default function ClassFormScreen() {
     <View style={styles.screen}>
       <AppSuccessToast
         visible={successToast}
-        message={classId ? 'Sınıf bilgileri güncellendi' : 'Sınıf kaydedildi'}
+        message={classId ? t('admin.classForm.updated') : t('admin.classForm.saved')}
         onHide={() => setSuccessToast(false)}
       />
     <KeyboardAvoidingView
@@ -190,18 +192,18 @@ export default function ClassFormScreen() {
       <ScrollView style={styles.container}>
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Sınıf Adı *</Text>
+            <Text style={styles.label}>{t('admin.classForm.className')} *</Text>
             <TextInput
               style={styles.input}
               value={ad}
               onChangeText={setAd}
-              placeholder="Örn: Papatya Sınıfı"
+              placeholder={t('admin.classForm.classNamePlaceholder')}
               placeholderTextColor="#999"
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Yaş Grubu *</Text>
+            <Text style={styles.label}>{t('admin.classForm.ageGroup')} *</Text>
             <View style={styles.chipWrap}>
               {YAS_GRUPLARI.map((item) => {
                 const active = yasGrubu === item.label;
@@ -228,7 +230,7 @@ export default function ClassFormScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.saveButtonText}>
-                {classId ? 'Güncelle' : 'Oluştur'}
+                {classId ? t('common.update') : t('common.create')}
               </Text>
             )}
           </TouchableOpacity>
@@ -236,13 +238,13 @@ export default function ClassFormScreen() {
           {classId && (
             <View style={styles.childrenSection}>
               <Text style={styles.childrenTitle}>
-                Bu Sınıftaki Çocuklar {cocuklarYukleniyor ? '' : `(${siniftakiCocuklar.length})`}
+                {t('admin.classForm.childrenTitle')} {cocuklarYukleniyor ? '' : `(${siniftakiCocuklar.length})`}
               </Text>
 
               {cocuklarYukleniyor ? (
                 <ActivityIndicator size="small" color="#3C3489" style={{ marginTop: 12 }} />
               ) : siniftakiCocuklar.length === 0 ? (
-                <Text style={styles.childrenEmpty}>Bu sınıfa henüz çocuk atanmamış.</Text>
+                <Text style={styles.childrenEmpty}>{t('admin.classForm.noChildren')}</Text>
               ) : (
                 siniftakiCocuklar.map((c) => (
                   <TouchableOpacity
