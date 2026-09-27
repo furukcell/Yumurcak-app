@@ -32,7 +32,10 @@
     "loading": "Preparing...",
     "error": "Error",
     "save": "Save",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "info": "Info",
+    "success": "Success",
+    "missingInfo": "Missing Information"
   },
   "nav": {
     "summary": "Summary",
@@ -2265,6 +2268,55 @@
       "noteLabel": "Additional Note",
       "notePlaceholder": "Transport, registration, meeting note...",
       "save": "Save Institution Information"
+    },
+    "serviceMonthlyStats": {
+      "back": "Back",
+      "title": "Monthly Service Statistics",
+      "warningTitle": "⚠️ Children Who Rarely Use the Service",
+      "empty": "No records yet for this month, or all children used the service regularly.",
+      "tripDays": "Trip Days",
+      "avgMorning": "Avg. Morning Duration",
+      "avgReturn": "Avg. Return Duration",
+      "warningCounts": "Pickup: {{pickup}}/{{days}} · Drop-off: {{dropoff}}/{{days}}",
+      "childCounts": "{{pickup}}/{{days}} picked up · {{dropoff}}/{{days}} dropped off"
+    },
+    "statistics": {
+      "title": "Institution Statistics",
+      "subtitle": "Overall trends, teacher usage and child-based risk analysis",
+      "loading": "Preparing statistics...",
+      "overview": "Institution Overview",
+      "attendance": "📅 Today's Attendance",
+      "payments": "💰 This Month's Payments",
+      "parentEngagement": "🔔 Parent Engagement",
+      "teacherUsage": "Teacher / Class Usage",
+      "childRisk": "Child Development and Risk",
+      "noRisk": "No significant risk",
+      "riskList": "Risk List",
+      "teacherLogs": "Teacher Login Records"
+    },
+    "subscription": {
+      "loading": "Preparing subscription information...",
+      "title": "Subscription / Payment",
+      "usageTitle": "Student Usage",
+      "usageDesc": "Registered student count is tracked against the package limit.",
+      "startTrial": "Start First Month Free Trial",
+      "paymentPeriod": "Payment Period",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "twoMonthsFree": "2 months free",
+      "packagesTitle": "Packages by Student Count",
+      "specialTitle": "100+ students",
+      "specialDesc": "Large institutions proceed with a custom offer. This package can be managed as a manual or corporate plan.",
+      "restore": "Restore Purchase",
+      "paymentWarning": "Google Play payment information could not be retrieved. You can continue with a demo or promo code.",
+      "promoTitle": "Promo Code",
+      "promoPlaceholder": "Promo code",
+      "applyPromo": "Apply Code",
+      "specialOffer": "Special Offer",
+      "subscriptionNotFound": "Subscription Not Found",
+      "codeUsed": "Code Already Used",
+      "invalidCode": "Invalid Code",
+      "limitReached": "Limit Reached"
     }
   }
 }
