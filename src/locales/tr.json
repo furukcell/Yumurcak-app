@@ -32,7 +32,10 @@
     "loading": "Hazırlanıyor...",
     "error": "Hata",
     "save": "Kaydet",
-    "saving": "Kaydediliyor..."
+    "saving": "Kaydediliyor...",
+    "info": "Bilgi",
+    "success": "Başarılı",
+    "missingInfo": "Eksik Bilgi"
   },
   "nav": {
     "summary": "Özet",
@@ -2265,6 +2268,55 @@
       "noteLabel": "Ek Not",
       "notePlaceholder": "Servis, kayıt, görüşme notu...",
       "save": "Kurum Bilgilerini Kaydet"
+    },
+    "serviceMonthlyStats": {
+      "back": "Geri",
+      "title": "Aylık Servis İstatistikleri",
+      "warningTitle": "⚠️ Servis Kullanıp Sık Binmeyenler",
+      "empty": "Bu ay için henüz kayıt yok ya da tüm çocuklar düzenli kullanmış.",
+      "tripDays": "Sefer Günü",
+      "avgMorning": "Ort. Sabah Süresi",
+      "avgReturn": "Ort. Dönüş Süresi",
+      "warningCounts": "Alınma: {{pickup}}/{{days}} · Bırakılma: {{dropoff}}/{{days}}",
+      "childCounts": "{{pickup}}/{{days}} alındı · {{dropoff}}/{{days}} bırakıldı"
+    },
+    "statistics": {
+      "title": "Kurum İstatistikleri",
+      "subtitle": "Genel gidişat, öğretmen kullanımı ve çocuk bazlı risk analizi",
+      "loading": "İstatistikler hazırlanıyor...",
+      "overview": "Kurum Genel Durum",
+      "attendance": "📅 Bugünkü Yoklama",
+      "payments": "💰 Bu Ay Ödeme Durumu",
+      "parentEngagement": "🔔 Veli Etkileşimi",
+      "teacherUsage": "Öğretmen / Sınıf Kullanımı",
+      "childRisk": "Çocuk Bazlı Gelişim ve Risk",
+      "noRisk": "Belirgin risk yok",
+      "riskList": "Risk Listesi",
+      "teacherLogs": "Öğretmen Giriş Kayıtları"
+    },
+    "subscription": {
+      "loading": "Abonelik bilgileri hazırlanıyor...",
+      "title": "Abonelik / Ödeme",
+      "usageTitle": "Öğrenci Kullanımı",
+      "usageDesc": "Kayıtlı öğrenci sayısı paket limitine göre takip edilir.",
+      "startTrial": "İlk 1 Ay Ücretsiz Denemeyi Başlat",
+      "paymentPeriod": "Ödeme Dönemi",
+      "monthly": "Aylık",
+      "yearly": "Yıllık",
+      "twoMonthsFree": "2 ay ücretsiz",
+      "packagesTitle": "Öğrenci Sayısına Göre Paketler",
+      "specialTitle": "100+ öğrenci",
+      "specialDesc": "Büyük kurumlar için özel teklif ile ilerlenir. Bu paket manuel satış veya özel kurumsal plan olarak yönetilebilir.",
+      "restore": "Satın Almayı Geri Yükle",
+      "paymentWarning": "Google Play ödeme bilgileri şu an alınamadı. Demo veya promosyon kodu ile devam edebilirsiniz.",
+      "promoTitle": "Promosyon Kodu",
+      "promoPlaceholder": "Promosyon kodu",
+      "applyPromo": "Kodu Uygula",
+      "specialOffer": "Özel Teklif",
+      "subscriptionNotFound": "Abonelik Bulunamadı",
+      "codeUsed": "Kod Kullanılmış",
+      "invalidCode": "Geçersiz Kod",
+      "limitReached": "Limit Doldu"
     }
   }
 }
