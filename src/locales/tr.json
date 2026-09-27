@@ -2213,7 +2213,8 @@
         "endTime": "Bitiş Saati",
         "category": "Kategori",
         "descriptionPlaceholder": "Açıklama (opsiyonel)"
-      }
+      },
+      "publishing": "Yayınlanıyor..."
     },
     "authMigration": {
       "usersLoadFailed": "Kullanıcılar yüklenemedi.",
@@ -2230,7 +2231,18 @@
       "users": "Kullanıcılar",
       "authPending": "Auth bekliyor",
       "log": "Log",
-      "noLog": "Henüz işlem yok."
+      "noLog": "Henüz işlem yok.",
+      "confirmTitle": "Firebase Auth Geçişi",
+      "confirmDesc": "authUid olmayan kullanıcılar için Firebase Auth hesabı oluşturulacak. Devam edilsin mi?",
+      "noUsers": "Taşınacak kullanıcı yok.",
+      "skippedPassword": "Atlandı: {{username}} şifre en az 6 karakter olmalı.",
+      "migrated": "Taşınmış",
+      "alreadyExists": "Zaten var: {{username}}. Firebase Console'da email var; manuel eşleştirme gerekebilir.",
+      "userError": "Hata: {{username}} -> {{error}}",
+      "total": "Toplam",
+      "waiting": "Bekleyen",
+      "warningText": "Production rules'a geçmeden önce tüm kullanıcıların authUid alması ve 3 rolün giriş testinden geçmesi gerekir.",
+      "done": "Tamam"
     },
     "institutionSettings": {
       "loadFailed": "Kurum bilgileri yüklenemedi.",
@@ -2346,7 +2358,9 @@
       "empty": "Ödeme kaydı yok",
       "emptyDesc": "Yeni ödeme oluşturmak için + Kayıt butonuna bas",
       "create": "+ Ödeme Kaydı Oluştur",
-      "updateFailed": "Ödeme durumu güncellenemedi."
+      "updateFailed": "Ödeme durumu güncellenemedi.",
+      "openAmount": "Açık Tutar",
+      "thisMonth": "Bu Ay"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2363,7 +2377,15 @@
       "targetLabel": "Duyuru Hedefi",
       "noClasses": "Henüz sınıf bulunamadı.",
       "selectClass": "Sınıf Seç",
-      "urgent": "Acil Duyuru"
+      "urgent": "Acil Duyuru",
+      "targetParents": "Bu duyuru sadece velilere gönderilecek.",
+      "targetTeachers": "Bu duyuru sadece öğretmenlere gönderilecek.",
+      "targetClass": "Bu duyuru seçilen sınıfa bağlı kişilere gönderilecek.",
+      "targetAll": "Bu duyuru tüm kuruma gönderilecek.",
+      "admin": "Yönetici",
+      "updated": "Duyuru güncellendi",
+      "sent": "Duyuru gönderildi",
+      "send": "Gönder"
     },
     "classList": {
       "teacher": "Öğretmen",
