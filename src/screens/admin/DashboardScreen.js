@@ -338,7 +338,7 @@ export default function DashboardScreen() {
             <TouchableOpacity style={styles.inboxItem} onPress={() => navigation.navigate('AdminMessages')} activeOpacity={0.8}>
               <Text style={styles.inboxEmoji}>💬</Text>
               <View style={styles.inboxTextBlock}>
-                <Text style={styles.inboxTitle}>Mesajlar</Text>
+                <Text style={styles.inboxTitle}>{t('admin.dashboard.messages')}</Text>
                 <Text style={styles.inboxSub}>{unreadMessages > 0 ? `${unreadMessages} ${t('admin.dashboard.new')}` : t('admin.dashboard.current')}</Text>
               </View>
               {unreadMessages > 0 ? (
@@ -349,7 +349,7 @@ export default function DashboardScreen() {
             <TouchableOpacity style={styles.inboxItem} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
               <Text style={styles.inboxEmoji}>🔔</Text>
               <View style={styles.inboxTextBlock}>
-                <Text style={styles.inboxTitle}>Bildirimler</Text>
+                <Text style={styles.inboxTitle}>{t('admin.dashboard.notifications')}</Text>
                 <Text style={styles.inboxSub}>{unreadNotifications > 0 ? `${unreadNotifications} ${t('admin.dashboard.new')}` : t('admin.dashboard.current')}</Text>
               </View>
               {unreadNotifications > 0 ? (
@@ -402,7 +402,7 @@ export default function DashboardScreen() {
                     {kategori.items.map((item, index) => {
                       const badgeCount = item.badgeKey === 'messages' ? unreadMessages : 0;
                       return (
-                        <TouchableOpacity key={item.title} style={[styles.catItem, index === 0 && styles.catItemFirst]} onPress={() => itemeGit(item)} activeOpacity={0.8}>
+                        <TouchableOpacity key={item.titleKey} style={[styles.catItem, index === 0 && styles.catItemFirst]} onPress={() => itemeGit(item)} activeOpacity={0.8}>
                           <Text style={styles.catItemEmoji}>{item.icon}</Text>
                           <Text style={[styles.catItemName, badgeCount > 0 && styles.catItemNameUnread]} numberOfLines={1} ellipsizeMode="tail">{t(item.titleKey)}</Text>
                           {item.comingSoon ? (
