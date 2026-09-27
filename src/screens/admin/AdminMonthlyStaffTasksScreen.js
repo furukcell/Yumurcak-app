@@ -269,7 +269,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.monthCenter}>
               <Text style={styles.monthLabel}>{monthLabel}</Text>
-              <Text style={styles.monthHint}>{loadingDraft ? '{t('admin.monthly.loading')}' : '{t('admin.monthly.staff.draft')}'}</Text>
+              <Text style={styles.monthHint}>{loadingDraft ? t('admin.monthly.loading') : t('admin.monthly.staff.draft')}</Text>
             </View>
             <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
               <Text style={styles.monthButtonText}>›</Text>
@@ -283,7 +283,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
                 <Text style={styles.publishedText}>{t('admin.monthly.staff.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? '{t('admin.monthly.unpublishing')}' : t('admin.monthly.unpublishTitle')}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublishTitle')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -343,7 +343,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : {t('admin.monthly.staff.publishButton', { month: monthLabel })}}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('admin.monthly.publishing') : t('admin.monthly.staff.publishButton', { month: monthLabel })}</Text>
           </TouchableOpacity>
 
           {publishedCount > 0 ? (
