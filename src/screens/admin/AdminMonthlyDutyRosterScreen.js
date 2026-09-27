@@ -52,7 +52,7 @@ function buildDutyRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: `${monthLabel} {t('admin.monthly.duty.title')}`,
+    baslik: `${monthLabel} ${t('admin.monthly.duty.title')}`,
     personel: String(value.personel || '').trim(),
     not: String(value.not || '').trim(),
     aktif: true,
@@ -300,7 +300,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
                 <Text style={styles.publishedText}>{t('admin.monthly.duty.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? '{t('admin.monthly.unpublishing')}' : t('admin.monthly.unpublishTitle')}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublishTitle')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -333,7 +333,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
           />
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : {t('admin.monthly.duty.publishButton', { month: monthLabel })}}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('admin.monthly.publishing') : t('admin.monthly.duty.publishButton', { month: monthLabel })}</Text>
           </TouchableOpacity>
 
           <View style={{ marginTop: 14 }}>
