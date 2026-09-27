@@ -569,7 +569,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
                   <View style={styles.libraryRow}>
                     <ActivityLibraryPicker
                       yasGrubu={yasGrubu}
-                      initial{t('admin.monthly.schedule.category')}={selectedValue.etkinlikler[editingIndex].kategori || ETKINLIK_KATEGORILERI[0].key}
+                      initialKategori={selectedValue.etkinlikler[editingIndex].kategori || ETKINLIK_KATEGORILERI[0].key}
                       onSelect={(ad) => updateItemField(selectedDateKey, editingIndex, 'etkinlik', ad)}
                       theme={theme}
                     />
