@@ -197,7 +197,7 @@ export default function AdminSubscriptionScreen() {
       const nextTier = getSuggestedTier(studentCount);
       return Alert.alert(
         'Paket Yetersiz',
-        `${tier.title} paketi ${tier.range} içindir. Kurumda şu an ${studentCount} öğrenci var. ${nextTier ? `${nextTier.title} paketini seçmelisin.` : '{i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.'}`
+        `${tier.title} paketi ${tier.range} içindir. Kurumda şu an ${studentCount} öğrenci var. ${nextTier ? `${nextTier.title} paketini seçmelisin.` : `${i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.`}`
       );
     }
 
@@ -207,7 +207,7 @@ export default function AdminSubscriptionScreen() {
 
     if (rcPackage) {
       Alert.alert(
-        `${tier.title} ${selectedPeriod === 'yillik' ? '{i18n.t('admin.subscription.yearly')}' : '{i18n.t('admin.subscription.monthly')}'}`,
+        `${tier.title} ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`,
         `${tier.range}\n${priceText}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.`,
         [
           { text: 'Vazgeç', style: 'cancel' },
@@ -307,7 +307,7 @@ export default function AdminSubscriptionScreen() {
 
   const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();
-    if (!code) return Alert.alert(i18n.t('common.missingInfo'), '{i18n.t('admin.subscription.promoPlaceholder')} gir.');
+    if (!code) return Alert.alert(i18n.t('common.missingInfo'), `${i18n.t('admin.subscription.promoPlaceholder')} gir.`);
 
     setSaving(true);
     try {
@@ -324,7 +324,7 @@ export default function AdminSubscriptionScreen() {
 
       if (!promo || promo.aktif === false) {
         setSaving(false);
-        return Alert.alert(i18n.t('admin.subscription.invalidCode'), '{i18n.t('admin.subscription.promoPlaceholder')} bulunamadı veya aktif değil.');
+        return Alert.alert(i18n.t('admin.subscription.invalidCode'), `${i18n.t('admin.subscription.promoPlaceholder')} bulunamadı veya aktif değil.`);
       }
 
       const used = Number(promo.kullanimSayisi || 0);
@@ -369,7 +369,7 @@ export default function AdminSubscriptionScreen() {
       Alert.alert(i18n.t('common.success'), `${code} kodu uygulandı. 1 ay demo tanımlandı.`);
     } catch (err) {
       console.error(err);
-      Alert.alert(i18n.t('common.error'), '{i18n.t('admin.subscription.promoPlaceholder')} uygulanamadı.');
+      Alert.alert(i18n.t('common.error'), `${i18n.t('admin.subscription.promoPlaceholder')} uygulanamadı.`);
     } finally {
       setSaving(false);
     }
@@ -430,7 +430,7 @@ export default function AdminSubscriptionScreen() {
               ? 'Mevcut paket öğrenci sayısı için yetersiz. Yeni öğrenci eklemek için üst pakete geçilmelidir.'
               : suggestedTier
                 ? `Size uygun paket: ${suggestedTier.title} (${suggestedTier.range})`
-                : '{i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.'}
+                : `${i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.`}
           </Text>
         </View>
 
@@ -485,7 +485,7 @@ export default function AdminSubscriptionScreen() {
             style={styles.input}
             value={promoCode}
             onChangeText={setPromoCode}
-            placeholder="{i18n.t('admin.subscription.promoPlaceholder')}"
+            placeholder={i18n.t('admin.subscription.promoPlaceholder')}
             placeholderTextColor="#999"
             autoCapitalize="characters"
           />
@@ -516,7 +516,7 @@ function PlanCard({ tier, period, studentCount, active, suggested, disabled, sav
       </View>
       <Text style={styles.planDesc}>{tier.desc}</Text>
       <Text style={styles.planPrice}>{formatPrice(price)} <Text style={styles.planSuffix}>{suffix}</Text></Text>
-      <Text style={styles.planSmall}>{period === 'yillik' ? '{i18n.t('admin.subscription.yearly')} ödemede {i18n.t('admin.subscription.twoMonthsFree')}' : '{i18n.t('admin.subscription.monthly')} yenilenir'}</Text>
+      <Text style={styles.planSmall}>{period === 'yillik' ? `${i18n.t('admin.subscription.yearly')} ödemede ${i18n.t('admin.subscription.twoMonthsFree')}` : `${i18n.t('admin.subscription.monthly')} yenilenir`}</Text>
       <TouchableOpacity style={[styles.planButton, disabled && styles.planButtonDisabled]} onPress={onPress} disabled={saving || disabled} activeOpacity={0.85}>
         <Text style={styles.planButtonText}>{disabled ? `${studentCount} öğrenci için yetersiz` : active ? 'Planı Yönet' : 'Paketi Seç'}</Text>
       </TouchableOpacity>
