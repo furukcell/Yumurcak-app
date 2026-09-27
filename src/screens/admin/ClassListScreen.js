@@ -128,7 +128,7 @@ export default function ClassListScreen() {
 
           <View style={styles.classMainInfo}>
             <Text style={styles.className} numberOfLines={1} ellipsizeMode="tail">
-              {item.ad || 'İsimsiz {t('admin.classList.class')}'}
+              {item.ad || t('admin.classList.unnamedClass')}
             </Text>
             <Text style={styles.classSubText} numberOfLines={1} ellipsizeMode="tail">
               {item.yasGrubu || 'Yaş grubu belirtilmemiş'}
