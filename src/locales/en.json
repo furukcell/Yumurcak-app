@@ -2213,7 +2213,8 @@
         "endTime": "End Time",
         "category": "Category",
         "descriptionPlaceholder": "Description (optional)"
-      }
+      },
+      "publishing": "Publishing..."
     },
     "authMigration": {
       "usersLoadFailed": "Users could not be loaded.",
@@ -2230,7 +2231,18 @@
       "users": "Users",
       "authPending": "Auth pending",
       "log": "Log",
-      "noLog": "No operation yet."
+      "noLog": "No operation yet.",
+      "confirmTitle": "Firebase Auth Migration",
+      "confirmDesc": "A Firebase Auth account will be created for users without authUid. Continue?",
+      "noUsers": "No users to migrate.",
+      "skippedPassword": "Skipped: {{username}} password must be at least 6 characters.",
+      "migrated": "Migrated",
+      "alreadyExists": "Already exists: {{username}}. The email exists in Firebase Console; manual linking may be required.",
+      "userError": "Error: {{username}} -> {{error}}",
+      "total": "Total",
+      "waiting": "Pending",
+      "warningText": "Before switching to production rules, all users must have authUid and all 3 roles must pass login tests.",
+      "done": "Done"
     },
     "institutionSettings": {
       "loadFailed": "Institution information could not be loaded.",
@@ -2346,7 +2358,9 @@
       "empty": "Ödeme kaydı yok",
       "emptyDesc": "Yeni ödeme oluşturmak için + Kayıt butonuna bas",
       "create": "+ Ödeme Kaydı Oluştur",
-      "updateFailed": "Ödeme durumu güncellenemedi."
+      "updateFailed": "Ödeme durumu güncellenemedi.",
+      "openAmount": "Open Amount",
+      "thisMonth": "This Month"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2363,7 +2377,15 @@
       "targetLabel": "Duyuru Hedefi",
       "noClasses": "Henüz sınıf bulunamadı.",
       "selectClass": "Sınıf Seç",
-      "urgent": "Acil Duyuru"
+      "urgent": "Acil Duyuru",
+      "targetParents": "This announcement will be sent only to parents.",
+      "targetTeachers": "This announcement will be sent only to teachers.",
+      "targetClass": "This announcement will be sent to people linked to the selected class.",
+      "targetAll": "This announcement will be sent to the entire institution.",
+      "admin": "Administrator",
+      "updated": "Announcement updated",
+      "sent": "Announcement sent",
+      "send": "Send"
     },
     "classList": {
       "teacher": "Öğretmen",
