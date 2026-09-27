@@ -2182,7 +2182,8 @@
         "publishedDesc": "Das Personal kann den Dienstplan dieses Monats sehen.",
         "publishButton": "Dienstplan für {{month}} veröffentlichen",
         "personnelPlaceholder": "Diensthabende Person (z. B. Lehrkraft Ayşe)"
-      }
+      },
+      "unpublishFailed": "Die Veröffentlichung konnte nicht aufgehoben werden."
     }
   }
 }
