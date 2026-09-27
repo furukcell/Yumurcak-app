@@ -3,6 +3,7 @@
 // FAZ 4: Admin ödeme ekranı profesyonel liste + filtreler
 // ============================================================
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -35,10 +36,10 @@ const THEME = {
 };
 
 const DURUM_META = {
-  tum: { label: 'Tümü', icon: '📋', color: THEME.primary, bg: THEME.primarySoft },
-  odendi: { label: 'Ödendi', icon: '✅', color: THEME.green, bg: '#E9FBEF' },
-  bekliyor: { label: 'Bekliyor', icon: '⏳', color: THEME.orange, bg: '#FFF3DF' },
-  gecikti: { label: 'Gecikti', icon: '❗', color: THEME.red, bg: '#FFE8EC' },
+  tum: { label: t('admin.paymentList.all'), icon: '📋', color: THEME.primary, bg: THEME.primarySoft },
+  odendi: { label: t('admin.paymentList.paid'), icon: '✅', color: THEME.green, bg: '#E9FBEF' },
+  bekliyor: { label: t('admin.paymentList.pending'), icon: '⏳', color: THEME.orange, bg: '#FFF3DF' },
+  gecikti: { label: t('admin.paymentList.late'), icon: '❗', color: THEME.red, bg: '#FFE8EC' },
 };
 
 const AY_ADLARI = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -115,6 +116,7 @@ function getMonthKey(o = {}) {
 }
 
 export default function PaymentListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || kullanici?.kurumId || null;
@@ -215,8 +217,8 @@ export default function PaymentListScreen() {
       odendi: odemeler.filter((o) => o.durum === 'odendi').length,
       bekliyor: odemeler.filter((o) => o.durum === 'bekliyor').length,
       gecikti: odemeler.filter((o) => o.durum === 'gecikti').length,
-      acikTutar: bekleyenler.reduce((sum, o) => sum + o.tutarNumber, 0),
-      buAyTutar: odemeler.filter((o) => o.monthKey === buAy).reduce((sum, o) => sum + o.tutarNumber, 0),
+      acik{t('admin.paymentList.amount')}: bekleyenler.reduce((sum, o) => sum + o.tutarNumber, 0),
+      buAy{t('admin.paymentList.amount')}: odemeler.filter((o) => o.monthKey === buAy).reduce((sum, o) => sum + o.tutarNumber, 0),
     };
   }, [odemeler]);
 
@@ -236,7 +238,7 @@ export default function PaymentListScreen() {
         updatedAt: Date.now(),
       });
     } catch (e) {
-      Alert.alert('Hata', 'Ödeme durumu güncellenemedi.');
+      Alert.alert('Hata', t('admin.paymentList.updateFailed'));
     } finally {
       setBusyId(null);
     }
@@ -254,7 +256,7 @@ export default function PaymentListScreen() {
             </View>
             <View style={styles.cardTextBlock}>
               <Text style={styles.cocukAd} numberOfLines={1}>{item.cocukAd}</Text>
-              <Text style={styles.baslik} numberOfLines={1}>{item.baslik || item.aciklama || item.title || 'Aylık ücret'}</Text>
+              <Text style={styles.baslik} numberOfLines={1}>{item.baslik || item.aciklama || item.title || t('admin.paymentList.monthlyFee')}</Text>
               <Text style={styles.donem}>{item.donem}</Text>
             </View>
             <View style={[styles.durumBadge, { backgroundColor: meta.bg }]}>
@@ -264,11 +266,11 @@ export default function PaymentListScreen() {
 
           <View style={styles.infoRow}>
             <View>
-              <Text style={styles.infoLabel}>Tutar</Text>
+              <Text style={styles.infoLabel}>{t('admin.paymentList.amount')}</Text>
               <Text style={styles.tutar}>{formatMoney(item.tutar || item.amount)}</Text>
             </View>
             <View style={styles.infoRight}>
-              <Text style={styles.infoLabel}>{item.odemeTarihi ? 'Ödeme tarihi' : 'Son ödeme'}</Text>
+              <Text style={styles.infoLabel}>{item.odemeTarihi ? t('admin.paymentList.paymentDate') : t('admin.paymentList.dueDate')}</Text>
               <Text style={styles.tarih} numberOfLines={1}>{item.odemeTarihi || item.sonOdemeTarihi || '-'}</Text>
             </View>
           </View>
@@ -276,11 +278,11 @@ export default function PaymentListScreen() {
 
         <View style={styles.cardActions}>
           <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('PaymentForm', { paymentId: item.id })} activeOpacity={0.85}>
-            <Text style={styles.editBtnText}>Düzenle</Text>
+            <Text style={styles.editBtnText}>{t('admin.paymentList.edit')}</Text>
           </TouchableOpacity>
           {item.durum !== 'odendi' ? (
             <TouchableOpacity style={[styles.odendiBtn, busy && { opacity: 0.6 }]} onPress={() => odendiYap(item)} disabled={busy} activeOpacity={0.85}>
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.odendiBtnText}>Ödendi Yap</Text>}
+              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.odendiBtnText}>{t('admin.paymentList.paid')} Yap</Text>}
             </TouchableOpacity>
           ) : null}
         </View>
@@ -292,7 +294,7 @@ export default function PaymentListScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Ödemeler yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('admin.paymentList.loading')}</Text>
       </View>
     );
   }
@@ -301,18 +303,18 @@ export default function PaymentListScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerCard}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.headerTitle}>Ödemeler</Text>
-          <Text style={styles.headerSub}>Aidat ve ücret kayıtlarını buradan takip et</Text>
+          <Text style={styles.headerTitle}>{t('admin.paymentList.title')}</Text>
+          <Text style={styles.headerSub}>{t('admin.paymentList.subtitle')}</Text>
         </View>
         <TouchableOpacity style={styles.headerAddBtn} onPress={() => navigation.navigate('PaymentForm')} activeOpacity={0.85}>
-          <Text style={styles.headerAddText}>+ Kayıt</Text>
+          <Text style={styles.headerAddText}>{t('admin.paymentList.add')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.summaryGrid}>
-        <SummaryBox title="Açık Tutar" value={formatMoney(stats.acikTutar)} color={THEME.red} />
-        <SummaryBox title="Bu Ay" value={formatMoney(stats.buAyTutar)} color={THEME.primary} />
-        <SummaryBox title="Ödendi" value={String(stats.odendi)} color={THEME.green} />
+        <SummaryBox title="Açık {t('admin.paymentList.amount')}" value={formatMoney(stats.acik{t('admin.paymentList.amount')})} color={THEME.red} />
+        <SummaryBox title="Bu Ay" value={formatMoney(stats.buAy{t('admin.paymentList.amount')})} color={THEME.primary} />
+        <SummaryBox title=t('admin.paymentList.paid') value={String(stats.odendi)} color={THEME.green} />
         <SummaryBox title="Geciken" value={String(stats.gecikti)} color={THEME.red} />
       </View>
 
@@ -334,10 +336,10 @@ export default function PaymentListScreen() {
         {filteredPayments.length === 0 ? (
           <View style={styles.bos}>
             <Text style={styles.bosEmoji}>💳</Text>
-            <Text style={styles.bosYazi}>Ödeme kaydı yok</Text>
-            <Text style={styles.bosAlt}>Yeni ödeme oluşturmak için + Kayıt butonuna bas</Text>
+            <Text style={styles.bosYazi}>{t('admin.paymentList.empty')}</Text>
+            <Text style={styles.bosAlt}>Yeni ödeme oluşturmak için {t('admin.paymentList.add')} butonuna bas</Text>
             <TouchableOpacity style={styles.emptyAddBtn} onPress={() => navigation.navigate('PaymentForm')} activeOpacity={0.85}>
-              <Text style={styles.emptyAddText}>+ Ödeme Kaydı Oluştur</Text>
+              <Text style={styles.emptyAddText}>{t('admin.paymentList.create')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
