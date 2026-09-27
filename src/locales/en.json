@@ -2020,6 +2020,23 @@
       "completedPlural": "Completed",
       "emptyTitle": "No institution bell notifications yet",
       "emptyDesc": "They will appear here when parents say “On the way” or “At the door”."
+    },
+    "service": {
+      "title": "Service List",
+      "childrenUsingService": "{{count}} children use the service",
+      "print": "Print",
+      "shareDownload": "Share/Download",
+      "noChildren": "No registered children.",
+      "noClass": "No class",
+      "noVehicle": "No service vehicle has been added yet. Tap to add a vehicle.",
+      "pickupTimePlaceholder": "Pickup time (e.g. 08:00)",
+      "dropoffTimePlaceholder": "Drop-off time (e.g. 16:30)",
+      "notePlaceholder": "Note (e.g. service plate, driver name)",
+      "saveFailed": "Service information could not be saved.",
+      "emptyListTitle": "List Empty",
+      "emptyListDesc": "No children using the service.",
+      "exportFailed": "Service list could not be created.",
+      "updatedToast": "Service information updated"
     }
   }
 }
