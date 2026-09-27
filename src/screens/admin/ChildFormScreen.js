@@ -3,6 +3,7 @@
 // FAZ 19: Sınıf/veli listesi artık index üzerinden, sadece kendi kreşinden çekilir
 // ============================================================
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -23,6 +24,7 @@ function asArray(value) {
 }
 
 export default function ChildFormScreen() {
+  const { t } = useTranslation();
   const headerHeight = useHeaderHeight();
   const route = useRoute();
   const { kullanici } = useAuth();
@@ -95,9 +97,9 @@ export default function ChildFormScreen() {
           setSinifId(data.sinifId || '');
           setAdres(data.adres || '');
           setSeciliVeliIds(data.veliIds || []);
-          setYeniBaslayan(data.yeniBaslayan === true || data.uyumTakibiAktif === true || data.uyumDurumu === 'aktif');
+          setYeniBaslayan(data.yeniBaslayan === true || data.uyumTakibi{t('admin.childForm.active')} === true || data.uyumDurumu === 'aktif');
           setUyumBaslangicTarihi(data.uyumBaslangicTarihi || bugunKey());
-          setUyumDurumu(data.uyumDurumu || (data.uyumTakibiAktif ? 'aktif' : 'pasif'));
+          setUyumDurumu(data.uyumDurumu || (data.uyumTakibi{t('admin.childForm.active')} ? 'aktif' : 'pasif'));
         }
       }
       setFetching(false);
@@ -111,18 +113,18 @@ export default function ChildFormScreen() {
 
   const handleSave = async () => {
     if (!ad.trim() || !dogumTarihi.trim() || !sinifId) {
-      Alert.alert('Hata', 'Ad, doğum tarihi ve sınıf zorunludur');
+      Alert.alert('Hata', t('admin.childForm.required'));
       return;
     }
 
     const normalizedBirthDate = normalizeChildBirthDate(dogumTarihi);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirthDate)) {
-      Alert.alert('Hata', 'Doğum tarihini 15.05.2022 veya 2022-05-15 formatında gir.');
+      Alert.alert('Hata', t('admin.childForm.birthFormat'));
       return;
     }
 
     if (yeniBaslayan && !/^\d{4}-\d{2}-\d{2}$/.test(uyumBaslangicTarihi)) {
-      Alert.alert('Hata', 'Uyum başlangıç tarihini 2026-06-26 formatında gir.');
+      Alert.alert('Hata', t('admin.childForm.adaptationDateFormat'));
       return;
     }
 
@@ -131,7 +133,7 @@ export default function ChildFormScreen() {
       const id = childId || generateId();
       const existingSnap = childId ? await get(ref(database, `cocuklar/${childId}`)) : null;
       const existing = existingSnap?.exists?.() ? existingSnap.val() : {};
-      const uyumAktif = yeniBaslayan && uyumDurumu !== 'tamamlandi';
+      const uyum{t('admin.childForm.active')} = yeniBaslayan && uyumDurumu !== 'tamamlandi';
       const kresId = kullanici?.kresId || existing?.kresId || 'default-kres';
 
       const childPayload = {
@@ -144,7 +146,7 @@ export default function ChildFormScreen() {
         adresKonum: adres.trim() !== (existing?.adres || '') ? null : (existing?.adresKonum || null),
         veliIds: seciliVeliIds,
         yeniBaslayan,
-        uyumTakibiAktif: uyumAktif,
+        uyumTakibi{t('admin.childForm.active')}: uyum{t('admin.childForm.active')},
         uyumBaslangicTarihi: yeniBaslayan ? uyumBaslangicTarihi : (existing?.uyumBaslangicTarihi || ''),
         uyumSureGun: 30,
         uyumDurumu: yeniBaslayan ? (uyumDurumu === 'tamamlandi' ? 'tamamlandi' : 'aktif') : 'pasif',
@@ -174,7 +176,7 @@ export default function ChildFormScreen() {
       setSuccessToast(true);
       setTimeout(() => navigation.goBack(), 900);
     } catch (error) {
-      Alert.alert('Hata', 'Çocuk kaydedilemedi');
+      Alert.alert('Hata', t('admin.childForm.saveFailed'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -188,7 +190,7 @@ export default function ChildFormScreen() {
   const handleDelete = () => {
     if (!childId) return;
     Alert.alert(
-      'Çocuğu Sil',
+      t('admin.childForm.delete'),
       `${ad || 'Bu çocuk'} kalıcı olarak silinecek. Bu işlem geri alınamaz: tüm rapor, yoklama ve galeri bağlantıları koparılır.`,
       [
         { text: 'Vazgeç', style: 'cancel' },
@@ -237,40 +239,40 @@ export default function ChildFormScreen() {
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Çocuk Adı *</Text>
-            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder="Örn: Ali Yılmaz" placeholderTextColor="#999" />
+            <Text style={styles.label}>{t('admin.childForm.nameLabel')}</Text>
+            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder=t('admin.childForm.namePlaceholder') placeholderTextColor="#999" />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Doğum Tarihi *</Text>
+            <Text style={styles.label}>{t('admin.childForm.birthLabel')}</Text>
             <TextInput style={styles.input} value={dogumTarihi} onChangeText={setDogumTarihi} placeholder="15.05.2022" placeholderTextColor="#999" />
-            <Text style={styles.hint}>Kaydedilince sistem 2022-05-15 olarak saklar, ekranlarda 15.05.2022 gösterir.</Text>
+            <Text style={styles.hint}>{t('admin.childForm.birthHint')}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Sınıf *</Text>
-            {siniflar.length === 0 ? <Text style={styles.bilgi}>Önce sınıf oluşturun</Text> : siniflar.map((s) => (
-              <TouchableOpacity key={s.id} style={[styles.seciBtn, sinifId === s.id && styles.seciBtnAktif]} onPress={() => setSinifId(s.id)}>
-                <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYaziAktif]}>{s.ad} — {s.yasGrubu}</Text>
+            <Text style={styles.label}>{t('admin.childForm.classLabel')}</Text>
+            {siniflar.length === 0 ? <Text style={styles.bilgi}>{t('admin.childForm.createClassFirst')}</Text> : siniflar.map((s) => (
+              <TouchableOpacity key={s.id} style={[styles.seciBtn, sinifId === s.id && styles.seciBtn{t('admin.childForm.active')}]} onPress={() => setSinifId(s.id)}>
+                <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYazi{t('admin.childForm.active')}]}>{s.ad} — {s.yasGrubu}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <View style={styles.uyumCard}>
-            <Text style={styles.uyumTitle}>🌱 Uyum Modülü</Text>
-            <Text style={styles.uyumDesc}>Bu çocuk kreşe yeni başlayan öğrenci mi? Seçilirse 30 günlük uyum takibi öğretmen ve veli tarafında açılır.</Text>
+            <Text style={styles.uyumTitle}>{t('admin.childForm.adaptationTitle')}</Text>
+            <Text style={styles.uyumDesc}>{t('admin.childForm.adaptationDesc')}</Text>
             <View style={styles.segmentRow}>
-              <TouchableOpacity style={[styles.segment, !yeniBaslayan && styles.segmentActive]} onPress={() => { setYeniBaslayan(false); setUyumDurumu('pasif'); }}><Text style={[styles.segmentText, !yeniBaslayan && styles.segmentTextActive]}>Mevcut öğrenci</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.segment, yeniBaslayan && styles.segmentActiveGreen]} onPress={() => { setYeniBaslayan(true); setUyumDurumu('aktif'); }}><Text style={[styles.segmentText, yeniBaslayan && styles.segmentTextActive]}>Yeni başlayan</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, !yeniBaslayan && styles.segmentActive]} onPress={() => { setYeniBaslayan(false); setUyumDurumu('pasif'); }}><Text style={[styles.segmentText, !yeniBaslayan && styles.segmentTextActive]}>{t('admin.childForm.existing')}</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, yeniBaslayan && styles.segmentActiveGreen]} onPress={() => { setYeniBaslayan(true); setUyumDurumu('aktif'); }}><Text style={[styles.segmentText, yeniBaslayan && styles.segmentTextActive]}>{t('admin.childForm.newStudent')}</Text></TouchableOpacity>
             </View>
             {yeniBaslayan ? (
               <View style={styles.uyumOpenBox}>
-                <Text style={styles.label}>Uyum başlangıç tarihi</Text>
+                <Text style={styles.label}>{t('admin.childForm.adaptationStart')}</Text>
                 <TextInput style={styles.input} value={uyumBaslangicTarihi} onChangeText={setUyumBaslangicTarihi} placeholder="2026-06-26" placeholderTextColor="#999" />
-                <Text style={styles.hint}>30 gün sonunda aktif takip kapanır, kayıtlar veli geçmişinde kalır.</Text>
-                {childId ? <View style={styles.segmentRowSmall}><TouchableOpacity style={[styles.statusBtn, uyumDurumu !== 'tamamlandi' && styles.statusBtnOn]} onPress={() => setUyumDurumu('aktif')}><Text style={[styles.statusText, uyumDurumu !== 'tamamlandi' && styles.statusTextOn]}>Aktif</Text></TouchableOpacity><TouchableOpacity style={[styles.statusBtn, uyumDurumu === 'tamamlandi' && styles.statusBtnDone]} onPress={() => setUyumDurumu('tamamlandi')}><Text style={[styles.statusText, uyumDurumu === 'tamamlandi' && styles.statusTextOn]}>Tamamlandı</Text></TouchableOpacity></View> : null}
+                <Text style={styles.hint}>{t('admin.childForm.adaptationHint')}</Text>
+                {childId ? <View style={styles.segmentRowSmall}><TouchableOpacity style={[styles.statusBtn, uyumDurumu !== 'tamamlandi' && styles.statusBtnOn]} onPress={() => setUyumDurumu('aktif')}><Text style={[styles.statusText, uyumDurumu !== 'tamamlandi' && styles.statusTextOn]}>{t('admin.childForm.active')}</Text></TouchableOpacity><TouchableOpacity style={[styles.statusBtn, uyumDurumu === 'tamamlandi' && styles.statusBtnDone]} onPress={() => setUyumDurumu('tamamlandi')}><Text style={[styles.statusText, uyumDurumu === 'tamamlandi' && styles.statusTextOn]}>{t('admin.childForm.completed')}</Text></TouchableOpacity></View> : null}
               </View>
             ) : null}
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Servis / Ev Adresi</Text>
+            <Text style={styles.label}>{t('admin.childForm.serviceAddress')}</Text>
             <TextInput
               style={[styles.input, { minHeight: 70, textAlignVertical: 'top' }]}
               value={adres}
@@ -279,22 +281,22 @@ export default function ChildFormScreen() {
               placeholderTextColor="#999"
               multiline
             />
-            <Text style={styles.hint}>Servis kullanıyorsa buraya girilen adres, servisçinin rota ekranında konum/yol tarifi için kullanılır.</Text>
+            <Text style={styles.hint}>{t('admin.childForm.serviceHint')}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Veli Bağla (opsiyonel)</Text>
-            {veliler.length === 0 ? <Text style={styles.bilgi}>Henüz veli yok</Text> : veliler.map((v) => (
-              <TouchableOpacity key={v.id} style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtnAktif]} onPress={() => veliToggle(v.id)}>
-                <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYaziAktif]}>{v.ad} ({v.kullaniciAdi})</Text>
+            <Text style={styles.label}>{t('admin.childForm.parentLabel')}</Text>
+            {veliler.length === 0 ? <Text style={styles.bilgi}>{t('admin.childForm.noParents')}</Text> : veliler.map((v) => (
+              <TouchableOpacity key={v.id} style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtn{t('admin.childForm.active')}]} onPress={() => veliToggle(v.id)}>
+                <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYazi{t('admin.childForm.active')}]}>{v.ad} ({v.kullaniciAdi})</Text>
               </TouchableOpacity>
             ))}
           </View>
           <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{childId ? 'Güncelle' : 'Oluştur'}</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{childId ? t('admin.childForm.update') : t('admin.childForm.create')}</Text>}
           </TouchableOpacity>
           {childId && (
             <TouchableOpacity style={[styles.deleteButton, loading && styles.saveButtonDisabled]} onPress={handleDelete} disabled={loading}>
-              <Text style={styles.deleteButtonText}>Çocuğu Sil</Text>
+              <Text style={styles.deleteButtonText}>{t('admin.childForm.delete')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -314,9 +316,9 @@ const styles = StyleSheet.create({
   hint: { color: '#777', fontSize: 12, marginTop: 6, lineHeight: 17 },
   bilgi: { color: '#999', fontStyle: 'italic' },
   seciBtn: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', marginBottom: 8, backgroundColor: '#fff' },
-  seciBtnAktif: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
+  seciBtn{t('admin.childForm.active')}: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
   seciBtnYazi: { fontSize: 15, color: '#333' },
-  seciBtnYaziAktif: { fontWeight: '700', color: '#712B13' },
+  seciBtnYazi{t('admin.childForm.active')}: { fontWeight: '700', color: '#712B13' },
   uyumCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#DDEFE3', marginBottom: 20 },
   uyumTitle: { color: '#12301E', fontSize: 18, fontWeight: '900' },
   uyumDesc: { color: '#667A70', fontWeight: '700', lineHeight: 18, marginTop: 6 },
