@@ -30,7 +30,9 @@
     "back": "Back",
     "childFallback": "Child",
     "loading": "Preparing...",
-    "error": "Error"
+    "error": "Error",
+    "save": "Save",
+    "saving": "Saving..."
   },
   "nav": {
     "summary": "Summary",
