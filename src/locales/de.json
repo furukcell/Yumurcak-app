@@ -1976,6 +1976,29 @@
       "noChildAssigned": "Diesem Fahrzeug sind keine Kinder zugewiesen.",
       "arrivedAt": "Angekommen {{time}}",
       "notArrivedYet": "Noch nicht angekommen"
+    },
+    "vehicleForm": {
+      "missingVehicleFieldsDesc": "Kennzeichen und Fahrzeugname sind erforderlich",
+      "missingStaffFieldsDesc": "Benutzername und vollständiger Name des Mitarbeiters sind erforderlich",
+      "authErrorDesc": "Für diesen Benutzernamen existiert bereits ein Firebase-Auth-Konto. Versuche einen anderen.",
+      "saveFailedDesc": "Servicefahrzeug konnte nicht gespeichert werden.\n\n{{detail}}",
+      "deleteDesc": "{{name}} ({{plaka}}) wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden: der Fahrzeugeintrag und ein eventuell verknüpftes Mitarbeiterkonto werden vollständig entfernt.",
+      "noPlateFallback": "kein Kennzeichen",
+      "deleteFailedDesc": "Servicefahrzeug konnte nicht gelöscht werden.\n\n{{detail}}",
+      "updatedToast": "Servicefahrzeug aktualisiert",
+      "createdToast": "Servicefahrzeug erstellt",
+      "vehicleInfoTitle": "Fahrzeuginformationen",
+      "vehicleNameLabel": "Fahrzeugname",
+      "vehicleNamePlaceholder": "z. B. Fahrzeug 1 / Morgenroute",
+      "plateLabel": "Kennzeichen",
+      "platePlaceholder": "z. B. 48 AB 123",
+      "staffSectionTitle": "Servicemitarbeiter",
+      "staffSectionNote": "Der diesem Fahrzeug zugewiesene Mitarbeiter kann sich mit seinem eigenen Konto anmelden und Kinder als abgeholt/abgesetzt markieren. Für den Fahrer ist kein separates Konto nötig.",
+      "usernamePlaceholder": "z. B. service1",
+      "staffNamePlaceholder": "z. B. Anna Schmidt",
+      "passwordNoteEdit": "Leer lassen, um das aktuelle Passwort beizubehalten.",
+      "passwordNoteNew": "Leer lassen — das Standardpasswort wird 123456.",
+      "defaultVehicleFallback": "Dieses Fahrzeug"
     }
   }
 }
