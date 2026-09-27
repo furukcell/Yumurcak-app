@@ -7,9 +7,11 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator }
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AnnouncementListScreen() {
+  const { i18n } = useTranslation();
   const navigation = useNavigation();
   const { kres, kullanici } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
@@ -56,7 +58,7 @@ export default function AnnouncementListScreen() {
       <Text style={styles.msg} numberOfLines={2}>{item.message}</Text>
       <Text style={styles.date}>
         {item.senderName ? `${item.senderName} · ` : ''}
-        {new Date(item.createdAt).toLocaleDateString('tr-TR')}
+        {new Date(item.createdAt).toLocaleDateString(i18n.language)}
       </Text>
     </TouchableOpacity>
   );
