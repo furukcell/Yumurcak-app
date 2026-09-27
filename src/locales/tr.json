@@ -1976,6 +1976,29 @@
       "noChildAssigned": "Bu araca atanmış çocuk yok.",
       "arrivedAt": "Vardı {{time}}",
       "notArrivedYet": "Henüz varmadı"
+    },
+    "vehicleForm": {
+      "missingVehicleFieldsDesc": "Plaka ve servis adı zorunludur",
+      "missingStaffFieldsDesc": "Servis görevlisinin kullanıcı adı ve ad soyadı zorunludur",
+      "authErrorDesc": "Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı deneyin.",
+      "saveFailedDesc": "Servis aracı kaydedilemedi.\n\n{{detail}}",
+      "deleteDesc": "{{name}} ({{plaka}}) kalıcı olarak silinecek. Bu işlem geri alınamaz: araç kaydı ve varsa bağlı servis görevlisi hesabı tamamen silinir.",
+      "noPlateFallback": "plaka yok",
+      "deleteFailedDesc": "Servis aracı silinemedi.\n\n{{detail}}",
+      "updatedToast": "Servis aracı güncellendi",
+      "createdToast": "Servis aracı oluşturuldu",
+      "vehicleInfoTitle": "Araç Bilgileri",
+      "vehicleNameLabel": "Servis Adı",
+      "vehicleNamePlaceholder": "Örn: 1 Nolu Servis / Sabah Turu",
+      "plateLabel": "Plaka",
+      "platePlaceholder": "Örn: 48 AB 123",
+      "staffSectionTitle": "Servis Görevlisi",
+      "staffSectionNote": "Bu araca atanan görevli, kendi hesabıyla giriş yapıp çocukları alındı/bırakıldı olarak işaretleyebilir. Şoför için ayrı hesap açmanıza gerek yok.",
+      "usernamePlaceholder": "Örn: servis1",
+      "staffNamePlaceholder": "Örn: Ayşe Yılmaz",
+      "passwordNoteEdit": "Boş bırakılırsa mevcut şifre korunur.",
+      "passwordNoteNew": "Boş bırakılırsa varsayılan şifre 123456 olur.",
+      "defaultVehicleFallback": "Bu servis"
     }
   }
 }
