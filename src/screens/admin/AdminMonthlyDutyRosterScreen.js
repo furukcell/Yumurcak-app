@@ -307,7 +307,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
 
           <View style={styles.utilityRow}>
             <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
-              <Text style={styles.copyButtonText}>{copying ? '{t('admin.monthly.copying')}' : '📋 {t('admin.monthly.copyPrevious')}'}</Text>
+              <Text style={styles.copyButtonText}>{copying ? t('admin.monthly.copying') : `📋 ${t('admin.monthly.copyPrevious')}`}</Text>
             </TouchableOpacity>
             <MonthlyArchivePicker
               kresId={kresId}
