@@ -2020,6 +2020,23 @@
       "completedPlural": "Erledigt",
       "emptyTitle": "Noch keine Institutionsglocken-Benachrichtigungen",
       "emptyDesc": "Sie erscheinen hier, wenn Eltern „Unterwegs“ oder „An der Tür“ sagen."
+    },
+    "service": {
+      "title": "Serviceliste",
+      "childrenUsingService": "{{count}} Kinder nutzen den Fahrdienst",
+      "print": "Drucken",
+      "shareDownload": "Teilen/Herunterladen",
+      "noChildren": "Keine Kinder registriert.",
+      "noClass": "Keine Klasse",
+      "noVehicle": "Noch kein Servicefahrzeug hinzugefügt. Tippen, um ein Fahrzeug hinzuzufügen.",
+      "pickupTimePlaceholder": "Abholzeit (z. B. 08:00)",
+      "dropoffTimePlaceholder": "Rückbringzeit (z. B. 16:30)",
+      "notePlaceholder": "Notiz (z. B. Kennzeichen, Fahrername)",
+      "saveFailed": "Serviceinformationen konnten nicht gespeichert werden.",
+      "emptyListTitle": "Liste leer",
+      "emptyListDesc": "Keine Kinder nutzen den Fahrdienst.",
+      "exportFailed": "Serviceliste konnte nicht erstellt werden.",
+      "updatedToast": "Serviceinformationen aktualisiert"
     }
   }
 }
