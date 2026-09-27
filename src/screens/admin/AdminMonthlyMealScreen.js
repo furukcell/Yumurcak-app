@@ -490,7 +490,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 ogun="kahvalti"
                 values={selectedValue.kahvalti}
                 onChange={(list) => updateMealList(selectedDateKey, 'kahvalti', list)}
-                placeholder="{t('admin.monthly.meal.breakfast')} yemeği ekle"
+                placeholder={t('admin.monthly.meal.breakfastPlaceholder')}
                 theme={theme}
               />
 
