@@ -29,7 +29,8 @@
     },
     "back": "Zurück",
     "childFallback": "Kind",
-    "loading": "Wird vorbereitet..."
+    "loading": "Wird vorbereitet...",
+    "error": "Fehler"
   },
   "nav": {
     "summary": "Übersicht",
@@ -1999,6 +2000,26 @@
       "passwordNoteEdit": "Leer lassen, um das aktuelle Passwort beizubehalten.",
       "passwordNoteNew": "Leer lassen — das Standardpasswort wird 123456.",
       "defaultVehicleFallback": "Dieses Fahrzeug"
+    },
+    "bell": {
+      "noTime": "Keine Uhrzeit",
+      "dropOff": "Ich bringe das Kind",
+      "pickUp": "Ich hole das Kind ab",
+      "deliveryInfoMissing": "Übergabeinformation fehlt",
+      "atDoor": "An der Tür",
+      "onTheWay": "Unterwegs",
+      "completed": "Erledigt",
+      "notification": "Benachrichtigung",
+      "markReadFailed": "Benachrichtigung konnte nicht als gelesen markiert werden.",
+      "markCompleteFailed": "Benachrichtigung konnte nicht abgeschlossen werden.",
+      "parentFallback": "Elternteil",
+      "read": "Gelesen",
+      "loading": "Institutionsglocke wird geladen...",
+      "active": "Aktiv",
+      "unread": "Ungelesen",
+      "completedPlural": "Erledigt",
+      "emptyTitle": "Noch keine Institutionsglocken-Benachrichtigungen",
+      "emptyDesc": "Sie erscheinen hier, wenn Eltern „Unterwegs“ oder „An der Tür“ sagen."
     }
   }
 }
