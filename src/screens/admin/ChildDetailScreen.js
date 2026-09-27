@@ -10,6 +10,7 @@ import {
 import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { calculateChildAge, formatChildBirthDate, getChildBirthDate } from '../../utils/childDates';
 
 function asArray(value) {
@@ -20,6 +21,7 @@ function asArray(value) {
 }
 
 export default function ChildDetailScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const { childId } = route.params;
@@ -122,7 +124,7 @@ export default function ChildDetailScreen() {
   if (!cocuk) {
     return (
       <View style={s.center}>
-        <Text style={s.bosYazi}>Çocuk bulunamadı.</Text>
+        <Text style={s.bosYazi}>{t('admin.childDetail.childNotFound')}</Text>
       </View>
     );
   }
@@ -144,51 +146,51 @@ export default function ChildDetailScreen() {
 
         {/* ── Sınıf Bilgisi ── */}
         <View style={s.bolum}>
-          <Text style={s.bolumBaslik}>Sınıf Bilgisi</Text>
+          <Text style={s.bolumBaslik}>{t('admin.childDetail.classInfoTitle')}</Text>
           <View style={s.bilgiKart}>
             {sinif ? (
               <>
-                <BilgiSatir etiket="Sınıf Adı" deger={sinif.ad} />
+                <BilgiSatir etiket={t('admin.childDetail.className')} deger={sinif.ad} />
                 {sinif.yasGrubu ? (
-                  <BilgiSatir etiket="Yaş Grubu" deger={sinif.yasGrubu} />
+                  <BilgiSatir etiket={t('admin.childDetail.ageGroup')} deger={sinif.yasGrubu} />
                 ) : null}
-                <BilgiSatir etiket="Doğum Tarihi" deger={cocuk.dogumTarihiText || 'Belirtilmemiş'} />
-                <BilgiSatir etiket="Yaş" deger={cocuk.yasText || '-'} />
+                <BilgiSatir etiket={t('admin.childDetail.birthDate')} deger={cocuk.dogumTarihiText || t('admin.childDetail.birthDateNotSpecified')} />
+                <BilgiSatir etiket={t('admin.childDetail.age')} deger={cocuk.yasText || '-'} />
               </>
             ) : (
-              <Text style={s.bosInfo}>Sınıf atanmamış</Text>
+              <Text style={s.bosInfo}>{t('admin.childDetail.noClassAssigned')}</Text>
             )}
           </View>
         </View>
 
         {/* ── Öğretmen Bilgisi ── */}
         <View style={s.bolum}>
-          <Text style={s.bolumBaslik}>Öğretmen</Text>
+          <Text style={s.bolumBaslik}>{t('admin.childDetail.teacherTitle')}</Text>
           <View style={s.bilgiKart}>
             {ogretmen ? (
               <>
-                <BilgiSatir etiket="Ad Soyad" deger={ogretmen.ad} />
-                <BilgiSatir etiket="Kullanıcı Adı" deger={`@${ogretmen.kullaniciAdi}`} />
+                <BilgiSatir etiket={t('admin.childDetail.fullName')} deger={ogretmen.ad} />
+                <BilgiSatir etiket={t('teacher.profile.infoUsername')} deger={`@${ogretmen.kullaniciAdi}`} />
               </>
             ) : (
-              <Text style={s.bosInfo}>Öğretmen atanmamış</Text>
+              <Text style={s.bosInfo}>{t('admin.childDetail.noTeacherAssigned')}</Text>
             )}
           </View>
         </View>
 
         {/* ── Veli Bilgileri ── */}
         <View style={s.bolum}>
-          <Text style={s.bolumBaslik}>Veliler</Text>
+          <Text style={s.bolumBaslik}>{t('admin.childDetail.parentsTitle')}</Text>
           {veliler.length === 0 ? (
             <View style={s.bilgiKart}>
-              <Text style={s.bosInfo}>Veli bağlı değil</Text>
+              <Text style={s.bosInfo}>{t('admin.childDetail.noParentLinked')}</Text>
             </View>
           ) : (
             veliler.map((v) => (
               <View key={v.id} style={[s.bilgiKart, { marginBottom: 10 }]}>
-                <BilgiSatir etiket="Ad Soyad" deger={v.ad} />
-                <BilgiSatir etiket="Kullanıcı Adı" deger={`@${v.kullaniciAdi}`} />
-                <BilgiSatir etiket="Telefon" deger={v.telefon ?? '-'} />
+                <BilgiSatir etiket={t('admin.childDetail.fullName')} deger={v.ad} />
+                <BilgiSatir etiket={t('teacher.profile.infoUsername')} deger={`@${v.kullaniciAdi}`} />
+                <BilgiSatir etiket={t('teacher.profile.infoPhone')} deger={v.telefon ?? '-'} />
               </View>
             ))
           )}
@@ -200,7 +202,7 @@ export default function ChildDetailScreen() {
           onPress={() => navigation.navigate('ChildForm', { childId: cocuk.id })}
           activeOpacity={0.85}
         >
-          <Text style={s.duzenleBtnYazi}>✏️  Çocuğu Düzenle</Text>
+          <Text style={s.duzenleBtnYazi}>✏️  {t('admin.childDetail.editButton')}</Text>
         </TouchableOpacity>
 
       </ScrollView>
