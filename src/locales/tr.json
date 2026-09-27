@@ -30,7 +30,9 @@
     "back": "Geri",
     "childFallback": "Çocuk",
     "loading": "Hazırlanıyor...",
-    "error": "Hata"
+    "error": "Hata",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor..."
   },
   "nav": {
     "summary": "Özet",
