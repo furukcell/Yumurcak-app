@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Alert, FlatList, SafeAreaView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { THEME_LIST } from '../../theme/themes';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import ThemedBackground from '../../components/ThemedBackground';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 export default function AdminThemeScreen() {
+  const { t } = useTranslation();
   const themeData = useAppTheme();
   const theme = themeData.theme;
   const themeId = themeData.themeId;
@@ -37,7 +39,7 @@ export default function AdminThemeScreen() {
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Tema kaydedilemedi.');
+      Alert.alert(t('teacher.theme.errorTitle'), t('admin.theme.saveErrorDesc'));
     } finally {
       setSaving(false);
     }
@@ -78,7 +80,7 @@ export default function AdminThemeScreen() {
         ? React.createElement(
             View,
             { style: [styles.activeBadge, { backgroundColor: item.primary }] },
-            React.createElement(Text, { style: styles.activeText }, 'Seçili')
+            React.createElement(Text, { style: styles.activeText }, t('teacher.theme.selectedBadge'))
           )
         : null
     );
@@ -92,17 +94,17 @@ export default function AdminThemeScreen() {
       { style: styles.safeArea },
       React.createElement(AppSuccessToast, {
         visible: successToast,
-        message: 'Kreş teması güncellendi',
+        message: t('admin.theme.successMessage'),
         onHide: function () { setSuccessToast(false); },
       }),
       React.createElement(
         View,
         { style: styles.container },
-        React.createElement(Text, { style: [styles.title, { color: theme.text }] }, 'Tema Ayarları'),
+        React.createElement(Text, { style: [styles.title, { color: theme.text }] }, t('teacher.theme.title')),
         React.createElement(
           Text,
           { style: [styles.subtitle, { color: theme.muted }] },
-          'Bu seçim aynı kreşe bağlı veli ve öğretmen ekranlarına uygulanır.'
+          t('admin.theme.subtitle')
         ),
         React.createElement(
           View,
@@ -110,11 +112,11 @@ export default function AdminThemeScreen() {
           React.createElement(
             View,
             { style: { flex: 1 } },
-            React.createElement(Text, { style: [styles.optionTitle, { color: theme.text }] }, 'Arka plan figürleri'),
+            React.createElement(Text, { style: [styles.optionTitle, { color: theme.text }] }, t('teacher.theme.patternTitle')),
             React.createElement(
               Text,
               { style: [styles.optionDesc, { color: theme.muted }] },
-              'Hayvan ve şekil desenleri ana ekranda hafif görünür.'
+              t('admin.theme.patternDesc')
             )
           ),
           React.createElement(Switch, {
@@ -143,7 +145,7 @@ export default function AdminThemeScreen() {
               },
             ],
           },
-          React.createElement(Text, { style: styles.saveText }, saving ? 'Kaydediliyor...' : 'Bu Temayı Kullan')
+          React.createElement(Text, { style: styles.saveText }, saving ? t('teacher.theme.saving') : t('admin.theme.saveButton'))
         )
       )
     )
