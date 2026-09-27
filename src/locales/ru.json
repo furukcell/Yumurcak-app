@@ -2213,7 +2213,8 @@
         "endTime": "End Time",
         "category": "Category",
         "descriptionPlaceholder": "Description (optional)"
-      }
+      },
+      "publishing": "Публикация..."
     },
     "authMigration": {
       "usersLoadFailed": "Users could not be loaded.",
@@ -2230,7 +2231,18 @@
       "users": "Users",
       "authPending": "Auth pending",
       "log": "Log",
-      "noLog": "No operation yet."
+      "noLog": "No operation yet.",
+      "confirmTitle": "Переход на Firebase Auth",
+      "confirmDesc": "Для пользователей без authUid будет создан аккаунт Firebase Auth. Продолжить?",
+      "noUsers": "Нет пользователей для переноса.",
+      "skippedPassword": "Пропущено: пароль {{username}} должен содержать не менее 6 символов.",
+      "migrated": "Перенесено",
+      "alreadyExists": "Уже существует: {{username}}. Email есть в Firebase Console; может потребоваться ручное связывание.",
+      "userError": "Ошибка: {{username}} -> {{error}}",
+      "total": "Всего",
+      "waiting": "Ожидают",
+      "warningText": "Перед переходом на production rules все пользователи должны получить authUid, а все 3 роли должны пройти тест входа.",
+      "done": "Готово"
     },
     "institutionSettings": {
       "loadFailed": "Institution information could not be loaded.",
@@ -2346,7 +2358,9 @@
       "empty": "Ödeme kaydı yok",
       "emptyDesc": "Yeni ödeme oluşturmak için + Kayıt butonuna bas",
       "create": "+ Ödeme Kaydı Oluştur",
-      "updateFailed": "Ödeme durumu güncellenemedi."
+      "updateFailed": "Ödeme durumu güncellenemedi.",
+      "openAmount": "Открытая сумма",
+      "thisMonth": "В этом месяце"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2363,7 +2377,15 @@
       "targetLabel": "Duyuru Hedefi",
       "noClasses": "Henüz sınıf bulunamadı.",
       "selectClass": "Sınıf Seç",
-      "urgent": "Acil Duyuru"
+      "urgent": "Acil Duyuru",
+      "targetParents": "Это объявление будет отправлено только родителям.",
+      "targetTeachers": "Это объявление будет отправлено только учителям.",
+      "targetClass": "Это объявление будет отправлено пользователям выбранной группы.",
+      "targetAll": "Это объявление будет отправлено всему учреждению.",
+      "admin": "Администратор",
+      "updated": "Объявление обновлено",
+      "sent": "Объявление отправлено",
+      "send": "Отправить"
     },
     "classList": {
       "teacher": "Öğretmen",
