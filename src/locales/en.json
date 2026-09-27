@@ -1976,6 +1976,29 @@
       "noChildAssigned": "No children assigned to this vehicle.",
       "arrivedAt": "Arrived {{time}}",
       "notArrivedYet": "Not arrived yet"
+    },
+    "vehicleForm": {
+      "missingVehicleFieldsDesc": "Plate and vehicle name are required",
+      "missingStaffFieldsDesc": "The staff member's username and full name are required",
+      "authErrorDesc": "A Firebase Auth account already exists for this username. Try a different one.",
+      "saveFailedDesc": "Couldn't save the service vehicle.\n\n{{detail}}",
+      "deleteDesc": "{{name}} ({{plaka}}) will be permanently deleted. This can't be undone: the vehicle record and any linked staff account will be completely removed.",
+      "noPlateFallback": "no plate",
+      "deleteFailedDesc": "Couldn't delete the service vehicle.\n\n{{detail}}",
+      "updatedToast": "Service vehicle updated",
+      "createdToast": "Service vehicle created",
+      "vehicleInfoTitle": "Vehicle Information",
+      "vehicleNameLabel": "Vehicle Name",
+      "vehicleNamePlaceholder": "e.g. Vehicle 1 / Morning Route",
+      "plateLabel": "License Plate",
+      "platePlaceholder": "e.g. 48 AB 123",
+      "staffSectionTitle": "Service Staff",
+      "staffSectionNote": "The staff member assigned to this vehicle can sign in with their own account and mark children as picked up/dropped off. No separate account setup is needed for the driver.",
+      "usernamePlaceholder": "e.g. service1",
+      "staffNamePlaceholder": "e.g. Jane Smith",
+      "passwordNoteEdit": "Leave it blank to keep the current password.",
+      "passwordNoteNew": "Leave it blank and the default password will be 123456.",
+      "defaultVehicleFallback": "This vehicle"
     }
   }
 }
