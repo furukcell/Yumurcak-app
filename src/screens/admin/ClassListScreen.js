@@ -95,7 +95,7 @@ export default function ClassListScreen() {
         ).then((entries) => {
           setChildCounts(Object.fromEntries(entries));
         }).catch((error) => {
-          console.warn(t('admin.classList.class') çocuk sayısı çekme hatası:', error);
+          console.warn('Sınıf çocuk sayısı çekme hatası:', error);
         });
       }).catch((error) => {
         console.warn('Sınıf listesi çekme hatası:', error);
