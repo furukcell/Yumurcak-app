@@ -1,12 +1,13 @@
 // ============================================================
 // YUMURCAK — AdminMonthlyDutyRosterScreen.js
-// FAZ 8: "Nöbet Çizelgesi" — kurum geneli (sınıf bazlı DEĞİL), gün-bazlı
+// FAZ 8: "{t('admin.monthly.duty.title')}" — kurum geneli (sınıf bazlı DEĞİL), gün-bazlı
 // nöbetçi personel planı. AdminMonthlyScheduleScreen ile AYNI altyapı
 // (monthlyDocuments.js, MonthlyCalendarView, MonthlyDocumentPdfBar,
 // MonthlyArchivePicker) — sadece kategori/tema/etkinlik-havuzu YOK,
 // tek alan: "Nöbetçi Personel" + opsiyonel "Not".
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
@@ -51,7 +52,7 @@ function buildDutyRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: `${monthLabel} Nöbet Çizelgesi`,
+    baslik: `${monthLabel} {t('admin.monthly.duty.title')}`,
     personel: String(value.personel || '').trim(),
     not: String(value.not || '').trim(),
     aktif: true,
@@ -68,6 +69,7 @@ function dutyPreview(value) {
 export default function AdminMonthlyDutyRosterScreen({ navigation }) {
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const kresId = kullanici?.kresId;
@@ -171,7 +173,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
       });
 
       if (!found) {
-        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir nöbet çizelgesi bulunamadı.');
+        Alert.alert(t('admin.monthly.notFound'), t('admin.monthly.duty.previousNotFound'));
         return;
       }
 
@@ -183,10 +185,10 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
         return next;
       });
 
-      Alert.alert('Kopyalandı', `${found} günlük nöbet planı geçen aydan kopyalandı.`);
+      Alert.alert(t('admin.monthly.copied'), t('admin.monthly.duty.copiedDesc', { count: found }));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.copyFailed'));
     } finally {
       setCopying(false);
     }
@@ -194,19 +196,19 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
 
   function confirmPublish() {
     if (!kresId) {
-      Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.institutionMissing'));
       return;
     }
     if (!hasAnyEntry) {
-      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne nöbetçi gir.');
+      Alert.alert(t('admin.monthly.missingInfo'), t('admin.monthly.duty.publishRequired'));
       return;
     }
     Alert.alert(
-      'Çizelgeyi Paylaş',
-      `${monthLabel} nöbet çizelgesi yayınlansın mı? Aynı ay için eski yayın pasife alınır.`,
+      t('admin.monthly.duty.publishTitle'),
+      t('admin.monthly.duty.publishConfirm', { month: monthLabel }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Yayınla', onPress: doPublish },
+        { text: t('admin.monthly.cancel'), style: 'cancel' },
+        { text: t('admin.monthly.publish'), onPress: doPublish },
       ]
     );
   }
@@ -229,7 +231,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Nöbet çizelgesi yayınlanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.duty.publishFailed'));
     } finally {
       setSaving(false);
     }
@@ -238,11 +240,11 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
   function confirmUnpublish() {
     if (!kresId || publishedCount === 0) return;
     Alert.alert(
-      'Yayından Kaldır',
-      `${monthLabel} için yayınlanmış nöbet çizelgesi kaldırılsın mı?`,
+      t('admin.monthly.unpublishTitle'),
+      t('admin.monthly.duty.unpublishConfirm', { month: monthLabel }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
+        { text: t('admin.monthly.cancel'), style: 'cancel' },
+        { text: t('admin.monthly.unpublish'), style: 'destructive', onPress: doUnpublish },
       ]
     );
   }
@@ -253,7 +255,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
       await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK });
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.unpublishFailed'));
     } finally {
       setUnpublishing(false);
     }
@@ -265,16 +267,16 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <AppSuccessToast visible={successToast} message={`${monthLabel} nöbet çizelgesi yayınlandı`} onHide={() => setSuccessToast(false)} />
+        <AppSuccessToast visible={successToast} message={t('admin.monthly.duty.publishedToast', { month: monthLabel })} onHide={() => setSuccessToast(false)} />
 
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Nöbet Çizelgesi</Text>
-              <Text style={styles.subtitle}>Kurum geneli, ay bazlı nöbetçi planı</Text>
+              <Text style={styles.title}>{t('admin.monthly.duty.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.monthly.duty.subtitle')}</Text>
             </View>
           </View>
 
@@ -295,17 +297,17 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                <Text style={styles.publishedText}>Personel şu an bu ayın nöbet çizelgesini görüyor.</Text>
+                <Text style={styles.publishedText}>{t('admin.monthly.duty.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? '{t('admin.monthly.unpublishing')}' : t('admin.monthly.unpublishTitle')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
           <View style={styles.utilityRow}>
             <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
-              <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+              <Text style={styles.copyButtonText}>{copying ? '{t('admin.monthly.copying')}' : '📋 {t('admin.monthly.copyPrevious')}'}</Text>
             </TouchableOpacity>
             <MonthlyArchivePicker
               kresId={kresId}
@@ -331,7 +333,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
           />
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Çizelgesini Yayınla`}</Text>
+            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : {t('admin.monthly.duty.publishButton', { month: monthLabel })}}</Text>
           </TouchableOpacity>
 
           <View style={{ marginTop: 14 }}>
@@ -364,14 +366,14 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
               <TextInput
                 value={selectedValue.personel}
                 onChangeText={(text) => updateField(selectedDateKey, 'personel', text)}
-                placeholder="Nöbetçi Personel (örn: Ayşe Öğretmen)"
+                placeholder="{t('admin.monthly.duty.personnelPlaceholder')}"
                 placeholderTextColor={theme.muted}
                 style={styles.modalInput}
               />
               <TextInput
                 value={selectedValue.not}
                 onChangeText={(text) => updateField(selectedDateKey, 'not', text)}
-                placeholder="Not (opsiyonel)"
+                placeholder="{t('admin.monthly.optionalNote')}"
                 placeholderTextColor={theme.muted}
                 style={styles.modalInput}
                 multiline
@@ -379,7 +381,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
 
               {hasDutyContent(selectedValue) ? (
                 <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>
-                  <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
+                  <Text style={styles.modalClearButtonText}>{t('admin.monthly.clearDay')}</Text>
                 </TouchableOpacity>
               ) : null}
             </ScrollView>
