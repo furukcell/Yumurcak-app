@@ -286,8 +286,8 @@ export default function ChildFormScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>{t('admin.childForm.parentLabel')}</Text>
             {veliler.length === 0 ? <Text style={styles.bilgi}>{t('admin.childForm.noParents')}</Text> : veliler.map((v) => (
-              <TouchableOpacity key={v.id} style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtn{t('admin.childForm.active')}]} onPress={() => veliToggle(v.id)}>
-                <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYazi{t('admin.childForm.active')}]}>{v.ad} ({v.kullaniciAdi})</Text>
+              <TouchableOpacity key={v.id} style={[styles.seciBtn, seciliVeliIds.includes(v.id) && styles.seciBtnActive]} onPress={() => veliToggle(v.id)}>
+                <Text style={[styles.seciBtnYazi, seciliVeliIds.includes(v.id) && styles.seciBtnYaziActive]}>{v.ad} ({v.kullaniciAdi})</Text>
               </TouchableOpacity>
             ))}
           </View>
