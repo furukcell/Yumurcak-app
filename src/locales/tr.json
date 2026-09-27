@@ -2648,7 +2648,8 @@
       "yearlyActive": "Yıllık abonelik aktif",
       "monthlyActive": "Aylık abonelik aktif",
       "demoActive": "Demo aktif",
-      "subscriptionCheck": "Abonelik durumu kontrol edilmeli"
+      "subscriptionCheck": "Abonelik durumu kontrol edilmeli",
+      "notifications": "Bildirimler"
     }
   }
 }
