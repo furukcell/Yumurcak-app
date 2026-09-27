@@ -29,7 +29,8 @@
     },
     "back": "Geri",
     "childFallback": "Çocuk",
-    "loading": "Hazırlanıyor..."
+    "loading": "Hazırlanıyor...",
+    "error": "Hata"
   },
   "nav": {
     "summary": "Özet",
@@ -1999,6 +2000,26 @@
       "passwordNoteEdit": "Boş bırakılırsa mevcut şifre korunur.",
       "passwordNoteNew": "Boş bırakılırsa varsayılan şifre 123456 olur.",
       "defaultVehicleFallback": "Bu servis"
+    },
+    "bell": {
+      "noTime": "Saat yok",
+      "dropOff": "Bırakacağım",
+      "pickUp": "Alacağım",
+      "deliveryInfoMissing": "Teslim bilgisi yok",
+      "atDoor": "Kapıdayım",
+      "onTheWay": "Geliyorum",
+      "completed": "Tamamlandı",
+      "notification": "Bildirim",
+      "markReadFailed": "Bildirim okundu yapılamadı.",
+      "markCompleteFailed": "Bildirim tamamlandı yapılamadı.",
+      "parentFallback": "Veli",
+      "read": "Okundu",
+      "loading": "Kurum zili yükleniyor...",
+      "active": "Aktif",
+      "unread": "Okunmamış",
+      "completedPlural": "Tamamlanan",
+      "emptyTitle": "Henüz kurum zili bildirimi yok",
+      "emptyDesc": "Veliler “Geliyorum” veya “Kapıdayım” dediğinde burada görünecek."
     }
   }
 }
