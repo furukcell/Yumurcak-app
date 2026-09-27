@@ -101,11 +101,11 @@ export default function AdminAuthMigrationScreen({ navigation }) {
     if (running) return;
 
     Alert.alert(
-      'Firebase Auth Geçişi',
-      'authUid olmayan kullanıcılar için Firebase Auth hesabı oluşturulacak. Devam edilsin mi?',
+      t('admin.authMigration.confirmTitle'),
+      t('admin.authMigration.confirmDesc'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Başlat', onPress: startMigration },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('admin.authMigration.start'), onPress: startMigration },
       ]
     );
   };
@@ -118,7 +118,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       const candidates = users.filter((u) => !u.authUid);
 
       if (candidates.length === 0) {
-        addLog('Taşınacak kullanıcı yok.');
+        addLog(t('admin.authMigration.noUsers'));
         setRunning(false);
         return;
       }
@@ -130,7 +130,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
           const password = String(user.sifre || user.password || '123456');
 
           if (password.length < 6) {
-            addLog(`Atlandı: ${username} şifre en az 6 karakter olmalı.`);
+            addLog(t('admin.authMigration.skippedPassword', { username }));
             continue;
           }
 
@@ -147,13 +147,13 @@ export default function AdminAuthMigrationScreen({ navigation }) {
 
           await set(ref(database, `authKullaniciIndex/${authUid}`), user.id);
 
-          addLog(`Tamam: ${username} -> ${email}`);
+          addLog(t('admin.authMigration.migrated', { username, email }));
         } catch (error) {
           const username = user.kullaniciAdi || user.id;
           if (error?.code === 'auth/email-already-in-use') {
-            addLog(`Zaten var: ${username}. Firebase Console'da email var; manuel eşleştirme gerekebilir.`);
+            addLog(t('admin.authMigration.alreadyExists', { username }));
           } else {
-            addLog(`Hata: ${username} -> ${error?.code || error?.message || 'bilinmeyen hata'}`);
+            addLog(t('admin.authMigration.userError', { username, error: error?.code || error?.message || t('common.unknownError') }));
           }
         }
       }
@@ -202,15 +202,15 @@ export default function AdminAuthMigrationScreen({ navigation }) {
         </View>
 
         <View style={styles.statsRow}>
-          <Stat label="Toplam" value={stats.total} />
-          <Stat label="Taşınmış" value={stats.migrated} />
-          <Stat label="Bekleyen" value={stats.waiting} />
+          <Stat label={t("admin.authMigration.total")} value={stats.total} />
+          <Stat label={t("admin.authMigration.migrated")} value={stats.migrated} />
+          <Stat label={t("admin.authMigration.waiting")} value={stats.waiting} />
         </View>
 
         <View style={styles.warningCard}>
           <Text style={styles.warningTitle}>{t('admin.authMigration.warningTitle')}</Text>
           <Text style={styles.warningText}>
-            Production rules'a geçmeden önce tüm kullanıcıların authUid alması ve 3 rolün giriş testinden geçmesi gerekir.
+            {t('admin.authMigration.warningText')}
           </Text>
         </View>
 
@@ -227,7 +227,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
               <Text style={styles.userMeta}>{user.authUid ? `authUid: ${shortUid(user.authUid)}` : t('admin.authMigration.authPending')}</Text>
             </View>
             <Text style={[styles.statusBadge, user.authUid ? styles.doneBadge : styles.waitBadge]}>
-              {user.authUid ? 'Tamam' : 'Bekliyor'}
+              {user.authUid ? t('admin.authMigration.done') : t('admin.authMigration.waiting')}
             </Text>
           </View>
         ))}
