@@ -2182,7 +2182,8 @@
         "publishedDesc": "Personel şu an bu ayın nöbet çizelgesini görüyor.",
         "publishButton": "{{month}} Çizelgesini Yayınla",
         "personnelPlaceholder": "Nöbetçi Personel (örn: Ayşe Öğretmen)"
-      }
+      },
+      "unpublishFailed": "Yayından kaldırılamadı."
     }
   }
 }
