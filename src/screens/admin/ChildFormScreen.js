@@ -97,9 +97,9 @@ export default function ChildFormScreen() {
           setSinifId(data.sinifId || '');
           setAdres(data.adres || '');
           setSeciliVeliIds(data.veliIds || []);
-          setYeniBaslayan(data.yeniBaslayan === true || data.uyumTakibi{t('admin.childForm.active')} === true || data.uyumDurumu === 'aktif');
+          setYeniBaslayan(data.yeniBaslayan === true || data.uyumTakibiAktif === true || data.uyumDurumu === 'aktif');
           setUyumBaslangicTarihi(data.uyumBaslangicTarihi || bugunKey());
-          setUyumDurumu(data.uyumDurumu || (data.uyumTakibi{t('admin.childForm.active')} ? 'aktif' : 'pasif'));
+          setUyumDurumu(data.uyumDurumu || (data.uyumTakibiAktif ? 'aktif' : 'pasif'));
         }
       }
       setFetching(false);
