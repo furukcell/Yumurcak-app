@@ -1976,6 +1976,29 @@
       "noChildAssigned": "Aucun enfant assigné à ce véhicule.",
       "arrivedAt": "Arrivé à {{time}}",
       "notArrivedYet": "Pas encore arrivé"
+    },
+    "vehicleForm": {
+      "missingVehicleFieldsDesc": "La plaque et le nom du véhicule sont obligatoires",
+      "missingStaffFieldsDesc": "Le nom d'utilisateur et le nom complet du responsable sont obligatoires",
+      "authErrorDesc": "Un compte Firebase Auth existe déjà pour ce nom d'utilisateur. Essayez-en un autre.",
+      "saveFailedDesc": "Impossible d'enregistrer le véhicule de service.\n\n{{detail}}",
+      "deleteDesc": "{{name}} ({{plaka}}) sera supprimé définitivement. Cette action est irréversible : la fiche du véhicule et le compte du responsable associé (le cas échéant) seront complètement supprimés.",
+      "noPlateFallback": "aucune plaque",
+      "deleteFailedDesc": "Impossible de supprimer le véhicule de service.\n\n{{detail}}",
+      "updatedToast": "Véhicule de service mis à jour",
+      "createdToast": "Véhicule de service créé",
+      "vehicleInfoTitle": "Informations sur le véhicule",
+      "vehicleNameLabel": "Nom du véhicule",
+      "vehicleNamePlaceholder": "Ex. : Véhicule 1 / Tournée du matin",
+      "plateLabel": "Plaque d'immatriculation",
+      "platePlaceholder": "Ex. : 48 AB 123",
+      "staffSectionTitle": "Responsable du service",
+      "staffSectionNote": "Le responsable assigné à ce véhicule peut se connecter avec son propre compte et marquer les enfants comme récupérés/déposés. Aucun compte séparé n'est nécessaire pour le chauffeur.",
+      "usernamePlaceholder": "Ex. : service1",
+      "staffNamePlaceholder": "Ex. : Marie Dupont",
+      "passwordNoteEdit": "Laissez vide pour conserver le mot de passe actuel.",
+      "passwordNoteNew": "Laissez vide et le mot de passe par défaut sera 123456.",
+      "defaultVehicleFallback": "Ce véhicule"
     }
   }
 }
