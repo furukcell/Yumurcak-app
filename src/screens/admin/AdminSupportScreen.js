@@ -273,8 +273,8 @@ export default function AdminSupportScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
-          <TextInput style={styles.subjectInput} value={subject} onChangeText={setSubject} placeholder="{t('admin.support.subjectPlaceholder')}" placeholderTextColor="#999" maxLength={120} />
-          <TextInput style={styles.newInput} value={message} onChangeText={(text) => setMessage(text.slice(0, MAX_LEN))} placeholder="{t('admin.support.messagePlaceholder')}" placeholderTextColor="#999" multiline textAlignVertical="top" />
+          <TextInput style={styles.subjectInput} value={subject} onChangeText={setSubject} placeholder={t('admin.support.subjectPlaceholder')} placeholderTextColor="#999" maxLength={120} />
+          <TextInput style={styles.newInput} value={message} onChangeText={(text) => setMessage(text.slice(0, MAX_LEN))} placeholder={t('admin.support.messagePlaceholder')} placeholderTextColor="#999" multiline textAlignVertical="top" />
           <TouchableOpacity style={[styles.primaryButton, creating && styles.disabled]} onPress={createTicket} disabled={creating} activeOpacity={0.85}>
             {creating ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>{t('admin.support.send')}</Text>}
           </TouchableOpacity>
@@ -346,7 +346,7 @@ export default function AdminSupportScreen({ navigation }) {
 
               {selected.durum !== 'kapandi' ? (
                 <View style={styles.composer}>
-                  <TextInput style={styles.replyInput} value={reply} onChangeText={(text) => setReply(text.slice(0, MAX_LEN))} placeholder="{t('admin.support.messagePlaceholder')}" placeholderTextColor="#999" multiline maxLength={MAX_LEN} />
+                  <TextInput style={styles.replyInput} value={reply} onChangeText={(text) => setReply(text.slice(0, MAX_LEN))} placeholder={t('admin.support.messagePlaceholder')} placeholderTextColor="#999" multiline maxLength={MAX_LEN} />
                   <TouchableOpacity style={[styles.sendButton, sending && styles.disabled]} onPress={sendReply} disabled={sending} activeOpacity={0.85}>
                     {sending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.sendText}>➤</Text>}
                   </TouchableOpacity>
