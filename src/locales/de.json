@@ -32,7 +32,10 @@
     "loading": "Wird vorbereitet...",
     "error": "Fehler",
     "save": "Speichern",
-    "saving": "Wird gespeichert..."
+    "saving": "Wird gespeichert...",
+    "info": "Information",
+    "success": "Erfolgreich",
+    "missingInfo": "Fehlende Information"
   },
   "nav": {
     "summary": "Übersicht",
@@ -2265,6 +2268,55 @@
       "noteLabel": "Additional Note",
       "notePlaceholder": "Transport, registration, meeting note...",
       "save": "Save Institution Information"
+    },
+    "serviceMonthlyStats": {
+      "back": "Zurück",
+      "title": "Monatliche Fahrdienststatistik",
+      "warningTitle": "⚠️ Kinder mit seltener Nutzung",
+      "empty": "Für diesen Monat gibt es noch keine Einträge oder alle Kinder haben den Fahrdienst regelmäßig genutzt.",
+      "tripDays": "Fahrtage",
+      "avgMorning": "Ø Dauer morgens",
+      "avgReturn": "Ø Rückfahrtdauer",
+      "warningCounts": "Abgeholt: {{pickup}}/{{days}} · Zurückgebracht: {{dropoff}}/{{days}}",
+      "childCounts": "{{pickup}}/{{days}} abgeholt · {{dropoff}}/{{days}} zurückgebracht"
+    },
+    "statistics": {
+      "title": "Einrichtungsstatistik",
+      "subtitle": "Gesamtentwicklung, Lehrernutzung und risikobezogene Kinderanalyse",
+      "loading": "Statistik wird vorbereitet...",
+      "overview": "Allgemeiner Zustand",
+      "attendance": "📅 Heutige Anwesenheit",
+      "payments": "💰 Zahlungen in diesem Monat",
+      "parentEngagement": "🔔 Elterninteraktion",
+      "teacherUsage": "Lehrer- / Klassennutzung",
+      "childRisk": "Entwicklung und Risiken der Kinder",
+      "noRisk": "Kein auffälliges Risiko",
+      "riskList": "Risikoliste",
+      "teacherLogs": "Lehrer-Anmeldungen"
+    },
+    "subscription": {
+      "loading": "Abonnementinformationen werden vorbereitet...",
+      "title": "Abonnement / Zahlung",
+      "usageTitle": "Schülernutzung",
+      "usageDesc": "Die Zahl der registrierten Schüler wird mit dem Paketlimit verglichen.",
+      "startTrial": "Ersten Monat kostenlos testen",
+      "paymentPeriod": "Zahlungszeitraum",
+      "monthly": "Monatlich",
+      "yearly": "Jährlich",
+      "twoMonthsFree": "2 Monate kostenlos",
+      "packagesTitle": "Pakete nach Schülerzahl",
+      "specialTitle": "100+ Schüler",
+      "specialDesc": "Für große Einrichtungen wird ein individuelles Angebot erstellt.",
+      "restore": "Kauf wiederherstellen",
+      "paymentWarning": "Google-Play-Zahlungsdaten konnten nicht abgerufen werden. Sie können mit Demo oder Promo-Code fortfahren.",
+      "promoTitle": "Promo-Code",
+      "promoPlaceholder": "Promo-Code",
+      "applyPromo": "Code anwenden",
+      "specialOffer": "Sonderangebot",
+      "subscriptionNotFound": "Abonnement nicht gefunden",
+      "codeUsed": "Code bereits verwendet",
+      "invalidCode": "Ungültiger Code",
+      "limitReached": "Limit erreicht"
     }
   }
 }
