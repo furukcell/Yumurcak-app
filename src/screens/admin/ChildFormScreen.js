@@ -133,7 +133,7 @@ export default function ChildFormScreen() {
       const id = childId || generateId();
       const existingSnap = childId ? await get(ref(database, `cocuklar/${childId}`)) : null;
       const existing = existingSnap?.exists?.() ? existingSnap.val() : {};
-      const uyum{t('admin.childForm.active')} = yeniBaslayan && uyumDurumu !== 'tamamlandi';
+      const uyumTakibiAktif = yeniBaslayan && uyumDurumu !== 'tamamlandi';
       const kresId = kullanici?.kresId || existing?.kresId || 'default-kres';
 
       const childPayload = {
@@ -250,8 +250,8 @@ export default function ChildFormScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>{t('admin.childForm.classLabel')}</Text>
             {siniflar.length === 0 ? <Text style={styles.bilgi}>{t('admin.childForm.createClassFirst')}</Text> : siniflar.map((s) => (
-              <TouchableOpacity key={s.id} style={[styles.seciBtn, sinifId === s.id && styles.seciBtn{t('admin.childForm.active')}]} onPress={() => setSinifId(s.id)}>
-                <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYazi{t('admin.childForm.active')}]}>{s.ad} — {s.yasGrubu}</Text>
+              <TouchableOpacity key={s.id} style={[styles.seciBtn, sinifId === s.id && styles.seciBtnActive]} onPress={() => setSinifId(s.id)}>
+                <Text style={[styles.seciBtnYazi, sinifId === s.id && styles.seciBtnYaziActive]}>{s.ad} — {s.yasGrubu}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -316,9 +316,9 @@ const styles = StyleSheet.create({
   hint: { color: '#777', fontSize: 12, marginTop: 6, lineHeight: 17 },
   bilgi: { color: '#999', fontStyle: 'italic' },
   seciBtn: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', marginBottom: 8, backgroundColor: '#fff' },
-  seciBtn{t('admin.childForm.active')}: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
+  seciBtnActive: { borderColor: '#712B13', backgroundColor: '#fdf0ee' },
   seciBtnYazi: { fontSize: 15, color: '#333' },
-  seciBtnYazi{t('admin.childForm.active')}: { fontWeight: '700', color: '#712B13' },
+  seciBtnYaziActive: { fontWeight: '700', color: '#712B13' },
   uyumCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#DDEFE3', marginBottom: 20 },
   uyumTitle: { color: '#12301E', fontSize: 18, fontWeight: '900' },
   uyumDesc: { color: '#667A70', fontWeight: '700', lineHeight: 18, marginTop: 6 },
