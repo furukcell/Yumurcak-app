@@ -252,7 +252,7 @@ export default function VeliListScreen() {
                   <View style={s.statDivider} />
                   <View style={s.statBox}>
                     <Text style={s.statValue}>{aktifVeliSayisi}</Text>
-                    <Text style={s.statLabel}>Aktif</Text>
+                    <Text style={s.statLabel}>{t('common.active')}</Text>
                   </View>
                   <View style={s.statDivider} />
                   <View style={s.statBox}>
@@ -307,12 +307,12 @@ export default function VeliListScreen() {
             <View style={s.emptyCard}>
               <Text style={s.emptyIcon}>👨‍👩‍👧</Text>
               <Text style={s.emptyTitle}>
-                {seciliSinifId ? '{t('admin.veliList.noParentInClass')}' : '{t('admin.veliList.emptyTitle')}'}
+                {seciliSinifId ? t('admin.veliList.noParentInClass') : t('admin.veliList.emptyTitle')}
               </Text>
               <Text style={s.emptyDesc}>
                 {seciliSinifId
-                  ? 'Farklı bir sınıf seçebilir veya "{t('common.all')}" ile filtreyi kaldırabilirsin.'
-                  : '{t('admin.veliList.title')}i ekleyerek çocuklarla ilişkilendirebilirsiniz.'}
+                  ? t('admin.veliList.noParentInClassDesc')
+                  : t('admin.veliList.emptyDesc')}
               </Text>
               {!seciliSinifId && (
                 <TouchableOpacity
@@ -372,7 +372,7 @@ export default function VeliListScreen() {
                         👶 {c.ad}
                       </Text>
                       <Text style={s.className} numberOfLines={1} ellipsizeMode="tail">
-                        🏫 {c.sinifAd || '{t('admin.veliList.noClass')}'}
+                        🏫 {c.sinifAd || t('admin.veliList.noClass')}
                       </Text>
                     </View>
                   ))
