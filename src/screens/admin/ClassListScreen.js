@@ -98,7 +98,7 @@ export default function ClassListScreen() {
           console.warn(t('admin.classList.class') çocuk sayısı çekme hatası:', error);
         });
       }).catch((error) => {
-        console.warn('{t('admin.classList.class')} listesi çekme hatası:', error);
+        console.warn('Sınıf listesi çekme hatası:', error);
         setClasses([]);
         setLoading(false);
       });
