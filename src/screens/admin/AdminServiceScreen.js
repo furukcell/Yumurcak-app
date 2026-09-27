@@ -18,6 +18,7 @@ import { ref, onValue, get, update, query, orderByChild, equalTo } from 'firebas
 
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import ThemedBackground from '../../components/ThemedBackground';
 import AppSuccessToast from '../../components/AppSuccessToast';
@@ -35,6 +36,7 @@ function asArray(value) {
 }
 
 export default function AdminServiceScreen({ navigation }) {
+  const { t } = useTranslation();
   const headerHeight = useHeaderHeight();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
@@ -151,7 +153,7 @@ export default function AdminServiceScreen({ navigation }) {
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Servis bilgisi kaydedilemedi.');
+      Alert.alert(t('common.error'), t('admin.service.saveFailed'));
     } finally {
       setSavingId(null);
     }
@@ -164,7 +166,7 @@ export default function AdminServiceScreen({ navigation }) {
 
   async function handleExport(mode) {
     if (serviceChildren.length === 0) {
-      Alert.alert('Liste Boş', 'Servis kullanan çocuk kaydı yok.');
+      Alert.alert(t('admin.service.emptyListTitle'), t('admin.service.emptyListDesc'));
       return;
     }
     setExporting(true);
@@ -186,7 +188,7 @@ export default function AdminServiceScreen({ navigation }) {
       else await shareMonthlyDocumentPdf(html, 'Servis Listesi');
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Servis listesi oluşturulamadı.');
+      Alert.alert(t('common.error'), t('admin.service.exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -195,7 +197,7 @@ export default function AdminServiceScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <AppSuccessToast visible={successToast} message="Servis bilgisi güncellendi" onHide={() => setSuccessToast(false)} />
+        <AppSuccessToast visible={successToast} message={t('admin.service.updatedToast')} onHide={() => setSuccessToast(false)} />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -204,27 +206,27 @@ export default function AdminServiceScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Servis Listesi</Text>
-              <Text style={styles.subtitle}>{serviceChildren.length} çocuk servis kullanıyor</Text>
+              <Text style={styles.title}>{t('admin.service.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.service.childrenUsingService', { count: serviceChildren.length })}</Text>
             </View>
           </View>
 
           <View style={styles.exportRow}>
             <TouchableOpacity disabled={exporting} style={[styles.exportButton, styles.exportFlex]} onPress={() => handleExport('print')} activeOpacity={0.85}>
-              <Text style={styles.exportButtonText}>{exporting ? '...' : '🖨️ Yazdır'}</Text>
+              <Text style={styles.exportButtonText}>{exporting ? '...' : `🖨️ ${t('admin.service.print')}`}</Text>
             </TouchableOpacity>
             <TouchableOpacity disabled={exporting} style={[styles.exportButton, styles.exportFlex]} onPress={() => handleExport('share')} activeOpacity={0.85}>
-              <Text style={styles.exportButtonText}>{exporting ? '...' : '📤 Paylaş/İndir'}</Text>
+              <Text style={styles.exportButtonText}>{exporting ? '...' : `📤 ${t('admin.service.shareDownload')}`}</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <ActivityIndicator color={theme.primary} style={{ marginTop: 30 }} />
           ) : children.length === 0 ? (
-            <Text style={styles.emptyText}>Kayıtlı çocuk yok.</Text>
+            <Text style={styles.emptyText}>{t('admin.service.noChildren')}</Text>
           ) : (
             children.map((child) => {
               const draft = drafts[child.id] || { servisKullaniyor: false, servisId: '', alisSaati: '', birakisSaati: '', servisNotu: '' };
@@ -233,7 +235,7 @@ export default function AdminServiceScreen({ navigation }) {
                   <View style={styles.cardHeaderRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.childName}>{child.ad} {child.soyad}</Text>
-                      <Text style={styles.childClass}>{sinifMap[child.sinifId] || 'Sınıf yok'}</Text>
+                      <Text style={styles.childClass}>{sinifMap[child.sinifId] || t('admin.service.noClass')}</Text>
                     </View>
                     <Switch
                       value={!!draft.servisKullaniyor}
@@ -250,7 +252,7 @@ export default function AdminServiceScreen({ navigation }) {
                           onPress={() => navigation.navigate('AdminVehicleList')}
                           activeOpacity={0.8}
                         >
-                          <Text style={styles.noVehicleText}>⚠️ Henüz servis aracı eklenmedi. Araç eklemek için dokun.</Text>
+                          <Text style={styles.noVehicleText}>⚠️ {t('admin.service.noVehicle')}</Text>
                         </TouchableOpacity>
                       ) : (
                         <View style={styles.vehicleChipRow}>
@@ -275,14 +277,14 @@ export default function AdminServiceScreen({ navigation }) {
                         <TextInput
                           value={draft.alisSaati}
                           onChangeText={(text) => updateDraft(child.id, 'alisSaati', text)}
-                          placeholder="Alış saati (örn: 08:00)"
+                          placeholder={t('admin.service.pickupTimePlaceholder')}
                           placeholderTextColor={theme.muted}
                           style={[styles.input, styles.inputFlex]}
                         />
                         <TextInput
                           value={draft.birakisSaati}
                           onChangeText={(text) => updateDraft(child.id, 'birakisSaati', text)}
-                          placeholder="Bırakış saati (örn: 16:30)"
+                          placeholder={t('admin.service.dropoffTimePlaceholder')}
                           placeholderTextColor={theme.muted}
                           style={[styles.input, styles.inputFlex]}
                         />
@@ -290,7 +292,7 @@ export default function AdminServiceScreen({ navigation }) {
                       <TextInput
                         value={draft.servisNotu}
                         onChangeText={(text) => updateDraft(child.id, 'servisNotu', text)}
-                        placeholder="Not (örn: Servis plakası, sürücü adı)"
+                        placeholder={t('admin.service.notePlaceholder')}
                         placeholderTextColor={theme.muted}
                         style={styles.input}
                       />
@@ -303,7 +305,7 @@ export default function AdminServiceScreen({ navigation }) {
                     onPress={() => saveChild(child.id)}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.saveRowButtonText}>{savingId === child.id ? 'Kaydediliyor...' : 'Kaydet'}</Text>
+                    <Text style={styles.saveRowButtonText}>{savingId === child.id ? t('common.saving') : t('common.save')}</Text>
                   </TouchableOpacity>
                 </View>
               );
