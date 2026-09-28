@@ -2794,7 +2794,8 @@
       "deletePoll": "حذف الاستطلاع نهائيًا",
       "no": "لا",
       "publishActive": "نشر كنشط",
-      "option": "خيار"
+      "option": "خيار",
+      "yes": "نعم"
     },
     "eventForm": {
       "unnamedClass": "فصل بدون اسم",
