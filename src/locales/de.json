@@ -46,7 +46,8 @@
     "passive": "Pasif",
     "edit": "Düzenle",
     "status": "Durum",
-    "all": "Alle"
+    "all": "Alle",
+    "user": "Benutzer"
   },
   "nav": {
     "summary": "Übersicht",
@@ -2111,7 +2112,8 @@
       "identityMissing": "Einrichtungs- oder Benutzerinformationen fehlen.",
       "messageTooLong": "Die Nachricht darf höchstens {{max}} Zeichen lang sein.",
       "createFailed": "Supportanfrage konnte nicht gesendet werden.",
-      "closeFailed": "Supportanfrage konnte nicht geschlossen werden."
+      "closeFailed": "Supportanfrage konnte nicht geschlossen werden.",
+      "institutionAdmin": "Einrichtungsadministrator"
     },
     "monthly": {
       "unknownError": "unbekannter Fehler",
@@ -2159,7 +2161,9 @@
         "lunchPlaceholder": "Mittagessen hinzufügen",
         "snack": "Snack",
         "snackPlaceholder": "Snack hinzufügen",
-        "classEmpty": "Die Lehrkraft dieser Klasse hat für {{month}} noch keine Mahlzeiten eingetragen."
+        "classEmpty": "Die Lehrkraft dieser Klasse hat für {{month}} noch keine Mahlzeiten eingetragen.",
+        "updatedTitle": "Speiseplan aktualisiert",
+        "publishedDesc": "Eltern können die Liste dieses Monats sehen."
       },
       "staff": {
         "previousNotFound": "Für den vorherigen Monat wurde keine Aufgabenliste gefunden.",
@@ -2180,7 +2184,10 @@
         "sectionTitlePlaceholder": "Abschnittstitel (z. B. Kommende Veranstaltungen)",
         "contentPlaceholder": "Inhalt...",
         "addSection": "Abschnitt hinzufügen",
-        "publishButton": "Aufgabenliste für {{month}} veröffentlichen"
+        "publishButton": "Aufgabenliste für {{month}} veröffentlichen",
+        "teachers": "Lehrkräfte",
+        "generalReminders": "Allgemeine Erinnerungen",
+        "publishedLabel": "veröffentlicht"
       },
       "duty": {
         "previousNotFound": "Für den vorherigen Monat wurde kein Dienstplan gefunden.",
@@ -2213,7 +2220,10 @@
         "startTime": "Start Time",
         "endTime": "End Time",
         "category": "Category",
-        "descriptionPlaceholder": "Description (optional)"
+        "descriptionPlaceholder": "Description (optional)",
+        "classFallback": "Klasse",
+        "publishTitle": "Monat veröffentlichen",
+        "updatedTitle": "Stundenplan aktualisiert"
       },
       "publishing": "Wird veröffentlicht..."
     },
@@ -2267,7 +2277,7 @@
       "subtitle": "This information appears directly on the parent communication screen.",
       "changePhoto": "Change Photo",
       "addPhoto": "Add Photo",
-      "remove": "Remove",
+      "remove": "Entfernen",
       "splashDesc": "Show a full-screen custom image for your institution when the app opens. If none is added, the default Yumurcak splash screen is used.",
       "splashPlaceholder": "9:16 · Tap to select",
       "changeImage": "Change Image",
@@ -2495,7 +2505,7 @@
       "all": "Tümü",
       "paid": "Ödendi",
       "pending": "Bekliyor",
-      "late": "Gecikti",
+      "late": "Überfällig",
       "monthlyFee": "Aylık ücret",
       "amount": "Tutar",
       "paymentDate": "Ödeme tarihi",
@@ -2511,7 +2521,8 @@
       "create": "+ Ödeme Kaydı Oluştur",
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Offener Betrag",
-      "thisMonth": "Diesen Monat"
+      "thisMonth": "Diesen Monat",
+      "noPeriod": "Kein Zeitraum"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2551,7 +2562,8 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "Klasse ohne Namen"
+      "unnamedClass": "Klasse ohne Namen",
+      "ageGroupNotSpecified": "Altersgruppe nicht angegeben"
     },
     "childList": {
       "birth": "Doğum",
@@ -2562,7 +2574,10 @@
       "registered": "kayıtlı çocuk",
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
-      "create": "+ Çocuk Ekle"
+      "create": "+ Çocuk Ekle",
+      "noParent": "Kein Elternteil verknüpft",
+      "classNotSpecified": "Klasse nicht angegeben",
+      "unassigned": "Nicht zugewiesen"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2673,7 +2688,13 @@
       "description": "Açıklama",
       "descriptionPlaceholder": "Örn: Haziran aidatı",
       "createPayment": "Ödeme Kaydı Oluştur",
-      "loading": "Form hazırlanıyor..."
+      "loading": "Form hazırlanıyor...",
+      "example": "Beispiel",
+      "childFallback": "Kind",
+      "defaultTitle": "Monatliche Kindergartengebühr",
+      "statusPending": "⏳ Ausstehend",
+      "statusPaid": "✅ Bezahlt",
+      "statusLate": "❗ Überfällig"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2687,8 +2708,8 @@
       "deleteTitle": "Anket silinsin mi?",
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
-      "noOptions": "Bu anket için seçenek eklenmemiş",
-      "loading": "Anketler yükleniyor...",
+      "noOptions": "Für diese Umfrage wurden keine Optionen hinzugefügt",
+      "loading": "Umfragen werden geladen...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2714,7 +2735,9 @@
       "results": "Sonuçlar",
       "makePassive": "Pasif Yap",
       "makeActive": "Aktif Et",
-      "deletePoll": "Anketi tamamen sil"
+      "deletePoll": "Anketi tamamen sil",
+      "no": "Nein",
+      "publishActive": "Als aktiv veröffentlichen"
     },
     "eventForm": {
       "unnamedClass": "Unbenannte Klasse",
