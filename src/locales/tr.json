@@ -2794,7 +2794,8 @@
       "deletePoll": "Anketi tamamen sil",
       "no": "Hayır",
       "publishActive": "Aktif Olarak Yayınla",
-      "option": "Seçenek"
+      "option": "Seçenek",
+      "yes": "Evet"
     },
     "eventForm": {
       "unnamedClass": "İsimsiz Sınıf",
