@@ -403,7 +403,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         kresId,
         hedefRoller: ['veli'],
         hedefSinifIds: [sinifId],
-        baslik: `📅 ${t('admin.monthly.schedule.updatedTitle')}`,
+        baslik: '📅 Ders programı güncellendi',
         mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`,
         tip: 'ders_programi',
         routeName: 'ParentSummary',
