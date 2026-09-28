@@ -2,6 +2,7 @@
 // YUMURCAK — AdminMessagesScreen.js
 // FAZ 16: Son 20 görüşme + okunmamış badge
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -288,7 +289,7 @@ function getConversationId(adminId, role, userId) {
   return `admin_${adminId}_${role}_${userId}`;
 }
 
-function getUserName(user, fallback = 'Kullanıcı') {
+function getUserName(user, fallback = t('common.user')) {
   return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || fallback;
 }
 
