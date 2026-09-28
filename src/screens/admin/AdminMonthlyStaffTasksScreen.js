@@ -39,7 +39,7 @@ import {
 const NODE_PATH = 'personelGorevListeleri';
 const KAYNAK = 'admin_aylik';
 
-function defaultSections() {
+function defaultSections(t) {
   return [
     { id: generateId(), baslik: t('admin.monthly.staff.defaultTeacherTitle'), icerik: '' },
     { id: generateId(), baslik: 'Mutfak / Temizlik Personeli', icerik: '' },
@@ -67,7 +67,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
   const monthLabel = useMemo(() => getMonthLabel(monthDate), [monthDate]);
 
   const [baslik, setBaslik] = useState('');
-  const [bolumler, setBolumler] = useState(defaultSections);
+  const [bolumler, setBolumler] = useState(() => defaultSections(t));
   const [loadingDraft, setLoadingDraft] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
@@ -92,7 +92,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
         setBolumler(
           Array.isArray(record.bolumler) && record.bolumler.length > 0
             ? record.bolumler.map((s) => ({ id: generateId(), baslik: s.baslik || '', icerik: s.icerik || '' }))
-            : defaultSections()
+            : defaultSections(t)
         );
       } else {
         setBaslik('');
