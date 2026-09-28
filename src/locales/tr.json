@@ -2539,7 +2539,7 @@
       "promoInvalid": "Promosyon kodu bulunamadı veya aktif değil.",
       "planUpgradeInfo": "Paket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.",
       "statusExpiring": "Durum",
-      "subscriptionInactive": "{{count}} öğrenci",
+      "subscriptionInactive": "Abonelik hakkı aktif değil.",
       "studentCountLabel": "Öğrenci sayısı",
       "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.",
       "specialOfferDesc": "Özel teklif gerekir."
