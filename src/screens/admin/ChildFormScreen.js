@@ -191,9 +191,9 @@ export default function ChildFormScreen() {
     if (!childId) return;
     Alert.alert(
       t('admin.childForm.delete'),
-      `${ad || 'Bu çocuk'} kalıcı olarak silinecek. Bu işlem geri alınamaz: tüm rapor, yoklama ve galeri bağlantıları koparılır.`,
+      t('admin.childForm.deleteConfirm', { name: ad || t('admin.childForm.childFallback') }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: 'Sil',
           style: 'destructive',
