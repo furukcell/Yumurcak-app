@@ -207,7 +207,7 @@ export default function AdminSubscriptionScreen() {
 
     if (rcPackage) {
       Alert.alert(
-        `${tier.title} ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`,
+        `${getTierTitle(tier)} ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`,
         i18n.t('admin.subscription.purchaseConfirmDesc', { range: getTierRange(tier), price: priceText }),
         [
           { text: i18n.t('admin.subscription.cancel'), style: 'cancel' },
@@ -219,7 +219,7 @@ export default function AdminSubscriptionScreen() {
 
     Alert.alert(
       i18n.t('admin.subscription.packageNotReady'),
-      i18n.t('admin.subscription.packageNotReadyDesc', { tier: tier.title, range: tier.range, price: priceText }),
+      i18n.t('admin.subscription.packageNotReadyDesc', { tier: getTierTitle(tier), range: getTierRange(tier), price: priceText }),
       [
        { text: i18n.t('admin.subscription.ok'), style: 'cancel' },
       ]
