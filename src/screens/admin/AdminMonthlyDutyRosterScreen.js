@@ -20,6 +20,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import MonthlyCalendarView from '../../components/MonthlyCalendarView';
 import MonthlyDocumentPdfBar from '../../components/MonthlyDocumentPdfBar';
 import MonthlyArchivePicker from '../../components/MonthlyArchivePicker';
+import i18n from '../../i18n';
 import {
   getDaysOfMonth,
   getMonthKey,
@@ -52,7 +53,7 @@ function buildDutyRecord({ day, value, kresId, monthKey, monthLabel, kaynak, now
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: `${monthLabel} ${t('admin.monthly.duty.title')}`,
+    baslik: `${monthLabel} ${i18n.t('admin.monthly.duty.title')}`,
     personel: String(value.personel || '').trim(),
     not: String(value.not || '').trim(),
     aktif: true,
