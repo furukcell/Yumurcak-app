@@ -1913,6 +1913,18 @@
       "sessionNotFoundError": "Oturum bulunamadı. Lütfen tekrar giriş yap.",
       "storageUploadFailedError": "Storage yüklemesi başarısız ({{status}}).",
       "statusUnknown": "bilinmeyen"
+    },
+    "notifications": {
+      "title": "Bildirimler",
+      "unreadCount": "{{count}} okunmamış bildirim",
+      "allRead": "Tüm bildirimler okundu",
+      "markAllRead": "Okundu",
+      "loading": "Bildirimler yükleniyor...",
+      "emptyTitle": "Henüz bildirim yok",
+      "emptyDesc": "Duyuru, mesaj, ödeme ve rapor bildirimleri burada görünecek.",
+      "cannotOpen": "Bu bildirimin ilgili ekranı şu an açılamıyor.",
+      "markReadFailed": "Bildirimler okundu yapılamadı.",
+      "noDate": "Tarih yok"
     }
   },
   "admin": {
@@ -2071,7 +2083,9 @@
       "unread": "Okunmamış",
       "completedPlural": "Tamamlanan",
       "emptyTitle": "Henüz kurum zili bildirimi yok",
-      "emptyDesc": "Veliler “Geliyorum” veya “Kapıdayım” dediğinde burada görünecek."
+      "emptyDesc": "Veliler “Geliyorum” veya “Kapıdayım” dediğinde burada görünecek.",
+      "deliveryLabel": "Teslim",
+      "timeLabel": "Saat"
     },
     "service": {
       "title": "Servis Listesi",
