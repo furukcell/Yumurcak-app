@@ -41,9 +41,9 @@ const KAYNAK = 'admin_aylik';
 
 function defaultSections() {
   return [
-    { id: generateId(), baslik: 'Öğretmenler', icerik: '' },
+    { id: generateId(), baslik: t('admin.monthly.staff.defaultTeacherTitle'), icerik: '' },
     { id: generateId(), baslik: 'Mutfak / Temizlik Personeli', icerik: '' },
-    { id: generateId(), baslik: 'Genel Hatırlatmalar', icerik: '' },
+    { id: generateId(), baslik: t('admin.monthly.staff.defaultReminderTitle'), icerik: '' },
   ];
 }
 
