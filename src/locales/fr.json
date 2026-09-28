@@ -2139,7 +2139,7 @@
       "optionalNote": "Note (facultatif)",
       "meal": {
         "readFailedTitle": "Impossible de lire la liste",
-        "readFailedDesc": "La liste mensuelle des repas n'a pas pu être lue depuis Firebase ({{error}}). Les données n'ont pas été perdues.",
+        "readFailedDesc": "Le menu mensuel publié n’a pas pu être lu depuis Firebase ({{error}}). Le formulaire peut sembler vide ; les données ne sont pas perdues.",
         "previousNotFound": "Aucune liste de repas publiée pour {{month}}.",
         "copiedDesc": "Les repas de {{count}} jours ont été copiés du mois précédent.",
         "publishRequired": "Saisissez des repas pour au moins un jour.",
@@ -2147,7 +2147,7 @@
         "publishConfirm": "Publier la liste des repas de {{month}} ? La publication précédente sera désactivée.",
         "publishFailed": "La liste mensuelle des repas n'a pas pu être publiée.",
         "unpublishConfirm": "Retirer la liste des repas de {{month}} ?",
-        "publishedToast": "Liste des repas de {{month}} publiée",
+        "publishedToast": "Menu de {{month}} publié",
         "title": "Liste mensuelle des repas",
         "subtitle": "Plan de repas mensuel pour tout l'établissement",
         "classLists": "Listes des classes",
@@ -2163,7 +2163,9 @@
         "snackPlaceholder": "Ajouter le goûter",
         "classEmpty": "L'enseignant de cette classe n'a pas encore saisi de repas pour {{month}}.",
         "updatedTitle": "Menu mis à jour",
-        "publishedDesc": "Les parents peuvent actuellement voir la liste de ce mois."
+        "publishedDesc": "Les parents peuvent actuellement voir la liste de ce mois.",
+        "daysEntered": "{{count}} jours saisis pour {{month}}",
+        "noDaysEntered": "Aucune saisie pour {{month}} pour le moment"
       },
       "staff": {
         "previousNotFound": "Aucune liste de tâches publiée pour le mois précédent.",
@@ -2223,7 +2225,10 @@
         "descriptionPlaceholder": "Description (optional)",
         "classFallback": "Classe",
         "publishTitle": "Publier le mois",
-        "updatedTitle": "Planning des cours mis à jour"
+        "updatedTitle": "Planning des cours mis à jour",
+        "publishConfirm": "Publier le planning des cours de {{className}} pour {{month}} ? La publication précédente du même mois sera désactivée.",
+        "publishedToast": "Le planning de {{className}} pour {{month}} a été publié",
+        "unpublishConfirm": "Supprimer le planning publié de {{month}} ?"
       },
       "publishing": "Publication..."
     },
