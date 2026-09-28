@@ -2,6 +2,7 @@
 // YUMURCAK — PollManagementScreen.js
 // Yönetici anket oluşturma, aktif/pasif yapma ve sonuç görme
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -115,7 +116,7 @@ export default function PollManagementScreen() {
   const [aciklama, setAciklama] = useState('');
   const [optionInputs, setOptionInputs] = useState([
     { id: makeOptionId(), value: 'Evet' },
-    { id: makeOptionId(), value: 'Hayır' },
+    { id: makeOptionId(), value: i18n.t('admin.pollManagement.no') },
   ]);
 
   useEffect(() => {
@@ -198,7 +199,7 @@ export default function PollManagementScreen() {
       setAciklama('');
       setOptionInputs([
         { id: makeOptionId(), value: 'Evet' },
-        { id: makeOptionId(), value: 'Hayır' },
+        { id: makeOptionId(), value: i18n.t('admin.pollManagement.no') },
       ]);
       setSuccessToast(true);
     } catch (e) {
@@ -252,7 +253,7 @@ export default function PollManagementScreen() {
     const options = normalizeOptions(item.secenekler || item.options || item.choices);
 
     if (options.length === 0) {
-      return <Text style={styles.resultEmpty}>Bu anket için seçenek eklenmemiş</Text>;
+      return <Text style={styles.resultEmpty}>{i18n.t('admin.pollManagement.noOptions')}</Text>;
     }
 
     return options.map((label, index) => {
@@ -272,7 +273,7 @@ export default function PollManagementScreen() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={THEME.primary} /><Text style={styles.loadingText}>Anketler yükleniyor...</Text></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={THEME.primary} /><Text style={styles.loadingText}>{i18n.t('admin.pollManagement.loading')}</Text></View>;
   }
 
   return (
@@ -364,7 +365,7 @@ export default function PollManagementScreen() {
           </View>
 
           <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={createPoll} disabled={saving} activeOpacity={0.85}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>✅ Aktif Olarak Yayınla</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>✅ {i18n.t('admin.pollManagement.publishActive')}</Text>}
           </TouchableOpacity>
         </View>
 
