@@ -59,7 +59,7 @@ function date(value, locale = 'tr-TR') {
 }
 
 function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || t('admin.support.institutionAdmin');
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || i18n.t('admin.support.institutionAdmin')
 }
 
 export default function AdminSupportScreen({ navigation }) {
