@@ -110,7 +110,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
 
   // Sınıf bazlı: ClassList'ten "bu sınıfın programını düzenle" ile gelinir.
   const sinifId = route.params?.sinifId || null;
-  const sinifAd = route.params?.sinifAd || 'Sınıf';
+  const sinifAd = route.params?.sinifAd || t('admin.monthly.schedule.classFallback');
 
   const kresId = kullanici?.kresId;
   const adminId = kullanici?.uid || kullanici?.id || null;
@@ -374,11 +374,11 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       return;
     }
     Alert.alert(
-      'Ayı Paylaş',
+      t('admin.monthly.schedule.publishTitle'),
       `${sinifAd} sınıfının ${monthLabel} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.`,
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Yayınla', onPress: doPublish },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.publish'), onPress: doPublish },
       ]
     );
   }
@@ -426,7 +426,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
       t('admin.monthly.unpublish'),
       `${monthLabel} için yayınlanmış ders programı kaldırılsın mı?`,
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
       ]
     );
@@ -516,7 +516,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
             theme={theme}
             renderDayPreview={(day) => {
               const preview = schedulePreview(values[day.dateKey]);
-              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('admin.monthly.empty')}</Text>;
             }}
           />
 
