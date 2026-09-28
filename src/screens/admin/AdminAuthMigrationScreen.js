@@ -256,7 +256,7 @@ function getSecondaryAuth() {
 }
 
 function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || t('common.user');
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || i18n.t('common.user')
 }
 
 function shortUid(uid) {
