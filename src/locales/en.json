@@ -2495,15 +2495,21 @@
       "tiers": {
         "baslangic": {
           "desc": "An ideal starter package for small institutions.",
-          "badge": "Economical"
+          "badge": "Economical",
+          "title": "Starter",
+          "range": "0 - 30 students"
         },
         "profesyonel": {
           "desc": "A balanced package for growing institutions.",
-          "badge": "Recommended"
+          "badge": "Recommended",
+          "title": "Professional",
+          "range": "31 - 50 students"
         },
         "kurum": {
           "desc": "For large institutions with intensive usage.",
-          "badge": "Large Institution"
+          "badge": "Large Institution",
+          "title": "Institution",
+          "range": "51 - 100 students"
         }
       },
       "promoEnter": "Enter the promo code.",
@@ -2511,7 +2517,9 @@
       "planUpgradeInfo": "Your new student limit becomes active immediately after the plan upgrade. Price differences and renewals follow Google Play rules.",
       "statusExpiring": "Status",
       "subscriptionInactive": "{{count}} students",
-      "studentCountLabel": "Student count"
+      "studentCountLabel": "Student count",
+      "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nYour new student limit will become active after the package upgrade. Price differences and renewals follow Google Play rules.",
+      "specialOfferDesc": "A special offer is required."
     },
     "paymentList": {
       "all": "Tümü",
