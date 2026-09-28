@@ -2418,6 +2418,13 @@
         "tired": "Yorgun",
         "calm": "Sakin",
         "normal": "Normal"
+      },
+      "riskLabels": {
+        "attendance": "Devam",
+        "meal": "Yemek",
+        "event": "Etkinlik",
+        "mood": "Ruh hali",
+        "sleep": "Uyku"
       }
     },
     "subscription": {
