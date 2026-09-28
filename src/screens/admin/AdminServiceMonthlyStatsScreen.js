@@ -193,7 +193,7 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
             <TouchableOpacity style={styles.monthArrow} onPress={() => shiftMonth(-1)} activeOpacity={0.8}>
               <Text style={styles.monthArrowText}>‹</Text>
             </TouchableOpacity>
-            <Text style={styles.monthLabel}>{getMonthName(monthIndex]} {year}</Text>
+            <Text style={styles.monthLabel}>{getMonthName(monthIndex)} {year}</Text>
             <TouchableOpacity
               style={[styles.monthArrow, isCurrentMonth && styles.monthArrowDisabled]}
               onPress={() => !isCurrentMonth && shiftMonth(1)}
