@@ -2164,7 +2164,7 @@
         "snackPlaceholder": "Snack hinzufügen",
         "classEmpty": "Die Lehrkraft dieser Klasse hat für {{month}} noch keine Mahlzeiten eingetragen.",
         "updatedTitle": "Speiseplan aktualisiert",
-        "publishedDesc": "Eltern können die Liste dieses Monats sehen.",
+        "publishedDesc": "Eltern können derzeit die Liste dieses Monats sehen.",
         "daysEntered": "{{count}} Tage für {{month}} eingetragen",
         "noDaysEntered": "Für {{month}} gibt es noch keine Einträge"
       },
@@ -2190,7 +2190,10 @@
         "publishButton": "Aufgabenliste für {{month}} veröffentlichen",
         "teachers": "Lehrkräfte",
         "generalReminders": "Allgemeine Erinnerungen",
-        "publishedLabel": "veröffentlicht"
+        "publishedLabel": "veröffentlicht",
+        "defaultTeacherTitle": "Lehrkräfte",
+        "defaultReminderTitle": "Allgemeine Erinnerungen",
+        "publishedCount": "veröffentlicht"
       },
       "duty": {
         "previousNotFound": "Für den vorherigen Monat wurde kein Dienstplan gefunden.",
@@ -2229,7 +2232,9 @@
         "updatedTitle": "Stundenplan aktualisiert",
         "publishConfirm": "Stundenplan für {{className}} für {{month}} veröffentlichen? Die vorherige Veröffentlichung für denselben Monat wird deaktiviert.",
         "publishedToast": "Stundenplan für {{className}} für {{month}} veröffentlicht",
-        "unpublishConfirm": "Den veröffentlichten Stundenplan für {{month}} entfernen?"
+        "unpublishConfirm": "Den veröffentlichten Stundenplan für {{month}} entfernen?",
+        "monthTitle": "Stundenplan {{month}}",
+        "publish": "Veröffentlichen"
       },
       "publishing": "Wird veröffentlicht..."
     },
@@ -2550,7 +2555,8 @@
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Offener Betrag",
       "thisMonth": "Diesen Monat",
-      "noPeriod": "Kein Zeitraum"
+      "noPeriod": "Kein Zeitraum",
+      "createHint": "Drücken Sie + Eintrag, um eine neue Zahlung zu erstellen"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2591,7 +2597,8 @@
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
       "unnamedClass": "Unbenannte Klasse",
-      "ageGroupNotSpecified": "Altersgruppe nicht angegeben"
+      "ageGroupNotSpecified": "Altersgruppe nicht angegeben",
+      "ageGroupMissing": "Altersgruppe nicht angegeben"
     },
     "childList": {
       "birth": "Doğum",
@@ -2605,7 +2612,8 @@
       "create": "+ Çocuk Ekle",
       "noParent": "Kein Elternteil verknüpft",
       "classNotSpecified": "Klasse nicht angegeben",
-      "unassigned": "Nicht zugewiesen"
+      "unassigned": "Nicht zugewiesen",
+      "noClass": "Klasse nicht angegeben"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2637,7 +2645,10 @@
       "deleteConfirm": "{{name}} wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden: Berichte, Anwesenheit und Galerieverknüpfungen werden getrennt.",
       "childFallback": "Dieses Kind",
       "updated": "Kinderdaten aktualisiert",
-      "saved": "Kind gespeichert"
+      "saved": "Kind gespeichert",
+      "unspecified": "Nicht angegeben",
+      "thisChild": "Dieses Kind",
+      "addressPlaceholder": "Z. B.: Muğla Mah. Deniz Sok. No:5 Bodrum"
     },
     "classForm": {
       "error": "Hata",
@@ -2723,10 +2734,11 @@
       "loading": "Form hazırlanıyor...",
       "example": "Beispiel",
       "childFallback": "Kind",
-      "defaultTitle": "Monatliche Kindergartengebühr",
+      "defaultTitle": "Monatlicher Kindergartenbeitrag",
       "statusPending": "⏳ Ausstehend",
       "statusPaid": "✅ Bezahlt",
-      "statusLate": "❗ Überfällig"
+      "statusLate": "❗ Überfällig",
+      "newPayment": "Neuer Zahlungseintrag"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
