@@ -2794,7 +2794,8 @@
       "deletePoll": "Umfrage vollständig löschen",
       "no": "Nein",
       "publishActive": "Als aktiv veröffentlichen",
-      "option": "Option"
+      "option": "Option",
+      "yes": "Ja"
     },
     "eventForm": {
       "unnamedClass": "Unbenannte Klasse",
