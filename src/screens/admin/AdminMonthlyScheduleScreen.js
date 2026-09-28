@@ -403,7 +403,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         kresId,
         hedefRoller: ['veli'],
         hedefSinifIds: [sinifId],
-        baslik: '📅 Ders programı güncellendi',
+        baslik: `📅 ${t('admin.monthly.schedule.updatedTitle')}`,
         mesaj: t('admin.monthly.schedule.publishedToast', { className: sinifAd, month: monthLabel }),
         tip: 'ders_programi',
         routeName: 'ParentSummary',
