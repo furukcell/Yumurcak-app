@@ -2566,7 +2566,9 @@
       "openAmount": "Offener Betrag",
       "thisMonth": "Diesen Monat",
       "noPeriod": "Kein Zeitraum",
-      "createHint": "Drücken Sie + Eintrag, um eine neue Zahlung zu erstellen"
+      "createHint": "Drücken Sie + Eintrag, um eine neue Zahlung zu erstellen",
+      "readPaymentsFailed": "Zahlungsdatensätze konnten nicht gelesen werden.",
+      "readChildrenFailed": "Kinderdatensätze konnten nicht gelesen werden."
     },
     "announcementForm": {
       "all": "Tüm Kurum",
