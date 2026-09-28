@@ -2426,11 +2426,21 @@
         "normal": "Normal"
       },
       "riskLabels": {
-        "attendance": "Présence",
-        "meal": "Repas",
-        "event": "Activité",
-        "mood": "Humeur",
-        "sleep": "Sommeil"
+        "Devam": "Présence",
+        "Yemek": "Repas",
+        "Etkinlik": "Activités",
+        "Ruh hali": "Humeur",
+        "Uyku": "Sommeil"
+      },
+      "unnamedChild": "Enfant sans nom",
+      "sleepSummary": "{{good}} bon / {{bad}} à suivre",
+      "moodSummary": "Majoritairement {{mood}}",
+      "riskReasons": {
+        "meal": "{{count}} repas avec alimentation faible/nulle",
+        "event": "{{count}} activités à faible participation",
+        "attendance": "{{count}} jours d’absence",
+        "mood": "{{count}} jours agités/tristes",
+        "sleep": "{{count}} jours nécessitant un suivi du sommeil"
       }
     },
     "subscription": {
