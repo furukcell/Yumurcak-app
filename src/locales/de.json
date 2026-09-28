@@ -2495,23 +2495,31 @@
       "tiers": {
         "baslangic": {
           "desc": "Ideales Einstiegspaket für kleine Einrichtungen.",
-          "badge": "Wirtschaftlich"
+          "badge": "Wirtschaftlich",
+          "title": "Starter",
+          "range": "0–30 Schüler"
         },
         "profesyonel": {
           "desc": "Ausgewogenes Paket für wachsende Einrichtungen.",
-          "badge": "Empfohlen"
+          "badge": "Empfohlen",
+          "title": "Professionell",
+          "range": "31–50 Schüler"
         },
         "kurum": {
           "desc": "Für große Einrichtungen mit intensiver Nutzung.",
-          "badge": "Große Einrichtung"
+          "badge": "Große Einrichtung",
+          "title": "Einrichtung",
+          "range": "51–100 Schüler"
         }
       },
       "promoEnter": "Promocode eingeben.",
-      "promoInvalid": "Promocode nicht gefunden oder nicht aktiv.",
+      "promoInvalid": "Der Promo-Code wurde nicht gefunden oder ist nicht aktiv.",
       "planUpgradeInfo": "Nach dem Paket-Upgrade wird das neue Schülerlimit sofort aktiv. Preisunterschiede und Verlängerungen folgen den Google-Play-Regeln.",
       "statusExpiring": "Status",
       "subscriptionInactive": "{{count}} Schüler",
-      "studentCountLabel": "Schülerzahl"
+      "studentCountLabel": "Schülerzahl",
+      "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nNach dem Paket-Upgrade wird das neue Schülerlimit sofort aktiv. Preisunterschiede und Verlängerungen richten sich nach den Google-Play-Regeln.",
+      "specialOfferDesc": "Ein individuelles Angebot ist erforderlich."
     },
     "paymentList": {
       "all": "Tümü",
