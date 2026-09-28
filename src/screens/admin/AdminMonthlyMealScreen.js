@@ -316,7 +316,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       await createNotification({
         kresId,
         hedefRoller: ['veli'],
-        baslik: '🍽️ Yemek listesi güncellendi',
+        baslik: `🍽️ ${t('admin.monthly.meal.updatedTitle')}`,
         mesaj: t('admin.monthly.meal.publishedToast', { month: monthLabel }),
         tip: 'yemek',
         routeName: 'ParentMeals',
