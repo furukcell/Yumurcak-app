@@ -2139,7 +2139,7 @@
       "optionalNote": "Note (optional)",
       "meal": {
         "readFailedTitle": "List could not be read",
-        "readFailedDesc": "The published monthly meal list could not be read from Firebase ({{error}}). The form may look empty because of this — the data was not lost; only the read failed.",
+        "readFailedDesc": "The published monthly meal list could not be read from Firebase ({{error}}). The form may appear empty; the data was not lost, only the read failed.",
         "previousNotFound": "There is no published meal list for {{month}}.",
         "copiedDesc": "{{count}} days of meal information were copied from the previous month. You can edit and publish them.",
         "publishRequired": "Enter meal information for at least one day to publish.",
@@ -2163,7 +2163,9 @@
         "snackPlaceholder": "Add snack",
         "classEmpty": "The teacher of this class has not entered meals for {{month}} yet.",
         "updatedTitle": "Meal list updated",
-        "publishedDesc": "Parents can currently see this month's list."
+        "publishedDesc": "Parents can currently see this month's list.",
+        "daysEntered": "{{count}} days entered for {{month}}",
+        "noDaysEntered": "No entries yet for {{month}}"
       },
       "staff": {
         "previousNotFound": "No published staff task list was found for the previous month.",
@@ -2223,7 +2225,10 @@
         "descriptionPlaceholder": "Description (optional)",
         "classFallback": "Class",
         "publishTitle": "Publish Month",
-        "updatedTitle": "Lesson schedule updated"
+        "updatedTitle": "Lesson schedule updated",
+        "publishConfirm": "Publish the {{month}} lesson schedule for {{className}}? The previous publication for the same month will be deactivated.",
+        "publishedToast": "The {{month}} lesson schedule for {{className}} was published",
+        "unpublishConfirm": "Remove the published lesson schedule for {{month}}?"
       },
       "publishing": "Publishing..."
     },
