@@ -3,6 +3,7 @@
 // Kurum yöneticisi ↔ Yumurcak Süper Admin destek sohbeti
 // Web panel ve SuperAdmin tarafıyla aynı `destekMesajlari` node'unu kullanır.
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -58,7 +59,7 @@ function date(value, locale = 'tr-TR') {
 }
 
 function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || 'Kurum Yöneticisi';
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || t('admin.support.institutionAdmin');
 }
 
 export default function AdminSupportScreen({ navigation }) {
