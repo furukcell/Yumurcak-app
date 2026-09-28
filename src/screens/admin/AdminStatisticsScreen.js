@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
@@ -80,7 +79,6 @@ function getEntererTime(item) {
 const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler', 'anketler', 'kullanicilar', 'odemeler', 'kurumZili']);
 
 export default function AdminStatisticsScreen() {
-  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
   const [activeTab, setActiveTab] = useState('genel');
@@ -127,8 +125,8 @@ export default function AdminStatisticsScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerCard}>
           <Text style={styles.headerEmoji}>📊</Text>
-          <Text style={styles.headerTitle}>{t('admin.statistics.title')}</Text>
-          <Text style={styles.headerSub}>{t('admin.statistics.subtitle')}</Text>
+          <Text style={styles.headerTitle}>{i18n.t('admin.statistics.title')}</Text>
+          <Text style={styles.headerSub}>{i18n.t('admin.statistics.subtitle')}</Text>
         </View>
 
         <View style={styles.tabRow}>
@@ -139,7 +137,7 @@ export default function AdminStatisticsScreen() {
               onPress={() => setActiveTab(tab.key)}
               activeOpacity={0.85}
             >
-              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{t(`admin.statistics.tabs.${tab.labelKey}`)}</Text>
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{i18n.t(`admin.statistics.tabs.${tab.labelKey}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -147,7 +145,7 @@ export default function AdminStatisticsScreen() {
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={THEME.primary} />
-            <Text style={styles.loadingText}>{t('admin.statistics.loading')}</Text>
+            <Text style={styles.loadingText}>{i18n.t('admin.statistics.loading')}</Text>
           </View>
         ) : (
           <>
@@ -166,7 +164,7 @@ export default function AdminStatisticsScreen() {
 function GeneralTab({ stats }) {
   return (
     <>
-      <Text style={styles.sectionTitle}>{t('admin.statistics.overview')}</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.overview')}</Text>
       <View style={styles.grid}>
         <StatCard icon="👶" value={stats.totalChildren} label={i18n.t("admin.statistics.statTotalChildren")} color={THEME.orange} />
         <StatCard icon="👨‍🏫" value={stats.totalTeachers} label={i18n.t("admin.statistics.statTeachers")} color={THEME.primary} />
@@ -175,14 +173,14 @@ function GeneralTab({ stats }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('admin.statistics.attendance')}</Text>
+        <Text style={styles.cardTitle}>{i18n.t('admin.statistics.attendance')}</Text>
         <ProgressLine label={i18n.t('admin.statistics.presentSummary', { present: stats.todayPresent, total: stats.todayAttendanceTotal })} percent={stats.todayAttendanceRate} color={THEME.green} />
         <Text style={styles.cardText}>{i18n.t('admin.statistics.todayAbsent')}: {stats.todayAbsent}</Text>
         <Text style={styles.cardText}>{i18n.t('admin.statistics.todayReports')}: {stats.todayReportCount}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('admin.statistics.payments')}</Text>
+        <Text style={styles.cardTitle}>{i18n.t('admin.statistics.payments')}</Text>
         <ProgressLine label={i18n.t('admin.statistics.collectionRate', { rate: stats.paymentCollectionRate })} percent={stats.paymentCollectionRate} color={THEME.gold} />
         <Text style={styles.cardText}>{i18n.t('admin.statistics.paid')}: {formatTL(stats.paidAmount)}</Text>
         <Text style={styles.cardText}>{i18n.t('admin.statistics.pendingLate')}: {formatTL(stats.pendingAmount)}</Text>
@@ -190,7 +188,7 @@ function GeneralTab({ stats }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('admin.statistics.parentEngagement')}</Text>
+        <Text style={styles.cardTitle}>{i18n.t('admin.statistics.parentEngagement')}</Text>
         <ProgressLine label={i18n.t('admin.statistics.pollAnswers', { count: stats.pollAnswerCount })} percent={Math.min(100, stats.pollAnswerCount * 10)} color={THEME.purple} />
         <Text style={styles.cardText}>{i18n.t('admin.statistics.activePolls')}: {stats.activePollCount}</Text>
         <Text style={styles.cardText}>{i18n.t('admin.statistics.bellNotifications')}: {stats.bellCount}</Text>
@@ -205,7 +203,7 @@ function TeacherTab({ teachers }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>{t('admin.statistics.teacherUsage')}</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.teacherUsage')}</Text>
       {teachers.map((teacher) => (
         <View key={teacher.id} style={styles.card}>
           <View style={styles.rowBetween}>
@@ -230,7 +228,7 @@ function ChildrenTab({ children }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>{t('admin.statistics.childRisk')}</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.childRisk')}</Text>
       {children.map((child) => (
         <View key={child.id} style={styles.card}>
           <View style={styles.rowBetween}>
@@ -250,7 +248,7 @@ function ChildrenTab({ children }) {
           <Text style={styles.cardText}>{i18n.t('admin.statistics.comment')}: {child.comment}</Text>
 
           <View style={styles.riskChipRow}>
-            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{i18n.t(`admin.statistics.riskLabels.${risk}`)}</Text>) : <Text style={styles.okChip}>{t('admin.statistics.noRisk')}</Text>}
+            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{i18n.t(`admin.statistics.riskLabels.${risk}`)}</Text>) : <Text style={styles.okChip}>{i18n.t('admin.statistics.noRisk')}</Text>}
           </View>
         </View>
       ))}
@@ -269,7 +267,7 @@ function RiskTab({ riskGroups }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>{t('admin.statistics.riskList')}</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.riskList')}</Text>
       {groupList.map((group) => (
         <View key={group.key} style={styles.card}>
           <Text style={styles.cardTitle}>{i18n.t(`admin.statistics.${group.titleKey}`)}</Text>
@@ -523,7 +521,7 @@ function ActivityTab({ entries }) {
 
   return (
     <>
-      <Text style={styles.sectionTitle}>{t('admin.statistics.teacherLogs')}</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.teacherLogs')}</Text>
       <Text style={[styles.cardText, { marginBottom: 12 }]}>{i18n.t('admin.statistics.activitySummary', { count: entries.length })}</Text>
       <View style={styles.card}>
         {entries.map((entry, index) => (
