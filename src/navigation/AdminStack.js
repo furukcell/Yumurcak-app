@@ -22,6 +22,7 @@ import EventListScreen from '../screens/admin/EventListScreen';
 import EventFormScreen from '../screens/admin/EventFormScreen';
 import AdminInstitutionSettingsScreen from '../screens/admin/AdminInstitutionSettingsScreen';
 import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
+import AdminLanguageScreen from '../screens/admin/AdminLanguageScreen';
 import AdminSubscriptionScreen from '../screens/admin/AdminSubscriptionScreen';
 import AdminMessagesScreen from '../screens/admin/AdminMessagesScreen';
 import AdminThemeScreen from '../screens/admin/AdminThemeScreen';
@@ -69,6 +70,7 @@ export default function AdminStack() {
     stackScreen('Support', AdminSupportScreen, { headerShown: false }),
     stackScreen('InstitutionSettings', AdminInstitutionSettingsScreen, { title: 'Kurum Bilgileri' }),
     stackScreen('AdminProfile', AdminProfileScreen, { headerShown: false }),
+    stackScreen('AdminLanguage', AdminLanguageScreen, { headerShown: false }),
     stackScreen('ThemeSettings', AdminThemeScreen, { title: 'Tema Ayarları' }),
     stackScreen('Subscription', AdminSubscriptionScreen, { title: 'Abonelik / Ödeme' }),
     stackScreen('AdminMessages', AdminMessagesScreen, { title: 'Mesajlar' }),
