@@ -43,7 +43,7 @@ function defaultSections() {
   return [
     { id: generateId(), baslik: 'Öğretmenler', icerik: '' },
     { id: generateId(), baslik: 'Mutfak / Temizlik Personeli', icerik: '' },
-    { id: generateId(), baslik: t('admin.monthly.staff.generalReminders'), icerik: '' },
+    { id: generateId(), baslik: 'Genel Hatırlatmalar', icerik: '' },
   ];
 }
 
