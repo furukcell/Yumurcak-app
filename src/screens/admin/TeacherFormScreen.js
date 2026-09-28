@@ -16,9 +16,11 @@ import { deleteKullaniciHesabi } from '../../utils/userDelete';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { useTranslation } from 'react-i18next';
 
 export default function TeacherFormScreen() {
   const headerHeight = useHeaderHeight();
+  const { t } = useTranslation();
   const route = useRoute();
   const { kullanici } = useAuth();
   const navigation = useNavigation();
@@ -68,7 +70,7 @@ export default function TeacherFormScreen() {
 
   const handleSave = async () => {
     if (!kullaniciAdi.trim() || !ad.trim()) {
-      Alert.alert('Hata', 'Kullanıcı adı ve ad soyad zorunludur');
+      Alert.alert(t('admin.teacherForm.error'), t('admin.teacherForm.required'));
       return;
     }
 
@@ -82,7 +84,7 @@ export default function TeacherFormScreen() {
       const kaydedilenSifre = sifre.trim() || oldTeacher.sifre || '123456';
 
       if (kaydedilenSifre.length < 6) {
-        Alert.alert('Hata', 'Şifre en az 6 karakter olmalı');
+        Alert.alert(t('admin.teacherForm.error'), t('admin.teacherForm.passwordMin'));
         setLoading(false);
         return;
       }
@@ -166,10 +168,10 @@ export default function TeacherFormScreen() {
     } catch (error) {
       console.error(error);
       if (error?.code === 'auth/email-already-in-use') {
-        Alert.alert('Auth Hatası', 'Bu kullanıcı adı için Firebase Auth hesabı zaten var. Farklı kullanıcı adı dene veya Auth Geçiş ekranından eşleştirme kontrolü yap.');
+        Alert.alert(t('admin.teacherForm.authError'), t('admin.teacherForm.authExists'));
         return;
       }
-      Alert.alert('Hata', `Öğretmen kaydedilemedi.\n\n${error?.code || error?.message || ''}`);
+      Alert.alert(t('admin.teacherForm.error'), t('admin.teacherForm.saveFailed', { detail: error?.code || error?.message || '' }));
     } finally {
       setLoading(false);
     }
@@ -181,12 +183,12 @@ export default function TeacherFormScreen() {
   const handleDelete = () => {
     if (!teacherId) return;
     Alert.alert(
-      'Öğretmeni Sil',
-      `${ad || 'Bu öğretmen'} kalıcı olarak silinecek. Bu işlem geri alınamaz: hesap ve Firebase Auth girişi tamamen silinir.`,
+      t('admin.teacherForm.deleteTitle'),
+      t('admin.teacherForm.deleteMessage', { name: ad || t('admin.teacherForm.thisTeacher') }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             setDeleting(true);
@@ -195,7 +197,7 @@ export default function TeacherFormScreen() {
               navigation.goBack();
             } catch (error) {
               console.error(error);
-              Alert.alert('Hata', `Öğretmen silinemedi.\n\n${error?.message || ''}`);
+              Alert.alert(t('admin.teacherForm.error'), t('admin.teacherForm.deleteFailed', { detail: error?.message || '' }));
             } finally {
               setDeleting(false);
             }
@@ -209,7 +211,7 @@ export default function TeacherFormScreen() {
 
   return (
     <View style={styles.screen}>
-      <AppSuccessToast visible={successToast} message={teacherId ? 'Öğretmen güncellendi' : 'Öğretmen kaydedildi'} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={teacherId ? t('admin.teacherForm.updated') : t('admin.teacherForm.saved')} onHide={() => setSuccessToast(false)} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -218,35 +220,35 @@ export default function TeacherFormScreen() {
       <ScrollView style={styles.container}>
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Kullanıcı Adı *</Text>
-            <TextInput style={styles.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder="Örn: ogretmen1" placeholderTextColor="#999" autoCapitalize="none" />
+            <Text style={styles.label}>{t('admin.teacherForm.username')} *</Text>
+            <TextInput style={styles.input} value={kullaniciAdi} onChangeText={setKullaniciAdi} placeholder={t('admin.teacherForm.usernamePlaceholder')} placeholderTextColor="#999" autoCapitalize="none" />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Ad Soyad *</Text>
-            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder="Örn: Ayşe Yılmaz" placeholderTextColor="#999" />
+            <Text style={styles.label}>{t('admin.teacherForm.fullName')} *</Text>
+            <TextInput style={styles.input} value={ad} onChangeText={setAd} placeholder={t('admin.teacherForm.namePlaceholder')} placeholderTextColor="#999" />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Şifre {!teacherId && '*'}</Text>
+            <Text style={styles.label}>{t('admin.teacherForm.password')} {!teacherId && '*'}</Text>
             <View style={styles.passwordRow}>
-              <TextInput style={styles.passwordInput} value={sifre} onChangeText={setSifre} placeholder={teacherId ? 'Boş bırakılırsa değişmez' : 'Boş bırakılırsa: 123456'} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
-              <TouchableOpacity style={styles.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={styles.passwordToggleText}>{sifreGoster ? 'Gizle' : 'Göster'}</Text></TouchableOpacity>
+              <TextInput style={styles.passwordInput} value={sifre} onChangeText={setSifre} placeholder={teacherId ? t('admin.teacherForm.passwordEditPlaceholder') : t('admin.teacherForm.passwordCreatePlaceholder')} secureTextEntry={!sifreGoster} placeholderTextColor="#999" autoCapitalize="none" autoCorrect={false} />
+              <TouchableOpacity style={styles.passwordToggle} onPress={() => setSifreGoster(!sifreGoster)} activeOpacity={0.75}><Text style={styles.passwordToggleText}>{sifreGoster ? t('common.hide') : t('common.show')}</Text></TouchableOpacity>
             </View>
-            <Text style={styles.sifreNotu}>{teacherId ? 'Boş bırakılırsa mevcut şifre korunur.' : 'Boş bırakılırsa varsayılan şifre 123456 olur.'}</Text>
+            <Text style={styles.sifreNotu}>{teacherId ? t('admin.teacherForm.passwordKeep') : t('admin.teacherForm.passwordDefault')}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Sınıf Ata (opsiyonel)</Text>
-            {siniflar.length === 0 ? <Text style={styles.bilgi}>Önce sınıf oluşturun</Text> : siniflar.map((s) => (
+            <Text style={styles.label}>{t('admin.teacherForm.assignClass')}</Text>
+            {siniflar.length === 0 ? <Text style={styles.bilgi}>{t('admin.teacherForm.createClassFirst')}</Text> : siniflar.map((s) => (
               <TouchableOpacity key={s.id} style={[styles.sinifBtn, sinifId === s.id && styles.sinifBtnAktif]} onPress={() => setSinifId(sinifId === s.id ? '' : s.id)}>
                 <Text style={[styles.sinifBtnYazi, sinifId === s.id && styles.sinifBtnYaziAktif]}>{s.ad} — {s.yasGrubu}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleSave} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{teacherId ? 'Güncelle' : 'Oluştur'}</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{teacherId ? t('common.update') : t('common.create')}</Text>}
           </TouchableOpacity>
           {teacherId && (
             <TouchableOpacity style={[styles.deleteButton, deleting && styles.saveButtonDisabled]} onPress={handleDelete} disabled={deleting}>
-              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={styles.deleteButtonText}>Öğretmeni Sil</Text>}
+              {deleting ? <ActivityIndicator color="#D6394F" /> : <Text style={styles.deleteButtonText}>{t('admin.teacherForm.deleteTeacher')}</Text>}
             </TouchableOpacity>
           )}
         </View>

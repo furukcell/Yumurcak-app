@@ -3,6 +3,7 @@
 // Etkinlik ekle/düzenle — çoklu sınıf seçimi
 // ============================================================
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, ActivityIndicator, SafeAreaView, Alert, Switch, Platform,
@@ -28,6 +29,7 @@ const THEME = {
 };
 
 export default function EventFormScreen() {
+  const { t } = useTranslation();
   const headerHeight = useHeaderHeight();
   const route = useRoute();
   const navigation = useNavigation();
@@ -68,7 +70,7 @@ export default function EventFormScreen() {
         const data = snap.val() || {};
         const liste = Object.entries(data).map(([id, s]) => ({
           id,
-          ad: s?.ad || 'İsimsiz Sınıf',
+          ad: s?.ad || t('admin.eventForm.unnamedClass'),
         }));
         setSiniflar(liste);
 
@@ -113,19 +115,19 @@ export default function EventFormScreen() {
 
   const handleKaydet = async () => {
     if (!baslik.trim()) {
-      Alert.alert('Eksik Bilgi', 'Lütfen etkinlik başlığını gir.');
+      Alert.alert(t('admin.eventForm.missingInfo'), t('admin.eventForm.enterTitle'));
       return;
     }
     if (!tarih.trim()) {
-      Alert.alert('Eksik Bilgi', 'Lütfen etkinlik tarihini gir. (örn: 25.06.2026)');
+      Alert.alert(t('admin.eventForm.missingInfo'), t('admin.eventForm.enterDate'));
       return;
     }
     if (!parseChildBirthDate(tarih)) {
-      Alert.alert('Hata', 'Tarihi 25.06.2026 formatında gir.');
+      Alert.alert(t('common.error'), t('admin.eventForm.dateFormat'));
       return;
     }
     if (seciliSiniflar.length === 0) {
-      Alert.alert('Eksik Bilgi', 'Lütfen en az bir sınıf seç.');
+      Alert.alert(t('admin.eventForm.missingInfo'), t('admin.eventForm.selectClass'));
       return;
     }
 
@@ -154,7 +156,7 @@ export default function EventFormScreen() {
         navigation.goBack();
       }, 900);
     } catch (err) {
-      Alert.alert('Hata', 'Kaydedilirken bir sorun oluştu: ' + err.message);
+      Alert.alert(t('common.error'), t('admin.eventForm.saveError') + err.message);
     } finally {
       setKaydediliyor(false);
     }
@@ -162,19 +164,19 @@ export default function EventFormScreen() {
 
   const handleSil = () => {
     Alert.alert(
-      'Etkinliği Sil',
-      'Bu etkinliği silmek istediğine emin misin?',
+      t('admin.eventForm.deleteTitle'),
+      t('admin.eventForm.deleteConfirm'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await remove(ref(database, `etkinlikler/${etkinlikId}`));
               navigation.goBack();
             } catch (err) {
-              Alert.alert('Hata', 'Silinirken bir sorun oluştu: ' + err.message);
+              Alert.alert(t('common.error'), t('admin.eventForm.deleteError') + err.message);
             }
           },
         },
@@ -194,7 +196,7 @@ export default function EventFormScreen() {
     <SafeAreaView style={styles.safeArea}>
       <AppSuccessToast
         visible={successToast}
-        message="Etkinlik kaydedildi"
+        message={t('admin.eventForm.saved')}
         onHide={() => setSuccessToast(false)}
       />
       <KeyboardAvoidingView
@@ -204,16 +206,16 @@ export default function EventFormScreen() {
       >
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
 
-        <Text style={styles.label}>Etkinlik Başlığı</Text>
+        <Text style={styles.label}>{t('admin.eventForm.titleLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Örn: Piknik Etkinliği"
+          placeholder={t('admin.eventForm.titlePlaceholder')}
           placeholderTextColor="#A6A8B8"
           value={baslik}
           onChangeText={setBaslik}
         />
 
-        <Text style={styles.label}>Tarih</Text>
+        <Text style={styles.label}>{t('admin.eventForm.dateLabel')}</Text>
         <TextInput
           style={styles.input}
           placeholder="25.06.2026"
@@ -222,7 +224,7 @@ export default function EventFormScreen() {
           onChangeText={setTarih}
         />
 
-        <Text style={styles.label}>Saat (opsiyonel)</Text>
+        <Text style={styles.label}>{t('admin.eventForm.timeLabel')}</Text>
         <TextInput
           style={styles.input}
           placeholder="10:00"
@@ -231,10 +233,10 @@ export default function EventFormScreen() {
           onChangeText={setSaat}
         />
 
-        <Text style={styles.label}>Açıklama (opsiyonel)</Text>
+        <Text style={styles.label}>{t('admin.eventForm.descriptionLabel')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Etkinlik hakkında detay yaz..."
+          placeholder={t('admin.eventForm.descriptionPlaceholder')}
           placeholderTextColor="#A6A8B8"
           value={aciklama}
           onChangeText={setAciklama}
@@ -242,10 +244,10 @@ export default function EventFormScreen() {
           numberOfLines={4}
         />
 
-        <Text style={styles.label}>Sınıflar (birden fazla seçilebilir)</Text>
+        <Text style={styles.label}>{t('admin.eventForm.classesLabel')}</Text>
         <View style={styles.sinifListesi}>
           {siniflar.length === 0 ? (
-            <Text style={styles.bilgiMetni}>Henüz sınıf eklenmemiş.</Text>
+            <Text style={styles.bilgiMetni}>{t('admin.eventForm.noClasses')}</Text>
           ) : (
             siniflar.map((s) => {
               const secili = seciliSiniflar.includes(s.id);
@@ -266,7 +268,7 @@ export default function EventFormScreen() {
         </View>
 
         <View style={styles.aktifSatir}>
-          <Text style={styles.label}>Etkinlik Aktif</Text>
+          <Text style={styles.label}>{t('admin.eventForm.activeLabel')}</Text>
           <Switch
             value={aktif}
             onValueChange={setAktif}
@@ -285,14 +287,14 @@ export default function EventFormScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.kaydetBtnText}>
-              {duzenlemeModu ? 'Değişiklikleri Kaydet' : 'Etkinliği Oluştur'}
+              {duzenlemeModu ? t('admin.eventForm.saveChanges') : t('admin.eventForm.create')}
             </Text>
           )}
         </TouchableOpacity>
 
         {duzenlemeModu ? (
           <TouchableOpacity style={styles.silBtn} onPress={handleSil} activeOpacity={0.85}>
-            <Text style={styles.silBtnText}>Etkinliği Sil</Text>
+            <Text style={styles.silBtnText}>{t('admin.eventForm.deleteEvent')}</Text>
           </TouchableOpacity>
         ) : null}
 

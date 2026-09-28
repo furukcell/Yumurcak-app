@@ -24,6 +24,7 @@ import { get, ref, update } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import AppSuccessToast from '../../components/AppSuccessToast';
 
 const THEME = {
@@ -41,6 +42,7 @@ const THEME = {
 export default function AdminInstitutionSettingsScreen() {
   const navigation = useNavigation();
   const { kullanici } = useAuth();
+  const { t } = useTranslation();
 
   const kresId = kullanici?.kresId || 'kres001';
 
@@ -90,7 +92,7 @@ export default function AdminInstitutionSettingsScreen() {
         });
       } catch (err) {
         console.error(err);
-        Alert.alert('Hata', 'Kurum bilgileri yüklenemedi.');
+        Alert.alert(t('common.error'), t('admin.institutionSettings.loadFailed'));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -108,7 +110,7 @@ export default function AdminInstitutionSettingsScreen() {
   };
 
   const save = async () => {
-    if (!form.ad.trim()) return Alert.alert('Eksik Bilgi', 'Kurum adı zorunludur.');
+    if (!form.ad.trim()) return Alert.alert(t('admin.institutionSettings.requiredNameTitle'), t('admin.institutionSettings.requiredName'));
 
     setSaving(true);
     try {
@@ -131,19 +133,19 @@ export default function AdminInstitutionSettingsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Kurum bilgileri kaydedilemedi.');
+      Alert.alert(t('common.error'), t('admin.institutionSettings.saveFailed'));
     } finally {
       setSaving(false);
     }
   };
 
   const pickAndUploadLogo = async () => {
-    if (!kresId) return Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+    if (!kresId) return Alert.alert(t('common.error'), t('admin.institutionSettings.institutionMissing'));
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Kurum fotoğrafı seçmek için galeri izni vermen gerekiyor.');
+        Alert.alert(t('admin.institutionSettings.permissionTitle'), t('admin.institutionSettings.logoPermission'));
         return;
       }
 
@@ -177,7 +179,7 @@ export default function AdminInstitutionSettingsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Kurum fotoğrafı yüklenemedi. Storage ayarlarını kontrol et.');
+      Alert.alert(t('common.error'), t('admin.institutionSettings.logoUploadFailed'));
     } finally {
       setUploadingLogo(false);
     }
@@ -185,10 +187,10 @@ export default function AdminInstitutionSettingsScreen() {
 
   const removeLogo = () => {
     if (!kresId) return;
-    Alert.alert('Kurum Fotoğrafı', 'Fotoğrafı kaldırmak istiyor musun?', [
-      { text: 'Vazgeç', style: 'cancel' },
+    Alert.alert(t('admin.institutionSettings.logoTitle'), t('admin.institutionSettings.removePhotoConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('admin.institutionSettings.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -196,7 +198,7 @@ export default function AdminInstitutionSettingsScreen() {
             setLogoUrl('');
           } catch (err) {
             console.error(err);
-            Alert.alert('Hata', 'Fotoğraf kaldırılamadı.');
+            Alert.alert(t('common.error'), t('admin.institutionSettings.removePhotoFailed'));
           }
         },
       },
@@ -204,12 +206,12 @@ export default function AdminInstitutionSettingsScreen() {
   };
 
   const pickAndUploadSplash = async () => {
-    if (!kresId) return Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+    if (!kresId) return Alert.alert(t('common.error'), t('admin.institutionSettings.institutionMissing'));
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('İzin Gerekli', 'Açılış ekranı görseli seçmek için galeri izni vermen gerekiyor.');
+        Alert.alert(t('admin.institutionSettings.permissionTitle'), t('admin.institutionSettings.splashPermission'));
         return;
       }
 
@@ -243,7 +245,7 @@ export default function AdminInstitutionSettingsScreen() {
       setSuccessToast(true);
     } catch (err) {
       console.error(err);
-      Alert.alert('Hata', 'Açılış ekranı görseli yüklenemedi. Storage ayarlarını kontrol et.');
+      Alert.alert(t('common.error'), t('admin.institutionSettings.splashUploadFailed'));
     } finally {
       setUploadingSplash(false);
     }
@@ -251,10 +253,10 @@ export default function AdminInstitutionSettingsScreen() {
 
   const removeSplash = () => {
     if (!kresId) return;
-    Alert.alert('Açılış Ekranı Görseli', 'Görseli kaldırmak istiyor musun?', [
-      { text: 'Vazgeç', style: 'cancel' },
+    Alert.alert(t('admin.institutionSettings.splashTitle'), t('admin.institutionSettings.removeSplashConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('admin.institutionSettings.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -262,7 +264,7 @@ export default function AdminInstitutionSettingsScreen() {
             setSplashUrl('');
           } catch (err) {
             console.error(err);
-            Alert.alert('Hata', 'Görsel kaldırılamadı.');
+            Alert.alert(t('common.error'), t('admin.institutionSettings.removeSplashFailed'));
           }
         },
       },
@@ -273,7 +275,7 @@ export default function AdminInstitutionSettingsScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Kurum bilgileri hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('admin.institutionSettings.loading')}</Text>
       </View>
     );
   }
@@ -299,23 +301,23 @@ export default function AdminInstitutionSettingsScreen() {
               )}
               <View style={styles.logoEditBadge}><Text style={styles.logoEditBadgeText}>📷</Text></View>
             </TouchableOpacity>
-            <Text style={styles.heroTitle}>Kurum Bilgileri</Text>
-            <Text style={styles.heroDesc}>Bu bilgiler veli iletişim ekranına direkt düşer.</Text>
+            <Text style={styles.heroTitle}>{t('admin.institutionSettings.title')}</Text>
+            <Text style={styles.heroDesc}>{t('admin.institutionSettings.subtitle')}</Text>
             <View style={styles.logoButtonsRow}>
               <TouchableOpacity onPress={pickAndUploadLogo} disabled={uploadingLogo}>
-                <Text style={styles.logoActionText}>{logoUrl ? 'Fotoğrafı Değiştir' : 'Fotoğraf Ekle'}</Text>
+                <Text style={styles.logoActionText}>{logoUrl ? t('admin.institutionSettings.changePhoto') : t('admin.institutionSettings.addPhoto')}</Text>
               </TouchableOpacity>
               {logoUrl ? (
                 <TouchableOpacity onPress={removeLogo} disabled={uploadingLogo}>
-                  <Text style={[styles.logoActionText, styles.logoRemoveText]}>Kaldır</Text>
+                  <Text style={[styles.logoActionText, styles.logoRemoveText]}>{t('admin.institutionSettings.remove')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
 
           <View style={styles.splashCard}>
-            <Text style={styles.legalTitle}>🌈 Açılış Ekranı Görseli</Text>
-            <Text style={styles.legalDesc}>Uygulama açılırken kendi kurumunuza özel tam ekran görsel gösterilsin. Eklenmezse varsayılan Yumurcak açılış ekranı kullanılır.</Text>
+            <Text style={styles.legalTitle}>🌈 {t('admin.institutionSettings.splashTitle')}</Text>
+            <Text style={styles.legalDesc}>{t('admin.institutionSettings.splashDesc')}</Text>
 
             <TouchableOpacity style={styles.splashPreviewWrap} onPress={pickAndUploadSplash} activeOpacity={0.85} disabled={uploadingSplash}>
               {uploadingSplash ? (
@@ -323,51 +325,51 @@ export default function AdminInstitutionSettingsScreen() {
               ) : splashUrl ? (
                 <Image source={{ uri: splashUrl }} style={styles.splashPreviewImage} resizeMode="cover" />
               ) : (
-                <Text style={styles.splashPlaceholderText}>9:16 · Dokun ve seç</Text>
+                <Text style={styles.splashPlaceholderText}>{t('admin.institutionSettings.splashPlaceholder')}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.splashButtonsRow}>
               <TouchableOpacity onPress={pickAndUploadSplash} disabled={uploadingSplash}>
-                <Text style={styles.splashActionText}>{splashUrl ? 'Görseli Değiştir' : 'Görsel Ekle'}</Text>
+                <Text style={styles.splashActionText}>{splashUrl ? t('admin.institutionSettings.changeImage') : t('admin.institutionSettings.addImage')}</Text>
               </TouchableOpacity>
               {splashUrl ? (
                 <TouchableOpacity onPress={removeSplash} disabled={uploadingSplash}>
-                  <Text style={[styles.splashActionText, styles.splashRemoveText]}>Kaldır</Text>
+                  <Text style={[styles.splashActionText, styles.splashRemoveText]}>{t('admin.institutionSettings.remove')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
 
           <View style={styles.legalCard}>
-            <Text style={styles.legalTitle}>⚖️ Yasal Bilgiler</Text>
-            <Text style={styles.legalDesc}>Kullanım şartları, gizlilik politikası ve KVKK metinleri.</Text>
+            <Text style={styles.legalTitle}>⚖️ {t('admin.institutionSettings.legalTitle')}</Text>
+            <Text style={styles.legalDesc}>{t('admin.institutionSettings.legalDesc')}</Text>
             <View style={styles.legalGrid}>
               <TouchableOpacity style={styles.legalButton} onPress={() => navigation.navigate('LegalDocuments', { docKey: 'terms' })} activeOpacity={0.85}>
-                <Text style={styles.legalButtonText}>📄 Kullanım Şartları</Text>
+                <Text style={styles.legalButtonText}>📄 {t('admin.institutionSettings.terms')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.legalButton} onPress={() => navigation.navigate('LegalDocuments', { docKey: 'privacy' })} activeOpacity={0.85}>
-                <Text style={styles.legalButtonText}>🔐 Gizlilik Politikası</Text>
+                <Text style={styles.legalButtonText}>🔐 {t('admin.institutionSettings.privacy')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.legalButton} onPress={() => navigation.navigate('LegalDocuments', { docKey: 'kvkk' })} activeOpacity={0.85}>
-                <Text style={styles.legalButtonText}>🛡️ KVKK Metni</Text>
+                <Text style={styles.legalButtonText}>🛡️ {t('admin.institutionSettings.kvkk')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <FormInput label="Kurum Adı" value={form.ad} onChangeText={(v) => setValue('ad', v)} placeholder="Yumurcak Kreş" />
-          <FormInput label="Adres" value={form.adres} onChangeText={(v) => setValue('adres', v)} placeholder="Mahalle, cadde, no..." multiline />
-          <FormInput label="Kurum Telefonu" value={form.telefon} onChangeText={(v) => setValue('telefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
-          <FormInput label="E-posta" value={form.email} onChangeText={(v) => setValue('email', v)} placeholder="info@..." keyboardType="email-address" />
-          <FormInput label="Yönetici Adı" value={form.yoneticiAd} onChangeText={(v) => setValue('yoneticiAd', v)} placeholder="Yönetici adı soyadı" />
-          <FormInput label="Yönetici Telefonu" value={form.yoneticiTelefon} onChangeText={(v) => setValue('yoneticiTelefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
-          <FormInput label="WhatsApp" value={form.whatsapp} onChangeText={(v) => setValue('whatsapp', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
-          <FormInput label="Website" value={form.website} onChangeText={(v) => setValue('website', v)} placeholder="https://..." />
-          <FormInput label="Çalışma Saatleri" value={form.calismaSaatleri} onChangeText={(v) => setValue('calismaSaatleri', v)} placeholder="08:00 - 18:00" />
-          <FormInput label="Ek Not" value={form.not} onChangeText={(v) => setValue('not', v)} placeholder="Servis, kayıt, görüşme notu..." multiline />
+          <FormInput label={t('admin.institutionSettings.nameLabel')} value={form.ad} onChangeText={(v) => setValue('ad', v)} placeholder={t('admin.institutionSettings.namePlaceholder')} />
+          <FormInput label={t('admin.institutionSettings.addressLabel')} value={form.adres} onChangeText={(v) => setValue('adres', v)} placeholder={t('admin.institutionSettings.addressPlaceholder')} multiline />
+          <FormInput label={t('admin.institutionSettings.phoneLabel')} value={form.telefon} onChangeText={(v) => setValue('telefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
+          <FormInput label={t('admin.institutionSettings.emailLabel')} value={form.email} onChangeText={(v) => setValue('email', v)} placeholder="info@..." keyboardType="email-address" />
+          <FormInput label={t('admin.institutionSettings.managerNameLabel')} value={form.yoneticiAd} onChangeText={(v) => setValue('yoneticiAd', v)} placeholder={t('admin.institutionSettings.managerNamePlaceholder')} />
+          <FormInput label={t('admin.institutionSettings.managerPhoneLabel')} value={form.yoneticiTelefon} onChangeText={(v) => setValue('yoneticiTelefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
+          <FormInput label={t('admin.institutionSettings.whatsappLabel')} value={form.whatsapp} onChangeText={(v) => setValue('whatsapp', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
+          <FormInput label={t('admin.institutionSettings.websiteLabel')} value={form.website} onChangeText={(v) => setValue('website', v)} placeholder="https://..." />
+          <FormInput label={t('admin.institutionSettings.hoursLabel')} value={form.calismaSaatleri} onChangeText={(v) => setValue('calismaSaatleri', v)} placeholder="08:00 - 18:00" />
+          <FormInput label={t('admin.institutionSettings.noteLabel')} value={form.not} onChangeText={(v) => setValue('not', v)} placeholder={t('admin.institutionSettings.notePlaceholder')} multiline />
 
           <TouchableOpacity style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={save} disabled={saving} activeOpacity={0.85}>
-            {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>Kurum Bilgilerini Kaydet</Text>}
+            {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{t('admin.institutionSettings.save')}</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

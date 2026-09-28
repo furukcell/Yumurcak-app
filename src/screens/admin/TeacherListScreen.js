@@ -16,6 +16,7 @@ import { ref, onValue, get } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -34,6 +35,7 @@ const THEME = {
 
 export default function TeacherListScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { kullanici, kres } = useAuth();
   const kresId = kres?.id || kullanici?.kresId;
 
@@ -91,7 +93,7 @@ export default function TeacherListScreen() {
 
             return {
               id,
-              ad: adSoyad || u.kullaniciAdi || 'İsimsiz öğretmen',
+              ad: adSoyad || u.kullaniciAdi || t('admin.teacherList.unnamed'),
               kullaniciAdi: u.kullaniciAdi || '-',
               telefon: u.telefon || u.tel || '-',
               email: u.email || '-',
@@ -137,7 +139,7 @@ export default function TeacherListScreen() {
   const renderItem = ({ item }) => {
     const sinifMetni = item.sinifAdlari.length > 0
       ? item.sinifAdlari.join(', ')
-      : 'Sınıf atanmamış';
+      : t('admin.teacherList.noClass');
 
     return (
       <TouchableOpacity
@@ -161,7 +163,7 @@ export default function TeacherListScreen() {
 
           <View style={[styles.statusBadge, item.aktif ? styles.statusActive : styles.statusPassive]}>
             <Text style={[styles.statusText, item.aktif ? styles.statusTextActive : styles.statusTextPassive]}>
-              {item.aktif ? 'Aktif' : 'Pasif'}
+              {item.aktif ? t('common.active') : t('common.passive')}
             </Text>
           </View>
         </View>
@@ -170,7 +172,7 @@ export default function TeacherListScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>🏫</Text>
             <View style={styles.infoTextBlock}>
-              <Text style={styles.infoLabel}>Sınıf</Text>
+              <Text style={styles.infoLabel}>{t('admin.teacherList.class')}</Text>
               <Text style={styles.infoValue} numberOfLines={2} ellipsizeMode="tail">
                 {sinifMetni}
               </Text>
@@ -180,7 +182,7 @@ export default function TeacherListScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>📞</Text>
             <View style={styles.infoTextBlock}>
-              <Text style={styles.infoLabel}>Telefon</Text>
+              <Text style={styles.infoLabel}>{t('admin.teacherList.phone')}</Text>
               <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">
                 {item.telefon}
               </Text>
@@ -190,7 +192,7 @@ export default function TeacherListScreen() {
 
         <View style={styles.cardFooter}>
           <Text style={styles.footerText} numberOfLines={1} ellipsizeMode="tail">
-            {item.email !== '-' ? item.email : 'E-posta bilgisi yok'}
+            {item.email !== '-' ? item.email : t('admin.teacherList.noEmail')}
           </Text>
           <Text style={styles.arrow}>›</Text>
         </View>
@@ -203,7 +205,7 @@ export default function TeacherListScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={THEME.primary} />
-          <Text style={styles.loadingText}>Öğretmenler yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('admin.teacherList.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -214,9 +216,9 @@ export default function TeacherListScreen() {
       <View style={styles.container}>
         <View style={styles.headerCard}>
           <View>
-            <Text style={styles.headerTitle}>Öğretmenler</Text>
+            <Text style={styles.headerTitle}>{t('admin.teacherList.title')}</Text>
             <Text style={styles.headerSub}>
-              {teachers.length} öğretmen · {aktifSayisi} aktif · {atanmisSayisi} sınıfa atanmış
+              {t('admin.teacherList.summary', { total: teachers.length, active: aktifSayisi, assigned: atanmisSayisi })}
             </Text>
           </View>
           <View style={styles.headerIcon}>
@@ -227,16 +229,16 @@ export default function TeacherListScreen() {
         {teachers.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyIcon}>👨‍🏫</Text>
-            <Text style={styles.emptyTitle}>Henüz kayıtlı öğretmen yok</Text>
+            <Text style={styles.emptyTitle}>{t('admin.teacherList.emptyTitle')}</Text>
             <Text style={styles.emptyDesc}>
-              Öğretmen hesabı ekleyerek sınıf ataması yapabilirsiniz.
+              {t('admin.teacherList.emptyDesc')}
             </Text>
             <TouchableOpacity
               style={styles.emptyButton}
               onPress={() => navigation.navigate('TeacherForm')}
               activeOpacity={0.85}
             >
-              <Text style={styles.emptyButtonText}>+ Öğretmen Ekle</Text>
+              <Text style={styles.emptyButtonText}>{t('admin.teacherList.add')}</Text>
             </TouchableOpacity>
           </View>
         ) : (

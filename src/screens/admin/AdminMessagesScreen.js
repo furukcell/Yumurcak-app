@@ -2,6 +2,7 @@
 // YUMURCAK — AdminMessagesScreen.js
 // FAZ 16: Son 20 görüşme + okunmamış badge
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { safeUnread } from '../../utils/messageHelpers';
+import { useTranslation } from 'react-i18next';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -34,6 +36,7 @@ const THEME = {
 export default function AdminMessagesScreen() {
   const navigation = useNavigation();
   const { kullanici } = useAuth();
+  const { t } = useTranslation();
 
   const adminId = kullanici?.uid || kullanici?.id;
   const kresId = kullanici?.kresId || 'kres001';
@@ -92,7 +95,7 @@ export default function AdminMessagesScreen() {
         const role = user.rol;
         const conversationId = getConversationId(adminId, role, user.id);
         const meta = conversations[conversationId] || {};
-        const childInfo = role === 'veli' ? getParentChildrenText(user.id, children, classes) : getTeacherClassText(user.id, classes);
+        const childInfo = role === 'veli' ? getParentChildrenText(user.id, children, classes, t) : getTeacherClassText(user.id, classes);
         return {
           ...user,
           role,
@@ -146,7 +149,7 @@ export default function AdminMessagesScreen() {
       conversationId: contact.conversationId,
       conversationMeta,
       title: getUserName(contact),
-      subtitle: contact.role === 'veli' ? `Veli · ${contact.childInfo || kres?.ad || ''}` : `Öğretmen · ${contact.childInfo || kres?.ad || ''}`,
+      subtitle: contact.role === 'veli' ? t('admin.messages.parentSubtitle', { info: contact.childInfo || kres?.ad || '' }) : t('admin.messages.teacherSubtitle', { info: contact.childInfo || kres?.ad || '' }),
     });
 
     try {
@@ -160,7 +163,7 @@ export default function AdminMessagesScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Mesajlar hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('admin.messages.loading')}</Text>
       </View>
     );
   }
@@ -170,24 +173,24 @@ export default function AdminMessagesScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>💬</Text>
-          <Text style={styles.heroTitle}>Mesajlar</Text>
-          <Text style={styles.heroDesc}>{kres?.ad || 'Kurum'} son 20 görüşme</Text>
+          <Text style={styles.heroTitle}>{t('admin.messages.title')}</Text>
+          <Text style={styles.heroDesc}>{t('admin.messages.heroDesc', { institution: kres?.ad || t('admin.messages.institutionFallback'), count: 20 })}</Text>
           <TouchableOpacity style={styles.newMessageButton} onPress={() => setNewMessageOpen(true)} activeOpacity={0.85}>
-            <Text style={styles.newMessageButtonText}>✎ Yeni Mesaj</Text>
+            <Text style={styles.newMessageButtonText}>✎ {t('admin.messages.newMessage')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.tabs}>
-          <TabButton label="Tümü" active={tab === 'all'} onPress={() => setTab('all')} />
-          <TabButton label="Veliler" active={tab === 'veli'} onPress={() => setTab('veli')} />
-          <TabButton label="Öğretmenler" active={tab === 'ogretmen'} onPress={() => setTab('ogretmen')} />
+          <TabButton label={t('admin.messages.all')} active={tab === 'all'} onPress={() => setTab('all')} />
+          <TabButton label={t('admin.messages.parents')} active={tab === 'veli'} onPress={() => setTab('veli')} />
+          <TabButton label={t('admin.messages.teachers')} active={tab === 'ogretmen'} onPress={() => setTab('ogretmen')} />
         </View>
 
         {contacts.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyTitle}>Kişi bulunamadı</Text>
-            <Text style={styles.emptyDesc}>Veli veya öğretmen eklendiğinde burada görünür.</Text>
+            <Text style={styles.emptyTitle}>{t('admin.messages.noPerson')}</Text>
+            <Text style={styles.emptyDesc}>{t('admin.messages.emptyDesc')}</Text>
           </View>
         ) : (
           contacts.map((contact) => (
@@ -204,8 +207,8 @@ export default function AdminMessagesScreen() {
                     </View>
                   ) : null}
                 </View>
-                <Text style={styles.desc} numberOfLines={1}>{contact.childInfo || 'Kurum kullanıcısı'}</Text>
-                <Text style={[styles.lastMessage, contact.unread > 0 && styles.lastMessageUnread]} numberOfLines={1}>{contact.sonMesaj || 'Henüz mesaj yok'}</Text>
+                <Text style={styles.desc} numberOfLines={1}>{contact.childInfo || t('admin.messages.institutionUser')}</Text>
+                <Text style={[styles.lastMessage, contact.unread > 0 && styles.lastMessageUnread]} numberOfLines={1}>{contact.sonMesaj || t('admin.messages.noMessage')}</Text>
               </View>
               <Text style={styles.arrow}>›</Text>
             </TouchableOpacity>
@@ -220,8 +223,8 @@ export default function AdminMessagesScreen() {
             <View style={styles.drawerHandle} />
             <View style={styles.drawerHeader}>
               <View>
-                <Text style={styles.drawerTitle}>Yeni Mesaj Başlat</Text>
-                <Text style={styles.drawerSubtitle}>Veli veya öğretmen seç, sohbete direkt başla</Text>
+                <Text style={styles.drawerTitle}>{t('admin.messages.startNew')}</Text>
+                <Text style={styles.drawerSubtitle}>{t('admin.messages.startNewDesc')}</Text>
               </View>
               <TouchableOpacity style={styles.drawerCloseButton} onPress={() => setNewMessageOpen(false)} activeOpacity={0.85}>
                 <Text style={styles.drawerCloseText}>×</Text>
@@ -234,22 +237,22 @@ export default function AdminMessagesScreen() {
                 style={styles.drawerSearchInput}
                 value={drawerQuery}
                 onChangeText={setDrawerQuery}
-                placeholder="Kişi ara..."
+                placeholder={t('admin.messages.searchPlaceholder')}
                 placeholderTextColor="#8A8EA3"
               />
             </View>
 
             <View style={styles.tabs}>
-              <TabButton label="Tümü" active={drawerTab === 'all'} onPress={() => setDrawerTab('all')} />
-              <TabButton label="Veliler" active={drawerTab === 'veli'} onPress={() => setDrawerTab('veli')} />
-              <TabButton label="Öğretmenler" active={drawerTab === 'ogretmen'} onPress={() => setDrawerTab('ogretmen')} />
+              <TabButton label={t('admin.messages.all')} active={drawerTab === 'all'} onPress={() => setDrawerTab('all')} />
+              <TabButton label={t('admin.messages.parents')} active={drawerTab === 'veli'} onPress={() => setDrawerTab('veli')} />
+              <TabButton label={t('admin.messages.teachers')} active={drawerTab === 'ogretmen'} onPress={() => setDrawerTab('ogretmen')} />
             </View>
 
             <ScrollView style={styles.drawerList} showsVerticalScrollIndicator={false}>
               {drawerContacts.length === 0 ? (
                 <View style={styles.drawerEmpty}>
                   <Text style={styles.drawerEmptyIcon}>📭</Text>
-                  <Text style={styles.drawerEmptyTitle}>Kişi bulunamadı</Text>
+                  <Text style={styles.drawerEmptyTitle}>{t('admin.messages.noPerson')}</Text>
                 </View>
               ) : (
                 drawerContacts.map((contact) => (
@@ -259,7 +262,7 @@ export default function AdminMessagesScreen() {
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.drawerContactTitle} numberOfLines={1}>{getUserName(contact)}</Text>
-                      <Text style={styles.drawerContactSub} numberOfLines={1}>{contact.childInfo || 'Kurum kullanıcısı'}</Text>
+                      <Text style={styles.drawerContactSub} numberOfLines={1}>{contact.childInfo || t('admin.messages.institutionUser')}</Text>
                     </View>
                     {contact.unread > 0 ? <Text style={styles.drawerUnread}>{contact.unread > 99 ? '99+' : contact.unread}</Text> : null}
                     <Text style={styles.arrow}>›</Text>
@@ -286,16 +289,16 @@ function getConversationId(adminId, role, userId) {
   return `admin_${adminId}_${role}_${userId}`;
 }
 
-function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || 'Kullanıcı';
+function getUserName(user, fallback = t('common.user')) {
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || fallback;
 }
 
-function getParentChildrenText(parentId, children, classes) {
+function getParentChildrenText(parentId, children, classes, t) {
   const linked = Object.values(children || {}).filter((child) => child?.veliIds?.includes(parentId));
   if (linked.length === 0) return '';
   return linked
     .map((child) => {
-      const childName = `${child.ad || child.adSoyad || 'Çocuk'} ${child.soyad || ''}`.trim();
+      const childName = `${child.ad || child.adSoyad || t('admin.messages.childFallback')} ${child.soyad || ''}`.trim();
       const className = child.sinifId ? classes?.[child.sinifId]?.ad : '';
       return className ? `${childName} · ${className}` : childName;
     })

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { onValue, ref, query, orderByChild, equalTo, get } from 'firebase/database';
@@ -81,6 +82,7 @@ function mealPreview(value) {
 export default function AdminMonthlyMealScreen({ navigation }) {
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const kresId = kullanici?.kresId;
@@ -194,8 +196,8 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       onError: (error) => {
         if (cancelled) return;
         Alert.alert(
-          'Liste okunamadı',
-          `Yayınlanmış aylık yemek listesi Firebase'den okunamadı (${error?.code || error?.message || 'bilinmeyen hata'}). Bu yüzden form boş görünüyor olabilir — veri kaybolmadı, sadece okuma başarısız oldu.`
+          t('admin.monthly.meal.readFailedTitle'),
+          t('admin.monthly.meal.readFailedDesc', { error: error?.code || error?.message || t('admin.monthly.unknownError') })
         );
       },
     }).then((loadedValues) => {
@@ -256,7 +258,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       });
 
       if (!found) {
-        Alert.alert('Bulunamadı', `${prevMonthKey} için yayınlanmış bir yemek listesi yok.`);
+        Alert.alert(t('admin.monthly.notFound'), t('admin.monthly.meal.previousNotFound', { month: prevMonthKey }));
         return;
       }
 
@@ -268,10 +270,10 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         return next;
       });
 
-      Alert.alert('Kopyalandı', `${found} günlük yemek bilgisi geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.`);
+      Alert.alert(t('admin.monthly.copied'), t('admin.monthly.meal.copiedDesc', { count: found }));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.copyFailed'));
     } finally {
       setCopying(false);
     }
@@ -279,19 +281,19 @@ export default function AdminMonthlyMealScreen({ navigation }) {
 
   function confirmPublish() {
     if (!kresId) {
-      Alert.alert('Hata', 'Kreş bilgisi bulunamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.institutionMissing'));
       return;
     }
     if (!hasAnyMeal) {
-      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir güne yemek bilgisi gir.');
+      Alert.alert(t('admin.monthly.missingInfo'), t('admin.monthly.meal.publishRequired'));
       return;
     }
     Alert.alert(
-      'Ayı Paylaş',
-      `${monthLabel} yemek listesi yayınlansın mı? Aynı ay için eski yayın pasife alınır ve veliler yeni listeyi görür.`,
+      t('admin.monthly.meal.publishTitle'),
+      t('admin.monthly.meal.publishConfirm', { month: monthLabel }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Yayınla', onPress: doPublish },
+        { text: t('admin.monthly.cancel'), style: 'cancel' },
+        { text: t('admin.monthly.publish'), onPress: doPublish },
       ]
     );
   }
@@ -314,18 +316,18 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       await createNotification({
         kresId,
         hedefRoller: ['veli'],
-        baslik: '🍽️ Yemek listesi güncellendi',
-        mesaj: `${monthLabel} yemek listesi yayınlandı.`,
+        baslik: `🍽️ ${t('admin.monthly.meal.updatedTitle')}`,
+        mesaj: t('admin.monthly.meal.publishedToast', { month: monthLabel }),
         tip: 'yemek',
         routeName: 'ParentMeals',
         createdBy: adminId || '',
       });
 
-      setSuccessMessage(`${monthLabel} yemek listesi yayınlandı`);
+      setSuccessMessage(t('admin.monthly.meal.publishedToast', { month: monthLabel }));
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Aylık yemek listesi yayınlanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.meal.publishFailed'));
     } finally {
       setSaving(false);
     }
@@ -334,11 +336,11 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   function confirmUnpublish() {
     if (!kresId || publishedCount === 0) return;
     Alert.alert(
-      'Yayından Kaldır',
-      `${monthLabel} için yayınlanmış yemek listesi kaldırılsın mı? Veliler artık bu ayın listesini göremeyecek.`,
+      t('admin.monthly.unpublishTitle'),
+      t('admin.monthly.meal.unpublishConfirm', { month: monthLabel }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
+        { text: t('admin.monthly.cancel'), style: 'cancel' },
+        { text: t('admin.monthly.unpublish'), style: 'destructive', onPress: doUnpublish },
       ]
     );
   }
@@ -349,7 +351,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK });
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.unpublishFailed'));
     } finally {
       setUnpublishing(false);
     }
@@ -361,16 +363,16 @@ export default function AdminMonthlyMealScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} yemek listesi yayınlandı`} onHide={() => setSuccessToast(false)} />
+        <AppSuccessToast visible={successToast} message={successMessage || t('admin.monthly.meal.publishedToast', { month: monthLabel })} onHide={() => setSuccessToast(false)} />
 
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Aylık Yemek Listesi</Text>
-              <Text style={styles.subtitle}>Kurum geneli ay bazlı yemek planı</Text>
+              <Text style={styles.title}>{t('admin.monthly.meal.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.monthly.meal.subtitle')}</Text>
             </View>
           </View>
 
@@ -380,7 +382,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.monthCenter}>
               <Text style={styles.monthLabel}>{monthLabel}</Text>
-              <Text style={styles.monthHint}>{days.length} günlük plan</Text>
+              <Text style={styles.monthHint}>{t('admin.monthly.dayPlan', { count: days.length })}</Text>
             </View>
             <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
               <Text style={styles.monthButtonText}>›</Text>
@@ -390,18 +392,18 @@ export default function AdminMonthlyMealScreen({ navigation }) {
           {publishedCount > 0 ? (
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                <Text style={styles.publishedText}>Veliler şu an bu ayın listesini görüyor.</Text>
+                <Text style={styles.publishedTitle}>✅ {t('admin.monthly.published', { month: monthLabel })}</Text>
+                <Text style={styles.publishedText}>{t('admin.monthly.meal.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublishTitle')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
           <View style={styles.utilityRow}>
             <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
-              <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+              <Text style={styles.copyButtonText}>{copying ? t('admin.monthly.copying') : `📋 ${t('admin.monthly.copyPrevious')}`}</Text>
             </TouchableOpacity>
             <MonthlyArchivePicker
               kresId={kresId}
@@ -415,8 +417,8 @@ export default function AdminMonthlyMealScreen({ navigation }) {
 
           {classes.length > 0 ? (
             <View style={styles.classSection}>
-              <Text style={styles.classSectionTitle}>👩‍🏫 Sınıf Listeleri</Text>
-              <Text style={styles.classSectionHint}>Öğretmenlerin kendi sınıfları için girdiği aylık liste — sadece görüntüleme.</Text>
+              <Text style={styles.classSectionTitle}>👩‍🏫 {t('admin.monthly.meal.classLists')}</Text>
+              <Text style={styles.classSectionHint}>{t('admin.monthly.meal.classListsHint')}</Text>
               {classes.map((c) => {
                 const dayCount = Object.values(classValues[c.id] || {}).filter(hasMealContent).length;
                 return (
@@ -427,9 +429,9 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                     onPress={() => setSelectedClassId(c.id)}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.classRowTitle}>{c.ad || 'Sınıf'}</Text>
+                      <Text style={styles.classRowTitle}>{c.ad || t('admin.monthly.meal.classFallback')}</Text>
                       <Text style={styles.classRowSubtitle}>
-                        {dayCount > 0 ? `${monthLabel} için ${dayCount} gün girilmiş` : `${monthLabel} için henüz giriş yok`}
+                        {dayCount > 0 ? t('admin.monthly.meal.daysEntered', { month: monthLabel, count: dayCount }) : t('admin.monthly.meal.noDaysEntered', { month: monthLabel })}
                       </Text>
                     </View>
                     <Text style={styles.classRowArrow}>›</Text>
@@ -448,12 +450,12 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             theme={theme}
             renderDayPreview={(day) => {
               const preview = mealPreview(values[day.dateKey]);
-              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('admin.monthly.empty')}</Text>;
             }}
           />
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Listesini Yayınla`}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('admin.monthly.publishing') : t('admin.monthly.meal.publishButton', { month: monthLabel })}</Text>
           </TouchableOpacity>
 
           <View style={{ marginTop: 14 }}>
@@ -483,36 +485,36 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.modalLabel}>Kahvaltı</Text>
+              <Text style={styles.modalLabel}>{t('admin.monthly.meal.breakfast')}</Text>
               <MealChipListInput
                 ogun="kahvalti"
                 values={selectedValue.kahvalti}
                 onChange={(list) => updateMealList(selectedDateKey, 'kahvalti', list)}
-                placeholder="Kahvaltı yemeği ekle"
+                placeholder={t('admin.monthly.meal.breakfastPlaceholder')}
                 theme={theme}
               />
 
-              <Text style={styles.modalLabel}>Öğle Yemeği</Text>
+              <Text style={styles.modalLabel}>{t('admin.monthly.meal.lunch')}</Text>
               <MealChipListInput
                 ogun="ogle"
                 values={selectedValue.ogle}
                 onChange={(list) => updateMealList(selectedDateKey, 'ogle', list)}
-                placeholder="Öğle yemeği ekle"
+                placeholder={t('admin.monthly.meal.lunchPlaceholder')}
                 theme={theme}
               />
 
-              <Text style={styles.modalLabel}>Ara Öğün</Text>
+              <Text style={styles.modalLabel}>{t('admin.monthly.meal.snack')}</Text>
               <MealChipListInput
                 ogun="araOgun"
                 values={selectedValue.araOgun}
                 onChange={(list) => updateMealList(selectedDateKey, 'araOgun', list)}
-                placeholder="Ara öğün ekle"
+                placeholder={t('admin.monthly.meal.snackPlaceholder')}
                 theme={theme}
               />
 
               {hasMealContent(selectedValue) ? (
                 <TouchableOpacity style={styles.modalClearButton} onPress={() => clearDay(selectedDateKey)} activeOpacity={0.85}>
-                  <Text style={styles.modalClearButtonText}>Bu Günü Temizle</Text>
+                  <Text style={styles.modalClearButtonText}>{t('admin.monthly.clearDay')}</Text>
                 </TouchableOpacity>
               ) : null}
             </ScrollView>
@@ -523,7 +525,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
           <View style={styles.modalBackdrop}>
             <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{classes.find((c) => c.id === selectedClassId)?.ad || 'Sınıf'} — {monthLabel}</Text>
+                <Text style={styles.modalTitle}>{classes.find((c) => c.id === selectedClassId)?.ad || t('admin.monthly.meal.classFallback')} — {monthLabel}</Text>
                 <TouchableOpacity onPress={() => setSelectedClassId('')} activeOpacity={0.8} style={styles.modalCloseButton}>
                   <Text style={styles.modalCloseCheck}>✓</Text>
                 </TouchableOpacity>
@@ -536,20 +538,20 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                   .filter(({ value }) => hasMealContent(value));
 
                 if (filledDays.length === 0) {
-                  return <Text style={styles.classEmptyText}>Bu sınıfın öğretmeni {monthLabel} için henüz yemek girmemiş.</Text>;
+                  return <Text style={styles.classEmptyText}>{t('admin.monthly.meal.classEmpty', { month: monthLabel })}</Text>;
                 }
 
                 return filledDays.map(({ day, value }) => (
                   <View key={day.dateKey} style={styles.classDayCard}>
                     <Text style={styles.classDayLabel}>{day.label}</Text>
                     {toMealArray(value.kahvalti).length > 0 ? (
-                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>Kahvaltı: </Text>{toMealArray(value.kahvalti).join(', ')}</Text>
+                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>{t('admin.monthly.meal.breakfast')}: </Text>{toMealArray(value.kahvalti).join(', ')}</Text>
                     ) : null}
                     {toMealArray(value.ogle).length > 0 ? (
-                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>Öğle: </Text>{toMealArray(value.ogle).join(', ')}</Text>
+                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>{t('admin.monthly.meal.lunchShort')}: </Text>{toMealArray(value.ogle).join(', ')}</Text>
                     ) : null}
                     {toMealArray(value.araOgun).length > 0 ? (
-                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>Ara Öğün: </Text>{toMealArray(value.araOgun).join(', ')}</Text>
+                      <Text style={styles.classDayMeal}><Text style={styles.classDayMealTag}>{t('admin.monthly.meal.snack')}: </Text>{toMealArray(value.araOgun).join(', ')}</Text>
                     ) : null}
                   </View>
                 ));

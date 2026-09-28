@@ -1,6 +1,6 @@
 // ============================================================
 // YUMURCAK — AdminMonthlyStaffTasksScreen.js
-// FAZ 8: "Personel Görev Listesi" — yemek listesi/ders programı gibi GÜN BAZLI
+// FAZ 8: "{t('admin.monthly.staff.title')}" — yemek listesi/ders programı gibi GÜN BAZLI
 // değil, ay başına TEK kayıt olan bir belge türü. Başlıklı bölümlerden
 // (örn. "Öğretmenler", "Mutfak / Temizlik Personeli") oluşan, kurum
 // genelinde, ay bazlı personel görev/sorumluluk listesi.
@@ -12,6 +12,7 @@
 // (unpublishMonth zaten day-array'e bağımlı değildi, değişmeden kullanıldı).
 // ============================================================
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -40,9 +41,9 @@ const KAYNAK = 'admin_aylik';
 
 function defaultSections() {
   return [
-    { id: generateId(), baslik: 'Öğretmenler', icerik: '' },
+    { id: generateId(), baslik: t('admin.monthly.staff.defaultTeacherTitle'), icerik: '' },
     { id: generateId(), baslik: 'Mutfak / Temizlik Personeli', icerik: '' },
-    { id: generateId(), baslik: 'Genel Hatırlatmalar', icerik: '' },
+    { id: generateId(), baslik: t('admin.monthly.staff.defaultReminderTitle'), icerik: '' },
   ];
 }
 
@@ -55,6 +56,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
   const headerHeight = useHeaderHeight();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const kresId = kullanici?.kresId;
@@ -145,7 +147,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
       const prevRecord = await fetchActiveSingleRecord({ nodePath: NODE_PATH, kresId, monthKey: prevMonthKey, kaynak: KAYNAK });
 
       if (!prevRecord) {
-        Alert.alert('Bulunamadı', 'Geçen ay için yayınlanmış bir görev listesi bulunamadı.');
+        Alert.alert(t('admin.monthly.notFound'), t('admin.monthly.staff.previousNotFound'));
         return;
       }
 
@@ -155,10 +157,10 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           ? prevRecord.bolumler.map((s) => ({ id: generateId(), baslik: s.baslik || '', icerik: s.icerik || '' }))
           : defaultSections()
       );
-      Alert.alert('Kopyalandı', 'Geçen ayın görev listesi kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.');
+      Alert.alert(t('admin.monthly.copied'), t('admin.monthly.staff.copiedDesc'));
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Geçen ay kopyalanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.copyFailed'));
     } finally {
       setCopying(false);
     }
@@ -168,19 +170,19 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
 
   function confirmPublish() {
     if (!kresId) {
-      Alert.alert('Hata', 'Kurum bilgisi bulunamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.institutionMissing'));
       return;
     }
     if (!hasAnyEntry) {
-      Alert.alert('Eksik Bilgi', 'Yayınlamak için en az bir bölüme içerik gir.');
+      Alert.alert(t('admin.monthly.missingInfo'), t('admin.monthly.staff.publishRequired'));
       return;
     }
     Alert.alert(
-      'Listeyi Yayınla',
-      `${monthLabel} görev listesi yayınlansın mı? Aynı ay için eski yayın pasife alınır.`,
+      t('admin.monthly.staff.publishTitle'),
+      t('admin.monthly.staff.publishConfirm', { month: monthLabel }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Yayınla', onPress: doPublish },
+        { text: t('admin.monthly.cancel'), style: 'cancel' },
+        { text: t('admin.monthly.publish'), onPress: doPublish },
       ]
     );
   }
@@ -198,7 +200,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           kaynak,
           ayKey: mKey,
           tarih: `${mKey}-01`,
-          baslik: baslik.trim() || `${monthLabel} Görev Listesi`,
+          baslik: baslik.trim() || t('admin.monthly.staff.defaultTitle', { month: monthLabel }),
           bolumler: bolumler
             .filter((s) => s.baslik.trim() || s.icerik.trim())
             .map((s) => ({ baslik: s.baslik.trim(), icerik: s.icerik.trim() })),
@@ -211,7 +213,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Görev listesi yayınlanamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.staff.publishFailed'));
     } finally {
       setSaving(false);
     }
@@ -220,11 +222,11 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
   function confirmUnpublish() {
     if (!kresId || publishedCount === 0) return;
     Alert.alert(
-      'Yayından Kaldır',
-      `${monthLabel} görev listesi kaldırılsın mı?`,
+      t('admin.monthly.unpublishTitle'),
+      t('admin.monthly.staff.unpublishConfirm', { month: monthLabel }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
+        { text: t('admin.monthly.cancel'), style: 'cancel' },
+        { text: t('admin.monthly.unpublish'), style: 'destructive', onPress: doUnpublish },
       ]
     );
   }
@@ -235,7 +237,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
       await unpublishMonth({ nodePath: NODE_PATH, kresId, monthKey, kaynak: KAYNAK });
     } catch (error) {
       console.log(error);
-      Alert.alert('Hata', 'Yayından kaldırılamadı.');
+      Alert.alert(t('common.error'), t('admin.monthly.unpublishFailed'));
     } finally {
       setUnpublishing(false);
     }
@@ -244,7 +246,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <AppSuccessToast visible={successToast} message={`${monthLabel} görev listesi yayınlandı`} onHide={() => setSuccessToast(false)} />
+        <AppSuccessToast visible={successToast} message={t('admin.monthly.staff.publishedToast', { month: monthLabel })} onHide={() => setSuccessToast(false)} />
          <KeyboardAvoidingView
           style={{ flex: 1 }}
            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -253,11 +255,11 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Personel Görev Listesi</Text>
-              <Text style={styles.subtitle}>Ay bazlı personel görev ve sorumluluk listesi</Text>
+              <Text style={styles.title}>{t('admin.monthly.staff.title')}</Text>
+              <Text style={styles.subtitle}>{t('admin.monthly.staff.subtitle')}</Text>
             </View>
           </View>
 
@@ -267,7 +269,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.monthCenter}>
               <Text style={styles.monthLabel}>{monthLabel}</Text>
-              <Text style={styles.monthHint}>{loadingDraft ? 'Yükleniyor...' : 'Görev listesi taslağı'}</Text>
+              <Text style={styles.monthHint}>{loadingDraft ? t('admin.monthly.loading') : t('admin.monthly.staff.draft')}</Text>
             </View>
             <TouchableOpacity style={styles.monthButton} onPress={() => changeMonth(1)} activeOpacity={0.8}>
               <Text style={styles.monthButtonText}>›</Text>
@@ -277,18 +279,18 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           {publishedCount > 0 ? (
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                <Text style={styles.publishedText}>Veliler ve öğretmenler şu an bu görev listesini görüyor.</Text>
+                <Text style={styles.publishedTitle}>✅ {t('admin.monthly.published', { month: monthLabel })}</Text>
+                <Text style={styles.publishedText}>{t('admin.monthly.staff.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
-                <Text style={styles.unpublishButtonText}>{unpublishing ? 'Kaldırılıyor...' : 'Yayından Kaldır'}</Text>
+                <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublishTitle')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
           <View style={styles.utilityRow}>
             <TouchableOpacity disabled={copying} style={[styles.copyButton, styles.utilityFlex, copying && { opacity: 0.6 }]} onPress={handleCopyPreviousMonth} activeOpacity={0.85}>
-              <Text style={styles.copyButtonText}>{copying ? 'Kopyalanıyor...' : '📋 Geçen Ayı Kopyala'}</Text>
+              <Text style={styles.copyButtonText}>{copying ? t('admin.monthly.copying') : `📋 ${t('admin.monthly.copyPrevious')}`}</Text>
             </TouchableOpacity>
             <MonthlyArchivePicker
               kresId={kresId}
@@ -296,16 +298,16 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
               kaynak={KAYNAK}
               currentMonthKey={monthKey}
               onSelectMonth={jumpToMonth}
-              countLabel="yayın"
+              countLabel={t('admin.monthly.staff.publishedLabel')}
               theme={theme}
             />
           </View>
 
-          <Text style={styles.fieldLabel}>Görev Listesi Başlığı</Text>
+          <Text style={styles.fieldLabel}>{t('admin.monthly.staff.listTitleLabel')}</Text>
           <TextInput
             value={baslik}
             onChangeText={setBaslik}
-            placeholder={`${monthLabel} Görev Listesi`}
+            placeholder={t('admin.monthly.staff.defaultTitle', { month: monthLabel })}
             placeholderTextColor={theme.muted}
             style={styles.titleInput}
           />
@@ -313,22 +315,22 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           {bolumler.map((section, index) => (
             <View key={section.id} style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionIndex}>Bölüm {index + 1}</Text>
+                <Text style={styles.sectionIndex}>{t('admin.monthly.staff.section', { index: index + 1 })}</Text>
                 <TouchableOpacity onPress={() => removeSection(section.id)} activeOpacity={0.8}>
-                  <Text style={styles.sectionRemove}>Sil</Text>
+                  <Text style={styles.sectionRemove}>{t('admin.monthly.delete')}</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
                 value={section.baslik}
                 onChangeText={(text) => updateSection(section.id, 'baslik', text)}
-                placeholder="Bölüm başlığı (örn: Yaklaşan Etkinlikler)"
+                placeholder={t('admin.monthly.staff.sectionTitlePlaceholder')}
                 placeholderTextColor={theme.muted}
                 style={styles.sectionTitleInput}
               />
               <TextInput
                 value={section.icerik}
                 onChangeText={(text) => updateSection(section.id, 'icerik', text)}
-                placeholder="İçerik..."
+                placeholder={t('admin.monthly.staff.contentPlaceholder')}
                 placeholderTextColor={theme.muted}
                 style={styles.sectionContentInput}
                 multiline
@@ -337,11 +339,11 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           ))}
 
           <TouchableOpacity style={styles.addSectionButton} onPress={addSection} activeOpacity={0.85}>
-            <Text style={styles.addSectionButtonText}>+ Bölüm Ekle</Text>
+            <Text style={styles.addSectionButtonText}>+ {t('admin.monthly.staff.addSection')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity disabled={saving} style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]} onPress={confirmPublish} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>{saving ? 'Yayınlanıyor...' : `${monthLabel} Görev Listesini Yayınla`}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('admin.monthly.publishing') : t('admin.monthly.staff.publishButton', { month: monthLabel })}</Text>
           </TouchableOpacity>
 
           {publishedCount > 0 ? (

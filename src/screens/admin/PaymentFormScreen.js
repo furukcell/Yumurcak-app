@@ -15,13 +15,11 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { createUserNotification } from '../../services/notificationCenter';
 import AppSuccessToast from '../../components/AppSuccessToast';
+import { useTranslation } from 'react-i18next';
 
 const DURUMLAR = ['bekliyor', 'odendi', 'gecikti'];
-const DURUM_ETIKET = { bekliyor: '⏳ Bekliyor', odendi: '✅ Ödendi', gecikti: '❗ Gecikti' };
-const AY_ADLARI = [
-  '', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-];
+const DURUM_ETIKET = { bekliyor: 'admin.paymentForm.statusPending', odendi: 'admin.paymentForm.statusPaid', gecikti: 'admin.paymentForm.statusLate' };
+const AY_KEYS = ['', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 function safeObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -43,7 +41,7 @@ function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
-function monthLabel(ay, yil) { return `${AY_ADLARI[Number(ay)] || ay} ${yil || ''}`.trim(); }
+function monthLabel(ay, yil, t) { return `${t ? t(`common.months.${AY_KEYS[Number(ay)] || 'jan'}`) : AY_KEYS[Number(ay)] || ay} ${yil || ''}`.trim(); }
 function clampMonth(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return new Date().getMonth() + 1;
@@ -59,7 +57,7 @@ function onlyNumberText(value) {
   return String(value || '').replace(',', '.').replace(/[^0-9.]/g, '');
 }
 function childName(c) {
-  return `${c.ad || ''} ${c.soyad || ''}`.trim() || c.adSoyad || c.isim || c.id || 'Çocuk';
+  return `${c.ad || ''} ${c.soyad || ''}`.trim() || c.adSoyad || c.isim || c.id || t('admin.paymentForm.childFallback');
 }
 function formatMoney(value) {
   const number = Number(onlyNumberText(value));
@@ -71,6 +69,7 @@ function dueDateForMonth(yil, ay) {
 
 export default function PaymentFormScreen() {
   const headerHeight = useHeaderHeight();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const { kullanici } = useAuth();
@@ -160,9 +159,9 @@ export default function PaymentFormScreen() {
   }, [duzenleme, paymentId, kresId]);
 
   async function kaydet() {
-    if (!seciliCocukId) return Alert.alert('Hata', 'Çocuk seçiniz.');
+    if (!seciliCocukId) return Alert.alert(t('admin.paymentForm.error'), t('admin.paymentForm.selectChild'));
     const finalTutar = Number(onlyNumberText(tutar));
-    if (!finalTutar || !Number.isFinite(finalTutar)) return Alert.alert('Hata', 'Geçerli bir tutar giriniz.');
+    if (!finalTutar || !Number.isFinite(finalTutar)) return Alert.alert(t('admin.paymentForm.error'), t('admin.paymentForm.invalidAmount'));
 
     const finalAy = clampMonth(ay);
     const finalYil = Number(yil) || new Date().getFullYear();
@@ -187,7 +186,7 @@ export default function PaymentFormScreen() {
         aciklama: aciklama.trim() || baslik.trim() || 'Aylık Kreş Ücreti',
         ay: finalAy,
         yil: finalYil,
-        donem: monthLabel(finalAy, finalYil),
+        donem: monthLabel(finalAy, finalYil, t),
         tarih: `${finalYil}-${pad2(finalAy)}`,
         tutar: finalTutar,
         amount: finalTutar,
@@ -208,7 +207,7 @@ export default function PaymentFormScreen() {
     kresId,
     userIds: finalVeliIds,
     baslik: '💳 Yeni ödeme kaydı',
-    mesaj: `${childName(cocuk)} için ${monthLabel(finalAy, finalYil)} dönemine ait ${formatMoney(finalTutar)} ödeme kaydı oluşturuldu.`,
+    mesaj: `${childName(cocuk)} için ${monthLabel(finalAy, finalYil, t)} dönemine ait ${formatMoney(finalTutar)} ödeme kaydı oluşturuldu.`,
     tip: 'odeme',
     routeName: 'ParentPayments',
     createdBy: kullanici?.uid || kullanici?.id || '',
@@ -220,7 +219,7 @@ export default function PaymentFormScreen() {
   navigation.goBack();
   }, 900);
     } catch (e) {
-      Alert.alert('Hata', 'Kayıt sırasında bir sorun oluştu.');
+      Alert.alert(t('admin.paymentForm.error'), t('admin.paymentForm.saveFailed'));
     } finally {
       setKaydediyor(false);
     }
@@ -243,13 +242,13 @@ export default function PaymentFormScreen() {
 
   const seciliCocuk = cocuklar.find((c) => c.id === seciliCocukId) || {};
 
-  if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#6C3DEB" /><Text style={s.loadingText}>Form hazırlanıyor...</Text></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#6C3DEB" /><Text style={s.loadingText}>{t('admin.paymentForm.loading')}</Text></View>;
 
   return (
      <SafeAreaView style={s.safe}>
         <AppSuccessToast
          visible={successToast}
-         message={duzenleme ? 'Ödeme güncellendi' : 'Ödeme kaydı oluşturuldu'}
+         message={duzenleme ? t('admin.paymentForm.updated') : t('admin.paymentForm.created')}
          onHide={() => setSuccessToast(false)}
        />
          <KeyboardAvoidingView
@@ -264,24 +263,24 @@ export default function PaymentFormScreen() {
            showsVerticalScrollIndicator={false}
         >
            <View style={s.heroCard}>
-             <Text style={s.heroTitle}>{duzenleme ? 'Ödeme Kaydını Düzenle' : 'Yeni Ödeme Kaydı'}</Text>
-             <Text style={s.heroSub} numberOfLines={1}>{seciliCocuk.adSoyad || 'Çocuk seçiniz'} • {monthLabel(ay, yil)}</Text>
+             <Text style={s.heroTitle}>{duzenleme ? t('admin.paymentForm.editTitle') : t('admin.paymentForm.newTitle')}</Text>
+             <Text style={s.heroSub} numberOfLines={1}>{seciliCocuk.adSoyad || t('admin.paymentForm.selectChild')} • {monthLabel(ay, yil, t)}</Text>
             <View style={s.previewRow}>
-              <View style={s.previewBox}><Text style={s.previewLabel}>Tutar</Text><Text style={s.previewValue}>{formatMoney(tutar)}</Text></View>
-              <View style={s.previewBox}><Text style={s.previewLabel}>Durum</Text><Text style={s.previewValue}>{DURUM_ETIKET[durum]}</Text></View>
+              <View style={s.previewBox}><Text style={s.previewLabel}>{t('admin.paymentForm.amount')}</Text><Text style={s.previewValue}>{formatMoney(tutar)}</Text></View>
+              <View style={s.previewBox}><Text style={s.previewLabel}>{t('admin.paymentForm.status')}</Text><Text style={s.previewValue}>{t(DURUM_ETIKET[durum])}</Text></View>
             </View>
           </View>
 
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Çocuk Seçimi</Text>
+          <Text style={s.sectionTitle}>{t('admin.paymentForm.childSelection')}</Text>
           {cocuklar.length === 0 ? (
-            <View style={s.emptyChildBox}><Text style={s.emptyChildText}>Bu kuruma bağlı çocuk bulunamadı.</Text></View>
+            <View style={s.emptyChildBox}><Text style={s.emptyChildText}>{t('admin.paymentForm.noChildren')}</Text></View>
           ) : (
             <View style={s.secimGrubu}>
               {cocuklar.map((c) => (
                 <TouchableOpacity key={c.id} style={[s.childBtn, seciliCocukId === c.id && s.childBtnAktif]} onPress={() => setSeciliCocukId(c.id)} activeOpacity={0.8}>
                   <Text style={[s.childName, seciliCocukId === c.id && s.childNameAktif]} numberOfLines={1}>{c.adSoyad}</Text>
-                  <Text style={[s.childSub, seciliCocukId === c.id && s.childSubAktif]} numberOfLines={1}>{c.sinifAdi || c.sinifAd || c.sinifId || 'Sınıf bilgisi yok'}</Text>
+                  <Text style={[s.childSub, seciliCocukId === c.id && s.childSubAktif]} numberOfLines={1}>{c.sinifAdi || c.sinifAd || c.sinifId || t('admin.paymentForm.noClass')}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -289,59 +288,59 @@ export default function PaymentFormScreen() {
         </View>
 
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Dönem ve Tutar</Text>
+          <Text style={s.sectionTitle}>{t('admin.paymentForm.periodAmount')}</Text>
           <View style={s.quickRow}>
-            <TouchableOpacity style={s.quickBtn} onPress={buAyiSec}><Text style={s.quickText}>Bu Ay</Text></TouchableOpacity>
-            <TouchableOpacity style={s.quickBtn} onPress={gelecekAyiSec}><Text style={s.quickText}>Gelecek Ay</Text></TouchableOpacity>
+            <TouchableOpacity style={s.quickBtn} onPress={buAyiSec}><Text style={s.quickText}>{t('admin.paymentForm.thisMonth')}</Text></TouchableOpacity>
+            <TouchableOpacity style={s.quickBtn} onPress={gelecekAyiSec}><Text style={s.quickText}>{t('admin.paymentForm.nextMonth')}</Text></TouchableOpacity>
           </View>
 
-          <Text style={s.etiket}>Başlık *</Text>
-          <TextInput style={s.input} value={baslik} onChangeText={setBaslik} placeholder="Aylık Kreş Ücreti" />
+          <Text style={s.etiket}>{t('admin.paymentForm.title')} *</Text>
+          <TextInput style={s.input} value={baslik} onChangeText={setBaslik} placeholder={t('admin.paymentForm.titlePlaceholder')} />
 
-          <Text style={s.etiket}>Ay *</Text>
+          <Text style={s.etiket}>{t('admin.paymentForm.month')} *</Text>
           <View style={s.monthGrid}>
-            {AY_ADLARI.slice(1).map((ad, i) => {
+            {AY_KEYS.slice(1).map((key, i) => {
               const ayNo = i + 1;
               return (
                 <TouchableOpacity key={ayNo} style={[s.monthBtn, Number(ay) === ayNo && s.monthBtnAktif]} onPress={() => setAy(ayNo)} activeOpacity={0.8}>
-                  <Text style={[s.monthYazi, Number(ay) === ayNo && s.monthYaziAktif]}>{ad.slice(0, 3)}</Text>
+                  <Text style={[s.monthYazi, Number(ay) === ayNo && s.monthYaziAktif]}>{t(`common.months.${key}`).slice(0, 3)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={s.etiket}>Yıl *</Text>
+          <Text style={s.etiket}>{t('admin.paymentForm.year')} *</Text>
           <TextInput style={s.input} value={String(yil)} onChangeText={(t) => setYil(Number(t) || new Date().getFullYear())} keyboardType="numeric" maxLength={4} placeholder="2026" />
 
-          <Text style={s.etiket}>Tutar (₺) *</Text>
+          <Text style={s.etiket}>{t('admin.paymentForm.amountTry')} *</Text>
           <TextInput style={s.input} value={tutar} onChangeText={setTutar} keyboardType="numeric" placeholder="7500" />
         </View>
 
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Durum ve Tarihler</Text>
+          <Text style={s.sectionTitle}>{t('admin.paymentForm.statusDates')}</Text>
           <View style={s.secimGrubu}>
             {DURUMLAR.map((d) => (
               <TouchableOpacity key={d} style={[s.secimBtn, durum === d && s.secimBtnAktif]} onPress={() => setDurum(d)} activeOpacity={0.8}>
-                <Text style={[s.secimBtnYazi, durum === d && s.secimBtnYaziAktif]}>{DURUM_ETIKET[d]}</Text>
+                <Text style={[s.secimBtnYazi, durum === d && s.secimBtnYaziAktif]}>{t(DURUM_ETIKET[d])}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={s.etiket}>Son Ödeme Tarihi</Text>
+          <Text style={s.etiket}>{t('admin.paymentForm.dueDate')}</Text>
           <TextInput style={s.input} value={sonOdemeTarihi} onChangeText={setSonOdemeTarihi} placeholder="YYYY-AA-GG" maxLength={10} />
-          <Text style={s.helper}>Örnek: {dueDateForMonth(yil, ay)}</Text>
+          <Text style={s.helper}>{t('admin.paymentForm.example')}: {dueDateForMonth(yil, ay)}</Text>
 
-          <Text style={s.etiket}>Ödeme Tarihi</Text>
+          <Text style={s.etiket}>{t('admin.paymentForm.paymentDate')}</Text>
           <TextInput style={s.input} value={odemeTarihi} onChangeText={setOdemeTarihi} placeholder="YYYY-AA-GG" maxLength={10} />
         </View>
 
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Açıklama</Text>
-          <TextInput style={[s.input, s.textArea]} value={aciklama} onChangeText={setAciklama} placeholder="Örn: Haziran aidatı" multiline />
+          <Text style={s.sectionTitle}>{t('admin.paymentForm.description')}</Text>
+          <TextInput style={[s.input, s.textArea]} value={aciklama} onChangeText={setAciklama} placeholder={t('admin.paymentForm.descriptionPlaceholder')} multiline />
         </View>
 
         <TouchableOpacity style={[s.kaydetBtn, (kaydediyor || cocuklar.length === 0) && { opacity: 0.6 }]} onPress={kaydet} disabled={kaydediyor || cocuklar.length === 0} activeOpacity={0.85}>
-          {kaydediyor ? <ActivityIndicator color="#fff" /> : <Text style={s.kaydetYazi}>{duzenleme ? '💾 Güncelle' : '💾 Ödeme Kaydı Oluştur'}</Text>}
+          {kaydediyor ? <ActivityIndicator color="#fff" /> : <Text style={s.kaydetYazi}>{duzenleme ? `💾 ${t('common.update')}` : `💾 ${t('admin.paymentForm.createPayment')}`}</Text>}
         </TouchableOpacity>
       </ScrollView>
      </KeyboardAvoidingView>

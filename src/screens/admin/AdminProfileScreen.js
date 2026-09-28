@@ -7,6 +7,7 @@
 import React from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import ChangePasswordCard from '../../components/ChangePasswordCard';
 
@@ -35,10 +36,11 @@ function InfoRow({ icon, label, value }) {
 }
 
 export default function AdminProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kullanici, kres, cikisYap } = useAuth();
   const userId = kullanici?.uid || kullanici?.id;
-  const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
+  const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || t('admin.profile.nameFallback');
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -47,27 +49,27 @@ export default function AdminProfileScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.8}>
             <Text style={styles.backBtnText}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Hesabım</Text>
+          <Text style={styles.headerTitle}>{t('admin.profile.title')}</Text>
           <View style={{ width: 36 }} />
         </View>
 
         <View style={styles.hero}>
           <Text style={styles.avatar}>🧑‍💼</Text>
           <Text style={styles.name} numberOfLines={1}>{adSoyad}</Text>
-          <Text style={styles.sub} numberOfLines={1}>{kres?.ad || 'Kurum Yöneticisi'}</Text>
+          <Text style={styles.sub} numberOfLines={1}>{kres?.ad || t('admin.profile.subtitleFallback')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Hesap Bilgileri</Text>
-          <InfoRow icon="🏫" label="Kurum" value={kres?.ad} />
-          <InfoRow icon="☎️" label="Telefon" value={kullanici?.telefon} />
-          <InfoRow icon="👤" label="Kullanıcı Adı" value={kullanici?.kullaniciAdi} />
+          <Text style={styles.cardTitle}>{t('admin.profile.infoCardTitle')}</Text>
+          <InfoRow icon="🏫" label={t('teacher.profile.infoInstitution')} value={kres?.ad} />
+          <InfoRow icon="☎️" label={t('teacher.profile.infoPhone')} value={kullanici?.telefon} />
+          <InfoRow icon="👤" label={t('teacher.profile.infoUsername')} value={kullanici?.kullaniciAdi} />
         </View>
 
         <ChangePasswordCard userId={userId} primaryColor={THEME.primary} />
 
         <TouchableOpacity style={styles.logoutButton} onPress={cikisYap} activeOpacity={0.85}>
-          <Text style={styles.logoutText}>↩ Çıkış Yap</Text>
+          <Text style={styles.logoutText}>↩ {t('teacher.profile.logoutButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

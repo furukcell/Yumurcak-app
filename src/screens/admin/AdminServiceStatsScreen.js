@@ -13,6 +13,8 @@ import { ref, onValue, get, query, orderByChild, equalTo } from 'firebase/databa
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import ThemedBackground from '../../components/ThemedBackground';
 
 function pad2(value) {
@@ -31,14 +33,15 @@ function formatTime(zaman) {
 
 function formatDateLabel(date, todayKey) {
   const key = toDateKey(date);
-  if (key === todayKey) return 'Bugün';
+  if (key === todayKey) return i18n.t('admin.serviceStats.today');
   const dun = new Date();
   dun.setDate(dun.getDate() - 1);
-  if (key === toDateKey(dun)) return 'Dün';
-  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+  if (key === toDateKey(dun)) return i18n.t('admin.serviceStats.yesterday');
+  return date.toLocaleDateString(i18n.language, { day: 'numeric', month: 'long', weekday: 'long' });
 }
 
 export default function AdminServiceStatsScreen({ navigation }) {
+  const { t, i18n: i18nInstance } = useTranslation();
   const { kullanici } = useAuth();
   const { theme } = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -62,7 +65,7 @@ export default function AdminServiceStatsScreen({ navigation }) {
     const unsub = onValue(q, (snap) => {
       const data = snap.val() || {};
       const list = Object.entries(data).map(([id, v]) => ({ id, ...v }));
-      list.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
+      list.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', i18nInstance.language));
       setVehicles(list);
     });
     return () => unsub();
@@ -132,9 +135,9 @@ export default function AdminServiceStatsScreen({ navigation }) {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-              <Text style={styles.backText}>‹ Geri</Text>
+              <Text style={styles.backText}>‹ {t('common.back')}</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Servis Durumu</Text>
+            <Text style={styles.title}>{t('admin.serviceStats.title')}</Text>
           </View>
 
           <View style={styles.dateNav}>
@@ -145,7 +148,7 @@ export default function AdminServiceStatsScreen({ navigation }) {
               <Text style={styles.dateLabel}>{formatDateLabel(selectedDate, todayKey)}</Text>
               {!isToday ? (
                 <TouchableOpacity onPress={() => setSelectedDate(new Date())} activeOpacity={0.8}>
-                  <Text style={styles.todayLink}>Bugüne dön</Text>
+                  <Text style={styles.todayLink}>{t('admin.serviceStats.backToToday')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -165,7 +168,7 @@ export default function AdminServiceStatsScreen({ navigation }) {
             <>
               {isToday && alinmayanlar.length > 0 ? (
                 <View style={styles.warningCard}>
-                  <Text style={styles.warningTitle}>⏳ Henüz Alınmayanlar ({alinmayanlar.length})</Text>
+                  <Text style={styles.warningTitle}>⏳ {t('admin.serviceStats.notPickedUpTitle', { count: alinmayanlar.length })}</Text>
                   {alinmayanlar.map((c) => {
                     const child = childrenMap[c.id];
                     const vehicle = vehicles.find((v) => v.id === c.servisId);
@@ -179,7 +182,7 @@ export default function AdminServiceStatsScreen({ navigation }) {
               ) : null}
 
               {vehicles.length === 0 ? (
-                <Text style={styles.emptyText}>Henüz servis aracı eklenmedi.</Text>
+                <Text style={styles.emptyText}>{t('admin.vehicleList.emptyText')}</Text>
               ) : (
                 vehicles.map((vehicle) => {
                   const durum = gunlukDurum[vehicle.id] || {};
@@ -192,13 +195,13 @@ export default function AdminServiceStatsScreen({ navigation }) {
                         <Text style={styles.vehicleName}>{vehicle.ad || vehicle.plaka}</Text>
                         <View style={[styles.badge, varmaSaat ? styles.badgeDone : styles.badgePending]}>
                           <Text style={[styles.badgeText, varmaSaat ? styles.badgeTextDone : styles.badgeTextPending]}>
-                            {varmaSaat ? `✅ Vardı ${varmaSaat}` : '⏳ Henüz varmadı'}
+                            {varmaSaat ? `✅ ${t('admin.serviceStats.arrivedAt', { time: varmaSaat })}` : `⏳ ${t('admin.serviceStats.notArrivedYet')}`}
                           </Text>
                         </View>
                       </View>
 
                       {cocuklar.length === 0 ? (
-                        <Text style={styles.noChildText}>Bu araca atanmış çocuk yok.</Text>
+                        <Text style={styles.noChildText}>{t('admin.serviceStats.noChildAssigned')}</Text>
                       ) : (
                         cocuklar.map((c) => {
                           const child = childrenMap[c.id];

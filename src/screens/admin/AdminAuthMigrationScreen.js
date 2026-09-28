@@ -2,6 +2,7 @@
 // YUMURCAK — AdminAuthMigrationScreen.js
 // FAZ 11 v2: Modern Yumurcak arayüzü
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,6 +21,7 @@ import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth'
 import { getApps, initializeApp } from 'firebase/app';
 import { database, firebaseConfig } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { usernameToEmail } from '../../utils/authHelpers';
 
 const THEME = {
@@ -37,6 +39,7 @@ const THEME = {
 
 export default function AdminAuthMigrationScreen({ navigation }) {
   const { kullanici } = useAuth();
+  const { t } = useTranslation();
   const kresId = kullanici?.kresId || 'kres001';
 
   const [loading, setLoading] = useState(true);
@@ -79,7 +82,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       setUsers(list);
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Kullanıcılar yüklenemedi.');
+      Alert.alert(t('common.error'), t('admin.authMigration.usersLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -99,11 +102,11 @@ export default function AdminAuthMigrationScreen({ navigation }) {
     if (running) return;
 
     Alert.alert(
-      'Firebase Auth Geçişi',
-      'authUid olmayan kullanıcılar için Firebase Auth hesabı oluşturulacak. Devam edilsin mi?',
+      t('admin.authMigration.confirmTitle'),
+      t('admin.authMigration.confirmDesc'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Başlat', onPress: startMigration },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('admin.authMigration.start'), onPress: startMigration },
       ]
     );
   };
@@ -116,7 +119,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       const candidates = users.filter((u) => !u.authUid);
 
       if (candidates.length === 0) {
-        addLog('Taşınacak kullanıcı yok.');
+        addLog(t('admin.authMigration.noUsers'));
         setRunning(false);
         return;
       }
@@ -128,7 +131,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
           const password = String(user.sifre || user.password || '123456');
 
           if (password.length < 6) {
-            addLog(`Atlandı: ${username} şifre en az 6 karakter olmalı.`);
+            addLog(t('admin.authMigration.skippedPassword', { username }));
             continue;
           }
 
@@ -145,23 +148,23 @@ export default function AdminAuthMigrationScreen({ navigation }) {
 
           await set(ref(database, `authKullaniciIndex/${authUid}`), user.id);
 
-          addLog(`Tamam: ${username} -> ${email}`);
+          addLog(t('admin.authMigration.migrated', { username, email }));
         } catch (error) {
           const username = user.kullaniciAdi || user.id;
           if (error?.code === 'auth/email-already-in-use') {
-            addLog(`Zaten var: ${username}. Firebase Console'da email var; manuel eşleştirme gerekebilir.`);
+            addLog(t('admin.authMigration.alreadyExists', { username }));
           } else {
-            addLog(`Hata: ${username} -> ${error?.code || error?.message || 'bilinmeyen hata'}`);
+            addLog(t('admin.authMigration.userError', { username, error: error?.code || error?.message || 'unknown error' }));
           }
         }
       }
 
       await signOut(secondaryAuth).catch(() => {});
       await loadUsers();
-      Alert.alert('Tamamlandı', 'Firebase Auth geçiş denemesi tamamlandı.');
+      Alert.alert(t('admin.authMigration.completedTitle'), t('admin.authMigration.completedDesc'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Auth geçiş işlemi başlatılamadı.');
+      Alert.alert(t('common.error'), t('admin.authMigration.startFailed'));
     } finally {
       setRunning(false);
     }
@@ -171,7 +174,7 @@ export default function AdminAuthMigrationScreen({ navigation }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Auth geçiş ekranı hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('admin.authMigration.loading')}</Text>
       </View>
     );
   }
@@ -181,12 +184,12 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       <View style={styles.customHeader}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
           <Text style={styles.backArrow}>‹</Text>
-          <Text style={styles.backText}>Geri</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
 
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>Firebase Auth</Text>
-          <Text style={styles.headerSub}>Yumurcak Geçiş Paneli</Text>
+          <Text style={styles.headerTitle}>{t('admin.authMigration.title')}</Text>
+          <Text style={styles.headerSub}>{t('admin.authMigration.subtitle')}</Text>
         </View>
 
         <View style={styles.headerRight} />
@@ -195,44 +198,44 @@ export default function AdminAuthMigrationScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>🔐</Text>
-          <Text style={styles.heroTitle}>Güvenli Giriş Geçişi</Text>
-          <Text style={styles.heroDesc}>Kullanıcıları Firebase Auth sistemine taşı ve üretim güvenliğine hazırla.</Text>
+          <Text style={styles.heroTitle}>{t('admin.authMigration.heroTitle')}</Text>
+          <Text style={styles.heroDesc}>{t('admin.authMigration.heroDesc')}</Text>
         </View>
 
         <View style={styles.statsRow}>
-          <Stat label="Toplam" value={stats.total} />
-          <Stat label="Taşınmış" value={stats.migrated} />
-          <Stat label="Bekleyen" value={stats.waiting} />
+          <Stat label={t("admin.authMigration.total")} value={stats.total} />
+          <Stat label={t("admin.authMigration.migrated")} value={stats.migrated} />
+          <Stat label={t("admin.authMigration.waiting")} value={stats.waiting} />
         </View>
 
         <View style={styles.warningCard}>
-          <Text style={styles.warningTitle}>Önemli Not</Text>
+          <Text style={styles.warningTitle}>{t('admin.authMigration.warningTitle')}</Text>
           <Text style={styles.warningText}>
-            Production rules'a geçmeden önce tüm kullanıcıların authUid alması ve 3 rolün giriş testinden geçmesi gerekir.
+            {t('admin.authMigration.warningText')}
           </Text>
         </View>
 
         <TouchableOpacity style={[styles.runButton, running && { opacity: 0.6 }]} onPress={runMigration} disabled={running}>
-          {running ? <ActivityIndicator color="#FFF" /> : <Text style={styles.runText}>Auth Geçişini Başlat</Text>}
+          {running ? <ActivityIndicator color="#FFF" /> : <Text style={styles.runText}>{t('admin.authMigration.start')}</Text>}
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Kullanıcılar</Text>
+        <Text style={styles.sectionTitle}>{t('admin.authMigration.users')}</Text>
         {users.map((user) => (
           <View key={user.id} style={styles.userCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.userName}>{getUserName(user)}</Text>
               <Text style={styles.userMeta}>{user.rol || '-'} · {user.kullaniciAdi || user.email || user.id}</Text>
-              <Text style={styles.userMeta}>{user.authUid ? `authUid: ${shortUid(user.authUid)}` : 'Auth bekliyor'}</Text>
+              <Text style={styles.userMeta}>{user.authUid ? `authUid: ${shortUid(user.authUid)}` : t('admin.authMigration.authPending')}</Text>
             </View>
             <Text style={[styles.statusBadge, user.authUid ? styles.doneBadge : styles.waitBadge]}>
-              {user.authUid ? 'Tamam' : 'Bekliyor'}
+              {user.authUid ? t('admin.authMigration.done') : t('admin.authMigration.waiting')}
             </Text>
           </View>
         ))}
 
-        <Text style={styles.sectionTitle}>Log</Text>
+        <Text style={styles.sectionTitle}>{t('admin.authMigration.log')}</Text>
         {logs.length === 0 ? (
-          <View style={styles.logEmpty}><Text style={styles.logText}>Henüz işlem yok.</Text></View>
+          <View style={styles.logEmpty}><Text style={styles.logText}>{t('admin.authMigration.noLog')}</Text></View>
         ) : (
           logs.map((line, index) => (
             <View key={`${line}_${index}`} style={styles.logLine}>
@@ -253,7 +256,7 @@ function getSecondaryAuth() {
 }
 
 function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || 'Kullanıcı';
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || t('common.user');
 }
 
 function shortUid(uid) {

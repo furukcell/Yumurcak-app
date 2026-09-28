@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -23,11 +25,11 @@ const THEME = {
 };
 
 const TABS = [
-  { key: 'genel', label: 'Genel' },
-  { key: 'ogretmen', label: 'Öğretmenler' },
-  { key: 'cocuk', label: 'Çocuklar' },
-  { key: 'risk', label: 'Riskler' },
-  { key: 'aktivite', label: 'Aktivite' },
+  { key: 'genel', labelKey: 'general' },
+  { key: 'ogretmen', labelKey: 'teachers' },
+  { key: 'cocuk', labelKey: 'children' },
+  { key: 'risk', labelKey: 'risks' },
+  { key: 'aktivite', labelKey: 'activity' },
 ];
 
 const NODE_KEYS = [
@@ -50,13 +52,13 @@ const NODE_KEYS = [
 // girdiğini gösteren log. Her düğüm için: kaydı giren kullanıcının id'sini
 // bulan fonksiyon + kısa açıklama üreten fonksiyon.
 const ACTIVITY_NODE_CONFIG = [
-  { key: 'yoklamalar', icon: '📅', label: 'Yoklama', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için yoklama girildi` },
-  { key: 'gunlukRaporlar', icon: '📝', label: 'Günlük Rapor', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için günlük rapor girildi` },
-  { key: 'etkinlikler', icon: '🎨', label: 'Etkinlik', describe: (item) => item.baslik ? `"${item.baslik}" etkinliği girildi` : 'Etkinlik girildi' },
-  { key: 'yemekListeleri', icon: '🍽️', label: 'Yemek Listesi', describe: () => 'Yemek listesi girildi' },
-  { key: 'duyurular', icon: '📢', label: 'Duyuru', describe: (item) => item.baslik ? `"${item.baslik}" duyurusu girildi` : 'Duyuru girildi' },
-  { key: 'ilacTakipFormlari', icon: '💊', label: 'İlaç Takip', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için "${item.ilacAdi || 'ilaç'}" takip formu girildi` },
-  { key: 'medikalBilgiler', icon: '🩺', label: 'Medikal Bilgi', describe: (item, ctx) => `${ctx.childName(item.cocukId)} için medikal bilgi güncellendi` },
+  { key: 'yoklamalar', icon: '📅', labelKey: 'attendance', describe: (item, ctx) => i18n.t('admin.statistics.activityDescriptions.attendance', { name: ctx.childName(item.cocukId) }) },
+  { key: 'gunlukRaporlar', icon: '📝', labelKey: 'dailyReport', describe: (item, ctx) => i18n.t('admin.statistics.activityDescriptions.dailyReport', { name: ctx.childName(item.cocukId) }) },
+  { key: 'etkinlikler', icon: '🎨', labelKey: 'event', describe: (item) => item.baslik ? i18n.t('admin.statistics.activityDescriptions.eventNamed', { title: item.baslik }) : i18n.t('admin.statistics.activityDescriptions.event') },
+  { key: 'yemekListeleri', icon: '🍽️', labelKey: 'mealList', describe: () => i18n.t('admin.statistics.activityDescriptions.mealList') },
+  { key: 'duyurular', icon: '📢', labelKey: 'announcement', describe: (item) => item.baslik ? i18n.t('admin.statistics.activityDescriptions.announcementNamed', { title: item.baslik }) : i18n.t('admin.statistics.activityDescriptions.announcement') },
+  { key: 'ilacTakipFormlari', icon: '💊', labelKey: 'medication', describe: (item, ctx) => i18n.t('admin.statistics.activityDescriptions.medication', { name: ctx.childName(item.cocukId), medicine: item.ilacAdi || i18n.t('admin.statistics.medicineFallback') }) },
+  { key: 'medikalBilgiler', icon: '🩺', labelKey: 'medical', describe: (item, ctx) => i18n.t('admin.statistics.activityDescriptions.medical', { name: ctx.childName(item.cocukId) }) },
 ];
 
 function getEntererId(item) {
@@ -78,6 +80,7 @@ function getEntererTime(item) {
 const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler', 'anketler', 'kullanicilar', 'odemeler', 'kurumZili']);
 
 export default function AdminStatisticsScreen() {
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
   const [activeTab, setActiveTab] = useState('genel');
@@ -124,8 +127,8 @@ export default function AdminStatisticsScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerCard}>
           <Text style={styles.headerEmoji}>📊</Text>
-          <Text style={styles.headerTitle}>Kurum İstatistikleri</Text>
-          <Text style={styles.headerSub}>Genel gidişat, öğretmen kullanımı ve çocuk bazlı risk analizi</Text>
+          <Text style={styles.headerTitle}>{i18n.t('admin.statistics.title')}</Text>
+          <Text style={styles.headerSub}>{i18n.t('admin.statistics.subtitle')}</Text>
         </View>
 
         <View style={styles.tabRow}>
@@ -136,7 +139,7 @@ export default function AdminStatisticsScreen() {
               onPress={() => setActiveTab(tab.key)}
               activeOpacity={0.85}
             >
-              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{tab.label}</Text>
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{i18n.t(`admin.statistics.tabs.${tab.labelKey}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -144,7 +147,7 @@ export default function AdminStatisticsScreen() {
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={THEME.primary} />
-            <Text style={styles.loadingText}>İstatistikler hazırlanıyor...</Text>
+            <Text style={styles.loadingText}>{i18n.t('admin.statistics.loading')}</Text>
           </View>
         ) : (
           <>
@@ -163,59 +166,59 @@ export default function AdminStatisticsScreen() {
 function GeneralTab({ stats }) {
   return (
     <>
-      <Text style={styles.sectionTitle}>Kurum Genel Durum</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.overview')}</Text>
       <View style={styles.grid}>
-        <StatCard icon="👶" value={stats.totalChildren} label="Toplam çocuk" color={THEME.orange} />
-        <StatCard icon="👨‍🏫" value={stats.totalTeachers} label="Öğretmen" color={THEME.primary} />
-        <StatCard icon="👨‍👩‍👧" value={stats.totalParents} label="Veli" color={THEME.green} />
-        <StatCard icon="🏫" value={stats.totalClasses} label="Sınıf" color={THEME.blue} />
+        <StatCard icon="👶" value={stats.totalChildren} label={i18n.t("admin.statistics.statTotalChildren")} color={THEME.orange} />
+        <StatCard icon="👨‍🏫" value={stats.totalTeachers} label={i18n.t("admin.statistics.statTeachers")} color={THEME.primary} />
+        <StatCard icon="👨‍👩‍👧" value={stats.totalParents} label={i18n.t("admin.statistics.statParents")} color={THEME.green} />
+        <StatCard icon="🏫" value={stats.totalClasses} label={i18n.t("admin.statistics.statClasses")} color={THEME.blue} />
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>📅 Bugünkü Yoklama</Text>
-        <ProgressLine label={`${stats.todayPresent} gelen / ${stats.todayAttendanceTotal} kayıt`} percent={stats.todayAttendanceRate} color={THEME.green} />
-        <Text style={styles.cardText}>Bugün gelmeyen çocuk: {stats.todayAbsent}</Text>
-        <Text style={styles.cardText}>Bugün girilen günlük rapor: {stats.todayReportCount}</Text>
+        <Text style={styles.cardTitle}>{i18n.t('admin.statistics.attendance')}</Text>
+        <ProgressLine label={i18n.t('admin.statistics.presentSummary', { present: stats.todayPresent, total: stats.todayAttendanceTotal })} percent={stats.todayAttendanceRate} color={THEME.green} />
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.todayAbsent')}: {stats.todayAbsent}</Text>
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.todayReports')}: {stats.todayReportCount}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>💰 Bu Ay Ödeme Durumu</Text>
-        <ProgressLine label={`Tahsilat oranı: %${stats.paymentCollectionRate}`} percent={stats.paymentCollectionRate} color={THEME.gold} />
-        <Text style={styles.cardText}>Ödenen: {formatTL(stats.paidAmount)}</Text>
-        <Text style={styles.cardText}>Bekleyen / geciken: {formatTL(stats.pendingAmount)}</Text>
-        <Text style={styles.cardText}>Bekleyen ödeme kaydı: {stats.pendingPaymentCount}</Text>
+        <Text style={styles.cardTitle}>{i18n.t('admin.statistics.payments')}</Text>
+        <ProgressLine label={i18n.t('admin.statistics.collectionRate', { rate: stats.paymentCollectionRate })} percent={stats.paymentCollectionRate} color={THEME.gold} />
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.paid')}: {formatTL(stats.paidAmount)}</Text>
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.pendingLate')}: {formatTL(stats.pendingAmount)}</Text>
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.pendingPaymentRecords')}: {stats.pendingPaymentCount}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🔔 Veli Etkileşimi</Text>
-        <ProgressLine label={`Anket cevabı: ${stats.pollAnswerCount}`} percent={Math.min(100, stats.pollAnswerCount * 10)} color={THEME.purple} />
-        <Text style={styles.cardText}>Aktif anket: {stats.activePollCount}</Text>
-        <Text style={styles.cardText}>Kurum zili bildirimi: {stats.bellCount}</Text>
-        <Text style={styles.cardText}>Bekleyen kurum zili: {stats.pendingBellCount}</Text>
+        <Text style={styles.cardTitle}>{i18n.t('admin.statistics.parentEngagement')}</Text>
+        <ProgressLine label={i18n.t('admin.statistics.pollAnswers', { count: stats.pollAnswerCount })} percent={Math.min(100, stats.pollAnswerCount * 10)} color={THEME.purple} />
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.activePolls')}: {stats.activePollCount}</Text>
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.bellNotifications')}: {stats.bellCount}</Text>
+        <Text style={styles.cardText}>{i18n.t('admin.statistics.pendingBell')}: {stats.pendingBellCount}</Text>
       </View>
     </>
   );
 }
 
 function TeacherTab({ teachers }) {
-  if (!teachers.length) return <EmptyBlock icon="👨‍🏫" title="Öğretmen istatistiği yok" desc="Bu kurum için öğretmen veya öğretmen raporu bulunamadı." />;
+  if (!teachers.length) return <EmptyBlock icon="👨‍🏫" title={i18n.t("admin.statistics.noTeacherStats")} desc={i18n.t("admin.statistics.noTeacherStatsDesc")} />;
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Öğretmen / Sınıf Kullanımı</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.teacherUsage')}</Text>
       {teachers.map((teacher) => (
         <View key={teacher.id} style={styles.card}>
           <View style={styles.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{teacher.name}</Text>
-              <Text style={styles.cardText}>{teacher.classNames || 'Sınıf bilgisi yok'}</Text>
+              <Text style={styles.cardText}>{teacher.classNames || i18n.t('admin.statistics.classInfoMissing')}</Text>
             </View>
-            <Text style={styles.badge}>{teacher.childCount} çocuk</Text>
+            <Text style={styles.badge}>{i18n.t('admin.statistics.childCount', { count: teacher.childCount })}</Text>
           </View>
-          <ProgressLine label={`Bu ay günlük rapor: ${teacher.reportCount}`} percent={Math.min(100, teacher.reportCount * 5)} color={THEME.primary} />
-          <ProgressLine label={`Yoklama düzeni: %${teacher.attendanceRate}`} percent={teacher.attendanceRate} color={THEME.green} />
-          <Text style={styles.cardText}>Etkinlik kaydı: {teacher.eventCount}</Text>
-          <Text style={styles.cardText}>Eksik rapor uyarısı: {teacher.reportCount < 5 ? 'Takip edilmeli' : 'Normal görünüyor'}</Text>
+          <ProgressLine label={i18n.t('admin.statistics.monthlyReports', { count: teacher.reportCount })} percent={Math.min(100, teacher.reportCount * 5)} color={THEME.primary} />
+          <ProgressLine label={i18n.t('admin.statistics.attendanceRate', { rate: teacher.attendanceRate })} percent={teacher.attendanceRate} color={THEME.green} />
+          <Text style={styles.cardText}>{i18n.t('admin.statistics.eventRecords')}: {teacher.eventCount}</Text>
+          <Text style={styles.cardText}>{i18n.t('admin.statistics.missingReportWarning')}: {teacher.reportCount < 5 ? i18n.t('admin.statistics.followUp') : i18n.t('admin.statistics.normal')}</Text>
         </View>
       ))}
     </>
@@ -223,31 +226,31 @@ function TeacherTab({ teachers }) {
 }
 
 function ChildrenTab({ children }) {
-  if (!children.length) return <EmptyBlock icon="👶" title="Çocuk istatistiği yok" desc="Bu kurum için çocuk kaydı bulunamadı." />;
+  if (!children.length) return <EmptyBlock icon="👶" title={i18n.t("admin.statistics.noChildStats")} desc={i18n.t("admin.statistics.noChildStatsDesc")} />;
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Çocuk Bazlı Gelişim ve Risk</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.childRisk')}</Text>
       {children.map((child) => (
         <View key={child.id} style={styles.card}>
           <View style={styles.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{child.name}</Text>
-              <Text style={styles.cardText}>{child.className || 'Sınıf bilgisi yok'}</Text>
+              <Text style={styles.cardText}>{child.className || i18n.t('admin.statistics.classInfoMissing')}</Text>
             </View>
             <RiskBadge riskCount={child.risks.length} />
           </View>
 
-          <ProgressLine label={`Devam oranı: %${child.attendanceRate}`} percent={child.attendanceRate} color={child.attendanceRate < 80 ? THEME.red : THEME.green} />
-          <ProgressLine label={`Yemek iyi: %${child.mealGoodRate}`} percent={child.mealGoodRate} color={child.mealGoodRate < 65 ? THEME.orange : THEME.green} />
-          <ProgressLine label={`Etkinlik katılımı: %${child.eventJoinRate}`} percent={child.eventJoinRate} color={child.eventJoinRate < 70 ? THEME.red : THEME.purple} />
+          <ProgressLine label={i18n.t('admin.statistics.attendanceRate', { rate: child.attendanceRate })} percent={child.attendanceRate} color={child.attendanceRate < 80 ? THEME.red : THEME.green} />
+          <ProgressLine label={i18n.t('admin.statistics.mealGoodRate', { rate: child.mealGoodRate })} percent={child.mealGoodRate} color={child.mealGoodRate < 65 ? THEME.orange : THEME.green} />
+          <ProgressLine label={i18n.t('admin.statistics.eventParticipation', { rate: child.eventJoinRate })} percent={child.eventJoinRate} color={child.eventJoinRate < 70 ? THEME.red : THEME.purple} />
 
-          <Text style={styles.cardText}>Uyku: {child.sleepSummary}</Text>
-          <Text style={styles.cardText}>Ruh hali: {child.moodSummary}</Text>
-          <Text style={styles.cardText}>Yorum: {child.comment}</Text>
+          <Text style={styles.cardText}>{i18n.t('admin.statistics.sleep')}: {child.sleepSummary}</Text>
+          <Text style={styles.cardText}>{i18n.t('admin.statistics.mood')}: {child.moodSummary}</Text>
+          <Text style={styles.cardText}>{i18n.t('admin.statistics.comment')}: {child.comment}</Text>
 
           <View style={styles.riskChipRow}>
-            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{risk}</Text>) : <Text style={styles.okChip}>Belirgin risk yok</Text>}
+            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{i18n.t(`admin.statistics.riskLabels.${risk}`)}</Text>) : <Text style={styles.okChip}>{i18n.t('admin.statistics.noRisk')}</Text>}
           </View>
         </View>
       ))}
@@ -257,19 +260,19 @@ function ChildrenTab({ children }) {
 
 function RiskTab({ riskGroups }) {
   const groupList = [
-    { key: 'meal', title: '🍽️ Yemek Takibi Gerekenler', empty: 'Yemek tarafında belirgin risk yok.' },
-    { key: 'event', title: '🎨 Etkinlik Katılımı Düşük', empty: 'Etkinlik katılımı genel olarak iyi.' },
-    { key: 'attendance', title: '📅 Devamsızlık Dikkat', empty: 'Devamsızlıkta belirgin risk yok.' },
-    { key: 'mood', title: '😟 Ruh Hali Takibi', empty: 'Ruh hali tarafında belirgin risk yok.' },
-    { key: 'sleep', title: '😴 Uyku Takibi', empty: 'Uyku tarafında belirgin risk yok.' },
+    { key: 'meal', titleKey: 'mealRiskTitle', emptyKey: 'mealRiskEmpty' },
+    { key: 'event', titleKey: 'eventRiskTitle', emptyKey: 'eventRiskEmpty' },
+    { key: 'attendance', titleKey: 'attendanceRiskTitle', emptyKey: 'attendanceRiskEmpty' },
+    { key: 'mood', titleKey: 'moodRiskTitle', emptyKey: 'moodRiskEmpty' },
+    { key: 'sleep', titleKey: 'sleepRiskTitle', emptyKey: 'sleepRiskEmpty' },
   ];
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Risk Listesi</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.riskList')}</Text>
       {groupList.map((group) => (
         <View key={group.key} style={styles.card}>
-          <Text style={styles.cardTitle}>{group.title}</Text>
+          <Text style={styles.cardTitle}>{i18n.t(`admin.statistics.${group.titleKey}`)}</Text>
           {riskGroups[group.key].length ? (
             riskGroups[group.key].map((item) => (
               <View key={`${group.key}-${item.id}`} style={styles.riskRow}>
@@ -278,7 +281,7 @@ function RiskTab({ riskGroups }) {
               </View>
             ))
           ) : (
-            <Text style={styles.cardText}>{group.empty}</Text>
+            <Text style={styles.cardText}>{i18n.t(`admin.statistics.${group.emptyKey}`)}</Text>
           )}
         </View>
       ))}
@@ -343,8 +346,8 @@ function buildStatistics(raw, kresId) {
 function buildActivityLog(raw, users, children, kresId) {
   const childName = (childId) => {
     const child = children.find((item) => item.id === childId);
-    if (!child) return 'Çocuk';
-    return getName(child, child.adSoyad || child.ad || 'Çocuk');
+    if (!child) return i18n.t('admin.statistics.childFallback');
+    return getName(child, child.adSoyad || child.ad || i18n.t('admin.statistics.childFallback'));
   };
   const ctx = { childName };
 
@@ -360,8 +363,8 @@ function buildActivityLog(raw, users, children, kresId) {
       entries.push({
         id: `${config.key}-${item.id}`,
         icon: config.icon,
-        nodeLabel: config.label,
-        teacherName: getName(teacher, 'İsimsiz öğretmen'),
+        nodeLabel: i18n.t(`admin.statistics.activityLabels.${config.labelKey}`),
+        teacherName: getName(teacher, i18n.t('admin.statistics.unnamedTeacher')),
         detail: config.describe(item, ctx),
         time,
       });
@@ -391,7 +394,7 @@ function buildChildStats(child, context) {
   if (sleep.total >= 3 && percent(sleep.bad, sleep.total) >= 30) risks.push('Uyku');
 
   const className = findClassName(context.classes, child.sinifId || child.classId);
-  const name = getName(child, 'İsimsiz çocuk');
+  const name = getName(child, i18n.t('admin.statistics.unnamedChild'));
 
   return {
     id: childId,
@@ -401,15 +404,15 @@ function buildChildStats(child, context) {
     absent,
     mealGoodRate: percent(meal.good, meal.total),
     eventJoinRate: percent(event.good, event.total),
-    sleepSummary: sleep.total ? `${sleep.good} iyi / ${sleep.bad} takip` : 'Kayıt yok',
-    moodSummary: mood.total ? `${mood.topLabel} ağırlıklı` : 'Kayıt yok',
+    sleepSummary: sleep.total ? i18n.t('admin.statistics.sleepSummary', { good: sleep.good, bad: sleep.bad }) : i18n.t('admin.statistics.noRecord'),
+    moodSummary: mood.total ? i18n.t('admin.statistics.moodSummary', { mood: mood.topLabel }) : i18n.t('admin.statistics.noRecord'),
     risks,
     riskReasons: {
-      meal: `${meal.bad} öğün az/yemedi`,
-      event: `${event.bad} etkinlikte düşük katılım`,
-      attendance: `${absent} gün devamsızlık`,
-      mood: `${mood.negative} gün huzursuz/üzgün`,
-      sleep: `${sleep.bad} gün uyku takibi`,
+      meal: i18n.t('admin.statistics.riskReasons.meal', { count: meal.bad }),
+      event: i18n.t('admin.statistics.riskReasons.event', { count: event.bad }),
+      attendance: i18n.t('admin.statistics.riskReasons.attendance', { count: absent }),
+      mood: i18n.t('admin.statistics.riskReasons.mood', { count: mood.negative }),
+      sleep: i18n.t('admin.statistics.riskReasons.sleep', { count: sleep.bad }),
     },
     comment: buildChildComment(name, risks),
   };
@@ -432,7 +435,7 @@ function buildTeacherStats(users, classes, children, reports, attendance, events
 
     return {
       id: teacherId,
-      name: getName(teacher, 'İsimsiz öğretmen'),
+      name: getName(teacher, i18n.t('admin.statistics.unnamedTeacher')),
       classNames: teacherClasses.map((item) => item.ad || item.sinifAdi || item.name).filter(Boolean).join(', '),
       childCount: teacherChildren.length,
       reportCount: teacherReports.length,
@@ -497,12 +500,12 @@ function buildMoodStats(reports) {
     return acc;
   }, { total: 0, negative: 0, counts: {} });
   const top = Object.entries(counts.counts).sort((a, b) => b[1] - a[1])[0];
-  return { ...counts, topLabel: top ? readableMood(top[0]) : 'Kayıt yok' };
+  return { ...counts, topLabel: top ? readableMood(top[0]) : i18n.t('admin.statistics.noRecord') };
 }
 
 function buildChildComment(name, risks) {
-  if (!risks.length) return `${name} için bu ay belirgin bir risk görünmüyor.`;
-  return `${name} için ${risks.join(', ')} alanlarında takip önerilir.`;
+  if (!risks.length) return i18n.t('admin.statistics.childNoRisk', { name });
+  return i18n.t('admin.statistics.childRiskAdvice', { name, risks: risks.join(', ') });
 }
 
 function StatCard({ icon, value, label, color }) {
@@ -516,12 +519,12 @@ function StatCard({ icon, value, label, color }) {
 }
 
 function ActivityTab({ entries }) {
-  if (!entries.length) return <EmptyBlock icon="🕓" title="Aktivite kaydı yok" desc="Öğretmenler bilgi girdikçe burada kim, ne zaman, ne girdi görünecek." />;
+  if (!entries.length) return <EmptyBlock icon="🕓" title={i18n.t('admin.statistics.noActivity')} desc={i18n.t('admin.statistics.noActivityDesc')} />;
 
   return (
     <>
-      <Text style={styles.sectionTitle}>Öğretmen Giriş Kayıtları</Text>
-      <Text style={[styles.cardText, { marginBottom: 12 }]}>Hangi öğretmenin hangi bilgiyi hangi saatte girdiğini gösterir (son {entries.length} kayıt).</Text>
+      <Text style={styles.sectionTitle}>{i18n.t('admin.statistics.teacherLogs')}</Text>
+      <Text style={[styles.cardText, { marginBottom: 12 }]}>{i18n.t('admin.statistics.activitySummary', { count: entries.length })}</Text>
       <View style={styles.card}>
         {entries.map((entry, index) => (
           <View key={entry.id} style={[styles.activityRow, index === entries.length - 1 && { borderBottomWidth: 0 }]}>
@@ -554,7 +557,7 @@ function ProgressLine({ label, percent: value, color }) {
 
 function RiskBadge({ riskCount }) {
   const hasRisk = riskCount > 0;
-  return <Text style={[styles.badge, hasRisk && styles.badgeRisk]}>{hasRisk ? `${riskCount} risk` : 'Normal'}</Text>;
+  return <Text style={[styles.badge, hasRisk && styles.badgeRisk]}>{hasRisk ? i18n.t('admin.statistics.riskCount', { count: riskCount }) : i18n.t('admin.statistics.normal')}</Text>;
 }
 
 function EmptyBlock({ icon, title, desc }) {
@@ -662,13 +665,13 @@ function normalizeText(value) {
 }
 
 function readableMood(value) {
-  if (value.includes('mutlu')) return 'Mutlu';
-  if (value.includes('huzursuz')) return 'Huzursuz';
-  if (value.includes('üzgün') || value.includes('uzgun')) return 'Üzgün';
-  if (value.includes('yorgun')) return 'Yorgun';
-  if (value.includes('sakin')) return 'Sakin';
-  if (value.includes('normal')) return 'Normal';
-  return value || 'Kayıt yok';
+  if (value.includes('mutlu')) return i18n.t('admin.statistics.moods.happy');
+  if (value.includes('huzursuz')) return i18n.t('admin.statistics.moods.restless');
+  if (value.includes('üzgün') || value.includes('uzgun')) return i18n.t('admin.statistics.moods.sad');
+  if (value.includes('yorgun')) return i18n.t('admin.statistics.moods.tired');
+  if (value.includes('sakin')) return i18n.t('admin.statistics.moods.calm');
+  if (value.includes('normal')) return i18n.t('admin.statistics.moods.normal');
+  return value || i18n.t('admin.statistics.noRecord');
 }
 
 function formatDateTimeTr(value) {

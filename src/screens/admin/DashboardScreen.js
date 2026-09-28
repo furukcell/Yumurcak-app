@@ -5,6 +5,7 @@
 // FAZ 20: Akordeon kategori kartları + sabit (pinned) Mesajlar/Bildirimler şeridi
 // ============================================================
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert, LayoutAnimation, UIManager } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -44,114 +45,114 @@ const backfillRunCache = new Set();
 const MENU_CATEGORIES = [
   {
     key: 'kurum',
-    title: 'Kurum & Kişiler',
-    subtitle: 'Sınıflar, öğretmenler, çocuklar, veliler',
+    titleKey: 'admin.dashboard.institution',
+    subtitleKey: 'admin.dashboard.institutionSubtitle',
     icon: '🏫',
     iconBg: '#EFE9FF',
     items: [
-      { title: 'Sınıflar', icon: '🏫', screen: 'ClassList', color: THEME.blue },
-      { title: 'Öğretmenler', icon: '👨‍🏫', screen: 'TeacherList', color: THEME.primary },
-      { title: 'Çocuklar', icon: '👶', screen: 'ChildList', color: THEME.orange },
-      { title: 'Veliler', icon: '👨‍👩‍👧', screen: 'VeliList', color: THEME.green },
-      { title: 'Personel Görev Listesi', icon: '📋', screen: 'AdminMonthlyStaffTasks', color: THEME.primary },
-      { title: 'Nöbet Çizelgesi', icon: '🗓️', screen: 'AdminMonthlyDutyRoster', color: THEME.red },
+      { titleKey: 'admin.dashboard.classes', icon: '🏫', screen: 'ClassList', color: THEME.blue },
+      { titleKey: 'admin.dashboard.teachers', icon: '👨‍🏫', screen: 'TeacherList', color: THEME.primary },
+      { titleKey: 'admin.dashboard.children', icon: '👶', screen: 'ChildList', color: THEME.orange },
+      { titleKey: 'admin.dashboard.parents', icon: '👨‍👩‍👧', screen: 'VeliList', color: THEME.green },
+      { titleKey: 'admin.dashboard.staffTasks', icon: '📋', screen: 'AdminMonthlyStaffTasks', color: THEME.primary },
+      { titleKey: 'admin.dashboard.dutyRoster', icon: '🗓️', screen: 'AdminMonthlyDutyRoster', color: THEME.red },
     ],
   },
   {
     key: 'iletisim',
-    title: 'İletişim',
-    subtitle: 'Mesajlar, duyurular, anketler',
+    titleKey: 'admin.dashboard.communication',
+    subtitleKey: 'admin.dashboard.communicationSubtitle',
     icon: '📣',
     iconBg: '#FFE9F2',
     items: [
-      { title: 'Mesajlar', icon: '💬', screen: 'AdminMessages', color: THEME.primary, badgeKey: 'messages' },
-      { title: 'Duyurular', icon: '📢', screen: 'AnnouncementList', color: THEME.red },
-      { title: 'Anket Yönetimi', icon: '🗳️', screen: 'PollManagement', color: THEME.purple },
+      { titleKey: 'admin.dashboard.messages', icon: '💬', screen: 'AdminMessages', color: THEME.primary, badgeKey: 'messages' },
+      { titleKey: 'admin.dashboard.announcements', icon: '📢', screen: 'AnnouncementList', color: THEME.red },
+      { titleKey: 'admin.dashboard.polls', icon: '🗳️', screen: 'PollManagement', color: THEME.purple },
     ],
   },
   {
     key: 'program',
-    title: 'Program & Takvim',
-    subtitle: 'Ders, etkinlik, yemek, doğum günü',
+    titleKey: 'admin.dashboard.program',
+    subtitleKey: 'admin.dashboard.programSubtitle',
     icon: '🗓️',
     iconBg: '#FFF4E0',
     items: [
-      { title: 'Ders Programı', icon: '📅', screen: 'LessonScheduleList', color: THEME.purple },
-      { title: 'Etkinlikler', icon: '🎉', screen: 'EventList', color: '#E67E22' },
-      { title: 'Aylık Yemek Listesi', icon: '🍽️', screen: 'AdminMonthlyMeal', color: THEME.orange },
-      { title: 'Doğum Günü Takvimi', icon: '🎂', screen: 'AdminBirthdayCalendar', color: THEME.orange },
+      { titleKey: 'admin.dashboard.lessonSchedule', icon: '📅', screen: 'LessonScheduleList', color: THEME.purple },
+      { titleKey: 'admin.dashboard.events', icon: '🎉', screen: 'EventList', color: '#E67E22' },
+      { titleKey: 'admin.dashboard.monthlyMeal', icon: '🍽️', screen: 'AdminMonthlyMeal', color: THEME.orange },
+      { titleKey: 'admin.dashboard.birthdays', icon: '🎂', screen: 'AdminBirthdayCalendar', color: THEME.orange },
     ],
   },
   {
     key: 'servis',
-    title: 'Servis',
-    subtitle: 'Servis listesi, araçlar, günlük durum',
+    titleKey: 'admin.dashboard.service',
+    subtitleKey: 'admin.dashboard.serviceSubtitle',
     icon: '🚌',
     iconBg: '#E8F0FF',
     items: [
-      { title: 'Servis Listesi', icon: '🚌', screen: 'AdminService', color: THEME.blue },
-      { title: 'Servis Araçları', icon: '🚐', screen: 'AdminVehicleList', color: THEME.blue },
-      { title: 'Servis Durumu', icon: '📊', screen: 'AdminServiceStats', color: THEME.blue },
-      { title: 'Aylık Servis İstatistikleri', icon: '📈', screen: 'AdminServiceMonthlyStats', color: THEME.blue },
+      { titleKey: 'admin.dashboard.serviceList', icon: '🚌', screen: 'AdminService', color: THEME.blue },
+      { titleKey: 'admin.dashboard.vehicles', icon: '🚐', screen: 'AdminVehicleList', color: THEME.blue },
+      { titleKey: 'admin.dashboard.serviceStats', icon: '📊', screen: 'AdminServiceStats', color: THEME.blue },
+      { titleKey: 'admin.dashboard.serviceMonthlyStats', icon: '📈', screen: 'AdminServiceMonthlyStats', color: THEME.blue },
     ],
   },
   {
     key: 'finans',
-    title: 'Finans',
-    subtitle: 'Ödemeler ve abonelik',
+    titleKey: 'admin.dashboard.finance',
+    subtitleKey: 'admin.dashboard.financeSubtitle',
     icon: '💳',
     iconBg: '#E3F6FF',
     items: [
-      { title: 'Ödemeler', icon: '💳', screen: 'PaymentList', color: THEME.teal },
-      { title: 'Abonelik / Ödeme', icon: '💎', screen: 'Subscription', color: THEME.gold },
+      { titleKey: 'admin.dashboard.payments', icon: '💳', screen: 'PaymentList', color: THEME.teal },
+      { titleKey: 'admin.dashboard.subscription', icon: '💎', screen: 'Subscription', color: THEME.gold },
     ],
   },
   {
     key: 'muhasebe',
-    title: 'Muhasebe',
-    subtitle: 'Bordro, izin hakedişi, personel maliyeti',
+    titleKey: 'admin.dashboard.accounting',
+    subtitleKey: 'admin.dashboard.accountingSubtitle',
     icon: '🧮',
     iconBg: '#FFEDE3',
     // NOT: Bu 5 kalemin henüz ekranı/route'u yok — "Yakında" olarak işaretli.
     items: [
-      { title: 'Bordro Hesaplama', icon: '🧾', comingSoon: true },
-      { title: 'İzin Yönetimi', icon: '🌴', comingSoon: true },
-      { title: 'Personel Hakediş Takibi', icon: '📈', comingSoon: true },
-      { title: 'Gider Takibi', icon: '📉', comingSoon: true },
-      { title: 'Yıllık Maliyet Özeti', icon: '📋', comingSoon: true },
+      { titleKey: 'admin.dashboard.payroll', icon: '🧾', comingSoon: true },
+      { titleKey: 'admin.dashboard.leave', icon: '🌴', comingSoon: true },
+      { titleKey: 'admin.dashboard.staffAccrual', icon: '📈', comingSoon: true },
+      { titleKey: 'admin.dashboard.expenses', icon: '📉', comingSoon: true },
+      { titleKey: 'admin.dashboard.annualCost', icon: '📋', comingSoon: true },
     ],
   },
   {
     key: 'medya',
-    title: 'Medya & Raporlar',
-    subtitle: 'Galeri ve istatistikler',
+    titleKey: 'admin.dashboard.mediaReports',
+    subtitleKey: 'admin.dashboard.mediaSubtitle',
     icon: '📊',
     iconBg: '#E7F8EE',
     items: [
-      { title: 'Galeri', icon: '🖼️', screen: 'AdminGallery', color: THEME.teal },
-      { title: 'İstatistikler', icon: '📊', screen: 'AdminStatistics', color: THEME.blue },
+      { titleKey: 'admin.dashboard.gallery', icon: '🖼️', screen: 'AdminGallery', color: THEME.teal },
+      { titleKey: 'admin.dashboard.statistics', icon: '📊', screen: 'AdminStatistics', color: THEME.blue },
     ],
   },
   {
     key: 'ayarlar',
-    title: 'Ayarlar',
-    subtitle: 'Kurum bilgileri, tema, zil',
+    titleKey: 'admin.dashboard.settings',
+    subtitleKey: 'admin.dashboard.settingsSubtitle',
     icon: '⚙️',
     iconBg: '#F3E9FF',
     items: [
-      { title: 'Kurum Bilgileri', icon: '🏫', screen: 'InstitutionSettings', color: THEME.primaryDark },
-      { title: 'Hesabım / Şifre', icon: '🔑', screen: 'AdminProfile', color: THEME.primary },
-      { title: 'Tema Ayarları', icon: '🎨', screen: 'ThemeSettings', color: THEME.purple },
-      { title: 'Kurum Zili', icon: '🔔', screen: 'AdminBell', color: THEME.red },
+      { titleKey: 'admin.dashboard.institutionInfo', icon: '🏫', screen: 'InstitutionSettings', color: THEME.primaryDark },
+      { titleKey: 'admin.dashboard.profile', icon: '🔑', screen: 'AdminProfile', color: THEME.primary },
+      { titleKey: 'admin.dashboard.theme', icon: '🎨', screen: 'ThemeSettings', color: THEME.purple },
+      { titleKey: 'admin.dashboard.bell', icon: '🔔', screen: 'AdminBell', color: THEME.red },
     ],
   },
 ];
 
 const OZET_ITEMS = [
-  { key: 'sinifSayisi', label: 'Sınıf', icon: '🏫', color: THEME.blue },
-  { key: 'cocukSayisi', label: 'Çocuk', icon: '👶', color: THEME.orange },
-  { key: 'ogretmenSayisi', label: 'Öğretmen', icon: '👨‍🏫', color: THEME.primary },
-  { key: 'veliSayisi', label: 'Veli', icon: '👨‍👩‍👧', color: THEME.green },
+  { key: 'sinifSayisi', labelKey: 'admin.dashboard.class', icon: '🏫', color: THEME.blue },
+  { key: 'cocukSayisi', labelKey: 'admin.dashboard.child', icon: '👶', color: THEME.orange },
+  { key: 'ogretmenSayisi', labelKey: 'admin.dashboard.teacher', icon: '👨‍🏫', color: THEME.primary },
+  { key: 'veliSayisi', labelKey: 'admin.dashboard.parent', icon: '👨‍👩‍👧', color: THEME.green },
 ];
 
 const EMPTY_STATS = {
@@ -182,6 +183,7 @@ function countIndex(data) {
 }
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { kullanici, cikisYap } = useAuth();
 
@@ -230,7 +232,7 @@ export default function DashboardScreen() {
 
   const itemeGit = (item) => {
     if (item.comingSoon) {
-      Alert.alert('Yakında', `"${item.title}" özelliği yakında eklenecek.`);
+      Alert.alert(t('admin.dashboard.comingSoon'), `"${t(item.titleKey)}" ${t('admin.dashboard.comingSoonFeature')}`);
       return;
     }
     navigation.navigate(item.screen);
@@ -300,7 +302,7 @@ export default function DashboardScreen() {
     };
   }, [kresId]);
 
-  const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || 'Yönetici';
+  const adSoyad = `${kullanici?.ad || ''} ${kullanici?.soyad || ''}`.trim() || kullanici?.kullaniciAdi || t('admin.dashboard.admin');
 
   return (
     <ThemedBackground>
@@ -317,7 +319,7 @@ export default function DashboardScreen() {
               </TouchableOpacity>
               <View style={styles.topTitleBlock}>
                 <View style={styles.brandNamePill}><Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">{kresAdi}</Text></View>
-                <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">Yönetim Paneli</Text>
+                <Text style={styles.panelLabel} numberOfLines={1} ellipsizeMode="tail">{t('admin.dashboard.panel')}</Text>
               </View>
             </View>
             <View style={styles.topActions}>
@@ -336,8 +338,8 @@ export default function DashboardScreen() {
             <TouchableOpacity style={styles.inboxItem} onPress={() => navigation.navigate('AdminMessages')} activeOpacity={0.8}>
               <Text style={styles.inboxEmoji}>💬</Text>
               <View style={styles.inboxTextBlock}>
-                <Text style={styles.inboxTitle}>Mesajlar</Text>
-                <Text style={styles.inboxSub}>{unreadMessages > 0 ? `${unreadMessages} yeni` : 'Güncel'}</Text>
+                <Text style={styles.inboxTitle}>{t('admin.dashboard.messages')}</Text>
+                <Text style={styles.inboxSub}>{unreadMessages > 0 ? `${unreadMessages} ${t('admin.dashboard.new')}` : t('admin.dashboard.current')}</Text>
               </View>
               {unreadMessages > 0 ? (
                 <View style={styles.inboxCount}><Text style={styles.inboxCountText}>{unreadMessages > 99 ? '99+' : unreadMessages}</Text></View>
@@ -347,8 +349,8 @@ export default function DashboardScreen() {
             <TouchableOpacity style={styles.inboxItem} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
               <Text style={styles.inboxEmoji}>🔔</Text>
               <View style={styles.inboxTextBlock}>
-                <Text style={styles.inboxTitle}>Bildirimler</Text>
-                <Text style={styles.inboxSub}>{unreadNotifications > 0 ? `${unreadNotifications} yeni` : 'Güncel'}</Text>
+                <Text style={styles.inboxTitle}>{t('admin.dashboard.notifications')}</Text>
+                <Text style={styles.inboxSub}>{unreadNotifications > 0 ? `${unreadNotifications} ${t('admin.dashboard.new')}` : t('admin.dashboard.current')}</Text>
               </View>
               {unreadNotifications > 0 ? (
                 <View style={styles.inboxCount}><Text style={styles.inboxCountText}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</Text></View>
@@ -358,14 +360,14 @@ export default function DashboardScreen() {
 
           <View style={styles.welcomeCard}>
             <View style={styles.welcomeLeft}>
-              <Text style={styles.welcomeGreeting}>Hoş Geldiniz 👋</Text>
+              <Text style={styles.welcomeGreeting}>{t('admin.dashboard.welcome')} 👋</Text>
               <Text style={styles.welcomeName} numberOfLines={1} ellipsizeMode="tail">{adSoyad}</Text>
-              <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">{getSubscriptionText(abonelik)}</Text>
+              <Text style={styles.welcomeSub} numberOfLines={2} ellipsizeMode="tail">{getSubscriptionText(abonelik, t)}</Text>
             </View>
             <View style={styles.welcomeIcon}><Text style={styles.welcomeIconText}>👑</Text></View>
           </View>
 
-          <Text style={styles.sectionTitle}>Genel Özet</Text>
+          <Text style={styles.sectionTitle}>{t('admin.dashboard.summary')}</Text>
           {yukleniyor ? (
             <View style={styles.loadingBox}><ActivityIndicator color={THEME.primary} /></View>
           ) : (
@@ -374,13 +376,13 @@ export default function DashboardScreen() {
                 <View key={item.key} style={styles.ozetKart}>
                   <Text style={styles.ozetIcon}>{item.icon}</Text>
                   <Text style={[styles.ozetSayi, { color: item.color }]} numberOfLines={1}>{istatistik[item.key]}</Text>
-                  <Text style={styles.ozetLabel} numberOfLines={1}>{item.label}</Text>
+                  <Text style={styles.ozetLabel} numberOfLines={1}>{t(item.labelKey)}</Text>
                 </View>
               ))}
             </View>
           )}
 
-          <Text style={styles.sectionTitle}>Yönetim İşlemleri</Text>
+          <Text style={styles.sectionTitle}>{t('admin.dashboard.management')}</Text>
           {MENU_CATEGORIES.map((kategori) => {
             const acik = acikKategori === kategori.key;
             return (
@@ -390,8 +392,8 @@ export default function DashboardScreen() {
                     <Text style={styles.catIconText}>{kategori.icon}</Text>
                   </View>
                   <View style={styles.catInfo}>
-                    <Text style={styles.catTitle} numberOfLines={1} ellipsizeMode="tail">{kategori.title}</Text>
-                    <Text style={styles.catSub} numberOfLines={1} ellipsizeMode="tail">{kategori.subtitle}</Text>
+                    <Text style={styles.catTitle} numberOfLines={1} ellipsizeMode="tail">{t(kategori.titleKey)}</Text>
+                    <Text style={styles.catSub} numberOfLines={1} ellipsizeMode="tail">{t(kategori.subtitleKey)}</Text>
                   </View>
                   <Text style={[styles.catChevron, acik && styles.catChevronOpen]}>›</Text>
                 </TouchableOpacity>
@@ -400,11 +402,11 @@ export default function DashboardScreen() {
                     {kategori.items.map((item, index) => {
                       const badgeCount = item.badgeKey === 'messages' ? unreadMessages : 0;
                       return (
-                        <TouchableOpacity key={item.title} style={[styles.catItem, index === 0 && styles.catItemFirst]} onPress={() => itemeGit(item)} activeOpacity={0.8}>
+                        <TouchableOpacity key={item.titleKey} style={[styles.catItem, index === 0 && styles.catItemFirst]} onPress={() => itemeGit(item)} activeOpacity={0.8}>
                           <Text style={styles.catItemEmoji}>{item.icon}</Text>
-                          <Text style={[styles.catItemName, badgeCount > 0 && styles.catItemNameUnread]} numberOfLines={1} ellipsizeMode="tail">{item.title}</Text>
+                          <Text style={[styles.catItemName, badgeCount > 0 && styles.catItemNameUnread]} numberOfLines={1} ellipsizeMode="tail">{t(item.titleKey)}</Text>
                           {item.comingSoon ? (
-                            <View style={styles.soonBadge}><Text style={styles.soonBadgeText}>Yakında</Text></View>
+                            <View style={styles.soonBadge}><Text style={styles.soonBadgeText}>{t('admin.dashboard.comingSoon')}</Text></View>
                           ) : badgeCount > 0 ? (
                             <View style={styles.catItemBadge}><Text style={styles.catItemBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text></View>
                           ) : null}
@@ -423,11 +425,11 @@ export default function DashboardScreen() {
   );
 }
 
-function getSubscriptionText(sub) {
-  if (!sub) return 'İlk 1 ay ücretsiz deneme';
-  if (sub.durum === 'aktif') return sub.plan === 'yillik' ? 'Yıllık abonelik aktif' : 'Aylık abonelik aktif';
-  if (sub.durum === 'demo') return `Demo aktif · ${sub.demoBitisTarihi || sub.bitisTarihi || ''}`;
-  return 'Abonelik durumu kontrol edilmeli';
+function getSubscriptionText(sub, t) {
+  if (!sub) return t('admin.dashboard.freeTrial');
+  if (sub.durum === 'aktif') return sub.plan === 'yillik' ? t('admin.dashboard.yearlyActive') : t('admin.dashboard.monthlyActive');
+  if (sub.durum === 'demo') return `${t('admin.dashboard.demoActive')} · ${sub.demoBitisTarihi || sub.bitisTarihi || ''}`;
+  return t('admin.dashboard.subscriptionCheck');
 }
 
 const styles = StyleSheet.create({

@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import * as ImagePicker from 'expo-image-picker';
 import { launchSafeGalleryPicker } from '../../utils/safeImagePicker';
@@ -26,6 +27,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { onValue, push, query, orderByChild, equalTo, ref as dbRef, remove, set } from 'firebase/database';
 import { deleteObject, getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { auth, database, firebaseConfig, storage } from '../../config/firebase';
+import i18n from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { saveGalleryMediaToDevice } from '../../utils/saveGalleryMedia';
 import { showPickerFailureGuidance } from '../../utils/miuiAutostart';
@@ -110,15 +112,15 @@ function uniqueIds(values) {
 }
 
 function getChildName(child) {
-  return `${child?.ad || child?.adSoyad || child?.isim || 'Çocuk'} ${child?.soyad || ''}`.trim();
+  return `${child?.ad || child?.adSoyad || child?.isim || i18n.t('common.childFallback')} ${child?.soyad || ''}`.trim();
 }
 
 function getClassName(classItem) {
-  return classItem?.ad || classItem?.sinifAdi || classItem?.name || 'Sınıf';
+  return classItem?.ad || classItem?.sinifAdi || classItem?.name || i18n.t('shared.gallery.classFallback');
 }
 
 function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || user?.email || 'Kullanıcı';
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || user?.email || i18n.t('shared.gallery.userFallback');
 }
 
 function formatDateTime(timestamp) {
@@ -129,11 +131,11 @@ function formatDateTime(timestamp) {
 
 function remainingText(expiresAt, now) {
   const diff = Number(expiresAt || 0) - now;
-  if (diff <= 0) return 'Süresi doldu';
+  if (diff <= 0) return i18n.t('parent.gallery.expired');
   const hours = Math.floor(diff / (60 * 60 * 1000));
   const minutes = Math.ceil((diff % (60 * 60 * 1000)) / (60 * 1000));
-  if (hours <= 0) return `${minutes} dk kaldı`;
-  return `${hours} sa ${minutes} dk kaldı`;
+  if (hours <= 0) return i18n.t('parent.gallery.remainingMinutes', { minutes });
+  return i18n.t('parent.gallery.remainingHoursMinutes', { hours, minutes });
 }
 
 function getFileInfo(asset) {
@@ -213,7 +215,7 @@ async function optimizeImageAsset(asset) {
 async function optimizeVideoAsset(asset, onProgress) {
   const durationMs = getAssetDurationMs(asset);
   if (durationMs && durationMs > MAX_VIDEO_DURATION_MS) {
-    throw new Error('Video süresi en fazla 5 dakika olabilir. Lütfen daha kısa bir video seç.');
+    throw new Error(i18n.t('shared.gallery.videoTooLongError'));
   }
 
   const originalSize = Number(asset.fileSize || asset.size || await getLocalFileSize(asset.uri) || 0);
@@ -242,7 +244,7 @@ async function optimizeVideoAsset(asset, onProgress) {
     const optimizedSize = await getLocalFileSize(compressedUri);
 
     if (optimizedSize && optimizedSize > MAX_VIDEO_SIZE_BYTES) {
-      throw new Error(`Video optimize edildi ama hâlâ çok büyük (${formatFileSize(optimizedSize)}). Lütfen daha kısa bir video seç.`);
+      throw new Error(i18n.t('shared.gallery.videoStillTooLargeError', { size: formatFileSize(optimizedSize) }));
     }
 
     return {
@@ -278,10 +280,10 @@ async function optimizeGalleryAsset(asset, onProgress) {
 }
 
 async function uploadFileToFirebaseStorage(uri, storagePath, contentType, onProgress) {
-  if (!uri) throw new Error('Medya dosyası bulunamadı.');
+  if (!uri) throw new Error(i18n.t('shared.gallery.mediaFileNotFoundError'));
 
   const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yap.');
+  if (!currentUser) throw new Error(i18n.t('shared.gallery.sessionNotFoundError'));
 
   const idToken = await currentUser.getIdToken();
   const bucket = firebaseConfig.storageBucket;
@@ -305,7 +307,8 @@ async function uploadFileToFirebaseStorage(uri, storagePath, contentType, onProg
 
   if (!result || result.status < 200 || result.status >= 300) {
     const detail = String(result?.body || '').slice(0, 500);
-    throw new Error(`Storage yüklemesi başarısız (${result?.status || 'bilinmeyen'}).${detail ? ` ${detail}` : ''}`);
+    const status = result?.status || i18n.t('shared.gallery.statusUnknown');
+    throw new Error(`${i18n.t('shared.gallery.storageUploadFailedError', { status })}${detail ? ` ${detail}` : ''}`);
   }
 
   return result;
@@ -348,10 +351,11 @@ function normalizeMediaItems(item) {
 }
 
 function getGalleryTitle(item) {
-  return item?.baslik || item?.title || item?.aciklama || item?.hedefAdi || 'Galeri paylaşımı';
+  return item?.baslik || item?.title || item?.aciklama || item?.hedefAdi || i18n.t('parent.gallery.sharePost');
 }
 
 function GalleryVideoPlayer({ uri }) {
+  const { t } = useTranslation();
   const player = useVideoPlayer(uri, (playerInstance) => {
     playerInstance.loop = false;
   });
@@ -366,7 +370,7 @@ function GalleryVideoPlayer({ uri }) {
     return (
       <View style={styles.videoPlayerFallback}>
         <Text style={styles.videoViewerIcon}>▶</Text>
-        <Text style={styles.videoViewerTitle}>Video bulunamadı</Text>
+        <Text style={styles.videoViewerTitle}>{t('shared.gallery.videoNotFound')}</Text>
       </View>
     );
   }
@@ -379,6 +383,7 @@ function GalleryVideoPlayer({ uri }) {
 }
 
 export default function GalleryScreenBase({ mode = 'parent', navigation }) {
+  const { t } = useTranslation();
   const [headerHeight, setHeaderHeight] = useState(0);
   const onHeaderLayout = useCallback((e) => setHeaderHeight(e.nativeEvent.layout.height), []);
   const { kullanici } = useAuth();
@@ -404,8 +409,8 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const [viewerIndex, setViewerIndex] = useState(0);
 
   const canUpload = mode === 'admin' || mode === 'teacher';
-  const title = mode === 'parent' ? 'Galeri' : mode === 'teacher' ? 'Sınıf Galerisi' : 'Galeri Yönetimi';
-  const roleLabel = mode === 'parent' ? 'Veli sadece görüntüler' : 'Fotoğraf / video yükleyebilirsin';
+  const title = mode === 'parent' ? t('parent.gallery.title') : mode === 'teacher' ? t('shared.gallery.titleTeacher') : t('shared.gallery.titleAdmin');
+  const roleLabel = mode === 'parent' ? t('parent.gallery.headerSub') : t('shared.gallery.roleLabelUploader');
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60 * 1000);
@@ -735,22 +740,22 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   const uploadTarget = useMemo(() => {
     if (targetType === 'child' && selectedChildId) {
       const child = myChildren.find((item) => item.id === selectedChildId);
-      return { hedef: 'cocuk', targetType: 'student', classId: child?.sinifId || null, studentId: child?.id || null, cocukIds: child ? [child.id] : [], label: child ? getChildName(child) : 'Seçili çocuk' };
+      return { hedef: 'cocuk', targetType: 'student', classId: child?.sinifId || null, studentId: child?.id || null, cocukIds: child ? [child.id] : [], label: child ? getChildName(child) : t('shared.gallery.selectedChildFallback') };
     }
     if (targetType === 'class' && selectedClassId) {
       const classItem = availableClasses.find((item) => item.id === selectedClassId);
       const classChildren = myChildren.filter((child) => child.sinifId === selectedClassId);
-      return { hedef: 'sinif', targetType: 'class', classId: selectedClassId, studentId: null, cocukIds: classChildren.map((child) => child.id), label: classItem ? getClassName(classItem) : 'Seçili sınıf' };
+      return { hedef: 'sinif', targetType: 'class', classId: selectedClassId, studentId: null, cocukIds: classChildren.map((child) => child.id), label: classItem ? getClassName(classItem) : t('shared.gallery.selectedClassFallback') };
     }
-    if (mode === 'teacher') return { hedef: 'sinif', targetType: 'class', classId: currentClass?.id || null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: currentClass ? getClassName(currentClass) : 'Tüm sınıf' };
-    return { hedef: 'kurum', targetType: 'school', classId: null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: 'Tüm kurum' };
-  }, [availableClasses, currentClass, mode, myChildren, selectedChildId, selectedClassId, targetType]);
+    if (mode === 'teacher') return { hedef: 'sinif', targetType: 'class', classId: currentClass?.id || null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: currentClass ? getClassName(currentClass) : t('shared.gallery.allClassLabel') };
+    return { hedef: 'kurum', targetType: 'school', classId: null, studentId: null, cocukIds: myChildren.map((child) => child.id), label: t('shared.gallery.allInstitutionLabel') };
+  }, [availableClasses, currentClass, mode, myChildren, selectedChildId, selectedClassId, targetType, t]);
 
   async function pickMedia() {
     if (!canUpload) return;
-    if (!kresId) return Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
-    if (targetType === 'class' && !selectedClassId) return Alert.alert('Sınıf Seç', 'Sınıfa özel paylaşım için bir sınıf seçmelisin.');
-    if (targetType === 'child' && !selectedChildId) return Alert.alert('Çocuk Seç', 'Çocuğa özel paylaşım için bir çocuk seçmelisin.');
+    if (!kresId) return Alert.alert(t('shared.gallery.missingInfoTitle'), t('shared.gallery.missingInfoDesc'));
+    if (targetType === 'class' && !selectedClassId) return Alert.alert(t('shared.gallery.selectClassTitle'), t('shared.gallery.selectClassDesc'));
+    if (targetType === 'child' && !selectedChildId) return Alert.alert(t('shared.gallery.selectChildTitle'), t('shared.gallery.selectChildDesc'));
 
     try {
       if (Platform.OS === 'ios') {
@@ -758,15 +763,15 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         if (!permission.granted) {
           if (permission.canAskAgain === false) {
             return Alert.alert(
-              'İzin Gerekli',
-              'Galeri izni daha önce reddedilmiş. Ayarlar\'dan Fotoğraflar erişimini açman gerekiyor.',
+              t('parent.gallery.permissionRequiredTitle'),
+              t('shared.gallery.permissionPreviouslyDeniedDesc'),
               [
-                { text: 'Vazgeç', style: 'cancel' },
-                { text: 'Ayarlara Git', onPress: () => Linking.openSettings() },
+                { text: t('shared.gallery.cancel'), style: 'cancel' },
+                { text: t('shared.gallery.goToSettings'), onPress: () => Linking.openSettings() },
               ]
             );
           }
-          return Alert.alert('İzin Gerekli', 'Galeriye erişim izni vermen gerekiyor.');
+          return Alert.alert(t('parent.gallery.permissionRequiredTitle'), t('shared.gallery.accessPermissionDesc'));
         }
       }
 
@@ -787,9 +792,9 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       }
       const assets = result.canceled ? [] : (result.assets || []).filter((asset) => asset?.uri);
       if (assets.length === 0) return;
-      if (assets.length > MAX_MEDIA_PER_POST) return Alert.alert('Çok Fazla Medya', `Tek paylaşımda en fazla ${MAX_MEDIA_PER_POST} medya seçebilirsin.`);
-      if (countVideoAssets(assets) > MAX_VIDEO_PER_POST) return Alert.alert('Çok Fazla Video', `Tek paylaşımda en fazla ${MAX_VIDEO_PER_POST} video seçebilirsin.`);
-      if (assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS)) return Alert.alert('Video Çok Uzun', 'Video süresi en fazla 2 dakika olabilir. Lütfen daha kısa bir video seç.');
+      if (assets.length > MAX_MEDIA_PER_POST) return Alert.alert(t('shared.gallery.tooManyMediaTitle'), t('shared.gallery.tooManyMediaDesc', { max: MAX_MEDIA_PER_POST }));
+      if (countVideoAssets(assets) > MAX_VIDEO_PER_POST) return Alert.alert(t('shared.gallery.tooManyVideoTitle'), t('shared.gallery.tooManyVideoDesc', { max: MAX_VIDEO_PER_POST }));
+      if (assets.find((asset) => getFileInfo(asset).isVideo && getAssetDurationMs(asset) > MAX_VIDEO_DURATION_MS)) return Alert.alert(t('shared.gallery.videoTooLongTitle'), t('shared.gallery.videoTooLongDesc'));
 
       // Seçilen medya burada sadece önizlemeye alınır — Firebase'e henüz yüklenmez.
       // Kullanıcı "Yükle" butonuna basana kadar hiçbir şey paylaşılmaz.
@@ -806,7 +811,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         kresId,
         mode,
       });
-      Alert.alert('Medya Seçilemedi', 'Medya seçilirken bir sorun oluştu. Lütfen tekrar deneyin.');
+      Alert.alert(t('shared.gallery.pickFailedTitle'), t('shared.gallery.pickFailedDesc'));
     }
   }
 
@@ -820,7 +825,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
 
   async function confirmUpload() {
     if (selectedAssets.length === 0) return;
-    if (!kresId) return Alert.alert('Eksik Bilgi', 'Kreş bilgisi bulunamadı. Önce kullanıcı/kresId bağlantısını kontrol et.');
+    if (!kresId) return Alert.alert(t('shared.gallery.missingInfoTitle'), t('shared.gallery.missingInfoDesc'));
 
     try {
       setUploading(true);
@@ -832,12 +837,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       for (let index = 0; index < selectedAssets.length; index += 1) {
         const rawAsset = selectedAssets[index].asset;
         const rawInfo = getFileInfo(rawAsset);
-        setUploadStatus(rawInfo.isVideo ? `Video optimize ediliyor... (${index + 1}/${selectedAssets.length})` : `Fotoğraf hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
+        setUploadStatus(rawInfo.isVideo
+          ? t('shared.gallery.optimizingVideo', { current: index + 1, total: selectedAssets.length })
+          : t('shared.gallery.preparingPhoto', { current: index + 1, total: selectedAssets.length }));
 
         let asset;
         try {
           asset = await optimizeGalleryAsset(rawAsset, (progress) => {
-            if (rawInfo.isVideo) setUploadStatus(`Video optimize ediliyor... %${Math.round(Number(progress || 0) * 100)}`);
+            if (rawInfo.isVideo) setUploadStatus(t('shared.gallery.optimizingVideoPercent', { percent: Math.round(Number(progress || 0) * 100) }));
           });
         } catch (error) {
           await logGalleryError({
@@ -856,10 +863,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         const mediaId = `${galleryId}-${index}`;
         const storagePath = `galeri/${kresId}/${galleryId}/${mediaId}.${extension}`;
 
-        setUploadStatus(`Medya hazırlanıyor... (${index + 1}/${selectedAssets.length})`);
+        setUploadStatus(t('shared.gallery.preparingMedia', { current: index + 1, total: selectedAssets.length }));
         const fileRef = storageRef(storage, storagePath);
         try {
-          setUploadStatus(`Medya yükleniyor... (${index + 1}/${selectedAssets.length})`);
+          setUploadStatus(t('shared.gallery.uploadingMedia', { current: index + 1, total: selectedAssets.length }));
           setUploadProgress(0);
           setUploadBytesSent(0);
           setUploadBytesExpected(Number(asset.fileSize || 0));
@@ -869,7 +876,13 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
             setUploadProgress(percent);
             setUploadBytesSent(sent);
             setUploadBytesExpected(resolvedExpected);
-            setUploadStatus('Medya yükleniyor... %' + percent + ' • ' + formatFileSize(sent) + ' / ' + formatFileSize(resolvedExpected) + ' (' + (index + 1) + '/' + selectedAssets.length + ')');
+            setUploadStatus(t('shared.gallery.uploadingMediaProgress', {
+              percent,
+              sent: formatFileSize(sent),
+              expected: formatFileSize(resolvedExpected),
+              current: index + 1,
+              total: selectedAssets.length,
+            }));
           });
         } catch (error) {
           await logGalleryError({
@@ -937,7 +950,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       };
 
       try {
-        setUploadStatus('Galeri kaydı oluşturuluyor...');
+        setUploadStatus(t('shared.gallery.creatingGalleryRecord'));
         await set(itemRef, galleryRecord);
         await Promise.all([
           set(dbRef(database, `kresGalerileri/${kresId}/${galleryId}`), true),
@@ -964,12 +977,12 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       setSelectedClassId('');
       setSelectedChildId('');
       setTargetType('all');
-      Alert.alert('Yüklendi', `${uploadTarget.label} için ${mediaItems.length} medya 24 saat boyunca galeride görünecek.`);
+      Alert.alert(t('shared.gallery.uploadedTitle'), t('shared.gallery.uploadedDesc', { label: uploadTarget.label, count: mediaItems.length }));
     } catch (error) {
       console.error('Galeri yüklemesi yapılamadı:', error?.code || error?.message || error);
       Alert.alert(
-        'Yükleme Başarısız',
-        `Medya yüklenemedi. ${error?.message || 'Lütfen tekrar deneyin.'}`
+        t('shared.gallery.uploadFailedTitle'),
+        t('shared.gallery.uploadFailedDesc', { detail: error?.message || t('shared.gallery.uploadFailedDefaultDetail') })
       );
     } finally {
       setUploadStatus('');
@@ -991,10 +1004,10 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         ...mediaItems.map((media) => media.storagePath ? deleteObject(storageRef(storage, media.storagePath)).catch(() => null) : Promise.resolve(null)),
       ]);
       if (item.storagePath) await deleteObject(storageRef(storage, item.storagePath)).catch(() => null);
-      if (showAlert) Alert.alert('Silindi', 'Galeri kaydı kaldırıldı.');
+      if (showAlert) Alert.alert(t('shared.gallery.deletedTitle'), t('shared.gallery.deletedDesc'));
     } catch (error) {
       console.error(error);
-      if (showAlert) Alert.alert('Hata', 'Galeri kaydı silinemedi.');
+      if (showAlert) Alert.alert(t('shared.gallery.errorTitle'), t('shared.gallery.deleteFailedDesc'));
     }
   }
 
@@ -1014,14 +1027,14 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     try {
       setSavingMediaId(media.id || media.url);
       await saveGalleryMediaToDevice(media);
-      Alert.alert('Kaydedildi', media.type === 'video' ? 'Video telefon galerisine kaydedildi.' : 'Fotoğraf telefon galerisine kaydedildi.');
+      Alert.alert(t('parent.gallery.savedTitle'), media.type === 'video' ? t('parent.gallery.videoSaved') : t('parent.gallery.photoSaved'));
     } catch (error) {
       console.error('Galeri medyası kaydedilemedi:', error?.message || error);
       if (error?.code === 'permission-denied') {
-        Alert.alert('İzin Gerekli', 'Medyanın telefona kaydedilebilmesi için galeri izni vermen gerekiyor.');
+        Alert.alert(t('parent.gallery.permissionRequiredTitle'), t('parent.gallery.permissionRequiredDesc'));
         return;
       }
-      Alert.alert('Kaydedilemedi', 'Medya telefona kaydedilemedi. Lütfen izinleri ve internet bağlantısını kontrol et.');
+      Alert.alert(t('parent.gallery.saveFailedTitle'), t('parent.gallery.saveFailedDesc'));
     } finally {
       setSavingMediaId('');
     }
@@ -1033,7 +1046,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     return (
       <TouchableOpacity key={media.id || `${item.id}-${index}`} style={[styles.gridTile, total === 1 && styles.singleTile, total === 3 && index === 0 && styles.largeTile]} onPress={() => openViewer(item, index)} activeOpacity={0.88}>
         {isVideo ? (
-          <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>Video</Text></View>
+          <View style={styles.videoTile}><Text style={styles.playIcon}>▶</Text><Text style={styles.videoTileText}>{t('parent.gallery.video')}</Text></View>
         ) : (
           <Image source={{ uri: media.thumbnailUrl || media.url }} style={styles.tileImage} resizeMode="cover" />
         )}
@@ -1068,17 +1081,17 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       <Modal visible={!!viewerItem} transparent animationType="fade" onRequestClose={closeViewer}>
         <SafeAreaView style={styles.viewerBackdrop}>
           <View style={styles.viewerHeader}>
-            <TouchableOpacity style={styles.viewerTopButton} onPress={closeViewer}><Text style={styles.viewerTopButtonText}>Kapat</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.viewerTopButton} onPress={closeViewer}><Text style={styles.viewerTopButtonText}>{t('parent.gallery.close')}</Text></TouchableOpacity>
             <Text style={styles.viewerCounter}>{viewerIndex + 1} / {mediaItems.length}</Text>
             <TouchableOpacity style={[styles.viewerTopButton, isSaving && styles.viewerTopButtonDisabled]} onPress={() => saveMedia(media)} disabled={isSaving}>
-              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.viewerTopButtonText}>Kaydet</Text>}
+              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.viewerTopButtonText}>{t('parent.gallery.save')}</Text>}
             </TouchableOpacity>
           </View>
           <View style={styles.viewerStage}>{isVideo ? <GalleryVideoPlayer uri={media.url} /> : <Image source={{ uri: media.url }} style={styles.viewerImage} resizeMode="contain" />}</View>
           {mediaItems.length > 1 ? (
             <View style={styles.viewerNavRow}>
-              <TouchableOpacity style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} disabled={viewerIndex === 0} onPress={() => setViewerIndex((index) => Math.max(index - 1, 0))}><Text style={styles.viewerNavText}>‹ Önceki</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} disabled={viewerIndex === mediaItems.length - 1} onPress={() => setViewerIndex((index) => Math.min(index + 1, mediaItems.length - 1))}><Text style={styles.viewerNavText}>Sonraki ›</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.viewerNavButton, viewerIndex === 0 && styles.viewerNavButtonDisabled]} disabled={viewerIndex === 0} onPress={() => setViewerIndex((index) => Math.max(index - 1, 0))}><Text style={styles.viewerNavText}>‹ {t('parent.gallery.previous')}</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.viewerNavButton, viewerIndex === mediaItems.length - 1 && styles.viewerNavButtonDisabled]} disabled={viewerIndex === mediaItems.length - 1} onPress={() => setViewerIndex((index) => Math.min(index + 1, mediaItems.length - 1))}><Text style={styles.viewerNavText}>{t('parent.gallery.next')} ›</Text></TouchableOpacity>
             </View>
           ) : null}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.viewerThumbRow} contentContainerStyle={styles.viewerThumbContent}>
@@ -1097,7 +1110,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={THEME.primary} size="large" />
-        <Text style={styles.loadingText}>Galeri hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('parent.gallery.loading')}</Text>
       </View>
     );
   }
@@ -1105,7 +1118,7 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header} onLayout={onHeaderLayout}>
-        {navigation?.canGoBack?.() ? <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹ Geri</Text></TouchableOpacity> : <View style={styles.backButton} />}
+        {navigation?.canGoBack?.() ? <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}><Text style={styles.backText}>‹ {t('parent.gallery.back')}</Text></TouchableOpacity> : <View style={styles.backButton} />}
         <View style={{ flex: 1, alignItems: 'center' }}><Text style={styles.headerTitle}>{title}</Text><Text style={styles.headerSub}>{roleLabel}</Text></View>
         <Text style={styles.headerIcon}>🖼️</Text>
       </View>
@@ -1113,17 +1126,17 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {canUpload ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Galeriye Paylaş</Text>
-            <Text style={styles.cardText}>Tek fotoğraf, çoklu fotoğraf veya video seçebilirsin. Paylaşımlar 24 saat sonra otomatik gizlenir.</Text>
+            <Text style={styles.cardTitle}>{t('shared.gallery.shareToGalleryTitle')}</Text>
+            <Text style={styles.cardText}>{t('shared.gallery.shareToGalleryDesc')}</Text>
             <View style={styles.segmentRow}>
-              <TouchableOpacity style={[styles.segment, targetType === 'all' && styles.segmentActive]} onPress={() => { setTargetType('all'); setSelectedClassId(''); setSelectedChildId(''); }}><Text style={[styles.segmentText, targetType === 'all' && styles.segmentTextActive]}>{mode === 'teacher' ? 'Tüm Sınıf' : 'Tüm Kurum'}</Text></TouchableOpacity>
-              {mode === 'admin' ? <TouchableOpacity style={[styles.segment, targetType === 'class' && styles.segmentActive]} onPress={() => { setTargetType('class'); setSelectedChildId(''); }}><Text style={[styles.segmentText, targetType === 'class' && styles.segmentTextActive]}>Sınıf</Text></TouchableOpacity> : null}
-              <TouchableOpacity style={[styles.segment, targetType === 'child' && styles.segmentActive]} onPress={() => { setTargetType('child'); setSelectedClassId(''); }}><Text style={[styles.segmentText, targetType === 'child' && styles.segmentTextActive]}>Tek Çocuk</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.segment, targetType === 'all' && styles.segmentActive]} onPress={() => { setTargetType('all'); setSelectedClassId(''); setSelectedChildId(''); }}><Text style={[styles.segmentText, targetType === 'all' && styles.segmentTextActive]}>{mode === 'teacher' ? t('shared.gallery.allClassSegment') : t('shared.gallery.allInstitutionSegment')}</Text></TouchableOpacity>
+              {mode === 'admin' ? <TouchableOpacity style={[styles.segment, targetType === 'class' && styles.segmentActive]} onPress={() => { setTargetType('class'); setSelectedChildId(''); }}><Text style={[styles.segmentText, targetType === 'class' && styles.segmentTextActive]}>{t('shared.gallery.classSegment')}</Text></TouchableOpacity> : null}
+              <TouchableOpacity style={[styles.segment, targetType === 'child' && styles.segmentActive]} onPress={() => { setTargetType('child'); setSelectedClassId(''); }}><Text style={[styles.segmentText, targetType === 'child' && styles.segmentTextActive]}>{t('shared.gallery.singleChildSegment')}</Text></TouchableOpacity>
             </View>
             {targetType === 'class' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>{availableClasses.map((classItem) => <TouchableOpacity key={classItem.id} style={[styles.childChip, selectedClassId === classItem.id && styles.childChipActive]} onPress={() => setSelectedClassId(classItem.id)}><Text style={[styles.childChipText, selectedClassId === classItem.id && styles.childChipTextActive]}>{getClassName(classItem)}</Text></TouchableOpacity>)}</ScrollView> : null}
             {targetType === 'child' ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childPicker}>{myChildren.map((child) => <TouchableOpacity key={child.id} style={[styles.childChip, selectedChildId === child.id && styles.childChipActive]} onPress={() => setSelectedChildId(child.id)}><Text style={[styles.childChipText, selectedChildId === child.id && styles.childChipTextActive]}>{getChildName(child)}</Text></TouchableOpacity>)}</ScrollView> : null}
-            <View style={styles.targetPreview}><Text style={styles.targetPreviewText}>Hedef: {uploadTarget.label}</Text></View>
-            <TextInput value={caption} onChangeText={setCaption} placeholder="Başlık / açıklama ekle (opsiyonel)" placeholderTextColor={THEME.muted} style={styles.input} multiline />
+            <View style={styles.targetPreview}><Text style={styles.targetPreviewText}>{t('parent.gallery.target')}: {uploadTarget.label}</Text></View>
+            <TextInput value={caption} onChangeText={setCaption} placeholder={t('shared.gallery.captionPlaceholder')} placeholderTextColor={THEME.muted} style={styles.input} multiline />
 
             {selectedAssets.length > 0 ? (
               <>
@@ -1143,45 +1156,45 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
                 </ScrollView>
                 <View style={styles.previewActionsRow}>
                   <TouchableOpacity style={[styles.secondaryButton, uploading && styles.disabledButton]} onPress={cancelSelection} disabled={uploading}>
-                    <Text style={styles.secondaryButtonText}>Vazgeç</Text>
+                    <Text style={styles.secondaryButtonText}>{t('shared.gallery.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.primaryButton, styles.primaryButtonFlex, uploading && styles.disabledButton]} onPress={confirmUpload} disabled={uploading}>
                     {uploading ? (
                       <View style={styles.uploadingButtonContent}>
                         <ActivityIndicator color="#fff" />
                         <View style={styles.uploadProgressTextWrap}>
-                          <Text style={styles.primaryButtonText}>{uploadStatus || 'Medya hazırlanıyor...'}</Text>
+                          <Text style={styles.primaryButtonText}>{uploadStatus || t('shared.gallery.preparingGeneric')}</Text>
                           {uploadBytesExpected > 0 && uploadProgress > 0 ? (
                             <Text style={styles.uploadProgressDetail}>{uploadProgress}% • {formatFileSize(uploadBytesSent)} / {formatFileSize(uploadBytesExpected)}</Text>
                           ) : null}
                         </View>
                       </View>
-                    ) : <Text style={styles.primaryButtonText}>{`Yükle (${selectedAssets.length})`}</Text>}
+                    ) : <Text style={styles.primaryButtonText}>{t('shared.gallery.uploadButton', { count: selectedAssets.length })}</Text>}
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
               <TouchableOpacity style={styles.primaryButton} onPress={pickMedia}>
-                <Text style={styles.primaryButtonText}>Fotoğraf / Video Seç</Text>
+                <Text style={styles.primaryButtonText}>{t('shared.gallery.pickMediaButton')}</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : null}
-        <Text style={styles.sectionTitle}>Aktif Galeri</Text>
+        <Text style={styles.sectionTitle}>{t('parent.gallery.activeGallery')}</Text>
         {visibleGallery.length === 0 ? (
-          <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>Aktif galeri yok</Text><Text style={styles.emptyDesc}>Son 24 saat içinde yüklenen fotoğraf veya video burada görünür.</Text></View>
+          <View style={styles.emptyCard}><Text style={styles.emptyIcon}>🖼️</Text><Text style={styles.emptyTitle}>{t('parent.gallery.emptyTitle')}</Text><Text style={styles.emptyDesc}>{t('parent.gallery.emptyDesc')}</Text></View>
         ) : visibleGallery.map((item) => {
           const mediaItems = normalizeMediaItems(item);
           return (
             <View key={item.id} style={styles.mediaCard}>
               {renderPreviewGrid(item)}
               <View style={styles.mediaBody}>
-                <View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getGalleryTitle(item)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{mediaItems.length} medya</Text></View></View>
-                <Text style={styles.mediaMeta}>Hedef: {item.hedefAdi || normalizeTargetType(item)}</Text>
-                <Text style={styles.mediaMeta}>Yükleyen: {item.yukleyenAd || getUserName(users[item.yukleyenId])}</Text>
-                <Text style={styles.mediaMeta}>Yüklenme: {formatDateTime(item.createdAt)}</Text>
-                <View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>Aç</Text></TouchableOpacity></View>
-                {canUpload ? <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(item, true)}><Text style={styles.deleteButtonText}>Sil</Text></TouchableOpacity> : null}
+                <View style={styles.mediaTitleRow}><Text style={styles.mediaTitle} numberOfLines={2}>{getGalleryTitle(item)}</Text><View style={styles.countBadge}><Text style={styles.countBadgeText}>{t('parent.gallery.mediaCount', { count: mediaItems.length })}</Text></View></View>
+                <Text style={styles.mediaMeta}>{t('parent.gallery.target')}: {item.hedefAdi || (normalizeTargetType(item) === 'school' ? t('parent.gallery.institutionFallback') : normalizeTargetType(item) === 'class' ? t('shared.gallery.classFallback') : t('common.childFallback'))}</Text>
+                <Text style={styles.mediaMeta}>{t('shared.gallery.uploadedByLabel')}: {item.yukleyenAd || getUserName(users[item.yukleyenId])}</Text>
+                <Text style={styles.mediaMeta}>{t('parent.gallery.uploaded')}: {formatDateTime(item.createdAt)}</Text>
+                <View style={styles.actionRow}><Text style={styles.remainingBadge}>⏳ {remainingText(item.expiresAt, now)}</Text><TouchableOpacity style={styles.openButton} onPress={() => openViewer(item, 0)}><Text style={styles.openButtonText}>{t('parent.gallery.open')}</Text></TouchableOpacity></View>
+                {canUpload ? <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(item, true)}><Text style={styles.deleteButtonText}>{t('shared.gallery.delete')}</Text></TouchableOpacity> : null}
               </View>
             </View>
           );

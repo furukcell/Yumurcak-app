@@ -12,6 +12,7 @@ import {
 import { ref, onValue, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const THEME = {
   primary: '#6C3DEB',
@@ -39,8 +40,8 @@ function normalizeText(value) {
   return String(value || '').toLowerCase().trim();
 }
 
-function formatTime(value) {
-  if (!value) return 'Saat yok';
+function formatTime(value, t) {
+  if (!value) return t('admin.bell.noTime');
   let date = null;
   if (typeof value === 'number') date = new Date(value);
   if (typeof value === 'string') {
@@ -57,19 +58,19 @@ function formatTime(value) {
   });
 }
 
-function teslimLabel(value) {
+function teslimLabel(value, t) {
   const v = normalizeText(value);
-  if (v === 'birakacagim' || v === 'birakacağım' || v === 'birakma') return '🏫 Bırakacağım';
-  if (v === 'alacagim' || v === 'alacağım' || v === 'alma') return '👋 Alacağım';
-  return value || 'Teslim bilgisi yok';
+  if (v === 'birakacagim' || v === 'birakacağım' || v === 'birakma') return `🏫 ${t('admin.bell.dropOff')}`;
+  if (v === 'alacagim' || v === 'alacağım' || v === 'alma') return `👋 ${t('admin.bell.pickUp')}`;
+  return value || t('admin.bell.deliveryInfoMissing');
 }
 
-function durumLabel(value) {
+function durumLabel(value, t) {
   const v = normalizeText(value);
-  if (v === 'kapidayim' || v === 'kapıdayım') return '📍 Kapıdayım';
-  if (v === 'geliyorum') return '🚗 Geliyorum';
-  if (v === 'tamamlandi' || v === 'tamamlandı') return '✅ Tamamlandı';
-  return value || 'Bildirim';
+  if (v === 'kapidayim' || v === 'kapıdayım') return `📍 ${t('admin.bell.atDoor')}`;
+  if (v === 'geliyorum') return `🚗 ${t('admin.bell.onTheWay')}`;
+  if (v === 'tamamlandi' || v === 'tamamlandı') return `✅ ${t('admin.bell.completed')}`;
+  return value || t('admin.bell.notification');
 }
 
 function getAccent(item) {
@@ -81,6 +82,7 @@ function getAccent(item) {
 }
 
 export default function AdminBellScreen() {
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || kullanici?.kurumId || null;
   const [bildirimler, setBildirimler] = useState([]);
@@ -131,7 +133,7 @@ export default function AdminBellScreen() {
         updatedAt: Date.now(),
       });
     } catch (error) {
-      Alert.alert('Hata', 'Bildirim okundu yapılamadı.');
+      Alert.alert(t('common.error'), t('admin.bell.markReadFailed'));
     } finally {
       setBusyId(null);
     }
@@ -149,7 +151,7 @@ export default function AdminBellScreen() {
         updatedAt: Date.now(),
       });
     } catch (error) {
-      Alert.alert('Hata', 'Bildirim tamamlandı yapılamadı.');
+      Alert.alert(t('common.error'), t('admin.bell.markCompleteFailed'));
     } finally {
       setBusyId(null);
     }
@@ -169,21 +171,21 @@ export default function AdminBellScreen() {
             <Text style={styles.iconText}>{normalizeText(durum).includes('kapi') || normalizeText(durum).includes('kapı') ? '📍' : '🚗'}</Text>
           </View>
           <View style={styles.cardInfo}>
-            <Text style={styles.childName}>{item.cocukAdi || item.cocukAd || item.childName || item.cocukId || 'Çocuk'}</Text>
-            <Text style={styles.parentName}>{item.veliAdi || item.veliAd || item.parentName || item.veliId || 'Veli'}</Text>
+            <Text style={styles.childName}>{item.cocukAdi || item.cocukAd || item.childName || item.cocukId || t('common.childFallback')}</Text>
+            <Text style={styles.parentName}>{item.veliAdi || item.veliAd || item.parentName || item.veliId || t('admin.bell.parentFallback')}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: accent + '20' }]}>
-            <Text style={[styles.statusText, { color: accent }]}>{tamamlandi ? '✅ Tamamlandı' : durumLabel(durum)}</Text>
+            <Text style={[styles.statusText, { color: accent }]}>{tamamlandi ? `✅ ${t('admin.bell.completed')}` : durumLabel(durum, t)}</Text>
           </View>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Teslim</Text>
-          <Text style={styles.infoValue}>{teslimLabel(item.teslimTuru || item.teslimTipi || item.type)}</Text>
+          <Text style={styles.infoValue}>{teslimLabel(item.teslimTuru || item.teslimTipi || item.type, t)}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Saat</Text>
-          <Text style={styles.infoValue}>{formatTime(item.createdAt || item.tarih || item.time)}</Text>
+          <Text style={styles.infoValue}>{formatTime(item.createdAt || item.tarih || item.time, t)}</Text>
         </View>
         {item.not || item.note ? (
           <View style={styles.noteBox}>
@@ -195,11 +197,11 @@ export default function AdminBellScreen() {
           <View style={styles.actionRow}>
             {!okundu ? (
               <TouchableOpacity style={[styles.secondaryBtn, busy && styles.disabled]} onPress={() => markOkundu(item)} disabled={busy} activeOpacity={0.85}>
-                <Text style={styles.secondaryBtnText}>👀 Okundu</Text>
+                <Text style={styles.secondaryBtnText}>👀 {t('admin.bell.read')}</Text>
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity style={[styles.primaryBtn, busy && styles.disabled]} onPress={() => markTamamlandi(item)} disabled={busy} activeOpacity={0.85}>
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>✅ Tamamlandı</Text>}
+              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>✅ {t('admin.bell.completed')}</Text>}
             </TouchableOpacity>
           </View>
         ) : null}
@@ -211,7 +213,7 @@ export default function AdminBellScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.primary} />
-        <Text style={styles.loadingText}>Kurum zili yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('admin.bell.loading')}</Text>
       </View>
     );
   }
@@ -221,25 +223,25 @@ export default function AdminBellScreen() {
       <View style={styles.summaryBar}>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryNumber, { color: THEME.orange }]}>{stats.aktif}</Text>
-          <Text style={styles.summaryLabel}>Aktif</Text>
+          <Text style={styles.summaryLabel}>{t('admin.bell.active')}</Text>
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryNumber, { color: THEME.red }]}>{stats.okunmamis}</Text>
-          <Text style={styles.summaryLabel}>Okunmamış</Text>
+          <Text style={styles.summaryLabel}>{t('admin.bell.unread')}</Text>
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryNumber, { color: THEME.green }]}>{stats.tamamlanan}</Text>
-          <Text style={styles.summaryLabel}>Tamamlanan</Text>
+          <Text style={styles.summaryLabel}>{t('admin.bell.completedPlural')}</Text>
         </View>
       </View>
 
       {bildirimler.length === 0 ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyIcon}>🔔</Text>
-          <Text style={styles.emptyTitle}>Henüz kurum zili bildirimi yok</Text>
-          <Text style={styles.emptyDesc}>Veliler “Geliyorum” veya “Kapıdayım” dediğinde burada görünecek.</Text>
+          <Text style={styles.emptyTitle}>{t('admin.bell.emptyTitle')}</Text>
+          <Text style={styles.emptyDesc}>{t('admin.bell.emptyDesc')}</Text>
         </View>
       ) : (
         <FlatList
