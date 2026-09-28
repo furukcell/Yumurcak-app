@@ -90,7 +90,7 @@ const DURUM_META = {
           <View style={styles.bos}>
             <Text style={styles.bosEmoji}>💳</Text>
             <Text style={styles.bosYazi}>{t('admin.paymentList.empty')}</Text>
-            <Text style={styles.bosAlt}>Yeni ödeme oluşturmak için {t('admin.paymentList.add')} butonuna bas</Text>
+            <Text style={styles.bosAlt}>{t('admin.paymentList.createHint')}</Text>
             <TouchableOpacity style={styles.emptyAddBtn} onPress={() => navigation.navigate('PaymentForm')} activeOpacity={0.85}>
               <Text style={styles.emptyAddText}>{t('admin.paymentList.create')}</Text>
             </TouchableOpacity>
