@@ -2418,6 +2418,13 @@
         "tired": "متعب",
         "calm": "هادئ",
         "normal": "طبيعي"
+      },
+      "riskLabels": {
+        "attendance": "الحضور",
+        "meal": "الوجبات",
+        "event": "النشاط",
+        "mood": "المزاج",
+        "sleep": "النوم"
       }
     },
     "subscription": {
