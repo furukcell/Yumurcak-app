@@ -53,7 +53,7 @@ export async function launchSafeGalleryPicker(options = {}) {
 
   try {
     crashLog('ImagePicker.launchImageLibraryAsync çağrılıyor (galeri)');
-    const result = await withTimeout(
+    let result = await withTimeout(
       ImagePicker.launchImageLibraryAsync({
         ...pickerOptions,
         mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -65,9 +65,37 @@ export async function launchSafeGalleryPicker(options = {}) {
       'ImagePicker'
     );
 
+    // Android bazı cihazlarda picker Activity'sini yeniden oluşturabilir.
+    // Expo bu durumda seçimi pending result olarak saklar; normal sonuç boşsa
+    // kaybolan seçimi geri almaya çalışıyoruz.
+    if (Platform.OS === 'android') {
+      try {
+        const pending = await ImagePicker.getPendingResultAsync();
+        if (pending?.assets?.length && (!result || result.canceled || !result.assets?.length)) {
+          result = pending;
+          await logGalleryEvent({
+            stage: 'PICKER_IMAGE_PENDING_RECOVERED',
+            userId,
+            kresId,
+            mode,
+            asset: pending.assets[0],
+            extra: { assetCount: pending.assets.length },
+          });
+        }
+      } catch (pendingError) {
+        await logGalleryError({
+          stage: 'PICKER_IMAGE_PENDING_READ_ERROR',
+          error: pendingError,
+          userId,
+          kresId,
+          mode,
+        });
+      }
+    }
+
     await finishAttempt('completed', {
-      resultType: result.canceled ? 'canceled' : 'selected',
-      assetCount: result.assets?.length || 0,
+      resultType: result?.canceled ? 'canceled' : 'selected',
+      assetCount: result?.assets?.length || 0,
     });
     return result;
   } catch (imagePickerError) {
