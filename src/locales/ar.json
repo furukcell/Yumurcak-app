@@ -2539,7 +2539,7 @@
       "promoInvalid": "لم يتم العثور على رمز العرض أو أنه غير نشط.",
       "planUpgradeInfo": "بعد ترقية الباقة يصبح حد الطلاب الجديد فعالًا فورًا. تطبق فروق الأسعار والتجديد وفق قواعد Google Play.",
       "statusExpiring": "الحالة",
-      "subscriptionInactive": "{{count}} طالبًا",
+      "subscriptionInactive": "ميزة الاشتراك غير نشطة.",
       "studentCountLabel": "عدد الطلاب",
       "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nسيصبح حد الطلاب الجديد فعالًا بعد ترقية الباقة. تُطبق فروق الأسعار والتجديد وفق قواعد Google Play.",
       "specialOfferDesc": "يلزم عرض خاص."
