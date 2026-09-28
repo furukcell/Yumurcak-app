@@ -46,7 +46,8 @@
     "passive": "Pasif",
     "edit": "Düzenle",
     "status": "Durum",
-    "all": "All"
+    "all": "All",
+    "user": "User"
   },
   "nav": {
     "summary": "Summary",
@@ -2111,7 +2112,8 @@
       "identityMissing": "Institution or user information is missing.",
       "messageTooLong": "The message can be at most {{max}} characters.",
       "createFailed": "Support request could not be sent.",
-      "closeFailed": "Support request could not be closed."
+      "closeFailed": "Support request could not be closed.",
+      "institutionAdmin": "Institution Administrator"
     },
     "monthly": {
       "unknownError": "unknown error",
@@ -2159,7 +2161,9 @@
         "lunchPlaceholder": "Add lunch",
         "snack": "Snack",
         "snackPlaceholder": "Add snack",
-        "classEmpty": "The teacher of this class has not entered meals for {{month}} yet."
+        "classEmpty": "The teacher of this class has not entered meals for {{month}} yet.",
+        "updatedTitle": "Meal list updated",
+        "publishedDesc": "Parents can currently see this month's list."
       },
       "staff": {
         "previousNotFound": "No published staff task list was found for the previous month.",
@@ -2180,7 +2184,10 @@
         "sectionTitlePlaceholder": "Section title (e.g. Upcoming Events)",
         "contentPlaceholder": "Content...",
         "addSection": "Add Section",
-        "publishButton": "Publish {{month}} Task List"
+        "publishButton": "Publish {{month}} Task List",
+        "teachers": "Teachers",
+        "generalReminders": "General Reminders",
+        "publishedLabel": "published"
       },
       "duty": {
         "previousNotFound": "No published duty roster was found for the previous month.",
@@ -2213,7 +2220,10 @@
         "startTime": "Start Time",
         "endTime": "End Time",
         "category": "Category",
-        "descriptionPlaceholder": "Description (optional)"
+        "descriptionPlaceholder": "Description (optional)",
+        "classFallback": "Class",
+        "publishTitle": "Publish Month",
+        "updatedTitle": "Lesson schedule updated"
       },
       "publishing": "Publishing..."
     },
@@ -2495,7 +2505,7 @@
       "all": "Tümü",
       "paid": "Ödendi",
       "pending": "Bekliyor",
-      "late": "Gecikti",
+      "late": "Overdue",
       "monthlyFee": "Aylık ücret",
       "amount": "Tutar",
       "paymentDate": "Ödeme tarihi",
@@ -2511,7 +2521,8 @@
       "create": "+ Ödeme Kaydı Oluştur",
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Open Amount",
-      "thisMonth": "This Month"
+      "thisMonth": "This Month",
+      "noPeriod": "No period"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2551,7 +2562,8 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "Unnamed class"
+      "unnamedClass": "Unnamed class",
+      "ageGroupNotSpecified": "Age group not specified"
     },
     "childList": {
       "birth": "Doğum",
@@ -2562,7 +2574,10 @@
       "registered": "kayıtlı çocuk",
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
-      "create": "+ Çocuk Ekle"
+      "create": "+ Çocuk Ekle",
+      "noParent": "No parent linked",
+      "classNotSpecified": "Class not specified",
+      "unassigned": "Unassigned"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2673,7 +2688,13 @@
       "description": "Açıklama",
       "descriptionPlaceholder": "Örn: Haziran aidatı",
       "createPayment": "Ödeme Kaydı Oluştur",
-      "loading": "Form hazırlanıyor..."
+      "loading": "Form hazırlanıyor...",
+      "example": "Example",
+      "childFallback": "Child",
+      "defaultTitle": "Monthly nursery fee",
+      "statusPending": "⏳ Pending",
+      "statusPaid": "✅ Paid",
+      "statusLate": "❗ Overdue"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2687,8 +2708,8 @@
       "deleteTitle": "Anket silinsin mi?",
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
-      "noOptions": "Bu anket için seçenek eklenmemiş",
-      "loading": "Anketler yükleniyor...",
+      "noOptions": "No options added to this poll",
+      "loading": "Loading polls...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2714,7 +2735,9 @@
       "results": "Sonuçlar",
       "makePassive": "Pasif Yap",
       "makeActive": "Aktif Et",
-      "deletePoll": "Anketi tamamen sil"
+      "deletePoll": "Anketi tamamen sil",
+      "no": "No",
+      "publishActive": "Publish as Active"
     },
     "eventForm": {
       "unnamedClass": "Unnamed class",
