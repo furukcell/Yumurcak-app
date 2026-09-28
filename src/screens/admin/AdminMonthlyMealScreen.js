@@ -197,7 +197,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         if (cancelled) return;
         Alert.alert(
           t('admin.monthly.meal.readFailedTitle'),
-          `Yayınlanmış aylık yemek listesi Firebase'den okunamadı (${error?.code || error?.message || t('admin.monthly.unknownError')}). Bu yüzden form boş görünüyor olabilir — veri kaybolmadı, sadece okuma başarısız oldu.`
+          t('admin.monthly.meal.readFailedDesc', { error: error?.code || error?.message || t('admin.monthly.unknownError') })
         );
       },
     }).then((loadedValues) => {
@@ -317,7 +317,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         kresId,
         hedefRoller: ['veli'],
         baslik: '🍽️ Yemek listesi güncellendi',
-        mesaj: `${monthLabel} yemek listesi yayınlandı.`,
+        mesaj: t('admin.monthly.meal.publishedToast', { month: monthLabel }),
         tip: 'yemek',
         routeName: 'ParentMeals',
         createdBy: adminId || '',
@@ -431,7 +431,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.classRowTitle}>{c.ad || t('admin.monthly.meal.classFallback')}</Text>
                       <Text style={styles.classRowSubtitle}>
-                        {dayCount > 0 ? `${monthLabel} için ${dayCount} gün girilmiş` : `${monthLabel} için henüz giriş yok`}
+                        {dayCount > 0 ? t('admin.monthly.meal.daysEntered', { month: monthLabel, count: dayCount }) : t('admin.monthly.meal.noDaysEntered', { month: monthLabel })}
                       </Text>
                     </View>
                     <Text style={styles.classRowArrow}>›</Text>
