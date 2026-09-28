@@ -2163,7 +2163,7 @@
         "snack": "وجبة خفيفة",
         "snackPlaceholder": "أضف وجبة خفيفة",
         "classEmpty": "لم يُدخل معلم هذا الصف وجبات لشهر {{month}} بعد.",
-        "updatedTitle": "تم تحديث قائمة الطعام",
+        "updatedTitle": "تم تحديث قائمة الوجبات",
         "publishedDesc": "يمكن لأولياء الأمور رؤية قائمة هذا الشهر حاليًا.",
         "daysEntered": "تم إدخال {{count}} يومًا لـ {{month}}",
         "noDaysEntered": "لا توجد إدخالات بعد لـ {{month}}"
@@ -2190,7 +2190,10 @@
         "publishButton": "نشر قائمة مهام {{month}}",
         "teachers": "المعلمون",
         "generalReminders": "تذكيرات عامة",
-        "publishedLabel": "منشور"
+        "publishedLabel": "منشور",
+        "defaultTeacherTitle": "المعلمون",
+        "defaultReminderTitle": "تذكيرات عامة",
+        "publishedCount": "منشور"
       },
       "duty": {
         "previousNotFound": "لم يتم العثور على جدول مناوبات للشهر السابق.",
@@ -2229,7 +2232,9 @@
         "updatedTitle": "تم تحديث جدول الدروس",
         "publishConfirm": "هل تريد نشر جدول دروس {{className}} لشهر {{month}}؟ سيتم تعطيل النشر السابق للشهر نفسه.",
         "publishedToast": "تم نشر جدول دروس {{className}} لشهر {{month}}",
-        "unpublishConfirm": "هل تريد إزالة جدول الدروس المنشور لشهر {{month}}؟"
+        "unpublishConfirm": "هل تريد إزالة جدول الدروس المنشور لشهر {{month}}؟",
+        "monthTitle": "جدول الدروس لشهر {{month}}",
+        "publish": "نشر"
       },
       "publishing": "جارٍ النشر..."
     },
@@ -2550,7 +2555,8 @@
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "المبلغ المفتوح",
       "thisMonth": "هذا الشهر",
-      "noPeriod": "لا توجد فترة"
+      "noPeriod": "لا توجد فترة",
+      "createHint": "اضغط + سجل لإنشاء دفعة جديدة"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2591,7 +2597,8 @@
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
       "unnamedClass": "فصل بلا اسم",
-      "ageGroupNotSpecified": "لم يتم تحديد الفئة العمرية"
+      "ageGroupNotSpecified": "لم يتم تحديد الفئة العمرية",
+      "ageGroupMissing": "الفئة العمرية غير محددة"
     },
     "childList": {
       "birth": "Doğum",
@@ -2603,9 +2610,10 @@
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
       "create": "+ Çocuk Ekle",
-      "noParent": "لا يوجد ولي أمر مرتبط",
+      "noParent": "لا يوجد ولي مرتبط",
       "classNotSpecified": "لم يتم تحديد الفصل",
-      "unassigned": "غير معين"
+      "unassigned": "غير مُعيّن",
+      "noClass": "الفصل غير محدد"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2637,7 +2645,10 @@
       "deleteConfirm": "سيتم حذف {{name}} نهائيًا. لا يمكن التراجع عن هذا الإجراء: سيتم فصل التقارير والحضور وروابط المعرض.",
       "childFallback": "هذا الطفل",
       "updated": "تم تحديث معلومات الطفل",
-      "saved": "تم حفظ الطفل"
+      "saved": "تم حفظ الطفل",
+      "unspecified": "غير محدد",
+      "thisChild": "هذا الطفل",
+      "addressPlaceholder": "مثال: Muğla Mah. Deniz Sok. No:5 Bodrum"
     },
     "classForm": {
       "error": "Hata",
@@ -2726,7 +2737,8 @@
       "defaultTitle": "رسوم الحضانة الشهرية",
       "statusPending": "⏳ قيد الانتظار",
       "statusPaid": "✅ مدفوع",
-      "statusLate": "❗ متأخر"
+      "statusLate": "❗ متأخر",
+      "newPayment": "سجل دفع جديد"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2740,8 +2752,8 @@
       "deleteTitle": "Anket silinsin mi?",
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
-      "noOptions": "لم تتم إضافة خيارات لهذا الاستبيان",
-      "loading": "جارٍ تحميل الاستبيانات...",
+      "noOptions": "لم تتم إضافة خيارات لهذا الاستطلاع",
+      "loading": "جارٍ تحميل الاستطلاعات...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2769,7 +2781,7 @@
       "makeActive": "Aktif Et",
       "deletePoll": "Anketi tamamen sil",
       "no": "لا",
-      "publishActive": "النشر كنشط",
+      "publishActive": "نشر كنشط",
       "option": "خيار"
     },
     "eventForm": {
