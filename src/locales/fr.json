@@ -46,7 +46,8 @@
     "passive": "Pasif",
     "edit": "Düzenle",
     "status": "Durum",
-    "all": "Tous"
+    "all": "Tous",
+    "user": "Utilisateur"
   },
   "nav": {
     "summary": "Résumé",
@@ -2111,7 +2112,8 @@
       "identityMissing": "Les informations de l'établissement ou de l'utilisateur sont manquantes.",
       "messageTooLong": "Le message ne peut pas dépasser {{max}} caractères.",
       "createFailed": "La demande n'a pas pu être envoyée.",
-      "closeFailed": "La demande n'a pas pu être fermée."
+      "closeFailed": "La demande n'a pas pu être fermée.",
+      "institutionAdmin": "Administrateur de l’établissement"
     },
     "monthly": {
       "unknownError": "erreur inconnue",
@@ -2159,7 +2161,9 @@
         "lunchPlaceholder": "Ajouter le déjeuner",
         "snack": "Goûter",
         "snackPlaceholder": "Ajouter le goûter",
-        "classEmpty": "L'enseignant de cette classe n'a pas encore saisi de repas pour {{month}}."
+        "classEmpty": "L'enseignant de cette classe n'a pas encore saisi de repas pour {{month}}.",
+        "updatedTitle": "Menu mis à jour",
+        "publishedDesc": "Les parents peuvent actuellement voir la liste de ce mois."
       },
       "staff": {
         "previousNotFound": "Aucune liste de tâches publiée pour le mois précédent.",
@@ -2180,7 +2184,10 @@
         "sectionTitlePlaceholder": "Titre de section (ex. Événements à venir)",
         "contentPlaceholder": "Contenu...",
         "addSection": "Ajouter une section",
-        "publishButton": "Publier la liste des tâches de {{month}}"
+        "publishButton": "Publier la liste des tâches de {{month}}",
+        "teachers": "Enseignants",
+        "generalReminders": "Rappels généraux",
+        "publishedLabel": "publié"
       },
       "duty": {
         "previousNotFound": "Aucun planning de garde publié pour le mois précédent.",
@@ -2213,7 +2220,10 @@
         "startTime": "Start Time",
         "endTime": "End Time",
         "category": "Category",
-        "descriptionPlaceholder": "Description (optional)"
+        "descriptionPlaceholder": "Description (optional)",
+        "classFallback": "Classe",
+        "publishTitle": "Publier le mois",
+        "updatedTitle": "Planning des cours mis à jour"
       },
       "publishing": "Publication..."
     },
@@ -2267,7 +2277,7 @@
       "subtitle": "This information appears directly on the parent communication screen.",
       "changePhoto": "Change Photo",
       "addPhoto": "Add Photo",
-      "remove": "Remove",
+      "remove": "Supprimer",
       "splashDesc": "Show a full-screen custom image for your institution when the app opens. If none is added, the default Yumurcak splash screen is used.",
       "splashPlaceholder": "9:16 · Tap to select",
       "changeImage": "Change Image",
@@ -2495,7 +2505,7 @@
       "all": "Tümü",
       "paid": "Ödendi",
       "pending": "Bekliyor",
-      "late": "Gecikti",
+      "late": "En retard",
       "monthlyFee": "Aylık ücret",
       "amount": "Tutar",
       "paymentDate": "Ödeme tarihi",
@@ -2511,7 +2521,8 @@
       "create": "+ Ödeme Kaydı Oluştur",
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Montant ouvert",
-      "thisMonth": "Ce mois-ci"
+      "thisMonth": "Ce mois-ci",
+      "noPeriod": "Aucune période"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2551,7 +2562,8 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "Classe sans nom"
+      "unnamedClass": "Classe sans nom",
+      "ageGroupNotSpecified": "Groupe d’âge non indiqué"
     },
     "childList": {
       "birth": "Doğum",
@@ -2562,7 +2574,10 @@
       "registered": "kayıtlı çocuk",
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
-      "create": "+ Çocuk Ekle"
+      "create": "+ Çocuk Ekle",
+      "noParent": "Aucun parent lié",
+      "classNotSpecified": "Classe non indiquée",
+      "unassigned": "Non attribué"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2673,7 +2688,13 @@
       "description": "Açıklama",
       "descriptionPlaceholder": "Örn: Haziran aidatı",
       "createPayment": "Ödeme Kaydı Oluştur",
-      "loading": "Form hazırlanıyor..."
+      "loading": "Form hazırlanıyor...",
+      "example": "Exemple",
+      "childFallback": "Enfant",
+      "defaultTitle": "Frais mensuels de crèche",
+      "statusPending": "⏳ En attente",
+      "statusPaid": "✅ Payé",
+      "statusLate": "❗ En retard"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2687,8 +2708,8 @@
       "deleteTitle": "Anket silinsin mi?",
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
-      "noOptions": "Bu anket için seçenek eklenmemiş",
-      "loading": "Anketler yükleniyor...",
+      "noOptions": "Aucune option ajoutée à ce sondage",
+      "loading": "Chargement des sondages...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2714,7 +2735,9 @@
       "results": "Sonuçlar",
       "makePassive": "Pasif Yap",
       "makeActive": "Aktif Et",
-      "deletePoll": "Anketi tamamen sil"
+      "deletePoll": "Anketi tamamen sil",
+      "no": "Non",
+      "publishActive": "Publier comme actif"
     },
     "eventForm": {
       "unnamedClass": "Classe sans nom",
