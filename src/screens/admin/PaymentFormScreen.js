@@ -57,7 +57,7 @@ function onlyNumberText(value) {
   return String(value || '').replace(',', '.').replace(/[^0-9.]/g, '');
 }
 function childName(c) {
-  return `${c.ad || ''} ${c.soyad || ''}`.trim() || c.adSoyad || c.isim || c.id || 'Çocuk';
+  return `${c.ad || ''} ${c.soyad || ''}`.trim() || c.adSoyad || c.isim || c.id || t('admin.paymentForm.childFallback');
 }
 function formatMoney(value) {
   const number = Number(onlyNumberText(value));
@@ -181,8 +181,8 @@ export default function PaymentFormScreen() {
         parentId: veliId,
         veliIds: finalVeliIds,
         parentIds: finalVeliIds,
-        baslik: baslik.trim() || 'Aylık Kreş Ücreti',
-        title: baslik.trim() || 'Aylık Kreş Ücreti',
+        baslik: baslik.trim() || t('admin.paymentForm.defaultTitle'),
+        title: baslik.trim() || t('admin.paymentForm.defaultTitle'),
         aciklama: aciklama.trim() || baslik.trim() || 'Aylık Kreş Ücreti',
         ay: finalAy,
         yil: finalYil,
