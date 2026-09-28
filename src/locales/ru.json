@@ -45,7 +45,8 @@
     "active": "Aktif",
     "passive": "Pasif",
     "edit": "Düzenle",
-    "status": "Durum"
+    "status": "Durum",
+    "all": "Все"
   },
   "nav": {
     "summary": "Сводка",
@@ -2385,7 +2386,8 @@
       "admin": "Администратор",
       "updated": "Объявление обновлено",
       "sent": "Объявление отправлено",
-      "send": "Отправить"
+      "send": "Отправить",
+      "select": "Выбрать"
     },
     "classList": {
       "teacher": "Öğretmen",
@@ -2398,7 +2400,8 @@
       "teacherAssignment": "Öğretmen Ataması",
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
-      "create": "+ Sınıf Ekle"
+      "create": "+ Sınıf Ekle",
+      "unnamedClass": "Без названия"
     },
     "childList": {
       "birth": "Doğum",
