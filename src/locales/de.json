@@ -2632,6 +2632,8 @@
       "birthFormat": "Geben Sie das Geburtsdatum im Format 15.05.2022 oder 2022-05-15 ein.",
       "adaptationDateFormat": "Geben Sie das Startdatum der Eingewöhnung im Format 2026-06-26 ein.",
       "saveFailed": "Kind konnte nicht gespeichert werden",
+      "limitReachedTitle": "Schülerlimit erreicht",
+      "limitReached": "Das Schülerlimit Ihres Abonnements ist erreicht ({{count}}/{{limit}}). Um weitere Schüler hinzuzufügen, senden Sie bitte eine Anfrage zum Upgrade Ihres Abonnements / Pakets.",
       "nameLabel": "Name des Kindes *",
       "namePlaceholder": "Z. B. Ali Yilmaz",
       "birthLabel": "Geburtsdatum *",
