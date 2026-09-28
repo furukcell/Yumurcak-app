@@ -80,6 +80,7 @@ function getEntererTime(item) {
 const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler', 'anketler', 'kullanicilar', 'odemeler', 'kurumZili']);
 
 export default function AdminStatisticsScreen() {
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
   const [activeTab, setActiveTab] = useState('genel');
