@@ -24,6 +24,7 @@ import ActivityAutocompleteInput from '../../components/ActivityAutocompleteInpu
 import { ETKINLIK_KATEGORILERI } from '../../constants';
 import { useRoute } from '@react-navigation/native';
 import { createNotification } from '../../services/notificationCenter';
+import i18n from '../../i18n';
 import {
   getDaysOfMonth,
   getMonthKey,
@@ -80,7 +81,7 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: t('admin.monthly.schedule.monthTitle', { month: monthLabel }),
+    baslik: i18n.t('admin.monthly.schedule.monthTitle', { month: monthLabel }),
     etkinlikler: list.filter(hasActivityItemContent).map((item) => ({
       etkinlik: String(item.etkinlik || '').trim(),
       aciklama: String(item.aciklama || '').trim(),
