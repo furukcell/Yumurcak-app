@@ -35,8 +35,8 @@ if (source.includes('Image library result handling failed')) {
   process.exit(0);
 }
 
-const importNeedle = 'import android.net.Uri\\n';
-const importReplacement = 'import android.net.Uri\\nimport android.util.Log\\n';
+const importNeedle = 'import android.net.Uri\n';
+const importReplacement = 'import android.net.Uri\nimport android.util.Log\n';
 
 if (!source.includes(importNeedle)) {
   throw new Error('[expo-image-picker patch] Could not find the expected Uri import.');
