@@ -59,7 +59,7 @@ const BUILT_IN_PROMOS = {
 };
 
 function getPlanLabel(subscription) {
-  if (!subscription?.planTier && !subscription?.plan) return 'Henüz yok';
+  if (!subscription?.planTier && !subscription?.plan) return i18n.t('admin.subscription.notSet');
   const tier = getTierById(subscription.planTier || String(subscription.plan || '').split('_')[0]);
   const plan = String(subscription.plan || '');
   const period = subscription.planPeriod || (plan.includes('yillik') ? 'yillik' : plan.includes('aylik') ? 'aylik' : '');
@@ -164,7 +164,7 @@ export default function AdminSubscriptionScreen() {
 
   const startTrial = async () => {
     if (subscription?.durum === 'aktif' || subscription?.durum === 'demo') {
-      return Alert.alert(i18n.t('common.info'), 'Bu kreşte zaten aktif/demo abonelik var.');
+      return Alert.alert(i18n.t('common.info'), i18n.t('admin.subscription.alreadyActive'));
     }
 
     setSaving(true);
@@ -179,10 +179,10 @@ export default function AdminSubscriptionScreen() {
         endDate: toDateStr(addMonths(now, 1)),
         price: 0,
       });
-      Alert.alert(i18n.t('common.success'), 'İlk 1 ay ücretsiz demo başlatıldı.');
+      Alert.alert(i18n.t('common.success'), i18n.t('admin.subscription.trialStarted'));
     } catch (err) {
       console.error(err);
-      Alert.alert(i18n.t('common.error'), 'Demo başlatılamadı.');
+      Alert.alert(i18n.t('common.error'), i18n.t('admin.subscription.trialFailed'));
     } finally {
       setSaving(false);
     }
@@ -190,19 +190,19 @@ export default function AdminSubscriptionScreen() {
 
   const selectPlan = async (tier, selectedPeriod) => {
     const price = selectedPeriod === 'yillik' ? tier.yearly : tier.monthly;
-    const priceText = `${formatPrice(price)} / ${selectedPeriod === 'yillik' ? 'yıl' : 'ay'}`;
+    const priceText = `${formatPrice(price)} / ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.year') : i18n.t('admin.subscription.month')}`;
     const rcPackage = getRevenueCatPackageForPlan(rcPackages, tier.id, selectedPeriod);
 
     if (studentCount > tier.maxStudent) {
       const nextTier = getSuggestedTier(studentCount);
       return Alert.alert(
-        'Paket Yetersiz',
-        `${tier.title} paketi ${tier.range} içindir. Kurumda şu an ${studentCount} öğrenci var. ${nextTier ? `${nextTier.title} paketini seçmelisin.` : `${i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.`}`
+        i18n.t('admin.subscription.packageInsufficient'),
+        i18n.t('admin.subscription.packageInsufficientDesc', { tier: tier.title, range: tier.range, count: studentCount, nextTier: nextTier?.title || '' })
       );
     }
 
     if (!suggestedTier) {
-      return Alert.alert(i18n.t('admin.subscription.specialOffer'), '100 üzeri öğrenci için özel teklif gerekir. Bu aşamada manuel görüşme ile ilerlenmeli.');
+      return Alert.alert(i18n.t('admin.subscription.specialOffer'), i18n.t('admin.subscription.over100'));
     }
 
     if (rcPackage) {
@@ -210,16 +210,16 @@ export default function AdminSubscriptionScreen() {
         `${tier.title} ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`,
         `${tier.range}\n${priceText}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.`,
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Satın Al', onPress: () => purchasePlan(tier, selectedPeriod, rcPackage) },
+          { text: i18n.t('common.cancel'), style: 'cancel' },
+          { text: i18n.t('admin.subscription.buy'), onPress: () => purchasePlan(tier, selectedPeriod, rcPackage) },
         ]
       );
       return;
     }
 
     Alert.alert(
-      'Paket Henüz Hazır Değil',
-      `${tier.title} paketi seçildi.\n${tier.range}\n${priceText}\n\nRevenueCat/Google Play paketi şu an okunamadı. Lütfen daha sonra tekrar deneyin.`,
+      i18n.t('admin.subscription.packageNotReady'),
+      i18n.t('admin.subscription.packageNotReadyDesc', { tier: tier.title, range: tier.range, price: priceText }),
       [
        { text: 'Tamam', style: 'cancel' },
       ]
@@ -231,12 +231,12 @@ export default function AdminSubscriptionScreen() {
     try {
       const result = await purchaseRevenueCatPackage(rcPackage, revenueCatUserId);
       await syncRevenueCatResult(result?.customerInfo, tier, selectedPeriod, rcPackage);
-      Alert.alert(i18n.t('common.success'), 'Abonelik aktif edildi.');
+      Alert.alert(i18n.t('common.success'), i18n.t('admin.subscription.activated'));
     } catch (err) {
       const userCancelled = err?.userCancelled || err?.code === 'PURCHASE_CANCELLED';
       if (!userCancelled) {
         console.warn('Satın alma hatası:', err);
-        Alert.alert(i18n.t('common.error'), 'Satın alma tamamlanamadı.');
+        Alert.alert(i18n.t('common.error'), i18n.t('admin.subscription.purchaseFailed'));
       }
     } finally {
       setSaving(false);
@@ -249,14 +249,14 @@ export default function AdminSubscriptionScreen() {
       const customerInfo = await restoreRevenueCatPurchases(revenueCatUserId);
       const active = isRevenueCatPremiumActive(customerInfo);
       if (!active) {
-        Alert.alert(i18n.t('admin.subscription.subscriptionNotFound'), 'Bu hesap için aktif abonelik bulunamadı.');
+        Alert.alert(i18n.t('admin.subscription.subscriptionNotFound'), i18n.t('admin.subscription.subscriptionNotFoundDesc'));
         return;
       }
       await syncRevenueCatResult(customerInfo, activeTier || PACKAGE_TIERS[0], subscription?.planPeriod || 'aylik');
-      Alert.alert(i18n.t('common.success'), 'Satın alma geri yüklendi.');
+      Alert.alert(i18n.t('common.success'), i18n.t('admin.subscription.restoreSuccess'));
     } catch (err) {
       console.warn('Satın alma geri yükleme hatası:', err);
-      Alert.alert(i18n.t('common.error'), 'Satın alma geri yüklenemedi.');
+      Alert.alert(i18n.t('common.error'), i18n.t('admin.subscription.restoreFailed'));
     } finally {
       setSaving(false);
     }
@@ -296,10 +296,10 @@ export default function AdminSubscriptionScreen() {
         endDate: toDateStr(end),
         price,
       });
-      Alert.alert(i18n.t('common.success'), `${tier.title} ${selectedPeriod === 'yillik' ? 'yıllık' : 'aylık'} abonelik aktif edildi.`);
+      Alert.alert(i18n.t('common.success'), i18n.t('admin.subscription.periodActivated', { tier: tier.title, period: selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly') }));
     } catch (err) {
       console.error(err);
-      Alert.alert(i18n.t('common.error'), 'Abonelik aktif edilemedi.');
+      Alert.alert(i18n.t('common.error'), i18n.t('admin.subscription.activationFailed'));
     } finally {
       setSaving(false);
     }
@@ -315,7 +315,7 @@ export default function AdminSubscriptionScreen() {
       const usageSnap = await get(ref(database, `promosyonKullanimlari/${usageKey}`));
       if (usageSnap.exists()) {
         setSaving(false);
-        return Alert.alert(i18n.t('admin.subscription.codeUsed'), 'Bu promosyon kodu bu kreş için daha önce kullanılmış.');
+        return Alert.alert(i18n.t('admin.subscription.codeUsed'), i18n.t('admin.subscription.promoAlreadyUsed'));
       }
 
       let promo = BUILT_IN_PROMOS[code] || null;
@@ -331,7 +331,7 @@ export default function AdminSubscriptionScreen() {
       const max = Number(promo.maksimumKullanim || 0);
       if (max > 0 && used >= max) {
         setSaving(false);
-        return Alert.alert(i18n.t('admin.subscription.limitReached'), 'Bu promosyon kodunun kullanım limiti dolmuş.');
+        return Alert.alert(i18n.t('admin.subscription.limitReached'), i18n.t('admin.subscription.promoLimitReached'));
       }
 
       const months = Math.min(Number(promo.sureAy || 1), 1);
@@ -366,10 +366,10 @@ export default function AdminSubscriptionScreen() {
       }
 
       setPromoCode('');
-      Alert.alert(i18n.t('common.success'), `${code} kodu uygulandı. 1 ay demo tanımlandı.`);
+      Alert.alert(i18n.t('common.success'), i18n.t('admin.subscription.promoApplied', { code }));
     } catch (err) {
       console.error(err);
-      Alert.alert(i18n.t('common.error'), `${i18n.t('admin.subscription.promoPlaceholder')} uygulanamadı.`);
+      Alert.alert(i18n.t('common.error'), i18n.t('admin.subscription.promoFailed'));
     } finally {
       setSaving(false);
     }
@@ -403,14 +403,14 @@ export default function AdminSubscriptionScreen() {
             <Text style={styles.statusTitle}>{status.label}</Text>
             <Text style={[styles.statusBadge, { backgroundColor: statusColors.bg, color: statusColors.color }]}>{statusColors.badge}</Text>
           </View>
-          <Text style={styles.statusText}>Plan: {getPlanLabel(subscription)}</Text>
-          <Text style={styles.statusText}>Bitiş: {subscription?.bitisTarihi || subscription?.demoBitisTarihi || '-'}</Text>
+          <Text style={styles.statusText}>{i18n.t('admin.subscription.planLabel')}: {getPlanLabel(subscription)}</Text>
+          <Text style={styles.statusText}>{i18n.t('admin.subscription.endLabel')}: {subscription?.bitisTarihi || subscription?.demoBitisTarihi || '-'}</Text>
           {status.key === 'grace_period' ? (
             <Text style={[styles.statusText, { color: THEME.red, fontWeight: '900' }]}>
-              Gecikme: {status.daysOverdue}. gün — {status.message}
+              {i18n.t('admin.subscription.overdueLabel')}: {status.daysOverdue}. {i18n.t('admin.subscription.day')} — {status.message}
             </Text>
           ) : (
-            <Text style={styles.statusText}>Kalan gün: {remainingDays}</Text>
+            <Text style={styles.statusText}>{i18n.t('admin.subscription.remainingDays')}: {remainingDays}</Text>
           )}
         </View>
 
@@ -427,9 +427,9 @@ export default function AdminSubscriptionScreen() {
           </View>
           <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}>
             {overLimit
-              ? 'Mevcut paket öğrenci sayısı için yetersiz. Yeni öğrenci eklemek için üst pakete geçilmelidir.'
+              ? i18n.t('admin.subscription.overLimit')
               : suggestedTier
-                ? `Size uygun paket: ${suggestedTier.title} (${suggestedTier.range})`
+                ? i18n.t('admin.subscription.suitablePlan', { tier: suggestedTier.title, range: suggestedTier.range })
                 : `${i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.`}
           </Text>
         </View>
@@ -501,7 +501,7 @@ export default function AdminSubscriptionScreen() {
 
 function PlanCard({ tier, period, studentCount, active, suggested, disabled, saving, onPress }) {
   const price = period === 'yillik' ? tier.yearly : tier.monthly;
-  const suffix = period === 'yillik' ? '/ yıl' : '/ ay';
+  const suffix = period === 'yillik' ? `/ ${i18n.t('admin.subscription.year')}` : `/ ${i18n.t('admin.subscription.month')}`;
 
   return (
     <View style={[styles.planCard, tier.featured && styles.planFeatured, active && styles.planActive, disabled && styles.planDisabled]}>
@@ -511,14 +511,14 @@ function PlanCard({ tier, period, studentCount, active, suggested, disabled, sav
           <Text style={styles.planRange}>{tier.range}</Text>
         </View>
         <View style={[styles.planBadge, { backgroundColor: `${tier.color}22` }]}>
-          <Text style={[styles.planBadgeText, { color: tier.color }]}>{active ? 'Aktif' : suggested ? 'Uygun' : tier.badge}</Text>
+          <Text style={[styles.planBadgeText, { color: tier.color }]}>{active ? i18n.t('admin.subscription.active') : suggested ? i18n.t('admin.subscription.suitable') : i18n.t(`admin.subscription.tiers.${tier.id}.badge`)}</Text>
         </View>
       </View>
-      <Text style={styles.planDesc}>{tier.desc}</Text>
+      <Text style={styles.planDesc}>{i18n.t(`admin.subscription.tiers.${tier.id}.desc`)}</Text>
       <Text style={styles.planPrice}>{formatPrice(price)} <Text style={styles.planSuffix}>{suffix}</Text></Text>
-      <Text style={styles.planSmall}>{period === 'yillik' ? `${i18n.t('admin.subscription.yearly')} ödemede ${i18n.t('admin.subscription.twoMonthsFree')}` : `${i18n.t('admin.subscription.monthly')} yenilenir`}</Text>
+      <Text style={styles.planSmall}>{period === 'yillik' ? i18n.t('admin.subscription.yearlyPaymentInfo') : i18n.t('admin.subscription.monthlyPaymentInfo')}</Text>
       <TouchableOpacity style={[styles.planButton, disabled && styles.planButtonDisabled]} onPress={onPress} disabled={saving || disabled} activeOpacity={0.85}>
-        <Text style={styles.planButtonText}>{disabled ? `${studentCount} öğrenci için yetersiz` : active ? 'Planı Yönet' : 'Paketi Seç'}</Text>
+        <Text style={styles.planButtonText}>{disabled ? i18n.t('admin.subscription.insufficientForStudents', { count: studentCount }) : active ? i18n.t('admin.subscription.managePlan') : i18n.t('admin.subscription.selectPlan')}</Text>
       </TouchableOpacity>
     </View>
   );
