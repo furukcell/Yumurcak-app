@@ -2539,7 +2539,7 @@
       "promoInvalid": "Code promo introuvable ou inactif.",
       "planUpgradeInfo": "Après la mise à niveau, la nouvelle limite d’élèves est activée immédiatement. Les différences de prix et renouvellements suivent les règles Google Play.",
       "statusExpiring": "Statut",
-      "subscriptionInactive": "{{count}} élèves",
+      "subscriptionInactive": "Le droit à l’abonnement n’est pas actif.",
       "studentCountLabel": "Nombre d’élèves",
       "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nLa nouvelle limite d’élèves devient active après la mise à niveau. Les différences de prix et renouvellements suivent les règles de Google Play.",
       "specialOfferDesc": "Une offre spéciale est requise."
