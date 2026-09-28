@@ -37,6 +37,7 @@ const THEME = {
 };
 
 const DURUM_META = {
+    tum: { icon: '', color: THEME.primary, bg: THEME.primarySoft, labelKey: 'admin.paymentList.all' },
     odendi: { icon: '✅', color: THEME.green, bg: '#E8FBEF', labelKey: 'admin.paymentList.paid' },
     bekliyor: { icon: '⏳', color: THEME.orange, bg: '#FFF4E1', labelKey: 'admin.paymentList.pending' },
     gecikti: { icon: '❗', color: THEME.red, bg: '#FFE8EE', labelKey: 'admin.paymentList.late' },
@@ -67,7 +68,7 @@ const DURUM_META = {
         <SummaryBox title={t('admin.paymentList.openAmount')} value={formatMoney(stats.acikTutar)} color={THEME.red} />
         <SummaryBox title={t('admin.paymentList.thisMonth')} value={formatMoney(stats.buAyTutar)} color={THEME.primary} />
         <SummaryBox title={t('admin.paymentList.paid')} value={String(stats.odendi)} color={THEME.green} />
-        <SummaryBox title="Geciken" value={String(stats.gecikti)} color={THEME.red} />
+        <SummaryBox title={t('admin.paymentList.late')} value={String(stats.gecikti)} color={THEME.red} />
       </View>
 
       <View style={styles.filterRow}>
@@ -76,7 +77,7 @@ const DURUM_META = {
           const active = filter === key;
           return (
             <TouchableOpacity key={key} style={[styles.filterChip, active && { backgroundColor: meta.color, borderColor: meta.color }]} onPress={() => setFilter(key)} activeOpacity={0.8}>
-              <Text style={[styles.filterText, active && styles.filterTextActive]}>{meta.label}</Text>
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>{t(meta.labelKey)}</Text>
             </TouchableOpacity>
           );
         })}
