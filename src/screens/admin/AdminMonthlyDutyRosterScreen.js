@@ -328,7 +328,7 @@ export default function AdminMonthlyDutyRosterScreen({ navigation }) {
             theme={theme}
             renderDayPreview={(day) => {
               const preview = dutyPreview(values[day.dateKey]);
-              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('admin.monthly.empty')}</Text>;
             }}
           />
 
