@@ -1,4 +1,89 @@
+diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt
+index 0000000..0000000 100644
+--- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt
++++ b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ImageLibraryContract.kt
+@@ -1,8 +1,9 @@
+ package expo.modules.imagepicker.contracts
+ 
+ import android.app.Activity
+ import android.content.ContentResolver
+ import android.content.Context
+ import android.content.Intent
+ import android.net.Uri
++import android.util.Log
+ import androidx.activity.result.PickVisualMediaRequest
+ import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+ import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+@@ -76,38 +77,46 @@ internal class ImageLibraryContract(
+   }
+ 
+   override fun parseResult(input: ImageLibraryContractOptions, resultCode: Int, intent: Intent?) =
+-    if (resultCode == Activity.RESULT_CANCELED) {
+-      ImagePickerContractResult.Cancelled
+-    } else {
+-      intent?.takeIf { resultCode == Activity.RESULT_OK }?.getAllDataUris()?.let { uris ->
+-        if (input.options.allowsMultipleSelection) {
+-          val results = uris.map { uri ->
+-            uri.toMediaType(contentResolver) to uri
+-          }.let {
+-            if (input.options.selectionLimit > 0) {
+-              it.take(input.options.selectionLimit)
++    try {
++      if (resultCode == Activity.RESULT_CANCELED) {
++        ImagePickerContractResult.Cancelled
++      } else {
++        intent?.takeIf { resultCode == Activity.RESULT_OK }?.getAllDataUris()?.let { uris ->
++          if (input.options.allowsMultipleSelection) {
++            val results = uris.map { uri ->
++              uri.toMediaType(contentResolver) to uri
++            }.let {
++              if (input.options.selectionLimit > 0) {
++                it.take(input.options.selectionLimit)
++              } else {
++                it
++              }
++            }
++
++            ImagePickerContractResult.Success(results)
++          } else {
++            if (intent.data != null) {
++              intent.data?.let { uri ->
++                val type = uri.toMediaType(contentResolver)
++                ImagePickerContractResult.Success(listOf(type to uri))
++              }
+             } else {
+-              it
++              uris.firstOrNull()?.let { uri ->
++                val type = uri.toMediaType(contentResolver)
++                ImagePickerContractResult.Success(listOf(type to uri))
++              } ?: ImagePickerContractResult.Error
+             }
+           }
+-
+-          ImagePickerContractResult.Success(results)
+-        } else {
+-          if (intent.data != null) {
+-            intent.data?.let { uri ->
+-              val type = uri.toMediaType(contentResolver)
+-              ImagePickerContractResult.Success(listOf(type to uri))
+-            }
+-          } else {
+-            uris.firstOrNull()?.let { uri ->
+-              val type = uri.toMediaType(contentResolver)
+-              ImagePickerContractResult.Success(listOf(type to uri))
+-            } ?: ImagePickerContractResult.Error
+-          }
+-        }
+-      } ?: ImagePickerContractResult.Error
++        } ?: ImagePickerContractResult.Error
++      }
++    } catch (e: Exception) {
++      Log.e("ExpoImagePicker", "Image library result handling failed", e)
++      ImagePickerContractResult.Error
+     }
+
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerExceptions.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerExceptions.kt
+index 0000000..0000000 100644
 @@ -4,9 +4,6 @@ import androidx.core.net.toUri
  import expo.modules.kotlin.exception.CodedException
  import java.io.File
@@ -10,6 +95,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
    CodedException("Failed to create the file '$path'", cause)
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerModule.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerModule.kt
+index 0000000..0000000 100644
 @@ -4,7 +4,6 @@ import android.Manifest
  import android.content.Context
  import android.content.Intent
@@ -36,6 +122,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
  )
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerOptions.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerOptions.kt
+index 0000000..0000000 100644
 @@ -85,14 +85,6 @@ internal enum class MediaTypes(val value: String) : Enumerable {
    VIDEOS("Videos"),
    ALL("All");
@@ -64,6 +151,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
          IMAGES
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerResponse.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerResponse.kt
+index 0000000..0000000 100644
 @@ -7,7 +7,7 @@ import expo.modules.kotlin.types.Enumerable
  
  internal class ImagePickerAsset(
@@ -75,6 +163,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
    @Field val height: Int = 0,
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerUtils.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ImagePickerUtils.kt
+index 0000000..0000000 100644
 @@ -20,6 +20,7 @@ import java.io.File
  import java.io.FileNotFoundException
  import java.io.FileOutputStream
@@ -135,6 +224,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
  }
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/MediaHandler.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/MediaHandler.kt
+index 0000000..0000000 100644
 @@ -6,6 +6,7 @@ import android.net.Uri
  import android.provider.OpenableColumns
  import android.util.Base64
@@ -206,6 +296,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
    private suspend fun handleVideo(
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ContractsUtils.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/ContractsUtils.kt
+index 0000000..0000000 100644
 @@ -3,11 +3,13 @@ package expo.modules.imagepicker.contracts
  import android.net.Uri
  import expo.modules.imagepicker.MediaType
@@ -224,6 +315,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
  }
 
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt
+index 0000000..0000000 100644
 @@ -3,6 +3,7 @@ package expo.modules.imagepicker.contracts
  import android.app.Activity
  import android.content.Context
@@ -240,4 +332,3 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
 +    val compressFormat = mediaType?.toBitmapCompressFormat() ?: Bitmap.CompressFormat.JPEG
      val cacheDirectory = appContextProvider.appContext.cacheDirectory
      val outputUri = createOutputFile(cacheDirectory, compressFormat.toImageFileExtension()).toUri()
-
