@@ -57,7 +57,7 @@ function onlyNumberText(value) {
   return String(value || '').replace(',', '.').replace(/[^0-9.]/g, '');
 }
 function childName(c) {
-  return `${c.ad || ''} ${c.soyad || ''}`.trim() || c.adSoyad || c.isim || c.id || t('admin.paymentForm.childFallback');
+  return `${c.ad || ''} ${c.soyad || ''}`.trim() || c.adSoyad || c.isim || c.id || 'Çocuk';
 }
 function formatMoney(value) {
   const number = Number(onlyNumberText(value));
