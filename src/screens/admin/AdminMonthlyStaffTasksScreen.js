@@ -279,7 +279,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           {publishedCount > 0 ? (
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
+                <Text style={styles.publishedTitle}>✅ {t('admin.monthly.published', { month: monthLabel })}</Text>
                 <Text style={styles.publishedText}>{t('admin.monthly.staff.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
@@ -315,7 +315,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
           {bolumler.map((section, index) => (
             <View key={section.id} style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionIndex}>Bölüm {index + 1}</Text>
+                <Text style={styles.sectionIndex}>{t('admin.monthly.staff.section', { index: index + 1 })}</Text>
                 <TouchableOpacity onPress={() => removeSection(section.id)} activeOpacity={0.8}>
                   <Text style={styles.sectionRemove}>{t('admin.monthly.delete')}</Text>
                 </TouchableOpacity>
