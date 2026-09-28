@@ -102,6 +102,7 @@ function makeOptionId() {
 
 export default function PollManagementScreen() {
   const headerHeight = useHeaderHeight();
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || kullanici?.kurumId || null;
 
@@ -115,8 +116,8 @@ export default function PollManagementScreen() {
   const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [optionInputs, setOptionInputs] = useState([
-    { id: makeOptionId(), value: 'Evet' },
-    { id: makeOptionId(), value: 'Hayır' },
+    { id: makeOptionId(), value: i18n.t('admin.pollManagement.yes') },
+    { id: makeOptionId(), value: i18n.t('admin.pollManagement.no') },
   ]);
 
   useEffect(() => {
@@ -198,8 +199,8 @@ export default function PollManagementScreen() {
       setBaslik('');
       setAciklama('');
       setOptionInputs([
-        { id: makeOptionId(), value: 'Evet' },
-        { id: makeOptionId(), value: 'Hayır' },
+        { id: makeOptionId(), value: t('admin.pollManagement.yes') },
+        { id: makeOptionId(), value: t('admin.pollManagement.no') },
       ]);
       setSuccessToast(true);
     } catch (e) {
