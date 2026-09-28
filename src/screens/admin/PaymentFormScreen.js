@@ -18,7 +18,7 @@ import AppSuccessToast from '../../components/AppSuccessToast';
 import { useTranslation } from 'react-i18next';
 
 const DURUMLAR = ['bekliyor', 'odendi', 'gecikti'];
-const DURUM_ETIKET = { bekliyor: '⏳ Bekliyor', odendi: '✅ Ödendi', gecikti: '❗ Gecikti' };
+const DURUM_ETIKET = { bekliyor: 'admin.paymentForm.statusPending', odendi: 'admin.paymentForm.statusPaid', gecikti: 'admin.paymentForm.statusLate' };
 const AY_KEYS = ['', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 function safeObject(value) {
@@ -267,7 +267,7 @@ export default function PaymentFormScreen() {
              <Text style={s.heroSub} numberOfLines={1}>{seciliCocuk.adSoyad || t('admin.paymentForm.selectChild')} • {monthLabel(ay, yil, t)}</Text>
             <View style={s.previewRow}>
               <View style={s.previewBox}><Text style={s.previewLabel}>{t('admin.paymentForm.amount')}</Text><Text style={s.previewValue}>{formatMoney(tutar)}</Text></View>
-              <View style={s.previewBox}><Text style={s.previewLabel}>{t('admin.paymentForm.status')}</Text><Text style={s.previewValue}>{DURUM_ETIKET[durum]}</Text></View>
+              <View style={s.previewBox}><Text style={s.previewLabel}>{t('admin.paymentForm.status')}</Text><Text style={s.previewValue}>{t(DURUM_ETIKET[durum])}</Text></View>
             </View>
           </View>
 
@@ -321,7 +321,7 @@ export default function PaymentFormScreen() {
           <View style={s.secimGrubu}>
             {DURUMLAR.map((d) => (
               <TouchableOpacity key={d} style={[s.secimBtn, durum === d && s.secimBtnAktif]} onPress={() => setDurum(d)} activeOpacity={0.8}>
-                <Text style={[s.secimBtnYazi, durum === d && s.secimBtnYaziAktif]}>{DURUM_ETIKET[d]}</Text>
+                <Text style={[s.secimBtnYazi, durum === d && s.secimBtnYaziAktif]}>{t(DURUM_ETIKET[d])}</Text>
               </TouchableOpacity>
             ))}
           </View>
