@@ -96,7 +96,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
         );
       } else {
         setBaslik('');
-        setBolumler(defaultSections());
+        setBolumler(defaultSections(t));
       }
       setLoadingDraft(false);
     });
@@ -155,7 +155,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
       setBolumler(
         Array.isArray(prevRecord.bolumler) && prevRecord.bolumler.length > 0
           ? prevRecord.bolumler.map((s) => ({ id: generateId(), baslik: s.baslik || '', icerik: s.icerik || '' }))
-          : defaultSections()
+          : defaultSections(t)
       );
       Alert.alert(t('admin.monthly.copied'), t('admin.monthly.staff.copiedDesc'));
     } catch (error) {
