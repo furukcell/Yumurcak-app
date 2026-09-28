@@ -2632,6 +2632,8 @@
       "birthFormat": "Enter the birth date in 15.05.2022 or 2022-05-15 format.",
       "adaptationDateFormat": "Enter the adaptation start date in 2026-06-26 format.",
       "saveFailed": "Child could not be saved",
+      "limitReachedTitle": "Student limit reached",
+      "limitReached": "Your subscription's student limit is full ({{count}}/{{limit}}). To add new students, please request a subscription / plan upgrade.",
       "nameLabel": "Child Name *",
       "namePlaceholder": "E.g. Ali Yilmaz",
       "birthLabel": "Birth Date *",
