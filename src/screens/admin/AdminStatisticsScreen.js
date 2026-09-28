@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
@@ -79,6 +80,7 @@ function getEntererTime(item) {
 const KRES_FILTERED_NODES = new Set(['cocuklar', 'siniflar', 'yoklamalar', 'gunlukRaporlar', 'etkinlikler', 'yemekListeleri', 'duyurular', 'ilacTakipFormlari', 'medikalBilgiler', 'anketler', 'kullanicilar', 'odemeler', 'kurumZili']);
 
 export default function AdminStatisticsScreen() {
+  const { t } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || 'kres001';
   const [activeTab, setActiveTab] = useState('genel');
