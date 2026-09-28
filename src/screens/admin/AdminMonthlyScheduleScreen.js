@@ -375,7 +375,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
     }
     Alert.alert(
       t('admin.monthly.schedule.publishTitle'),
-      `${sinifAd} sınıfının ${monthLabel} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.`,
+      t('admin.monthly.schedule.publishConfirm', { className: sinifAd, month: monthLabel }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         { text: t('common.publish'), onPress: doPublish },
@@ -404,13 +404,13 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         hedefRoller: ['veli'],
         hedefSinifIds: [sinifId],
         baslik: '📅 Ders programı güncellendi',
-        mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`,
+        mesaj: t('admin.monthly.schedule.publishedToast', { className: sinifAd, month: monthLabel }),
         tip: 'ders_programi',
         routeName: 'ParentSummary',
         createdBy: adminId || '',
       });
 
-      setSuccessMessage(`${monthLabel} ders programı yayınlandı`);
+      setSuccessMessage(t('admin.monthly.schedule.publishedToast', { className: sinifAd, month: monthLabel }));
       setSuccessToast(true);
     } catch (error) {
       console.log(error);
@@ -424,10 +424,10 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
     if (!kresId || !sinifId || publishedCount === 0) return;
     Alert.alert(
       t('admin.monthly.unpublish'),
-      `${monthLabel} için yayınlanmış ders programı kaldırılsın mı?`,
+      t('admin.monthly.schedule.unpublishConfirm', { month: monthLabel }),
       [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: 'Kaldır', style: 'destructive', onPress: doUnpublish },
+        { text: t('admin.monthly.unpublish'), style: 'destructive', onPress: doUnpublish },
       ]
     );
   }
@@ -450,7 +450,7 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
   return (
     <ThemedBackground>
       <SafeAreaView style={styles.safeArea}>
-        <AppSuccessToast visible={successToast} message={successMessage || `${monthLabel} ders programı yayınlandı`} onHide={() => setSuccessToast(false)} />
+        <AppSuccessToast visible={successToast} message={successMessage || t('admin.monthly.schedule.publishedToast', { className: sinifAd, month: monthLabel })} onHide={() => setSuccessToast(false)} />
 
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
