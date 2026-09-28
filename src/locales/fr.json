@@ -2632,6 +2632,8 @@
       "birthFormat": "Saisissez la date de naissance au format 15.05.2022 ou 2022-05-15.",
       "adaptationDateFormat": "Saisissez la date de début d’adaptation au format 2026-06-26.",
       "saveFailed": "Impossible d’enregistrer l’enfant",
+      "limitReachedTitle": "Limite d'élèves atteinte",
+      "limitReached": "La limite d'élèves de votre abonnement est atteinte ({{count}}/{{limit}}). Pour ajouter de nouveaux élèves, veuillez demander une mise à niveau de votre abonnement / forfait.",
       "nameLabel": "Nom de l’enfant *",
       "namePlaceholder": "Ex. : Ali Yilmaz",
       "birthLabel": "Date de naissance *",
