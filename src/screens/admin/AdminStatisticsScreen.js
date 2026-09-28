@@ -212,7 +212,7 @@ function TeacherTab({ teachers }) {
               <Text style={styles.cardTitle}>{teacher.name}</Text>
               <Text style={styles.cardText}>{teacher.classNames || i18n.t('admin.statistics.classInfoMissing')}</Text>
             </View>
-            <Text style={styles.badge}>{teacher.childCount} çocuk</Text>
+            <Text style={styles.badge}>{i18n.t('admin.statistics.childCount', { count: teacher.childCount })}</Text>
           </View>
           <ProgressLine label={i18n.t('admin.statistics.monthlyReports', { count: teacher.reportCount })} percent={Math.min(100, teacher.reportCount * 5)} color={THEME.primary} />
           <ProgressLine label={i18n.t('admin.statistics.attendanceRate', { rate: teacher.attendanceRate })} percent={teacher.attendanceRate} color={THEME.green} />
@@ -249,7 +249,7 @@ function ChildrenTab({ children }) {
           <Text style={styles.cardText}>{i18n.t('admin.statistics.comment')}: {child.comment}</Text>
 
           <View style={styles.riskChipRow}>
-            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{risk}</Text>) : <Text style={styles.okChip}>{t('admin.statistics.noRisk')}</Text>}
+            {child.risks.length ? child.risks.map((risk) => <Text key={risk} style={styles.riskChip}>{i18n.t(`admin.statistics.riskLabels.${risk}`)}</Text>) : <Text style={styles.okChip}>{t('admin.statistics.noRisk')}</Text>}
           </View>
         </View>
       ))}
