@@ -2305,7 +2305,8 @@
       "hoursLabel": "Working Hours",
       "noteLabel": "Additional Note",
       "notePlaceholder": "Transport, registration, meeting note...",
-      "save": "Save Institution Information"
+      "save": "Save Institution Information",
+      "managerNamePlaceholder": "الاسم الكامل للمدير"
     },
     "serviceMonthlyStats": {
       "back": "رجوع",
@@ -2610,7 +2611,11 @@
       "update": "Güncelle",
       "create": "Oluştur",
       "delete": "Çocuğu Sil",
-      "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}"
+      "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}",
+      "deleteConfirm": "سيتم حذف {{name}} نهائيًا. لا يمكن التراجع عن هذا الإجراء: سيتم فصل التقارير والحضور وروابط المعرض.",
+      "childFallback": "هذا الطفل",
+      "updated": "تم تحديث معلومات الطفل",
+      "saved": "تم حفظ الطفل"
     },
     "classForm": {
       "error": "Hata",
@@ -2742,7 +2747,8 @@
       "makeActive": "Aktif Et",
       "deletePoll": "Anketi tamamen sil",
       "no": "لا",
-      "publishActive": "النشر كنشط"
+      "publishActive": "النشر كنشط",
+      "option": "خيار"
     },
     "eventForm": {
       "unnamedClass": "فصل بدون اسم",
