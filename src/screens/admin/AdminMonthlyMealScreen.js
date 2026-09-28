@@ -316,7 +316,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
       await createNotification({
         kresId,
         hedefRoller: ['veli'],
-        baslik: '🍽️ Yemek listesi güncellendi',
+        baslik: `🍽️ ${t('admin.monthly.meal.updatedTitle')}`,
         mesaj: `${monthLabel} yemek listesi yayınlandı.`,
         tip: 'yemek',
         routeName: 'ParentMeals',
@@ -393,7 +393,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             <View style={styles.publishedCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.publishedTitle}>✅ {monthLabel} yayında</Text>
-                <Text style={styles.publishedText}>Veliler şu an bu ayın listesini görüyor.</Text>
+                <Text style={styles.publishedText}>{t('admin.monthly.meal.publishedDesc')}</Text>
               </View>
               <TouchableOpacity disabled={unpublishing} style={[styles.unpublishButton, unpublishing && { opacity: 0.6 }]} onPress={confirmUnpublish} activeOpacity={0.85}>
                 <Text style={styles.unpublishButtonText}>{unpublishing ? t('admin.monthly.unpublishing') : t('admin.monthly.unpublishTitle')}</Text>
@@ -450,7 +450,7 @@ export default function AdminMonthlyMealScreen({ navigation }) {
             theme={theme}
             renderDayPreview={(day) => {
               const preview = mealPreview(values[day.dateKey]);
-              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>Boş</Text>;
+              return preview ? <Text style={styles.previewText} numberOfLines={1}>{preview}</Text> : <Text style={styles.previewEmpty}>{t('admin.monthly.empty')}</Text>;
             }}
           />
 
