@@ -79,7 +79,7 @@ function formatDate(value) {
 function getOptionLabel(option, index) {
   if (typeof option === 'string') return option;
   const obj = safeObject(option);
-  return obj.label || obj.text || obj.value || obj.baslik || `Seçenek ${index + 1}`;
+  return obj.label || obj.text || obj.value || obj.baslik || `${i18n.t('admin.pollManagement.option')} ${index + 1}`;
 }
 
 function getAnswerValue(answer) {
@@ -116,7 +116,7 @@ export default function PollManagementScreen() {
   const [aciklama, setAciklama] = useState('');
   const [optionInputs, setOptionInputs] = useState([
     { id: makeOptionId(), value: 'Evet' },
-    { id: makeOptionId(), value: i18n.t('admin.pollManagement.no') },
+    { id: makeOptionId(), value: 'Hayır' },
   ]);
 
   useEffect(() => {
@@ -199,7 +199,7 @@ export default function PollManagementScreen() {
       setAciklama('');
       setOptionInputs([
         { id: makeOptionId(), value: 'Evet' },
-        { id: makeOptionId(), value: i18n.t('admin.pollManagement.no') },
+        { id: makeOptionId(), value: 'Hayır' },
       ]);
       setSuccessToast(true);
     } catch (e) {
