@@ -2163,7 +2163,7 @@
         "snack": "Goûter",
         "snackPlaceholder": "Ajouter le goûter",
         "classEmpty": "L'enseignant de cette classe n'a pas encore saisi de repas pour {{month}}.",
-        "updatedTitle": "Menu mis à jour",
+        "updatedTitle": "Liste des repas mise à jour",
         "publishedDesc": "Les parents peuvent actuellement voir la liste de ce mois.",
         "daysEntered": "{{count}} jours saisis pour {{month}}",
         "noDaysEntered": "Aucune saisie pour {{month}} pour le moment"
@@ -2190,7 +2190,10 @@
         "publishButton": "Publier la liste des tâches de {{month}}",
         "teachers": "Enseignants",
         "generalReminders": "Rappels généraux",
-        "publishedLabel": "publié"
+        "publishedLabel": "publié",
+        "defaultTeacherTitle": "Enseignants",
+        "defaultReminderTitle": "Rappels généraux",
+        "publishedCount": "publié"
       },
       "duty": {
         "previousNotFound": "Aucun planning de garde publié pour le mois précédent.",
@@ -2229,7 +2232,9 @@
         "updatedTitle": "Planning des cours mis à jour",
         "publishConfirm": "Publier le planning des cours de {{className}} pour {{month}} ? La publication précédente du même mois sera désactivée.",
         "publishedToast": "Le planning de {{className}} pour {{month}} a été publié",
-        "unpublishConfirm": "Supprimer le planning publié de {{month}} ?"
+        "unpublishConfirm": "Supprimer le planning publié de {{month}} ?",
+        "monthTitle": "Programme de {{month}}",
+        "publish": "Publier"
       },
       "publishing": "Publication..."
     },
@@ -2550,7 +2555,8 @@
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Montant ouvert",
       "thisMonth": "Ce mois-ci",
-      "noPeriod": "Aucune période"
+      "noPeriod": "Aucune période",
+      "createHint": "Appuyez sur + Enregistrement pour créer un paiement"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2591,7 +2597,8 @@
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
       "unnamedClass": "Classe sans nom",
-      "ageGroupNotSpecified": "Groupe d’âge non indiqué"
+      "ageGroupNotSpecified": "Groupe d’âge non indiqué",
+      "ageGroupMissing": "Groupe d’âge non indiqué"
     },
     "childList": {
       "birth": "Doğum",
@@ -2605,7 +2612,8 @@
       "create": "+ Çocuk Ekle",
       "noParent": "Aucun parent lié",
       "classNotSpecified": "Classe non indiquée",
-      "unassigned": "Non attribué"
+      "unassigned": "Non attribué",
+      "noClass": "Classe non indiquée"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2637,7 +2645,10 @@
       "deleteConfirm": "{{name}} sera supprimé définitivement. Cette action est irréversible : les rapports, présences et liens de galerie seront déconnectés.",
       "childFallback": "Cet enfant",
       "updated": "Informations de l’enfant mises à jour",
-      "saved": "Enfant enregistré"
+      "saved": "Enfant enregistré",
+      "unspecified": "Non indiqué",
+      "thisChild": "Cet enfant",
+      "addressPlaceholder": "Ex. : Muğla Mah. Deniz Sok. No:5 Bodrum"
     },
     "classForm": {
       "error": "Hata",
@@ -2726,7 +2737,8 @@
       "defaultTitle": "Frais mensuels de crèche",
       "statusPending": "⏳ En attente",
       "statusPaid": "✅ Payé",
-      "statusLate": "❗ En retard"
+      "statusLate": "❗ En retard",
+      "newPayment": "Nouvel enregistrement de paiement"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
