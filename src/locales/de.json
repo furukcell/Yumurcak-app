@@ -2535,11 +2535,11 @@
           "range": "51–100 Schüler"
         }
       },
-      "promoEnter": "Promocode eingeben.",
+      "promoEnter": "Geben Sie den Promo-Code ein.",
       "promoInvalid": "Der Promo-Code wurde nicht gefunden oder ist nicht aktiv.",
       "planUpgradeInfo": "Nach dem Paket-Upgrade wird das neue Schülerlimit sofort aktiv. Preisunterschiede und Verlängerungen folgen den Google-Play-Regeln.",
       "statusExpiring": "Status",
-      "subscriptionInactive": "{{count}} Schüler",
+      "subscriptionInactive": "Das Abonnement ist nicht aktiv.",
       "studentCountLabel": "Schülerzahl",
       "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nNach dem Paket-Upgrade wird das neue Schülerlimit sofort aktiv. Preisunterschiede und Verlängerungen richten sich nach den Google-Play-Regeln.",
       "specialOfferDesc": "Ein individuelles Angebot ist erforderlich."
