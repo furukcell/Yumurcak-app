@@ -2163,8 +2163,8 @@
         "snack": "Перекус",
         "snackPlaceholder": "Добавить перекус",
         "classEmpty": "Учитель этого класса ещё не ввёл питание на {{month}}.",
-        "updatedTitle": "Меню обновлено",
-        "publishedDesc": "Родители сейчас видят меню этого месяца.",
+        "updatedTitle": "Список питания обновлен",
+        "publishedDesc": "Родители сейчас видят список на этот месяц.",
         "daysEntered": "За {{month}} заполнено дней: {{count}}",
         "noDaysEntered": "Для {{month}} пока нет записей"
       },
@@ -2190,7 +2190,10 @@
         "publishButton": "Опубликовать список задач {{month}}",
         "teachers": "Учителя",
         "generalReminders": "Общие напоминания",
-        "publishedLabel": "опубликовано"
+        "publishedLabel": "опубликовано",
+        "defaultTeacherTitle": "Учителя",
+        "defaultReminderTitle": "Общие напоминания",
+        "publishedCount": "опубликовано"
       },
       "duty": {
         "previousNotFound": "График дежурств за предыдущий месяц не найден.",
@@ -2224,12 +2227,14 @@
         "endTime": "End Time",
         "category": "Category",
         "descriptionPlaceholder": "Description (optional)",
-        "classFallback": "Группа",
+        "classFallback": "Класс",
         "publishTitle": "Опубликовать месяц",
         "updatedTitle": "Расписание занятий обновлено",
         "publishConfirm": "Опубликовать расписание занятий на {{month}} для группы {{className}}? Предыдущая публикация за этот месяц будет отключена.",
         "publishedToast": "Расписание занятий {{className}} на {{month}} опубликовано",
-        "unpublishConfirm": "Удалить опубликованное расписание занятий за {{month}}?"
+        "unpublishConfirm": "Удалить опубликованное расписание занятий за {{month}}?",
+        "monthTitle": "Расписание на {{month}}",
+        "publish": "Опубликовать"
       },
       "publishing": "Публикация..."
     },
@@ -2550,7 +2555,8 @@
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Открытая сумма",
       "thisMonth": "В этом месяце",
-      "noPeriod": "Период не указан"
+      "noPeriod": "Период не указан",
+      "createHint": "Нажмите + Запись, чтобы создать новый платеж"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2591,7 +2597,8 @@
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
       "unnamedClass": "Класс без названия",
-      "ageGroupNotSpecified": "Возрастная группа не указана"
+      "ageGroupNotSpecified": "Возрастная группа не указана",
+      "ageGroupMissing": "Возрастная группа не указана"
     },
     "childList": {
       "birth": "Doğum",
@@ -2605,7 +2612,8 @@
       "create": "+ Çocuk Ekle",
       "noParent": "Родитель не привязан",
       "classNotSpecified": "Группа не указана",
-      "unassigned": "Не назначен"
+      "unassigned": "Не назначен",
+      "noClass": "Класс не указан"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2636,8 +2644,11 @@
       "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}",
       "deleteConfirm": "{{name}} будет удалён навсегда. Это действие нельзя отменить: отчёты, посещаемость и связи с галереей будут отключены.",
       "childFallback": "Этот ребёнок",
-      "updated": "Данные ребёнка обновлены",
-      "saved": "Ребёнок сохранён"
+      "updated": "Данные ребенка обновлены",
+      "saved": "Ребенок сохранен",
+      "unspecified": "Не указано",
+      "thisChild": "Этот ребенок",
+      "addressPlaceholder": "Напр.: Muğla Mah. Deniz Sok. No:5 Bodrum"
     },
     "classForm": {
       "error": "Hata",
@@ -2726,7 +2737,8 @@
       "defaultTitle": "Ежемесячная плата за детский сад",
       "statusPending": "⏳ Ожидает",
       "statusPaid": "✅ Оплачено",
-      "statusLate": "❗ Просрочено"
+      "statusLate": "❗ Просрочено",
+      "newPayment": "Новая запись платежа"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2741,7 +2753,7 @@
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
       "noOptions": "Для этого опроса варианты не добавлены",
-      "loading": "Опросы загружаются...",
+      "loading": "Загрузка опросов...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2769,7 +2781,7 @@
       "makeActive": "Aktif Et",
       "deletePoll": "Anketi tamamen sil",
       "no": "Нет",
-      "publishActive": "Опубликовать активным",
+      "publishActive": "Опубликовать как активный",
       "option": "Вариант"
     },
     "eventForm": {
