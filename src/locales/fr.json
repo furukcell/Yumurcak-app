@@ -2566,7 +2566,9 @@
       "openAmount": "Montant ouvert",
       "thisMonth": "Ce mois-ci",
       "noPeriod": "Aucune période",
-      "createHint": "Appuyez sur + Enregistrement pour créer un paiement"
+      "createHint": "Appuyez sur + Enregistrement pour créer un paiement",
+      "readPaymentsFailed": "Impossible de lire les paiements.",
+      "readChildrenFailed": "Impossible de lire les fiches enfants."
     },
     "announcementForm": {
       "all": "Tüm Kurum",
