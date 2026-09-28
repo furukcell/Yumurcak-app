@@ -604,7 +604,7 @@ export default function TeacherMealsScreen() {
 
     Alert.alert(
       t('teacher.meals.removePhotoConfirmTitle'),
-      t('teacher.meals.removePhotoConfirmDesc', { meal: selectedMeal.title }),
+      t('teacher.meals.removePhotoConfirmDesc', { meal: t(`parent.mealCard.mealName.${selectedMeal.key}`) }),
       [
         { text: t('teacher.meals.cancelButton'), style: 'cancel' },
         {
@@ -751,7 +751,7 @@ export default function TeacherMealsScreen() {
                   return (
                   <View key={meal.key} style={[styles.mealInputCard, selectedMealKey === meal.key && styles.mealInputCardActive]}>
                     <TouchableOpacity style={styles.mealInputHeader} onPress={() => setSelectedMealKey(meal.key)} activeOpacity={0.85}>
-                      <Text style={styles.mealInputTitle}>{meal.icon} {meal.title}</Text>
+                     <Text style={styles.mealInputTitle}>{meal.icon} {t(`parent.mealCard.mealName.${meal.key}`)}</Text>
                       <Text style={styles.mealInputHint}>
                         {mealHasPhoto ? t('teacher.meals.photoAddedHint') : selectedMealKey === meal.key ? t('teacher.meals.photoHereHint') : t('teacher.meals.photoSelectHint')}
                       </Text>
@@ -762,7 +762,7 @@ export default function TeacherMealsScreen() {
                       value={mealTexts[meal.key]}
                       onFocus={() => setSelectedMealKey(meal.key)}
                       onChangeText={(value) => updateMealText(meal.key, value)}
-                      placeholder={t('teacher.meals.mealPlaceholder', { meal: meal.title })}
+                      placeholder={t('teacher.meals.mealPlaceholder', { meal: t(`parent.mealCard.mealName.${meal.key}`) })}
                       theme={THEME}
                     />
                   </View>
@@ -770,7 +770,7 @@ export default function TeacherMealsScreen() {
                 })}
 
                 <View style={styles.photoInfoCard}>
-                  <Text style={styles.photoInfoTitle}>{t('teacher.meals.photoOfMealLabel', { icon: selectedMeal.icon, meal: selectedMeal.title })}</Text>
+                  <Text style={styles.photoInfoTitle}>{t('teacher.meals.photoOfMealLabel', { icon: selectedMeal.icon, meal: t(`parent.mealCard.mealName.${selectedMeal.key}`) })}</Text>
                   <Text style={styles.photoInfoText}>{t('teacher.meals.photoInfoText')}</Text>
                 </View>
 
