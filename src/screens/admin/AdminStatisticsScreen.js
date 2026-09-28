@@ -393,7 +393,7 @@ function buildChildStats(child, context) {
   if (sleep.total >= 3 && percent(sleep.bad, sleep.total) >= 30) risks.push('Uyku');
 
   const className = findClassName(context.classes, child.sinifId || child.classId);
-  const name = getName(child, 'İsimsiz çocuk');
+  const name = getName(child, i18n.t('admin.statistics.unnamedChild'));
 
   return {
     id: childId,
@@ -403,15 +403,15 @@ function buildChildStats(child, context) {
     absent,
     mealGoodRate: percent(meal.good, meal.total),
     eventJoinRate: percent(event.good, event.total),
-    sleepSummary: sleep.total ? `${sleep.good} iyi / ${sleep.bad} takip` : 'Kayıt yok',
-    moodSummary: mood.total ? `${mood.topLabel} ağırlıklı` : 'Kayıt yok',
+    sleepSummary: sleep.total ? i18n.t('admin.statistics.sleepSummary', { good: sleep.good, bad: sleep.bad }) : i18n.t('admin.statistics.noRecord'),
+    moodSummary: mood.total ? i18n.t('admin.statistics.moodSummary', { mood: mood.topLabel }) : i18n.t('admin.statistics.noRecord'),
     risks,
     riskReasons: {
-      meal: `${meal.bad} öğün az/yemedi`,
-      event: `${event.bad} etkinlikte düşük katılım`,
-      attendance: `${absent} gün devamsızlık`,
-      mood: `${mood.negative} gün huzursuz/üzgün`,
-      sleep: `${sleep.bad} gün uyku takibi`,
+      meal: i18n.t('admin.statistics.riskReasons.meal', { count: meal.bad }),
+      event: i18n.t('admin.statistics.riskReasons.event', { count: event.bad }),
+      attendance: i18n.t('admin.statistics.riskReasons.attendance', { count: absent }),
+      mood: i18n.t('admin.statistics.riskReasons.mood', { count: mood.negative }),
+      sleep: i18n.t('admin.statistics.riskReasons.sleep', { count: sleep.bad }),
     },
     comment: buildChildComment(name, risks),
   };
@@ -434,7 +434,7 @@ function buildTeacherStats(users, classes, children, reports, attendance, events
 
     return {
       id: teacherId,
-      name: getName(teacher, 'İsimsiz öğretmen'),
+      name: getName(teacher, i18n.t('admin.statistics.unnamedTeacher')),
       classNames: teacherClasses.map((item) => item.ad || item.sinifAdi || item.name).filter(Boolean).join(', '),
       childCount: teacherChildren.length,
       reportCount: teacherReports.length,
