@@ -2190,7 +2190,10 @@
         "publishButton": "Publish {{month}} Task List",
         "teachers": "Teachers",
         "generalReminders": "General Reminders",
-        "publishedLabel": "published"
+        "publishedLabel": "published",
+        "defaultTeacherTitle": "Teachers",
+        "defaultReminderTitle": "General Reminders",
+        "publishedCount": "published"
       },
       "duty": {
         "previousNotFound": "No published duty roster was found for the previous month.",
@@ -2229,7 +2232,9 @@
         "updatedTitle": "Lesson schedule updated",
         "publishConfirm": "Publish the {{month}} lesson schedule for {{className}}? The previous publication for the same month will be deactivated.",
         "publishedToast": "The {{month}} lesson schedule for {{className}} was published",
-        "unpublishConfirm": "Remove the published lesson schedule for {{month}}?"
+        "unpublishConfirm": "Remove the published lesson schedule for {{month}}?",
+        "monthTitle": "{{month}} Lesson Schedule",
+        "publish": "Publish"
       },
       "publishing": "Publishing..."
     },
@@ -2560,7 +2565,8 @@
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Open Amount",
       "thisMonth": "This Month",
-      "noPeriod": "No period"
+      "noPeriod": "No period",
+      "createHint": "Press + Record to create a new payment"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2601,7 +2607,8 @@
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
       "unnamedClass": "Unnamed class",
-      "ageGroupNotSpecified": "Age group not specified"
+      "ageGroupNotSpecified": "Age group not specified",
+      "ageGroupMissing": "Age group not specified"
     },
     "childList": {
       "birth": "Doğum",
@@ -2615,7 +2622,8 @@
       "create": "+ Çocuk Ekle",
       "noParent": "No parent linked",
       "classNotSpecified": "Class not specified",
-      "unassigned": "Unassigned"
+      "unassigned": "Unassigned",
+      "noClass": "Class not specified"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2647,7 +2655,10 @@
       "deleteConfirm": "{{name}} will be permanently deleted. This cannot be undone: all reports, attendance and gallery links will be disconnected.",
       "childFallback": "This child",
       "updated": "Child information updated",
-      "saved": "Child saved"
+      "saved": "Child saved",
+      "unspecified": "Not specified",
+      "thisChild": "This child",
+      "addressPlaceholder": "E.g. Muğla Mah. Deniz Sok. No:5 Bodrum"
     },
     "classForm": {
       "error": "Hata",
@@ -2733,10 +2744,11 @@
       "loading": "Form hazırlanıyor...",
       "example": "Example",
       "childFallback": "Child",
-      "defaultTitle": "Monthly nursery fee",
+      "defaultTitle": "Monthly Nursery Fee",
       "statusPending": "⏳ Pending",
       "statusPaid": "✅ Paid",
-      "statusLate": "❗ Overdue"
+      "statusLate": "❗ Overdue",
+      "newPayment": "New payment record"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
