@@ -104,7 +104,7 @@ function getChildName(cocuk = {}, odeme = {}) {
 function getDonem(o = {}) {
   if (o.donem) return formatDisplayMonth(o.donem);
   if (o.tarih && String(o.tarih).length >= 7) return formatDisplayMonth(String(o.tarih).slice(0, 7));
-  const ayText = getMonthName(Number(o.ay)] || o.ay || '';
+  const ayText = getMonthName(Number(o.ay)) || o.ay || '';
   return `${ayText} ${o.yil || ''}`.trim() || t('admin.paymentList.noPeriod');
 }
 
