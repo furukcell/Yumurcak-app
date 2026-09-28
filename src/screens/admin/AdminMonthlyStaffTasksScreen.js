@@ -41,9 +41,9 @@ const KAYNAK = 'admin_aylik';
 
 function defaultSections() {
   return [
-    { id: generateId(), baslik: 'Öğretmenler', icerik: '' },
+    { id: generateId(), baslik: t('admin.monthly.staff.teachers'), icerik: '' },
     { id: generateId(), baslik: 'Mutfak / Temizlik Personeli', icerik: '' },
-    { id: generateId(), baslik: 'Genel Hatırlatmalar', icerik: '' },
+    { id: generateId(), baslik: t('admin.monthly.staff.generalReminders'), icerik: '' },
   ];
 }
 
@@ -298,7 +298,7 @@ export default function AdminMonthlyStaffTasksScreen({ navigation }) {
               kaynak={KAYNAK}
               currentMonthKey={monthKey}
               onSelectMonth={jumpToMonth}
-              countLabel="yayın"
+              countLabel={t('admin.monthly.staff.publishedLabel')}
               theme={theme}
             />
           </View>
