@@ -2495,15 +2495,21 @@
       "tiers": {
         "baslangic": {
           "desc": "Forfait de démarrage idéal pour les petits établissements.",
-          "badge": "Économique"
+          "badge": "Économique",
+          "title": "Départ",
+          "range": "0–30 élèves"
         },
         "profesyonel": {
           "desc": "Forfait équilibré pour les établissements en croissance.",
-          "badge": "Recommandé"
+          "badge": "Recommandé",
+          "title": "Professionnel",
+          "range": "31–50 élèves"
         },
         "kurum": {
           "desc": "Pour les grands établissements à usage intensif.",
-          "badge": "Grand établissement"
+          "badge": "Grand établissement",
+          "title": "Établissement",
+          "range": "51–100 élèves"
         }
       },
       "promoEnter": "Saisissez le code promo.",
@@ -2511,7 +2517,9 @@
       "planUpgradeInfo": "Après la mise à niveau, la nouvelle limite d’élèves est activée immédiatement. Les différences de prix et renouvellements suivent les règles Google Play.",
       "statusExpiring": "Statut",
       "subscriptionInactive": "{{count}} élèves",
-      "studentCountLabel": "Nombre d’élèves"
+      "studentCountLabel": "Nombre d’élèves",
+      "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nLa nouvelle limite d’élèves devient active après la mise à niveau. Les différences de prix et renouvellements suivent les règles de Google Play.",
+      "specialOfferDesc": "Une offre spéciale est requise."
     },
     "paymentList": {
       "all": "Tümü",
