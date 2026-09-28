@@ -20,6 +20,7 @@ import { database, storage } from '../../config/firebase';
 import { THEME, useTeacherData, ScreenHeader, LoadingState, InfoRow, getUserName } from './teacherShared';
 import AppSuccessToast from '../../components/AppSuccessToast';
 import ChangePasswordCard from '../../components/ChangePasswordCard';
+import LanguageCard from '../../components/LanguageCard';
 
 export default function TeacherProfileScreen() {
   const { t } = useTranslation();
@@ -168,6 +169,8 @@ export default function TeacherProfileScreen() {
           <InfoRow icon="☎️" label={t('teacher.profile.infoPhone')} value={kullanici?.telefon || '-'} />
           <InfoRow icon="👤" label={t('teacher.profile.infoUsername')} value={kullanici?.kullaniciAdi || '-'} />
         </View>
+
+        <LanguageCard />
 
         <ChangePasswordCard userId={teacherId} primaryColor={THEME.primary} />
 
