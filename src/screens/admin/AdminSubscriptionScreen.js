@@ -537,8 +537,8 @@ function getStatusColors(status) {
       return { badge: i18n.t('admin.subscription.statusDemo'), color: THEME.orange, bg: '#FFF4D8' };
     case 'expiring_soon':
       return status.severity === 'critical'
-        ? { badge: 'Son Günler', color: THEME.red, bg: '#FFE8EE' }
-        : { badge: 'Yaklaşıyor', color: THEME.orange, bg: '#FFF4D8' };
+        ? { badge: i18n.t('admin.subscription.statusFinalDays'), color: THEME.red, bg: '#FFE8EE' }
+        : { badge: i18n.t('admin.subscription.statusApproaching'), color: THEME.orange, bg: '#FFF4D8' };
     case 'grace_period':
       return { badge: i18n.t('admin.subscription.statusPaymentLate'), color: THEME.red, bg: '#FFE8EE' };
     case 'blocked_manual':
