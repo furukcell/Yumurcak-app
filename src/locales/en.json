@@ -2794,7 +2794,8 @@
       "deletePoll": "Delete poll permanently",
       "no": "No",
       "publishActive": "Publish as Active",
-      "option": "Option"
+      "option": "Option",
+      "yes": "Yes"
     },
     "eventForm": {
       "unnamedClass": "Unnamed class",
