@@ -2495,23 +2495,31 @@
       "tiers": {
         "baslangic": {
           "desc": "باقة بداية مثالية للمؤسسات الصغيرة.",
-          "badge": "اقتصادية"
+          "badge": "اقتصادية",
+          "title": "البداية",
+          "range": "0–30 طالبًا"
         },
         "profesyonel": {
           "desc": "باقة متوازنة للمؤسسات النامية.",
-          "badge": "موصى بها"
+          "badge": "موصى بها",
+          "title": "احترافي",
+          "range": "31–50 طالبًا"
         },
         "kurum": {
           "desc": "للمؤسسات الكبيرة ذات الاستخدام المكثف.",
-          "badge": "مؤسسة كبيرة"
+          "badge": "مؤسسة كبيرة",
+          "title": "مؤسسة",
+          "range": "51–100 طالبًا"
         }
       },
       "promoEnter": "أدخل رمز العرض.",
-      "promoInvalid": "رمز العرض غير موجود أو غير نشط.",
+      "promoInvalid": "لم يتم العثور على رمز العرض أو أنه غير نشط.",
       "planUpgradeInfo": "بعد ترقية الباقة يصبح حد الطلاب الجديد فعالًا فورًا. تطبق فروق الأسعار والتجديد وفق قواعد Google Play.",
       "statusExpiring": "الحالة",
       "subscriptionInactive": "{{count}} طالبًا",
-      "studentCountLabel": "عدد الطلاب"
+      "studentCountLabel": "عدد الطلاب",
+      "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nسيصبح حد الطلاب الجديد فعالًا بعد ترقية الباقة. تُطبق فروق الأسعار والتجديد وفق قواعد Google Play.",
+      "specialOfferDesc": "يلزم عرض خاص."
     },
     "paymentList": {
       "all": "Tümü",
