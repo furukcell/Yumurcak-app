@@ -181,7 +181,7 @@ export default function PaymentFormScreen() {
         parentId: veliId,
         veliIds: finalVeliIds,
         parentIds: finalVeliIds,
-        baslik: baslik.trim() || t('admin.paymentForm.defaultTitle'),
+        baslik: baslik.trim() || 'Aylık Kreş Ücreti',
         title: baslik.trim() || t('admin.paymentForm.defaultTitle'),
         aciklama: aciklama.trim() || baslik.trim() || 'Aylık Kreş Ücreti',
         ay: finalAy,
