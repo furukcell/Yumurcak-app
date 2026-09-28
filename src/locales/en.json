@@ -2539,7 +2539,7 @@
       "promoInvalid": "Promo code was not found or is not active.",
       "planUpgradeInfo": "Your new student limit becomes active immediately after the plan upgrade. Price differences and renewals follow Google Play rules.",
       "statusExpiring": "Status",
-      "subscriptionInactive": "{{count}} students",
+      "subscriptionInactive": "The subscription entitlement is not active.",
       "studentCountLabel": "Student count",
       "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nYour new student limit will become active after the package upgrade. Price differences and renewals follow Google Play rules.",
       "specialOfferDesc": "A special offer is required."
