@@ -2566,7 +2566,9 @@
       "openAmount": "Açık Tutar",
       "thisMonth": "Bu Ay",
       "noPeriod": "Dönem yok",
-      "createHint": "Yeni ödeme oluşturmak için + Kayıt butonuna bas"
+      "createHint": "Yeni ödeme oluşturmak için + Kayıt butonuna bas",
+      "readPaymentsFailed": "Ödeme kayıtları okunamadı.",
+      "readChildrenFailed": "Çocuk kayıtları okunamadı."
     },
     "announcementForm": {
       "all": "Tüm Kurum",
