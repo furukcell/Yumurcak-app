@@ -81,7 +81,7 @@ export default function PaymentFormScreen() {
   const [seciliCocukId, setSeciliCocukId] = useState('');
   const [ay, setAy] = useState(new Date().getMonth() + 1);
   const [yil, setYil] = useState(new Date().getFullYear());
-  const [baslik, setBaslik] = useState(t('admin.paymentForm.defaultTitle'));
+  const [baslik, setBaslik] = useState('Aylık Kreş Ücreti');
   const [tutar, setTutar] = useState('');
   const [durum, setDurum] = useState('bekliyor');
   const [sonOdemeTarihi, setSonOdemeTarihi] = useState('');
@@ -206,7 +206,7 @@ export default function PaymentFormScreen() {
   await createUserNotification({
     kresId,
     userIds: finalVeliIds,
-    baslik: `💳 ${t('admin.paymentForm.newPayment')}`,
+    baslik: '💳 Yeni ödeme kaydı',
     mesaj: `${childName(cocuk)} için ${monthLabel(finalAy, finalYil, t)} dönemine ait ${formatMoney(finalTutar)} ödeme kaydı oluşturuldu.`,
     tip: 'odeme',
     routeName: 'ParentPayments',
