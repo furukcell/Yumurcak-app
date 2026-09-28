@@ -2139,7 +2139,7 @@
       "optionalNote": "ملاحظة (اختياري)",
       "meal": {
         "readFailedTitle": "تعذر قراءة القائمة",
-        "readFailedDesc": "تعذر قراءة قائمة الوجبات المنشورة من Firebase ({{error}}). البيانات لم تُفقد.",
+        "readFailedDesc": "تعذر قراءة قائمة الطعام الشهرية المنشورة من Firebase ({{error}}). قد يظهر النموذج فارغًا؛ لم تفقد البيانات، حدث فشل في القراءة فقط.",
         "previousNotFound": "لا توجد قائمة وجبات منشورة لـ {{month}}.",
         "copiedDesc": "تم نسخ وجبات {{count}} يوماً من الشهر السابق.",
         "publishRequired": "أدخل الوجبات ليوم واحد على الأقل للنشر.",
@@ -2147,7 +2147,7 @@
         "publishConfirm": "هل تريد نشر قائمة وجبات {{month}}؟ سيتم تعطيل النشر السابق.",
         "publishFailed": "تعذر نشر قائمة الوجبات.",
         "unpublishConfirm": "هل تريد إزالة قائمة وجبات {{month}} المنشورة؟",
-        "publishedToast": "تم نشر قائمة وجبات {{month}}",
+        "publishedToast": "تم نشر قائمة طعام {{month}}",
         "title": "قائمة الوجبات الشهرية",
         "subtitle": "خطة وجبات شهرية للمؤسسة بالكامل",
         "classLists": "قوائم الصفوف",
@@ -2163,7 +2163,9 @@
         "snackPlaceholder": "أضف وجبة خفيفة",
         "classEmpty": "لم يُدخل معلم هذا الصف وجبات لشهر {{month}} بعد.",
         "updatedTitle": "تم تحديث قائمة الطعام",
-        "publishedDesc": "يمكن لأولياء الأمور رؤية قائمة هذا الشهر حاليًا."
+        "publishedDesc": "يمكن لأولياء الأمور رؤية قائمة هذا الشهر حاليًا.",
+        "daysEntered": "تم إدخال {{count}} يومًا لـ {{month}}",
+        "noDaysEntered": "لا توجد إدخالات بعد لـ {{month}}"
       },
       "staff": {
         "previousNotFound": "لم يتم العثور على قائمة مهام للشهر السابق.",
@@ -2223,7 +2225,10 @@
         "descriptionPlaceholder": "Description (optional)",
         "classFallback": "الفصل",
         "publishTitle": "نشر الشهر",
-        "updatedTitle": "تم تحديث جدول الدروس"
+        "updatedTitle": "تم تحديث جدول الدروس",
+        "publishConfirm": "هل تريد نشر جدول دروس {{className}} لشهر {{month}}؟ سيتم تعطيل النشر السابق للشهر نفسه.",
+        "publishedToast": "تم نشر جدول دروس {{className}} لشهر {{month}}",
+        "unpublishConfirm": "هل تريد إزالة جدول الدروس المنشور لشهر {{month}}؟"
       },
       "publishing": "جارٍ النشر..."
     },
