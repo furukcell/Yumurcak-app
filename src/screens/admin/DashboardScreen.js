@@ -143,6 +143,7 @@ const MENU_CATEGORIES = [
       { titleKey: 'admin.dashboard.institutionInfo', icon: '🏫', screen: 'InstitutionSettings', color: THEME.primaryDark },
       { titleKey: 'admin.dashboard.profile', icon: '🔑', screen: 'AdminProfile', color: THEME.primary },
       { titleKey: 'admin.dashboard.theme', icon: '🎨', screen: 'ThemeSettings', color: THEME.purple },
+      { titleKey: 'parent.profile.languageTitle', icon: '🌐', screen: 'AdminLanguage', color: THEME.blue },
       { titleKey: 'admin.dashboard.bell', icon: '🔔', screen: 'AdminBell', color: THEME.red },
     ],
   },
