@@ -1903,3 +1903,53 @@ exports.deleteCocuk = functions
 
     return { success: true };
   });
+
+// ─────────────────────────────────────────────────────────────
+// Öğrenci limiti — sunucu tarafı garanti.
+// Yeni bir çocuk eklenince (veya "ayrıldı"dan tekrar aktif yapılınca)
+// kurumun aktif öğrenci sayısı abonelikler/{kresId}/ogrenciLimiti'ni
+// aşıyorsa işlem geri alınır. Mobil/web kontrolleri atlansa bile çalışır.
+// Not: iki kayıt aynı anda limitin sınırında eklenirse ikisi de geri
+// alınabilir (güvenli taraf) — kullanıcı tekrar dener.
+// ─────────────────────────────────────────────────────────────
+exports.enforceStudentLimit = functions
+  .region('europe-west1')
+  .database.ref('/cocuklar/{cocukId}')
+  .onWrite(async (change, context) => {
+    const after = change.after.val();
+    if (!after) return null; // silme
+
+    const before = change.before.val();
+    const isActive = (c) => !!c && c.durum !== 'ayrildi';
+    const becameActive = isActive(after) && (!before || !isActive(before));
+    if (!becameActive) return null;
+
+    const kresId = after.kresId;
+    if (!kresId) return null;
+
+    const db = admin.database();
+    const subSnap = await db.ref(`abonelikler/${kresId}`).once('value');
+    const limit = Number((subSnap.val() || {}).ogrenciLimiti);
+    if (!Number.isFinite(limit) || limit <= 0) return null; // limit tanımlı değil
+
+    const kidsSnap = await db.ref('cocuklar').orderByChild('kresId').equalTo(kresId).once('value');
+    let activeCount = 0;
+    kidsSnap.forEach((c) => { if (isActive(c.val())) activeCount += 1; });
+    if (activeCount <= limit) return null;
+
+    const cocukId = context.params.cocukId;
+    console.warn(`[enforceStudentLimit] kres=${kresId} limit=${limit} aktif=${activeCount} → ${cocukId} geri alınıyor`);
+
+    if (before) {
+      // Tekrar aktif yapılmıştı → eski haline döndür
+      await change.after.ref.set(before);
+      return null;
+    }
+
+    // Yeni eklenmişti → kaydı ve index'lerini sil
+    const updates = { [`cocuklar/${cocukId}`]: null, [`kresCocuklari/${kresId}/${cocukId}`]: null };
+    if (after.sinifId) updates[`sinifCocuklari/${after.sinifId}/${cocukId}`] = null;
+    arr(after.veliIds).forEach((veliId) => { updates[`veliCocuklari/${veliId}/${cocukId}`] = null; });
+    await db.ref().update(updates);
+    return null;
+  });
