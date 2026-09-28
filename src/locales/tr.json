@@ -2495,15 +2495,21 @@
       "tiers": {
         "baslangic": {
           "desc": "Küçük kreşler için ideal başlangıç paketi.",
-          "badge": "Ekonomik"
+          "badge": "Ekonomik",
+          "title": "Başlangıç",
+          "range": "0 - 30 öğrenci"
         },
         "profesyonel": {
           "desc": "Büyüyen kurumlar için dengeli paket.",
-          "badge": "Önerilen"
+          "badge": "Önerilen",
+          "title": "Profesyonel",
+          "range": "31 - 50 öğrenci"
         },
         "kurum": {
           "desc": "Yoğun kullanımlı büyük kreşler için.",
-          "badge": "Büyük Kreş"
+          "badge": "Büyük Kreş",
+          "title": "Kurum",
+          "range": "51 - 100 öğrenci"
         }
       },
       "promoEnter": "Promosyon kodunu gir.",
@@ -2511,7 +2517,9 @@
       "planUpgradeInfo": "Paket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.",
       "statusExpiring": "Durum",
       "subscriptionInactive": "{{count}} öğrenci",
-      "studentCountLabel": "Öğrenci sayısı"
+      "studentCountLabel": "Öğrenci sayısı",
+      "purchaseConfirmDesc": "{{range}}\n{{price}}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.",
+      "specialOfferDesc": "Özel teklif gerekir."
     },
     "paymentList": {
       "all": "Tümü",
