@@ -135,7 +135,7 @@ export default function AdminSubscriptionScreen() {
   const studentCount = children.length;
   const suggestedTier = getSuggestedTier(studentCount);
   const activeTier = subscription?.planTier ? getTierById(subscription.planTier) : suggestedTier;
-  const activeLimit = subscription?.planTier ? getTierById(subscription.planTier).maxStudent : suggestedTier?.maxStudent;
+  const activeLimit = Number(subscription?.ogrenciLimiti) > 0 ? Number(subscription.ogrenciLimiti) : (subscription?.planTier ? getTierById(subscription.planTier).maxStudent : suggestedTier?.maxStudent);
   const overLimit = activeLimit && studentCount > activeLimit;
 
   const writeSubscription = async ({ tier, selectedPeriod, durum, source, endDate, price, customerInfo, rcPackage }) => {
