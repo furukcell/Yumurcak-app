@@ -2305,7 +2305,8 @@
       "hoursLabel": "Çalışma Saatleri",
       "noteLabel": "Ek Not",
       "notePlaceholder": "Servis, kayıt, görüşme notu...",
-      "save": "Kurum Bilgilerini Kaydet"
+      "save": "Kurum Bilgilerini Kaydet",
+      "managerNamePlaceholder": "Yönetici adı soyadı"
     },
     "serviceMonthlyStats": {
       "back": "Geri",
@@ -2610,7 +2611,11 @@
       "update": "Güncelle",
       "create": "Oluştur",
       "delete": "Çocuğu Sil",
-      "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}"
+      "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}",
+      "deleteConfirm": "{{name}} kalıcı olarak silinecek. Bu işlem geri alınamaz: tüm rapor, yoklama ve galeri bağlantıları koparılır.",
+      "childFallback": "Bu çocuk",
+      "updated": "Çocuk bilgileri güncellendi",
+      "saved": "Çocuk kaydedildi"
     },
     "classForm": {
       "error": "Hata",
@@ -2742,7 +2747,8 @@
       "makeActive": "Aktif Et",
       "deletePoll": "Anketi tamamen sil",
       "no": "Hayır",
-      "publishActive": "Aktif Olarak Yayınla"
+      "publishActive": "Aktif Olarak Yayınla",
+      "option": "Seçenek"
     },
     "eventForm": {
       "unnamedClass": "İsimsiz Sınıf",
