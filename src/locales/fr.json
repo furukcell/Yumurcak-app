@@ -1913,6 +1913,18 @@
       "sessionNotFoundError": "Session introuvable. Veuillez vous reconnecter.",
       "storageUploadFailedError": "Échec de l'envoi vers le stockage ({{status}}).",
       "statusUnknown": "inconnu"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{{count}} notifications non lues",
+      "allRead": "Toutes les notifications sont lues",
+      "markAllRead": "Lu",
+      "loading": "Chargement des notifications...",
+      "emptyTitle": "Pas encore de notification",
+      "emptyDesc": "Les notifications d'annonces, de messages, de paiements et de rapports s'afficheront ici.",
+      "cannotOpen": "L'écran de cette notification ne peut pas être ouvert pour le moment.",
+      "markReadFailed": "Impossible de marquer les notifications comme lues.",
+      "noDate": "Pas de date"
     }
   },
   "admin": {
@@ -2071,7 +2083,9 @@
       "unread": "Non lu",
       "completedPlural": "Terminées",
       "emptyTitle": "Aucune notification de la sonnette de l'établissement",
-      "emptyDesc": "Elles apparaîtront ici lorsque les parents diront « J'arrive » ou « À la porte »."
+      "emptyDesc": "Elles apparaîtront ici lorsque les parents diront « J'arrive » ou « À la porte ».",
+      "deliveryLabel": "Remise",
+      "timeLabel": "Heure"
     },
     "service": {
       "title": "Liste du service",
