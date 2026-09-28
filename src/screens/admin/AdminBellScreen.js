@@ -175,7 +175,7 @@ export default function AdminBellScreen() {
             <Text style={styles.parentName}>{item.veliAdi || item.veliAd || item.parentName || item.veliId || t('admin.bell.parentFallback')}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: accent + '20' }]}>
-            <Text style={[styles.statusText, { color: accent }]}>{tamamlandi ? '✅ Tamamlandı' : durumLabel(durum, t)}</Text>
+            <Text style={[styles.statusText, { color: accent }]}>{tamamlandi ? `✅ ${t('admin.bell.completed')}` : durumLabel(durum, t)}</Text>
           </View>
         </View>
 
