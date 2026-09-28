@@ -210,7 +210,7 @@ export default function AdminSubscriptionScreen() {
         `${tier.title} ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`,
         `${tier.range}\n${priceText}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.`,
         [
-          { text: i18n.t('common.cancel'), style: 'cancel' },
+          { text: i18n.t('admin.subscription.cancel'), style: 'cancel' },
           { text: i18n.t('admin.subscription.buy'), onPress: () => purchasePlan(tier, selectedPeriod, rcPackage) },
         ]
       );
@@ -221,7 +221,7 @@ export default function AdminSubscriptionScreen() {
       i18n.t('admin.subscription.packageNotReady'),
       i18n.t('admin.subscription.packageNotReadyDesc', { tier: tier.title, range: tier.range, price: priceText }),
       [
-       { text: 'Tamam', style: 'cancel' },
+       { text: i18n.t('admin.subscription.ok'), style: 'cancel' },
       ]
     );
   };
@@ -395,7 +395,7 @@ export default function AdminSubscriptionScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>💎</Text>
           <Text style={styles.heroTitle}>{i18n.t('admin.subscription.title')}</Text>
-          <Text style={styles.heroDesc}>{kres?.ad || 'Kreş'} için öğrenci sayısına göre paket yönetimi</Text>
+          <Text style={styles.heroDesc}>{i18n.t('admin.subscription.heroDesc', { institution: kres?.ad || i18n.t('admin.subscription.institutionFallback') })}</Text>
         </View>
 
         <View style={[styles.statusCard, (status.key === 'grace_period' || status.key === 'expired') && styles.statusCardDanger]}>
@@ -529,23 +529,23 @@ function PlanCard({ tier, period, studentCount, active, suggested, disabled, sav
 function getStatusColors(status) {
   switch (status.key) {
     case 'active':
-      return { badge: 'Aktif', color: THEME.green, bg: '#E8FBEA' };
+      return { badge: i18n.t('admin.subscription.statusActive'), color: THEME.green, bg: '#E8FBEA' };
     case 'demo':
-      return { badge: 'Demo', color: THEME.orange, bg: '#FFF4D8' };
+      return { badge: i18n.t('admin.subscription.statusDemo'), color: THEME.orange, bg: '#FFF4D8' };
     case 'expiring_soon':
       return status.severity === 'critical'
         ? { badge: 'Son Günler', color: THEME.red, bg: '#FFE8EE' }
         : { badge: 'Yaklaşıyor', color: THEME.orange, bg: '#FFF4D8' };
     case 'grace_period':
-      return { badge: 'Ödeme Gecikti', color: THEME.red, bg: '#FFE8EE' };
+      return { badge: i18n.t('admin.subscription.statusPaymentLate'), color: THEME.red, bg: '#FFE8EE' };
     case 'blocked_manual':
-      return { badge: 'Erişim Kısıtlı', color: THEME.red, bg: '#FFE8EE' };
+      return { badge: i18n.t('admin.subscription.statusRestricted'), color: THEME.red, bg: '#FFE8EE' };
     case 'expired':
-      return { badge: 'Süresi Doldu', color: THEME.red, bg: '#FFE8EE' };
+      return { badge: i18n.t('admin.subscription.statusExpired'), color: THEME.red, bg: '#FFE8EE' };
     case 'none':
     case 'passive':
     default:
-      return { badge: 'Pasif', color: THEME.red, bg: '#FFE8EE' };
+      return { badge: i18n.t('admin.subscription.statusPassive'), color: THEME.red, bg: '#FFE8EE' };
   }
 }
 
