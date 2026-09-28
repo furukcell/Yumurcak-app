@@ -40,7 +40,7 @@ function normalizeText(value) {
   return String(value || '').toLowerCase().trim();
 }
 
-function formatTime(value, t) {
+function formatTime(value, t, locale) {
   if (!value) return t('admin.bell.noTime');
   let date = null;
   if (typeof value === 'number') date = new Date(value);
@@ -49,7 +49,7 @@ function formatTime(value, t) {
     date = Number.isFinite(numeric) && value.length >= 10 ? new Date(numeric) : new Date(value);
   }
   if (!date || Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString('tr-TR', {
+  return date.toLocaleString(locale || 'tr', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -82,7 +82,7 @@ function getAccent(item) {
 }
 
 export default function AdminBellScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { kullanici } = useAuth();
   const kresId = kullanici?.kresId || kullanici?.kurumId || null;
   const [bildirimler, setBildirimler] = useState([]);
@@ -180,12 +180,12 @@ export default function AdminBellScreen() {
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Teslim</Text>
+          <Text style={styles.infoLabel}>{t('admin.bell.deliveryLabel')}</Text>
           <Text style={styles.infoValue}>{teslimLabel(item.teslimTuru || item.teslimTipi || item.type, t)}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Saat</Text>
-          <Text style={styles.infoValue}>{formatTime(item.createdAt || item.tarih || item.time, t)}</Text>
+          <Text style={styles.infoLabel}>{t('admin.bell.timeLabel')}</Text>
+          <Text style={styles.infoValue}>{formatTime(item.createdAt || item.tarih || item.time, t, i18n.language)}</Text>
         </View>
         {item.not || item.note ? (
           <View style={styles.noteBox}>
