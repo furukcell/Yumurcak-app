@@ -2190,7 +2190,10 @@
         "publishButton": "{{month}} Görev Listesini Yayınla",
         "teachers": "Öğretmenler",
         "generalReminders": "Genel Hatırlatmalar",
-        "publishedLabel": "yayın"
+        "publishedLabel": "yayın",
+        "defaultTeacherTitle": "Öğretmenler",
+        "defaultReminderTitle": "Genel Hatırlatmalar",
+        "publishedCount": "yayın"
       },
       "duty": {
         "previousNotFound": "Geçen ay için yayınlanmış bir nöbet çizelgesi bulunamadı.",
@@ -2229,7 +2232,9 @@
         "updatedTitle": "Ders programı güncellendi",
         "publishConfirm": "{{className}} sınıfının {{month}} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.",
         "publishedToast": "{{className}} sınıfının {{month}} ders programı yayınlandı",
-        "unpublishConfirm": "{{month}} için yayınlanmış ders programı kaldırılsın mı?"
+        "unpublishConfirm": "{{month}} için yayınlanmış ders programı kaldırılsın mı?",
+        "monthTitle": "{{month}} Ders Programı",
+        "publish": "Yayınla"
       },
       "publishing": "Yayınlanıyor..."
     },
@@ -2560,7 +2565,8 @@
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Açık Tutar",
       "thisMonth": "Bu Ay",
-      "noPeriod": "Dönem yok"
+      "noPeriod": "Dönem yok",
+      "createHint": "Yeni ödeme oluşturmak için + Kayıt butonuna bas"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2601,7 +2607,8 @@
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
       "unnamedClass": "İsimsiz sınıf",
-      "ageGroupNotSpecified": "Yaş grubu belirtilmemiş"
+      "ageGroupNotSpecified": "Yaş grubu belirtilmemiş",
+      "ageGroupMissing": "Yaş grubu belirtilmemiş"
     },
     "childList": {
       "birth": "Doğum",
@@ -2615,7 +2622,8 @@
       "create": "+ Çocuk Ekle",
       "noParent": "Veli bağlı değil",
       "classNotSpecified": "Sınıf belirtilmemiş",
-      "unassigned": "Atanmamış"
+      "unassigned": "Atanmamış",
+      "noClass": "Sınıf belirtilmemiş"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2647,7 +2655,10 @@
       "deleteConfirm": "{{name}} kalıcı olarak silinecek. Bu işlem geri alınamaz: tüm rapor, yoklama ve galeri bağlantıları koparılır.",
       "childFallback": "Bu çocuk",
       "updated": "Çocuk bilgileri güncellendi",
-      "saved": "Çocuk kaydedildi"
+      "saved": "Çocuk kaydedildi",
+      "unspecified": "Belirtilmemiş",
+      "thisChild": "Bu çocuk",
+      "addressPlaceholder": "Örn: Muğla Mah. Deniz Sok. No:5 Bodrum"
     },
     "classForm": {
       "error": "Hata",
@@ -2736,7 +2747,8 @@
       "defaultTitle": "Aylık Kreş Ücreti",
       "statusPending": "⏳ Bekliyor",
       "statusPaid": "✅ Ödendi",
-      "statusLate": "❗ Gecikti"
+      "statusLate": "❗ Gecikti",
+      "newPayment": "Yeni ödeme kaydı"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
