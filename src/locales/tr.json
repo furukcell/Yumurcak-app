@@ -2421,11 +2421,21 @@
         "normal": "Normal"
       },
       "riskLabels": {
-        "attendance": "Devam",
-        "meal": "Yemek",
-        "event": "Etkinlik",
-        "mood": "Ruh hali",
-        "sleep": "Uyku"
+        "Devam": "Devam",
+        "Yemek": "Yemek",
+        "Etkinlik": "Etkinlik",
+        "Ruh hali": "Ruh hali",
+        "Uyku": "Uyku"
+      },
+      "unnamedChild": "İsimsiz çocuk",
+      "sleepSummary": "{{good}} iyi / {{bad}} takip",
+      "moodSummary": "{{mood}} ağırlıklı",
+      "riskReasons": {
+        "meal": "{{count}} öğün az/yemedi",
+        "event": "{{count}} etkinlikte düşük katılım",
+        "attendance": "{{count}} gün devamsızlık",
+        "mood": "{{count}} gün huzursuz/üzgün",
+        "sleep": "{{count}} gün uyku takibi"
       }
     },
     "subscription": {
