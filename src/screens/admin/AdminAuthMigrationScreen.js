@@ -2,6 +2,7 @@
 // YUMURCAK — AdminAuthMigrationScreen.js
 // FAZ 11 v2: Modern Yumurcak arayüzü
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -255,7 +256,7 @@ function getSecondaryAuth() {
 }
 
 function getUserName(user) {
-  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || 'Kullanıcı';
+  return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.ad || user?.kullaniciAdi || t('common.user');
 }
 
 function shortUid(uid) {
