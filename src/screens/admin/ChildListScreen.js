@@ -168,7 +168,7 @@ export default function ChildListScreen() {
   const renderItem = ({ item }) => {
     const veliText = item.veliler.length > 0
       ? item.veliler.map((v) => v.ad).join(', ')
-      : 'Veli bağlı değil';
+      : t('admin.childList.noParent');
 
     const telefonText = item.veliler.length > 0
       ? item.veliler.map((v) => v.telefon || '-').join(' / ')
@@ -190,7 +190,7 @@ export default function ChildListScreen() {
               {item.ad}
             </Text>
             <Text style={styles.classText} numberOfLines={1} ellipsizeMode="tail">
-              🏫 {item.sinifAd ?? 'Sınıf belirtilmemiş'} {item.yas ? `• ${item.yas}` : ''}
+              🏫 {item.sinifAd ?? t('admin.childList.classNotSpecified')} {item.yas ? `• ${item.yas}` : ''}
             </Text>
           </View>
 
@@ -208,7 +208,7 @@ export default function ChildListScreen() {
           <View style={[styles.infoPill, styles.infoPillGreen]}>
             <Text style={styles.infoLabel}>{t('admin.childList.teacher')}</Text>
             <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">
-              {item.ogretmenAd || 'Atanmamış'}
+              {item.ogretmenAd || t('admin.childList.unassigned')}
             </Text>
           </View>
         </View>
