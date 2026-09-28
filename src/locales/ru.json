@@ -46,7 +46,8 @@
     "passive": "Pasif",
     "edit": "Düzenle",
     "status": "Durum",
-    "all": "Все"
+    "all": "Все",
+    "user": "Пользователь"
   },
   "nav": {
     "summary": "Сводка",
@@ -2111,7 +2112,8 @@
       "identityMissing": "Не найдены данные учреждения или пользователя.",
       "messageTooLong": "Сообщение не может превышать {{max}} символов.",
       "createFailed": "Не удалось отправить запрос.",
-      "closeFailed": "Не удалось закрыть запрос."
+      "closeFailed": "Не удалось закрыть запрос.",
+      "institutionAdmin": "Администратор учреждения"
     },
     "monthly": {
       "unknownError": "неизвестная ошибка",
@@ -2159,7 +2161,9 @@
         "lunchPlaceholder": "Добавить обед",
         "snack": "Перекус",
         "snackPlaceholder": "Добавить перекус",
-        "classEmpty": "Учитель этого класса ещё не ввёл питание на {{month}}."
+        "classEmpty": "Учитель этого класса ещё не ввёл питание на {{month}}.",
+        "updatedTitle": "Меню обновлено",
+        "publishedDesc": "Родители сейчас видят меню этого месяца."
       },
       "staff": {
         "previousNotFound": "Список задач за предыдущий месяц не найден.",
@@ -2180,7 +2184,10 @@
         "sectionTitlePlaceholder": "Заголовок раздела (например: Предстоящие мероприятия)",
         "contentPlaceholder": "Содержание...",
         "addSection": "Добавить раздел",
-        "publishButton": "Опубликовать список задач {{month}}"
+        "publishButton": "Опубликовать список задач {{month}}",
+        "teachers": "Учителя",
+        "generalReminders": "Общие напоминания",
+        "publishedLabel": "опубликовано"
       },
       "duty": {
         "previousNotFound": "График дежурств за предыдущий месяц не найден.",
@@ -2213,7 +2220,10 @@
         "startTime": "Start Time",
         "endTime": "End Time",
         "category": "Category",
-        "descriptionPlaceholder": "Description (optional)"
+        "descriptionPlaceholder": "Description (optional)",
+        "classFallback": "Группа",
+        "publishTitle": "Опубликовать месяц",
+        "updatedTitle": "Расписание занятий обновлено"
       },
       "publishing": "Публикация..."
     },
@@ -2267,7 +2277,7 @@
       "subtitle": "This information appears directly on the parent communication screen.",
       "changePhoto": "Change Photo",
       "addPhoto": "Add Photo",
-      "remove": "Remove",
+      "remove": "Удалить",
       "splashDesc": "Show a full-screen custom image for your institution when the app opens. If none is added, the default Yumurcak splash screen is used.",
       "splashPlaceholder": "9:16 · Tap to select",
       "changeImage": "Change Image",
@@ -2495,7 +2505,7 @@
       "all": "Tümü",
       "paid": "Ödendi",
       "pending": "Bekliyor",
-      "late": "Gecikti",
+      "late": "Просрочено",
       "monthlyFee": "Aylık ücret",
       "amount": "Tutar",
       "paymentDate": "Ödeme tarihi",
@@ -2511,7 +2521,8 @@
       "create": "+ Ödeme Kaydı Oluştur",
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Открытая сумма",
-      "thisMonth": "В этом месяце"
+      "thisMonth": "В этом месяце",
+      "noPeriod": "Период не указан"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2551,7 +2562,8 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "Без названия"
+      "unnamedClass": "Без названия",
+      "ageGroupNotSpecified": "Возрастная группа не указана"
     },
     "childList": {
       "birth": "Doğum",
@@ -2562,7 +2574,10 @@
       "registered": "kayıtlı çocuk",
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
-      "create": "+ Çocuk Ekle"
+      "create": "+ Çocuk Ekle",
+      "noParent": "Родитель не привязан",
+      "classNotSpecified": "Группа не указана",
+      "unassigned": "Не назначен"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2673,7 +2688,13 @@
       "description": "Açıklama",
       "descriptionPlaceholder": "Örn: Haziran aidatı",
       "createPayment": "Ödeme Kaydı Oluştur",
-      "loading": "Form hazırlanıyor..."
+      "loading": "Form hazırlanıyor...",
+      "example": "Пример",
+      "childFallback": "Ребёнок",
+      "defaultTitle": "Ежемесячная плата за детский сад",
+      "statusPending": "⏳ Ожидает",
+      "statusPaid": "✅ Оплачено",
+      "statusLate": "❗ Просрочено"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2687,8 +2708,8 @@
       "deleteTitle": "Anket silinsin mi?",
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
-      "noOptions": "Bu anket için seçenek eklenmemiş",
-      "loading": "Anketler yükleniyor...",
+      "noOptions": "Для этого опроса варианты не добавлены",
+      "loading": "Опросы загружаются...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2714,7 +2735,9 @@
       "results": "Sonuçlar",
       "makePassive": "Pasif Yap",
       "makeActive": "Aktif Et",
-      "deletePoll": "Anketi tamamen sil"
+      "deletePoll": "Anketi tamamen sil",
+      "no": "Нет",
+      "publishActive": "Опубликовать активным"
     },
     "eventForm": {
       "unnamedClass": "Без названия",
