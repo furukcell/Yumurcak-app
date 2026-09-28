@@ -46,7 +46,8 @@
     "passive": "Pasif",
     "edit": "Düzenle",
     "status": "Durum",
-    "all": "الكل"
+    "all": "الكل",
+    "user": "المستخدم"
   },
   "nav": {
     "summary": "ملخص",
@@ -2111,7 +2112,8 @@
       "identityMissing": "بيانات المؤسسة أو المستخدم غير موجودة.",
       "messageTooLong": "يجب ألا تتجاوز الرسالة {{max}} حرفاً.",
       "createFailed": "تعذر إرسال طلب الدعم.",
-      "closeFailed": "تعذر إغلاق طلب الدعم."
+      "closeFailed": "تعذر إغلاق طلب الدعم.",
+      "institutionAdmin": "مدير المؤسسة"
     },
     "monthly": {
       "unknownError": "خطأ غير معروف",
@@ -2159,7 +2161,9 @@
         "lunchPlaceholder": "أضف الغداء",
         "snack": "وجبة خفيفة",
         "snackPlaceholder": "أضف وجبة خفيفة",
-        "classEmpty": "لم يُدخل معلم هذا الصف وجبات لشهر {{month}} بعد."
+        "classEmpty": "لم يُدخل معلم هذا الصف وجبات لشهر {{month}} بعد.",
+        "updatedTitle": "تم تحديث قائمة الطعام",
+        "publishedDesc": "يمكن لأولياء الأمور رؤية قائمة هذا الشهر حاليًا."
       },
       "staff": {
         "previousNotFound": "لم يتم العثور على قائمة مهام للشهر السابق.",
@@ -2180,7 +2184,10 @@
         "sectionTitlePlaceholder": "عنوان القسم (مثال: الفعاليات القادمة)",
         "contentPlaceholder": "المحتوى...",
         "addSection": "إضافة قسم",
-        "publishButton": "نشر قائمة مهام {{month}}"
+        "publishButton": "نشر قائمة مهام {{month}}",
+        "teachers": "المعلمون",
+        "generalReminders": "تذكيرات عامة",
+        "publishedLabel": "منشور"
       },
       "duty": {
         "previousNotFound": "لم يتم العثور على جدول مناوبات للشهر السابق.",
@@ -2213,7 +2220,10 @@
         "startTime": "Start Time",
         "endTime": "End Time",
         "category": "Category",
-        "descriptionPlaceholder": "Description (optional)"
+        "descriptionPlaceholder": "Description (optional)",
+        "classFallback": "الفصل",
+        "publishTitle": "نشر الشهر",
+        "updatedTitle": "تم تحديث جدول الدروس"
       },
       "publishing": "جارٍ النشر..."
     },
@@ -2267,7 +2277,7 @@
       "subtitle": "This information appears directly on the parent communication screen.",
       "changePhoto": "Change Photo",
       "addPhoto": "Add Photo",
-      "remove": "Remove",
+      "remove": "إزالة",
       "splashDesc": "Show a full-screen custom image for your institution when the app opens. If none is added, the default Yumurcak splash screen is used.",
       "splashPlaceholder": "9:16 · Tap to select",
       "changeImage": "Change Image",
@@ -2495,7 +2505,7 @@
       "all": "Tümü",
       "paid": "Ödendi",
       "pending": "Bekliyor",
-      "late": "Gecikti",
+      "late": "متأخر",
       "monthlyFee": "Aylık ücret",
       "amount": "Tutar",
       "paymentDate": "Ödeme tarihi",
@@ -2511,7 +2521,8 @@
       "create": "+ Ödeme Kaydı Oluştur",
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "المبلغ المفتوح",
-      "thisMonth": "هذا الشهر"
+      "thisMonth": "هذا الشهر",
+      "noPeriod": "لا توجد فترة"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2551,7 +2562,8 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "فصل بدون اسم"
+      "unnamedClass": "فصل بدون اسم",
+      "ageGroupNotSpecified": "لم يتم تحديد الفئة العمرية"
     },
     "childList": {
       "birth": "Doğum",
@@ -2562,7 +2574,10 @@
       "registered": "kayıtlı çocuk",
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
-      "create": "+ Çocuk Ekle"
+      "create": "+ Çocuk Ekle",
+      "noParent": "لا يوجد ولي أمر مرتبط",
+      "classNotSpecified": "لم يتم تحديد الفصل",
+      "unassigned": "غير معين"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2673,7 +2688,13 @@
       "description": "Açıklama",
       "descriptionPlaceholder": "Örn: Haziran aidatı",
       "createPayment": "Ödeme Kaydı Oluştur",
-      "loading": "Form hazırlanıyor..."
+      "loading": "Form hazırlanıyor...",
+      "example": "مثال",
+      "childFallback": "الطفل",
+      "defaultTitle": "رسوم الحضانة الشهرية",
+      "statusPending": "⏳ قيد الانتظار",
+      "statusPaid": "✅ مدفوع",
+      "statusLate": "❗ متأخر"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2687,8 +2708,8 @@
       "deleteTitle": "Anket silinsin mi?",
       "deleteMessage": "Bu işlem anketi ve cevaplarını tamamen siler.",
       "deleteFailed": "Anket silinemedi.",
-      "noOptions": "Bu anket için seçenek eklenmemiş",
-      "loading": "Anketler yükleniyor...",
+      "noOptions": "لم تتم إضافة خيارات لهذا الاستبيان",
+      "loading": "جارٍ تحميل الاستبيانات...",
       "published": "Anket velilere açıldı",
       "totalPolls": "Toplam Anket",
       "answers": "Cevap",
@@ -2714,7 +2735,9 @@
       "results": "Sonuçlar",
       "makePassive": "Pasif Yap",
       "makeActive": "Aktif Et",
-      "deletePoll": "Anketi tamamen sil"
+      "deletePoll": "Anketi tamamen sil",
+      "no": "لا",
+      "publishActive": "النشر كنشط"
     },
     "eventForm": {
       "unnamedClass": "فصل بدون اسم",
