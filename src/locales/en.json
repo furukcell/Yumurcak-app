@@ -2566,7 +2566,9 @@
       "openAmount": "Open Amount",
       "thisMonth": "This Month",
       "noPeriod": "No period",
-      "createHint": "Press + Record to create a new payment"
+      "createHint": "Press + Record to create a new payment",
+      "readPaymentsFailed": "Payment records could not be read.",
+      "readChildrenFailed": "Child records could not be read."
     },
     "announcementForm": {
       "all": "Tüm Kurum",
