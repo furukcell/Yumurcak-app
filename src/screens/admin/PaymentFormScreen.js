@@ -328,7 +328,7 @@ export default function PaymentFormScreen() {
 
           <Text style={s.etiket}>{t('admin.paymentForm.dueDate')}</Text>
           <TextInput style={s.input} value={sonOdemeTarihi} onChangeText={setSonOdemeTarihi} placeholder="YYYY-AA-GG" maxLength={10} />
-          <Text style={s.helper}>Örnek: {dueDateForMonth(yil, ay)}</Text>
+          <Text style={s.helper}>{t('admin.paymentForm.example')}: {dueDateForMonth(yil, ay)}</Text>
 
           <Text style={s.etiket}>{t('admin.paymentForm.paymentDate')}</Text>
           <TextInput style={s.input} value={odemeTarihi} onChangeText={setOdemeTarihi} placeholder="YYYY-AA-GG" maxLength={10} />
