@@ -46,7 +46,8 @@
     "passive": "Pasif",
     "edit": "Düzenle",
     "status": "Durum",
-    "all": "Tümü"
+    "all": "Tümü",
+    "user": "Kullanıcı"
   },
   "nav": {
     "summary": "Özet",
@@ -2111,7 +2112,8 @@
       "identityMissing": "Kurum veya kullanıcı bilgisi bulunamadı.",
       "messageTooLong": "Mesaj en fazla {{max}} karakter olabilir.",
       "createFailed": "Destek talebi gönderilemedi.",
-      "closeFailed": "Destek talebi kapatılamadı."
+      "closeFailed": "Destek talebi kapatılamadı.",
+      "institutionAdmin": "Kurum Yöneticisi"
     },
     "monthly": {
       "unknownError": "bilinmeyen hata",
@@ -2159,7 +2161,9 @@
         "lunchPlaceholder": "Öğle yemeği ekle",
         "snack": "Ara Öğün",
         "snackPlaceholder": "Ara öğün ekle",
-        "classEmpty": "Bu sınıfın öğretmeni {{month}} için henüz yemek girmemiş."
+        "classEmpty": "Bu sınıfın öğretmeni {{month}} için henüz yemek girmemiş.",
+        "updatedTitle": "Yemek listesi güncellendi",
+        "publishedDesc": "Veliler şu an bu ayın listesini görüyor."
       },
       "staff": {
         "previousNotFound": "Geçen ay için yayınlanmış bir görev listesi bulunamadı.",
@@ -2180,7 +2184,10 @@
         "sectionTitlePlaceholder": "Bölüm başlığı (örn: Yaklaşan Etkinlikler)",
         "contentPlaceholder": "İçerik...",
         "addSection": "Bölüm Ekle",
-        "publishButton": "{{month}} Görev Listesini Yayınla"
+        "publishButton": "{{month}} Görev Listesini Yayınla",
+        "teachers": "Öğretmenler",
+        "generalReminders": "Genel Hatırlatmalar",
+        "publishedLabel": "yayın"
       },
       "duty": {
         "previousNotFound": "Geçen ay için yayınlanmış bir nöbet çizelgesi bulunamadı.",
@@ -2213,7 +2220,10 @@
         "startTime": "Başlangıç Saati",
         "endTime": "Bitiş Saati",
         "category": "Kategori",
-        "descriptionPlaceholder": "Açıklama (opsiyonel)"
+        "descriptionPlaceholder": "Açıklama (opsiyonel)",
+        "classFallback": "Sınıf",
+        "publishTitle": "Ayı Paylaş",
+        "updatedTitle": "Ders programı güncellendi"
       },
       "publishing": "Yayınlanıyor..."
     },
@@ -2495,7 +2505,7 @@
       "all": "Tümü",
       "paid": "Ödendi",
       "pending": "Bekliyor",
-      "late": "Gecikti",
+      "late": "Geciken",
       "monthlyFee": "Aylık ücret",
       "amount": "Tutar",
       "paymentDate": "Ödeme tarihi",
@@ -2511,7 +2521,8 @@
       "create": "+ Ödeme Kaydı Oluştur",
       "updateFailed": "Ödeme durumu güncellenemedi.",
       "openAmount": "Açık Tutar",
-      "thisMonth": "Bu Ay"
+      "thisMonth": "Bu Ay",
+      "noPeriod": "Dönem yok"
     },
     "announcementForm": {
       "all": "Tüm Kurum",
@@ -2551,7 +2562,8 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "İsimsiz sınıf"
+      "unnamedClass": "İsimsiz sınıf",
+      "ageGroupNotSpecified": "Yaş grubu belirtilmemiş"
     },
     "childList": {
       "birth": "Doğum",
@@ -2562,7 +2574,10 @@
       "registered": "kayıtlı çocuk",
       "empty": "Henüz çocuk eklenmemiş",
       "emptyDesc": "İlk kaydı ekleyerek sınıf ve veli takibini başlat.",
-      "create": "+ Çocuk Ekle"
+      "create": "+ Çocuk Ekle",
+      "noParent": "Veli bağlı değil",
+      "classNotSpecified": "Sınıf belirtilmemiş",
+      "unassigned": "Atanmamış"
     },
     "childForm": {
       "required": "Ad, doğum tarihi ve sınıf zorunludur",
@@ -2673,7 +2688,13 @@
       "description": "Açıklama",
       "descriptionPlaceholder": "Örn: Haziran aidatı",
       "createPayment": "Ödeme Kaydı Oluştur",
-      "loading": "Form hazırlanıyor..."
+      "loading": "Form hazırlanıyor...",
+      "example": "Örnek",
+      "childFallback": "Çocuk",
+      "defaultTitle": "Aylık Kreş Ücreti",
+      "statusPending": "⏳ Bekliyor",
+      "statusPaid": "✅ Ödendi",
+      "statusLate": "❗ Gecikti"
     },
     "pollManagement": {
       "loadFailed": "Anket kayıtları okunamadı.",
@@ -2714,7 +2735,9 @@
       "results": "Sonuçlar",
       "makePassive": "Pasif Yap",
       "makeActive": "Aktif Et",
-      "deletePoll": "Anketi tamamen sil"
+      "deletePoll": "Anketi tamamen sil",
+      "no": "Hayır",
+      "publishActive": "Aktif Olarak Yayınla"
     },
     "eventForm": {
       "unnamedClass": "İsimsiz Sınıf",
