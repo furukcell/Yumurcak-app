@@ -1913,6 +1913,18 @@
       "sessionNotFoundError": "Sitzung nicht gefunden. Bitte melde dich erneut an.",
       "storageUploadFailedError": "Speicher-Upload fehlgeschlagen ({{status}}).",
       "statusUnknown": "unbekannt"
+    },
+    "notifications": {
+      "title": "Benachrichtigungen",
+      "unreadCount": "{{count}} ungelesene Benachrichtigungen",
+      "allRead": "Alle Benachrichtigungen gelesen",
+      "markAllRead": "Gelesen",
+      "loading": "Benachrichtigungen werden geladen...",
+      "emptyTitle": "Noch keine Benachrichtigungen",
+      "emptyDesc": "Benachrichtigungen zu Ankündigungen, Nachrichten, Zahlungen und Berichten erscheinen hier.",
+      "cannotOpen": "Der Bildschirm zu dieser Benachrichtigung kann gerade nicht geöffnet werden.",
+      "markReadFailed": "Benachrichtigungen konnten nicht als gelesen markiert werden.",
+      "noDate": "Kein Datum"
     }
   },
   "admin": {
@@ -2071,7 +2083,9 @@
       "unread": "Ungelesen",
       "completedPlural": "Erledigt",
       "emptyTitle": "Noch keine Institutionsglocken-Benachrichtigungen",
-      "emptyDesc": "Sie erscheinen hier, wenn Eltern „Unterwegs“ oder „An der Tür“ sagen."
+      "emptyDesc": "Sie erscheinen hier, wenn Eltern „Unterwegs“ oder „An der Tür“ sagen.",
+      "deliveryLabel": "Übergabe",
+      "timeLabel": "Uhrzeit"
     },
     "service": {
       "title": "Serviceliste",
