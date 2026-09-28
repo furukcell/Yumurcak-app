@@ -2632,6 +2632,8 @@
       "birthFormat": "Doğum tarihini 15.05.2022 veya 2022-05-15 formatında gir.",
       "adaptationDateFormat": "Uyum başlangıç tarihini 2026-06-26 formatında gir.",
       "saveFailed": "Çocuk kaydedilemedi",
+      "limitReachedTitle": "Öğrenci limiti doldu",
+      "limitReached": "Aboneliğinizdeki öğrenci limiti doldu ({{count}}/{{limit}}). Yeni öğrenci eklemek için abonelik / paket yükseltme talebi göndermeniz gerekiyor.",
       "nameLabel": "Çocuk Adı *",
       "namePlaceholder": "Örn: Ali Yılmaz",
       "birthLabel": "Doğum Tarihi *",
