@@ -2426,11 +2426,21 @@
         "normal": "طبيعي"
       },
       "riskLabels": {
-        "attendance": "الحضور",
-        "meal": "الوجبات",
-        "event": "النشاط",
-        "mood": "المزاج",
-        "sleep": "النوم"
+        "Devam": "الحضور",
+        "Yemek": "الطعام",
+        "Etkinlik": "الأنشطة",
+        "Ruh hali": "المزاج",
+        "Uyku": "النوم"
+      },
+      "unnamedChild": "طفل بدون اسم",
+      "sleepSummary": "{{good}} جيد / {{bad}} يحتاج متابعة",
+      "moodSummary": "غالبًا {{mood}}",
+      "riskReasons": {
+        "meal": "{{count}} وجبات مع أكل قليل/عدم الأكل",
+        "event": "{{count}} أنشطة بمشاركة منخفضة",
+        "attendance": "{{count}} أيام غياب",
+        "mood": "{{count}} أيام من القلق/الحزن",
+        "sleep": "{{count}} أيام تحتاج متابعة النوم"
       }
     },
     "subscription": {
