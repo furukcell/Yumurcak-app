@@ -361,7 +361,7 @@ export default function AdminInstitutionSettingsScreen() {
           <FormInput label={t('admin.institutionSettings.addressLabel')} value={form.adres} onChangeText={(v) => setValue('adres', v)} placeholder={t('admin.institutionSettings.addressPlaceholder')} multiline />
           <FormInput label={t('admin.institutionSettings.phoneLabel')} value={form.telefon} onChangeText={(v) => setValue('telefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
           <FormInput label={t('admin.institutionSettings.emailLabel')} value={form.email} onChangeText={(v) => setValue('email', v)} placeholder="info@..." keyboardType="email-address" />
-          <FormInput label={t('admin.institutionSettings.managerNameLabel')} value={form.yoneticiAd} onChangeText={(v) => setValue('yoneticiAd', v)} placeholder="Yönetici adı soyadı" />
+          <FormInput label={t('admin.institutionSettings.managerNameLabel')} value={form.yoneticiAd} onChangeText={(v) => setValue('yoneticiAd', v)} placeholder={t('admin.institutionSettings.managerNamePlaceholder')} />
           <FormInput label={t('admin.institutionSettings.managerPhoneLabel')} value={form.yoneticiTelefon} onChangeText={(v) => setValue('yoneticiTelefon', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
           <FormInput label={t('admin.institutionSettings.whatsappLabel')} value={form.whatsapp} onChangeText={(v) => setValue('whatsapp', v)} placeholder="05xx xxx xx xx" keyboardType="phone-pad" />
           <FormInput label={t('admin.institutionSettings.websiteLabel')} value={form.website} onChangeText={(v) => setValue('website', v)} placeholder="https://..." />
