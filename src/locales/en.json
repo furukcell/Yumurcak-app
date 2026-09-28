@@ -1913,6 +1913,18 @@
       "sessionNotFoundError": "Session not found. Please sign in again.",
       "storageUploadFailedError": "Storage upload failed ({{status}}).",
       "statusUnknown": "unknown"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{{count}} unread notifications",
+      "allRead": "All notifications read",
+      "markAllRead": "Mark read",
+      "loading": "Loading notifications...",
+      "emptyTitle": "No notifications yet",
+      "emptyDesc": "Announcement, message, payment and report notifications will appear here.",
+      "cannotOpen": "The screen for this notification cannot be opened right now.",
+      "markReadFailed": "Could not mark notifications as read.",
+      "noDate": "No date"
     }
   },
   "admin": {
@@ -2071,7 +2083,9 @@
       "unread": "Unread",
       "completedPlural": "Completed",
       "emptyTitle": "No institution bell notifications yet",
-      "emptyDesc": "They will appear here when parents say “On the way” or “At the door”."
+      "emptyDesc": "They will appear here when parents say “On the way” or “At the door”.",
+      "deliveryLabel": "Handover",
+      "timeLabel": "Time"
     },
     "service": {
       "title": "Service List",
