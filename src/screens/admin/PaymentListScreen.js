@@ -2,6 +2,7 @@
 // YUMURCAK — PaymentListScreen.js
 // FAZ 4: Admin ödeme ekranı profesyonel liste + filtreler
 // ============================================================
+import i18n from '../../i18n';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -42,7 +43,7 @@ const DURUM_META = {
   gecikti: { label: t('admin.paymentList.late'), icon: '❗', color: THEME.red, bg: '#FFE8EC' },
 };
 
-const AY_ADLARI = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const getMonthName = (month) => month ? new Date(2020, month - 1, 1).toLocaleDateString(i18n.language, { month: 'long' }) : '';
 
 function safeObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -103,7 +104,7 @@ function getChildName(cocuk = {}, odeme = {}) {
 function getDonem(o = {}) {
   if (o.donem) return formatDisplayMonth(o.donem);
   if (o.tarih && String(o.tarih).length >= 7) return formatDisplayMonth(String(o.tarih).slice(0, 7));
-  const ayText = AY_ADLARI[Number(o.ay)] || o.ay || '';
+  const ayText = getMonthName(Number(o.ay)] || o.ay || '';
   return `${ayText} ${o.yil || ''}`.trim() || t('admin.paymentList.noPeriod');
 }
 
