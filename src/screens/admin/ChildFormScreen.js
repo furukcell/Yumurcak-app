@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { ref, get, update } from 'firebase/database';
+import { ref, get, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { generateId } from '../../utils/id';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -126,6 +126,28 @@ export default function ChildFormScreen() {
     if (yeniBaslayan && !/^\d{4}-\d{2}-\d{2}$/.test(uyumBaslangicTarihi)) {
       Alert.alert('Hata', t('admin.childForm.adaptationDateFormat'));
       return;
+    }
+
+    // Abonelik öğrenci limiti — sadece yeni çocuk eklerken kontrol edilir.
+    // (Sunucu tarafında enforceStudentLimit Function'ı da aynı kontrolü yapar.)
+    if (!childId && kullanici?.kresId) {
+      try {
+        const [subSnap, cocuklarSnap] = await Promise.all([
+          get(ref(database, `abonelikler/${kullanici.kresId}`)),
+          get(query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(kullanici.kresId))),
+        ]);
+        const limit = Number(subSnap.val()?.ogrenciLimiti);
+        if (Number.isFinite(limit) && limit > 0) {
+          let aktif = 0;
+          cocuklarSnap.forEach((c) => { if (c.val()?.durum !== 'ayrildi') aktif += 1; });
+          if (aktif >= limit) {
+            Alert.alert(t('admin.childForm.limitReachedTitle'), t('admin.childForm.limitReached', { count: aktif, limit }));
+            return;
+          }
+        }
+      } catch (limitError) {
+        console.warn('Öğrenci limiti kontrol edilemedi:', limitError);
+      }
     }
 
     setLoading(true);
