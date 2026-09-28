@@ -289,7 +289,7 @@ function getConversationId(adminId, role, userId) {
   return `admin_${adminId}_${role}_${userId}`;
 }
 
-function getUserName(user, fallback = t('common.user')) {
+function getUserName(user, fallback = i18n.t('common.user')) {
   return `${user?.ad || ''} ${user?.soyad || ''}`.trim() || user?.kullaniciAdi || fallback;
 }
 
