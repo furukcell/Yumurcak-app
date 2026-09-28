@@ -93,7 +93,7 @@ export default function ChildFormScreen() {
         if (snap.exists()) {
           const data = snap.val();
           setAd(`${data.ad || ''} ${data.soyad || ''}`.trim() || data.ad || '');
-          setDogumTarihi(formatChildBirthDate(getChildBirthDate(data)) === 'Belirtilmemiş' ? '' : formatChildBirthDate(getChildBirthDate(data)));
+          setDogumTarihi(formatChildBirthDate(getChildBirthDate(data)) === t('admin.childForm.unspecified') ? '' : formatChildBirthDate(getChildBirthDate(data)));
           setSinifId(data.sinifId || '');
           setAdres(data.adres || '');
           setSeciliVeliIds(data.veliIds || []);
