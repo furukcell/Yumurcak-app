@@ -63,7 +63,7 @@ function getPlanLabel(subscription) {
   const tier = getTierById(subscription.planTier || String(subscription.plan || '').split('_')[0]);
   const plan = String(subscription.plan || '');
   const period = subscription.planPeriod || (plan.includes('yillik') ? 'yillik' : plan.includes('aylik') ? 'aylik' : '');
-  if (!period || period === 'demo') return subscription.plan === 'demo' ? `${tier.title} / Demo` : (subscription.plan || tier.title);
+  if (!period || period === 'demo') return subscription.plan === 'demo' ? `${getTierTitle(tier)} / Demo` : (subscription.plan || tier.title);
   return `${tier.title} / ${period === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`;
 }
 
@@ -197,7 +197,7 @@ export default function AdminSubscriptionScreen() {
       const nextTier = getSuggestedTier(studentCount);
       return Alert.alert(
         i18n.t('admin.subscription.packageInsufficient'),
-        i18n.t('admin.subscription.packageInsufficientDesc', { tier: tier.title, range: tier.range, count: studentCount, nextTier: nextTier?.title || '' })
+        i18n.t('admin.subscription.packageInsufficientDesc', { tier: tier.title, range: getTierRange(tier), count: studentCount, nextTier: getTierTitle(nextTier) || '' })
       );
     }
 
@@ -208,7 +208,7 @@ export default function AdminSubscriptionScreen() {
     if (rcPackage) {
       Alert.alert(
         `${tier.title} ${selectedPeriod === 'yillik' ? i18n.t('admin.subscription.yearly') : i18n.t('admin.subscription.monthly')}`,
-        `${tier.range}\n${priceText}\n\nPaket yükseltme tamamlanınca yeni öğrenci limitiniz hemen aktif olur. Ücret farkı ve yenileme Google Play kurallarına göre uygulanır.`,
+        i18n.t('admin.subscription.purchaseConfirmDesc', { range: getTierRange(tier), price: priceText }),
         [
           { text: i18n.t('admin.subscription.cancel'), style: 'cancel' },
           { text: i18n.t('admin.subscription.buy'), onPress: () => purchasePlan(tier, selectedPeriod, rcPackage) },
@@ -324,7 +324,7 @@ export default function AdminSubscriptionScreen() {
 
       if (!promo || promo.aktif === false) {
         setSaving(false);
-        return Alert.alert(i18n.t('admin.subscription.invalidCode'), `${i18n.t('admin.subscription.promoPlaceholder')} bulunamadı veya aktif değil.`);
+        return Alert.alert(i18n.t('admin.subscription.invalidCode'), i18n.t('admin.subscription.promoInvalid'));
       }
 
       const used = Number(promo.kullanimSayisi || 0);
@@ -429,8 +429,8 @@ export default function AdminSubscriptionScreen() {
             {overLimit
               ? i18n.t('admin.subscription.overLimit')
               : suggestedTier
-                ? i18n.t('admin.subscription.suitablePlan', { tier: suggestedTier.title, range: suggestedTier.range })
-                : `${i18n.t('admin.subscription.specialTitle')} için özel teklif gerekir.`}
+                ? i18n.t('admin.subscription.suitablePlan', { tier: getTierTitle(suggestedTier), range: getTierRange(suggestedTier) })
+                : i18n.t('admin.subscription.specialOfferDesc')}
           </Text>
         </View>
 
@@ -526,6 +526,9 @@ function PlanCard({ tier, period, studentCount, active, suggested, disabled, sav
 
 // status.key: none | expired | grace_period | expiring_soon | demo | active | passive
 // status.severity (sadece expiring_soon/grace_period'da): 'critical' | 'warning'
+function getTierTitle(tier) { return i18n.t(`admin.subscription.tiers.${tier?.id}.title`, { defaultValue: tier?.title || '' }); }
+function getTierRange(tier) { return i18n.t(`admin.subscription.tiers.${tier?.id}.range`, { defaultValue: tier?.range || '' }); }
+
 function getStatusColors(status) {
   switch (status.key) {
     case 'active':
