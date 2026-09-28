@@ -2305,7 +2305,8 @@
       "hoursLabel": "Working Hours",
       "noteLabel": "Additional Note",
       "notePlaceholder": "Transport, registration, meeting note...",
-      "save": "Save Institution Information"
+      "save": "Save Institution Information",
+      "managerNamePlaceholder": "Имя и фамилия администратора"
     },
     "serviceMonthlyStats": {
       "back": "Назад",
@@ -2610,7 +2611,11 @@
       "update": "Güncelle",
       "create": "Oluştur",
       "delete": "Çocuğu Sil",
-      "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}"
+      "deleteFailed": "Çocuk silinemedi.\n\n{{detail}}",
+      "deleteConfirm": "{{name}} будет удалён навсегда. Это действие нельзя отменить: отчёты, посещаемость и связи с галереей будут отключены.",
+      "childFallback": "Этот ребёнок",
+      "updated": "Данные ребёнка обновлены",
+      "saved": "Ребёнок сохранён"
     },
     "classForm": {
       "error": "Hata",
@@ -2742,7 +2747,8 @@
       "makeActive": "Aktif Et",
       "deletePoll": "Anketi tamamen sil",
       "no": "Нет",
-      "publishActive": "Опубликовать активным"
+      "publishActive": "Опубликовать активным",
+      "option": "Вариант"
     },
     "eventForm": {
       "unnamedClass": "Без названия",
