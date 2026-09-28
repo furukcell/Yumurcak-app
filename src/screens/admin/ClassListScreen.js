@@ -131,7 +131,7 @@ export default function ClassListScreen() {
               {item.ad || t('admin.classList.unnamedClass')}
             </Text>
             <Text style={styles.classSubText} numberOfLines={1} ellipsizeMode="tail">
-              {item.yasGrubu || 'Yaş grubu belirtilmemiş'}
+              {item.yasGrubu || t('admin.classList.ageGroupNotSpecified')}
             </Text>
           </View>
 
@@ -200,7 +200,7 @@ export default function ClassListScreen() {
 
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNumber}>{toplamOgretmen}</Text>
-                  <Text style={styles.summaryLabel}>{t('admin.classList.teacher')} Ataması</Text>
+                  <Text style={styles.summaryLabel}>{t('admin.classList.teacherAssignment')}</Text>
                 </View>
               </View>
             </View>
