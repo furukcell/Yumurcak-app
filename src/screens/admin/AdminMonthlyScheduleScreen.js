@@ -80,7 +80,7 @@ function buildScheduleRecord({ day, value, kresId, monthKey, monthLabel, kaynak,
     kaynak,
     ayKey: monthKey,
     tarih: day.dateKey,
-    baslik: `${monthLabel} Ders Programı`,
+    baslik: t('admin.monthly.schedule.monthTitle', { month: monthLabel }),
     etkinlikler: list.filter(hasActivityItemContent).map((item) => ({
       etkinlik: String(item.etkinlik || '').trim(),
       aciklama: String(item.aciklama || '').trim(),
