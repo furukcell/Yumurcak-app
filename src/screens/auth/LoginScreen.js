@@ -2,9 +2,11 @@
 // YUMURCAK — LoginScreen.js
 // FAZ 1: Yeni profesyonel giriş ekranı + keyboard düzeltmesi
 // Firebase Auth + eski RTDB login fallback korunmuştur
+// + Giriş ekranında dil seçici (ilk açılışta otomatik açılır)
+// + Ekran metinleri i18n ('auth' namespace) üzerinden geliyor
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,12 +19,18 @@ import {
   Alert,
   Platform,
   Image,
+  Modal,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useTranslation } from 'react-i18next';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Updates from 'expo-updates';
 import { auth, database } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LANGUAGE_STORAGE_KEY } from '../../i18n';
 import {
   usernameToEmail,
   findUserIdByAuthUid,
@@ -48,24 +56,86 @@ const COLORS = {
   danger: '#FF7043',
 };
 
+const LANGUAGES = [
+  { code: 'tr', flag: '🇹🇷', label: 'Türkçe' },
+  { code: 'en', flag: '🇬🇧', label: 'English' },
+  { code: 'ru', flag: '🇷🇺', label: 'Русский' },
+  { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
+  { code: 'fr', flag: '🇫🇷', label: 'Français' },
+  { code: 'ar', flag: '🇸🇦', label: 'العربية' },
+];
+
 export default function LoginScreen({ navigation }) {
   const { girisYap } = useAuth();
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   const [kullaniciAdi, setKullaniciAdi] = useState('');
   const [sifre, setSifre] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
   const [sifreGoster, setSifreGoster] = useState(false);
 
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [changingLang, setChangingLang] = useState(false);
+
+  // İlk kurulumda (daha önce hiç dil seçilmemişse) çekmeceyi otomatik aç
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)
+      .then((stored) => {
+        if (!cancelled && !stored) {
+          setLangMenuOpen(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleChangeLanguage = async (lng) => {
+    if (lng === language || changingLang) {
+      setLangMenuOpen(false);
+      return;
+    }
+    setChangingLang(true);
+    try {
+      const { restartNeeded } = await changeLanguage(lng);
+      setLangMenuOpen(false);
+
+      if (restartNeeded) {
+        Alert.alert(
+          t('auth.restartRequiredTitle'),
+          t('auth.restartRequiredDesc'),
+          [
+            { text: t('auth.restartLater'), style: 'cancel' },
+            {
+              text: t('auth.restartNow'),
+              onPress: async () => {
+                try {
+                  await Updates.reloadAsync();
+                } catch (error) {
+                  console.warn('Yeniden başlatma başarısız (muhtemelen dev ortamı):', error?.message || error);
+                }
+              },
+            },
+          ]
+        );
+      }
+    } finally {
+      setChangingLang(false);
+    }
+  };
+
   const girisYapHandler = async () => {
     if (!kullaniciAdi.trim() || !sifre.trim()) {
-      Alert.alert('Eksik Bilgi', 'Kullanıcı adı ve şifre giriniz!');
+      Alert.alert(t('auth.missingInfoTitle'), t('auth.missingInfoDesc'));
       return;
     }
 
     setYukleniyor(true);
 
     try {
-      // 1) Önce Firebase Auth dene
       const email = usernameToEmail(kullaniciAdi);
       const authResult = await signInWithEmailAndPassword(auth, email, sifre.trim());
 
@@ -73,16 +143,13 @@ export default function LoginScreen({ navigation }) {
       const legacyUserId = await findUserIdByAuthUid(authUid);
 
       if (!legacyUserId) {
-        Alert.alert(
-          'Hesap Eşleşmedi',
-          'Firebase Auth girişi başarılı ama uygulama kullanıcı kaydı bulunamadı. Yönetici panelinden Auth Geçiş ekranını tekrar çalıştır.'
-        );
+        Alert.alert(t('auth.accountMismatchTitle'), t('auth.accountMismatchDesc'));
         return;
       }
 
       const userSnap = await get(ref(database, `kullanicilar/${legacyUserId}`));
       if (!userSnap.exists()) {
-        Alert.alert('Hata', 'Kullanıcı kaydı bulunamadı.');
+        Alert.alert(t('auth.errorTitle'), t('auth.userRecordNotFound'));
         return;
       }
 
@@ -95,32 +162,31 @@ export default function LoginScreen({ navigation }) {
       };
 
       if (userData.aktif === false) {
-        Alert.alert('Hata', 'Bu kullanıcı pasif durumda!');
+        Alert.alert(t('auth.errorTitle'), t('auth.userInactive'));
         return;
       }
 
       const kresObj = await getKresForUser(userData);
       await girisYap(userData, kresObj);
     } catch (authError) {
-      // 2) Auth hesabı yoksa eski RTDB kullanıcı adı/şifre sistemiyle giriş yap
       try {
         const legacyResult = await findLegacyUserByUsernameAndPassword(kullaniciAdi, sifre);
 
         if (legacyResult.status === 'not_found') {
-          Alert.alert('Hata', 'Kullanıcı bulunamadı!');
+          Alert.alert(t('auth.errorTitle'), t('auth.userNotFound'));
           return;
         }
 
         if (legacyResult.status === 'wrong_password') {
           Alert.alert(
-            'Hata',
-            `Şifre yanlış!\n\nBulunan kullanıcı alanları: ${(legacyResult.fields || []).join(', ')}`
+            t('auth.errorTitle'),
+            t('auth.wrongPassword', { fields: (legacyResult.fields || []).join(', ') })
           );
           return;
         }
 
         if (legacyResult.status === 'passive') {
-          Alert.alert('Hata', 'Bu kullanıcı pasif durumda!');
+          Alert.alert(t('auth.errorTitle'), t('auth.userInactive'));
           return;
         }
 
@@ -129,13 +195,10 @@ export default function LoginScreen({ navigation }) {
 
         await girisYap(kullaniciObj, kresObj);
 
-        Alert.alert(
-          'Bilgi',
-          'Eski giriş sistemiyle giriş yapıldı. Firebase Auth için yönetici panelinden Auth Geçiş ekranı çalıştırılmalı.'
-        );
+        Alert.alert(t('auth.infoTitle'), t('auth.legacyLoginInfo'));
       } catch (legacyError) {
         console.error('Login hata:', authError, legacyError);
-        Alert.alert('Hata', 'Bağlantı hatası, tekrar deneyin!');
+        Alert.alert(t('auth.errorTitle'), t('auth.connectionError'));
       }
     } finally {
       setYukleniyor(false);
@@ -143,11 +206,10 @@ export default function LoginScreen({ navigation }) {
   };
 
   const sifremiUnuttumHandler = () => {
-    Alert.alert(
-      'Şifremi Unuttum',
-      'Şifre işlemleri için okul yöneticinizle iletişime geçiniz.'
-    );
+    Alert.alert(t('auth.forgotPasswordTitle'), t('auth.forgotPasswordDesc'));
   };
+
+  const activeLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
   return (
     <SafeAreaView style={s.safe}>
@@ -156,6 +218,16 @@ export default function LoginScreen({ navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
       >
+        <TouchableOpacity
+          style={s.langButton}
+          onPress={() => setLangMenuOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={s.langButtonText}>
+            {activeLang.flag} {activeLang.code.toUpperCase()} ▾
+          </Text>
+        </TouchableOpacity>
+
         <ScrollView
           style={s.scroll}
           contentContainerStyle={s.scrollIc}
@@ -173,12 +245,10 @@ export default function LoginScreen({ navigation }) {
             <Image source={LOGO} style={s.logo} resizeMode="contain" />
 
             <Text style={s.appName}>Yumurcak</Text>
-            <Text style={s.appSubtitle}>Kreş Takip Uygulaması</Text>
+            <Text style={s.appSubtitle}>{t('auth.appSubtitle')}</Text>
 
-            <Text style={s.welcome}>Hoş geldiniz</Text>
-            <Text style={s.description}>
-              Çocuğunuzun günlük gelişimini kolayca takip edin.
-            </Text>
+            <Text style={s.welcome}>{t('auth.welcome')}</Text>
+            <Text style={s.description}>{t('auth.description')}</Text>
           </View>
 
           <View style={s.kart}>
@@ -186,7 +256,7 @@ export default function LoginScreen({ navigation }) {
               <Text style={s.inputIkon}>👤</Text>
               <TextInput
                 style={s.input}
-                placeholder="Kullanıcı Adı"
+                placeholder={t('auth.usernamePlaceholder')}
                 value={kullaniciAdi}
                 onChangeText={setKullaniciAdi}
                 autoCapitalize="none"
@@ -200,7 +270,7 @@ export default function LoginScreen({ navigation }) {
               <Text style={s.inputIkon}>🔒</Text>
               <TextInput
                 style={s.input}
-                placeholder="Şifre"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={sifre}
                 onChangeText={setSifre}
                 secureTextEntry={!sifreGoster}
@@ -230,12 +300,12 @@ export default function LoginScreen({ navigation }) {
               {yukleniyor ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={s.btnYazi}>Giriş Yap</Text>
+                <Text style={s.btnYazi}>{t('auth.loginButton')}</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={sifremiUnuttumHandler} activeOpacity={0.7}>
-              <Text style={s.forgotText}>Şifremi Unuttum</Text>
+              <Text style={s.forgotText}>{t('auth.forgotPassword')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -261,7 +331,7 @@ export default function LoginScreen({ navigation }) {
                 activeOpacity={0.7}
               >
                 <Text style={s.legalIcon}>🛡️</Text>
-                <Text style={s.legalText}>KVKK Aydınlatma Metni</Text>
+                <Text style={s.legalText}>{t('auth.kvkkLink')}</Text>
               </TouchableOpacity>
 
               <View style={s.legalDivider} />
@@ -272,7 +342,7 @@ export default function LoginScreen({ navigation }) {
                 activeOpacity={0.7}
               >
                 <Text style={s.legalIcon}>🔐</Text>
-                <Text style={s.legalText}>Gizlilik Politikası</Text>
+                <Text style={s.legalText}>{t('auth.privacyLink')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -280,14 +350,59 @@ export default function LoginScreen({ navigation }) {
               onPress={() => navigation.navigate('LegalDocuments', { docKey: 'terms' })}
               activeOpacity={0.7}
             >
-              <Text style={s.termsText}>Kullanım Şartları</Text>
+              <Text style={s.termsText}>{t('auth.termsLink')}</Text>
             </TouchableOpacity>
 
-            <Text style={s.safeText}>🔒 Güvenli okul iletişimi</Text>
-            <Text style={s.versiyon}>© 2026 Yumurcak v1.0</Text>
+            <Text style={s.safeText}>🔒 {t('auth.safeText')}</Text>
+            <Text style={s.versiyon}>{t('auth.version')}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={langMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLangMenuOpen(false)}
+      >
+        <TouchableOpacity
+          style={s.langModalOverlay}
+          activeOpacity={1}
+          onPress={() => setLangMenuOpen(false)}
+        >
+          <View style={s.langModalSheet}>
+            <Text style={s.langModalTitle}>{t('auth.languagePickerTitle')}</Text>
+
+            {LANGUAGES.map((lang) => (
+              <TouchableOpacity
+                key={lang.code}
+                style={[
+                  s.langModalItem,
+                  language === lang.code && s.langModalItemActive,
+                ]}
+                onPress={() => handleChangeLanguage(lang.code)}
+                activeOpacity={0.85}
+                disabled={changingLang}
+              >
+                <Text style={s.langModalItemFlag}>{lang.flag}</Text>
+                <Text
+                  style={[
+                    s.langModalItemText,
+                    language === lang.code && s.langModalItemTextActive,
+                  ]}
+                >
+                  {lang.label}
+                </Text>
+                {language === lang.code && (
+                  <Text style={s.langModalItemCheck}>✓</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+
+            <Text style={s.langModalWarning}>{t('auth.languagePickerWarning')}</Text>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -312,6 +427,96 @@ const s = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: 18,
     paddingBottom: 18,
+  },
+
+  langButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 8 : 14,
+    right: 16,
+    zIndex: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.blue,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  langButtonText: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  langModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20,50,74,0.45)',
+    justifyContent: 'flex-end',
+  },
+
+  langModalSheet: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28,
+  },
+
+  langModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+
+  langModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    marginBottom: 4,
+  },
+
+  langModalItemActive: {
+    backgroundColor: COLORS.softBlue,
+  },
+
+  langModalItemFlag: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+
+  langModalItemText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  langModalItemTextActive: {
+    color: COLORS.blue,
+  },
+
+  langModalItemCheck: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: COLORS.blue,
+  },
+
+  langModalWarning: {
+    marginTop: 14,
+    fontSize: 12,
+    color: COLORS.muted,
+    textAlign: 'center',
+    lineHeight: 17,
   },
 
   bgCircleLeft: {
