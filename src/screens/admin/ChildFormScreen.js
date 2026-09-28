@@ -215,7 +215,7 @@ export default function ChildFormScreen() {
               navigation.goBack();
             } catch (error) {
               console.error(error);
-              Alert.alert('Hata', `Çocuk silinemedi.\n\n${error?.message || ''}`);
+              Alert.alert('Hata', t('admin.childForm.deleteFailed', { error: error?.message || '' }));
             } finally {
               setLoading(false);
             }
@@ -235,7 +235,7 @@ export default function ChildFormScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
-      <AppSuccessToast visible={successToast} message={childId ? 'Çocuk bilgileri güncellendi' : 'Çocuk kaydedildi'} onHide={() => setSuccessToast(false)} />
+      <AppSuccessToast visible={successToast} message={childId ? t('admin.childForm.updated') : t('admin.childForm.saved')} onHide={() => setSuccessToast(false)} />
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
           <View style={styles.field}>
@@ -277,7 +277,7 @@ export default function ChildFormScreen() {
               style={[styles.input, { minHeight: 70, textAlignVertical: 'top' }]}
               value={adres}
               onChangeText={setAdres}
-              placeholder="Örn: Muğla Mah. Deniz Sok. No:5 Bodrum"
+              placeholder={t('admin.childForm.addressPlaceholder')}
               placeholderTextColor="#999"
               multiline
             />
