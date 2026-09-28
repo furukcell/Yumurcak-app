@@ -188,9 +188,9 @@ export default function AdminInstitutionSettingsScreen() {
   const removeLogo = () => {
     if (!kresId) return;
     Alert.alert(t('admin.institutionSettings.logoTitle'), t('admin.institutionSettings.removePhotoConfirm'), [
-      { text: 'Vazgeç', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('admin.institutionSettings.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -254,9 +254,9 @@ export default function AdminInstitutionSettingsScreen() {
   const removeSplash = () => {
     if (!kresId) return;
     Alert.alert(t('admin.institutionSettings.splashTitle'), t('admin.institutionSettings.removeSplashConfirm'), [
-      { text: 'Vazgeç', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Kaldır',
+        text: t('admin.institutionSettings.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
