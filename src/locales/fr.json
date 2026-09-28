@@ -2072,7 +2072,7 @@
       "startNew": "Démarrer un message",
       "startNewDesc": "Choisissez un parent ou un enseignant pour commencer la conversation",
       "searchPlaceholder": "Rechercher une personne...",
-      "parentSubtitle": "Parent · {{info}}",
+      "parentSubtitle": "Responsable · {{info}}",
       "teacherSubtitle": "Enseignant · {{info}}",
       "childFallback": "Enfant"
     },
@@ -2082,7 +2082,7 @@
       "loading": "Préparation de l'assistance...",
       "title": "Centre d'assistance",
       "subtitle": "Discutez avec l'équipe d'assistance Yumurcak",
-      "ticketCount": "{{count}} conversations",
+      "ticketCount": "Conversations : {{count}}",
       "noTickets": "Aucune conversation pour le moment",
       "newTicket": "Nouvelle demande",
       "newTicketTitle": "Nouvelle demande d'assistance",
@@ -2183,7 +2183,7 @@
         "publishedDesc": "Les parents et enseignants peuvent voir cette liste.",
         "listTitleLabel": "Titre de la liste des tâches",
         "defaultTitle": "Liste des tâches {{month}}",
-        "section": "Section {{index}}",
+        "section": "Rubrique {{index}}",
         "sectionTitlePlaceholder": "Titre de section (ex. Événements à venir)",
         "contentPlaceholder": "Contenu...",
         "addSection": "Ajouter une section",
@@ -2776,7 +2776,7 @@
       "descriptionPlaceholder": "Brève description pour les parents",
       "options": "Options",
       "optionsHelp": "Saisissez chaque option dans une case séparée.",
-      "optionPlaceholder": "Option {{index}}",
+      "optionPlaceholder": "Choix {{index}}",
       "addOption": "＋ Ajouter une option",
       "audience": "Public",
       "institutionWide": "Tout l’établissement",
@@ -2848,7 +2848,7 @@
       "parents": "Parents",
       "staffTasks": "Tâches du personnel",
       "dutyRoster": "Planning de garde",
-      "communication": "Communication",
+      "communication": "Échanges",
       "communicationSubtitle": "Messages, annonces, sondages",
       "messages": "Messages",
       "announcements": "Annonces",
@@ -2904,7 +2904,7 @@
       "monthlyActive": "Abonnement mensuel actif",
       "demoActive": "Démo active",
       "subscriptionCheck": "Vérifiez le statut de l’abonnement",
-      "notifications": "Notifications"
+      "notifications": "Alertes"
     }
   }
 }
