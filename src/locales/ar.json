@@ -2567,7 +2567,7 @@
       "empty": "Henüz sınıf eklenmemiş",
       "emptyDesc": "İlk sınıfı ekleyerek çocuk ve öğretmen yönetimini başlat.",
       "create": "+ Sınıf Ekle",
-      "unnamedClass": "فصل بدون اسم",
+      "unnamedClass": "فصل بلا اسم",
       "ageGroupNotSpecified": "لم يتم تحديد الفئة العمرية"
     },
     "childList": {
