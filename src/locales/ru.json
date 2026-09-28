@@ -2566,7 +2566,9 @@
       "openAmount": "Открытая сумма",
       "thisMonth": "В этом месяце",
       "noPeriod": "Период не указан",
-      "createHint": "Нажмите + Запись, чтобы создать новый платеж"
+      "createHint": "Нажмите + Запись, чтобы создать новый платеж",
+      "readPaymentsFailed": "Не удалось прочитать записи платежей.",
+      "readChildrenFailed": "Не удалось прочитать записи о детях."
     },
     "announcementForm": {
       "all": "Tüm Kurum",
