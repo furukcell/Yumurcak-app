@@ -47,7 +47,8 @@
     "edit": "Düzenle",
     "status": "Durum",
     "all": "Все",
-    "user": "Пользователь"
+    "user": "Пользователь",
+    "publish": "Опубликовать"
   },
   "nav": {
     "summary": "Сводка",
