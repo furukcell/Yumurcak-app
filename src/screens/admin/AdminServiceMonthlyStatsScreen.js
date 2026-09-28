@@ -9,6 +9,7 @@
 //  - "Servis kullanıp sık binmeyen" çocukların öne çıkarılmış listesi
 // Yazma yok, sadece okuma/agregasyon — mevcut veri modeline dokunmaz.
 // ============================================================
+import i18n from '../../i18n';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ref, get, onValue, query, orderByChild, equalTo } from 'firebase/database';
@@ -35,7 +36,7 @@ function formatDuration(ms) {
   return h > 0 ? `${h}s ${m}dk` : `${m} dk`;
 }
 
-const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const getMonthName = (month) => new Date(2020, month - 1, 1).toLocaleDateString(i18n.language, { month: 'long' });
 
 export default function AdminServiceMonthlyStatsScreen({ navigation }) {
   const { kullanici } = useAuth();
@@ -192,7 +193,7 @@ export default function AdminServiceMonthlyStatsScreen({ navigation }) {
             <TouchableOpacity style={styles.monthArrow} onPress={() => shiftMonth(-1)} activeOpacity={0.8}>
               <Text style={styles.monthArrowText}>‹</Text>
             </TouchableOpacity>
-            <Text style={styles.monthLabel}>{AY_ADLARI[monthIndex]} {year}</Text>
+            <Text style={styles.monthLabel}>{getMonthName(monthIndex]} {year}</Text>
             <TouchableOpacity
               style={[styles.monthArrow, isCurrentMonth && styles.monthArrowDisabled]}
               onPress={() => !isCurrentMonth && shiftMonth(1)}
