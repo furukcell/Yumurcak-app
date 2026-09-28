@@ -2139,7 +2139,7 @@
       "optionalNote": "Not (opsiyonel)",
       "meal": {
         "readFailedTitle": "Liste okunamadı",
-        "readFailedDesc": "Yayınlanmış aylık yemek listesi Firebase'den okunamadı ({{error}}). Form boş görünebilir; veri kaybolmadı, yalnızca okuma başarısız oldu.",
+        "readFailedDesc": "Yayınlanmış aylık yemek listesi Firebase'den okunamadı ({{error}}). Bu yüzden form boş görünüyor olabilir — veri kaybolmadı, sadece okuma başarısız oldu.",
         "previousNotFound": "{{month}} için yayınlanmış bir yemek listesi yok.",
         "copiedDesc": "{{count}} günlük yemek bilgisi geçen aydan kopyalandı. Değişiklikleri yapıp yayınlayabilirsin.",
         "publishRequired": "Yayınlamak için en az bir güne yemek bilgisi gir.",
@@ -2163,7 +2163,9 @@
         "snackPlaceholder": "Ara öğün ekle",
         "classEmpty": "Bu sınıfın öğretmeni {{month}} için henüz yemek girmemiş.",
         "updatedTitle": "Yemek listesi güncellendi",
-        "publishedDesc": "Veliler şu an bu ayın listesini görüyor."
+        "publishedDesc": "Veliler şu an bu ayın listesini görüyor.",
+        "daysEntered": "{{month}} için {{count}} gün girilmiş",
+        "noDaysEntered": "{{month}} için henüz giriş yok"
       },
       "staff": {
         "previousNotFound": "Geçen ay için yayınlanmış bir görev listesi bulunamadı.",
@@ -2223,7 +2225,10 @@
         "descriptionPlaceholder": "Açıklama (opsiyonel)",
         "classFallback": "Sınıf",
         "publishTitle": "Ayı Paylaş",
-        "updatedTitle": "Ders programı güncellendi"
+        "updatedTitle": "Ders programı güncellendi",
+        "publishConfirm": "{{className}} sınıfının {{month}} ders programı yayınlansın mı? Aynı ay için eski yayın pasife alınır.",
+        "publishedToast": "{{className}} sınıfının {{month}} ders programı yayınlandı",
+        "unpublishConfirm": "{{month}} için yayınlanmış ders programı kaldırılsın mı?"
       },
       "publishing": "Yayınlanıyor..."
     },
