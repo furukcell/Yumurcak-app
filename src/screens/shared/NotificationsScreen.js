@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import {
   iconFor,
@@ -35,6 +36,7 @@ const THEME = {
 
 export default function NotificationsScreen() {
   const navigation = useNavigation();
+  const { t, i18n } = useTranslation();
   const { kullanici } = useAuth();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
@@ -68,7 +70,7 @@ export default function NotificationsScreen() {
     try {
       navigation.navigate(item.routeName, item.routeParams || {});
     } catch (error) {
-      Alert.alert('Bilgi', 'Bu bildirimin ilgili ekranı şu an açılamıyor.');
+      Alert.alert(t('common.info'), t('shared.notifications.cannotOpen'));
     }
   };
 
@@ -77,7 +79,7 @@ export default function NotificationsScreen() {
       await readAllNotifications(items, kullanici);
     } catch (error) {
       console.warn('Tüm bildirimler okundu yapılamadı:', error);
-      Alert.alert('Hata', 'Bildirimler okundu yapılamadı.');
+      Alert.alert(t('common.error'), t('shared.notifications.markReadFailed'));
     }
   };
 
@@ -88,24 +90,24 @@ export default function NotificationsScreen() {
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerTextBlock}>
-          <Text style={styles.title}>Bildirimler</Text>
-          <Text style={styles.subtitle}>{unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : 'Tüm bildirimler okundu'}</Text>
+          <Text style={styles.title}>{t('shared.notifications.title')}</Text>
+          <Text style={styles.subtitle}>{unreadCount > 0 ? t('shared.notifications.unreadCount', { count: unreadCount }) : t('shared.notifications.allRead')}</Text>
         </View>
         <TouchableOpacity style={styles.readAllButton} onPress={markAllRead} activeOpacity={0.82}>
-          <Text style={styles.readAllText}>Okundu</Text>
+          <Text style={styles.readAllText}>{t('shared.notifications.markAllRead')}</Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={THEME.primary} />
-          <Text style={styles.centerText}>Bildirimler yükleniyor...</Text>
+          <Text style={styles.centerText}>{t('shared.notifications.loading')}</Text>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyIcon}>🔔</Text>
-          <Text style={styles.emptyTitle}>Henüz bildirim yok</Text>
-          <Text style={styles.emptyDesc}>Duyuru, mesaj, ödeme ve rapor bildirimleri burada görünecek.</Text>
+          <Text style={styles.emptyTitle}>{t('shared.notifications.emptyTitle')}</Text>
+          <Text style={styles.emptyDesc}>{t('shared.notifications.emptyDesc')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
@@ -127,7 +129,7 @@ export default function NotificationsScreen() {
                     {!read ? <View style={styles.dot} /> : null}
                   </View>
                   <Text style={styles.cardMessage} numberOfLines={2}>{item.mesaj}</Text>
-                  <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
+                  <Text style={styles.cardDate}>{formatDate(item.createdAt, t, i18n.language)}</Text>
                 </View>
                 {item.routeName ? <Text style={styles.arrow}>›</Text> : null}
               </TouchableOpacity>
@@ -139,11 +141,11 @@ export default function NotificationsScreen() {
   );
 }
 
-function formatDate(value) {
-  if (!value) return 'Tarih yok';
+function formatDate(value, t, locale) {
+  if (!value) return t('shared.notifications.noDate');
   const date = new Date(Number(value));
-  if (Number.isNaN(date.getTime())) return 'Tarih yok';
-  return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
+  if (Number.isNaN(date.getTime())) return t('shared.notifications.noDate');
+  return date.toLocaleDateString(locale || 'tr', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
 }
 
 const styles = StyleSheet.create({
