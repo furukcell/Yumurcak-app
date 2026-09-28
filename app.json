@@ -94,7 +94,8 @@
         }
       ],
       "./plugins/withJvmTargetFix.js",
-      "./plugins/withAllowBackupFix.js"
+      "./plugins/withAllowBackupFix.js",
+      "./plugins/withRNFirebasePodConfig.js"
     ]
   }
 }
