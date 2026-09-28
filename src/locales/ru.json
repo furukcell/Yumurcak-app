@@ -2794,7 +2794,8 @@
       "deletePoll": "Удалить опрос полностью",
       "no": "Нет",
       "publishActive": "Опубликовать как активный",
-      "option": "Вариант"
+      "option": "Вариант",
+      "yes": "Да"
     },
     "eventForm": {
       "unnamedClass": "Без названия",
