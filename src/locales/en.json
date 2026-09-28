@@ -2421,11 +2421,21 @@
         "normal": "Normal"
       },
       "riskLabels": {
-        "attendance": "Attendance",
-        "meal": "Meals",
-        "event": "Activity",
-        "mood": "Mood",
-        "sleep": "Sleep"
+        "Devam": "Attendance",
+        "Yemek": "Meals",
+        "Etkinlik": "Events",
+        "Ruh hali": "Mood",
+        "Uyku": "Sleep"
+      },
+      "unnamedChild": "Unnamed child",
+      "sleepSummary": "{{good}} good / {{bad}} follow-up",
+      "moodSummary": "Mostly {{mood}}",
+      "riskReasons": {
+        "meal": "{{count}} meals with low/no eating",
+        "event": "{{count}} events with low participation",
+        "attendance": "{{count}} days absent",
+        "mood": "{{count}} unsettled/sad days",
+        "sleep": "{{count}} days requiring sleep follow-up"
       }
     },
     "subscription": {
