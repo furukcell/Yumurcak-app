@@ -2566,7 +2566,9 @@
       "openAmount": "المبلغ المفتوح",
       "thisMonth": "هذا الشهر",
       "noPeriod": "لا توجد فترة",
-      "createHint": "اضغط + سجل لإنشاء دفعة جديدة"
+      "createHint": "اضغط + سجل لإنشاء دفعة جديدة",
+      "readPaymentsFailed": "تعذر قراءة سجلات الدفع.",
+      "readChildrenFailed": "تعذر قراءة سجلات الأطفال."
     },
     "announcementForm": {
       "all": "Tüm Kurum",
