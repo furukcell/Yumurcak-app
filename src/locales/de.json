@@ -2139,7 +2139,7 @@
       "optionalNote": "Notiz (optional)",
       "meal": {
         "readFailedTitle": "Liste konnte nicht gelesen werden",
-        "readFailedDesc": "Die veröffentlichte Monats-Speiseliste konnte nicht aus Firebase gelesen werden ({{error}}). Die Daten sind nicht verloren.",
+        "readFailedDesc": "Der veröffentlichte Monats-Speiseplan konnte nicht aus Firebase gelesen werden ({{error}}). Das Formular kann leer erscheinen; die Daten sind nicht verloren.",
         "previousNotFound": "Für {{month}} gibt es keine veröffentlichte Speiseliste.",
         "copiedDesc": "Speiseinformationen für {{count}} Tage wurden kopiert. Sie können sie bearbeiten und veröffentlichen.",
         "publishRequired": "Geben Sie für mindestens einen Tag Speiseinformationen ein.",
@@ -2147,7 +2147,7 @@
         "publishConfirm": "Die Speiseliste für {{month}} veröffentlichen? Die vorherige Veröffentlichung wird deaktiviert.",
         "publishFailed": "Die monatliche Speiseliste konnte nicht veröffentlicht werden.",
         "unpublishConfirm": "Die Speiseliste für {{month}} entfernen?",
-        "publishedToast": "Speiseliste für {{month}} veröffentlicht",
+        "publishedToast": "Speiseplan für {{month}} veröffentlicht",
         "title": "Monatliche Speiseliste",
         "subtitle": "Monatlicher Speiseplan für die gesamte Einrichtung",
         "classLists": "Klassenlisten",
@@ -2163,7 +2163,9 @@
         "snackPlaceholder": "Snack hinzufügen",
         "classEmpty": "Die Lehrkraft dieser Klasse hat für {{month}} noch keine Mahlzeiten eingetragen.",
         "updatedTitle": "Speiseplan aktualisiert",
-        "publishedDesc": "Eltern können die Liste dieses Monats sehen."
+        "publishedDesc": "Eltern können die Liste dieses Monats sehen.",
+        "daysEntered": "{{count}} Tage für {{month}} eingetragen",
+        "noDaysEntered": "Für {{month}} gibt es noch keine Einträge"
       },
       "staff": {
         "previousNotFound": "Für den vorherigen Monat wurde keine Aufgabenliste gefunden.",
@@ -2223,7 +2225,10 @@
         "descriptionPlaceholder": "Description (optional)",
         "classFallback": "Klasse",
         "publishTitle": "Monat veröffentlichen",
-        "updatedTitle": "Stundenplan aktualisiert"
+        "updatedTitle": "Stundenplan aktualisiert",
+        "publishConfirm": "Stundenplan für {{className}} für {{month}} veröffentlichen? Die vorherige Veröffentlichung für denselben Monat wird deaktiviert.",
+        "publishedToast": "Stundenplan für {{className}} für {{month}} veröffentlicht",
+        "unpublishConfirm": "Den veröffentlichten Stundenplan für {{month}} entfernen?"
       },
       "publishing": "Wird veröffentlicht..."
     },
