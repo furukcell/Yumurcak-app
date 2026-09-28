@@ -2794,7 +2794,8 @@
       "deletePoll": "Supprimer définitivement le sondage",
       "no": "Non",
       "publishActive": "Publier comme actif",
-      "option": "Option"
+      "option": "Option",
+      "yes": "Oui"
     },
     "eventForm": {
       "unnamedClass": "Classe sans nom",
