@@ -264,7 +264,7 @@ export default function AdminSubscriptionScreen() {
 
   const syncRevenueCatResult = async (customerInfo, tier, selectedPeriod, rcPackage = null) => {
     const active = isRevenueCatPremiumActive(customerInfo);
-    if (!active) throw new Error('Abonelik hakkı aktif değil.');
+    if (!active) throw new Error(i18n.t('admin.subscription.subscriptionInactive'));
 
     const now = new Date();
     const expiryDate = getRevenueCatExpiryDate(customerInfo) || toDateStr(selectedPeriod === 'yillik' ? addMonths(now, 12) : addMonths(now, 1));
@@ -307,7 +307,7 @@ export default function AdminSubscriptionScreen() {
 
   const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();
-    if (!code) return Alert.alert(i18n.t('common.missingInfo'), `${i18n.t('admin.subscription.promoPlaceholder')} gir.`);
+    if (!code) return Alert.alert(i18n.t('common.missingInfo'), i18n.t('admin.subscription.promoEnter'));
 
     setSaving(true);
     try {
