@@ -37,10 +37,261 @@ const THEME = {
 };
 
 const DURUM_META = {
-    tum: { icon: '', color: THEME.primary, bg: THEME.primarySoft, labelKey: 'admin.paymentList.all' },
-    odendi: { icon: '✅', color: THEME.green, bg: '#E8FBEF', labelKey: 'admin.paymentList.paid' },
-    bekliyor: { icon: '⏳', color: THEME.orange, bg: '#FFF4E1', labelKey: 'admin.paymentList.pending' },
-    gecikti: { icon: '❗', color: THEME.red, bg: '#FFE8EE', labelKey: 'admin.paymentList.late' },
+  tum: { labelKey: 'admin.paymentList.all', icon: '📋', color: THEME.primary, bg: THEME.primarySoft },
+  odendi: { labelKey: 'admin.paymentList.paid', icon: '✅', color: THEME.green, bg: '#E9FBEF' },
+  bekliyor: { labelKey: 'admin.paymentList.pending', icon: '⏳', color: THEME.orange, bg: '#FFF3DF' },
+  gecikti: { labelKey: 'admin.paymentList.late', icon: '❗', color: THEME.red, bg: '#FFE8EC' },
+};
+
+function getMonthName(month) {
+  if (!month) return '';
+  return new Date(2020, month - 1, 1).toLocaleDateString(i18n.language, { month: 'long' });
+}
+
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function toList(data) {
+  return Object.entries(safeObject(data)).map(([id, item]) => ({ id, ...safeObject(item) }));
+}
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function currentMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+}
+
+function normalizeDurum(item = {}) {
+  const v = String(item.durum || item.status || '').toLowerCase().trim();
+  if (['odendi', 'ödendi', 'paid', 'tamamlandi', 'tamamlandı'].includes(v)) return 'odendi';
+  if (['gecikti', 'geçti', 'late', 'overdue'].includes(v)) return 'gecikti';
+  const due = item.sonOdemeTarihi || item.dueDate;
+  if (due && Date.parse(due) < Date.now()) return 'gecikti';
+  return 'bekliyor';
+}
+
+function toNumber(value) {
+  if (typeof value === 'number') return value;
+  const clean = String(value || '0').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+  const number = Number(clean);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatMoney(value) {
+  const number = toNumber(value);
+  return number > 0 ? `${number.toLocaleString('tr-TR')} ₺` : '-';
+}
+
+function getChildName(cocuk = {}, odeme = {}) {
+  return (
+    `${cocuk.ad || ''} ${cocuk.soyad || ''}`.trim() ||
+    cocuk.adSoyad ||
+    cocuk.isim ||
+    odeme.cocukAd ||
+    odeme.cocukAdi ||
+    odeme.childName ||
+    odeme.cocukId ||
+    i18n.t('admin.paymentForm.childFallback')
+  );
+}
+
+function getDonem(o = {}) {
+  if (o.donem) return formatDisplayMonth(o.donem);
+  if (o.tarih && String(o.tarih).length >= 7) return formatDisplayMonth(String(o.tarih).slice(0, 7));
+  const ayText = getMonthName(Number(o.ay)) || o.ay || '';
+  return `${ayText} ${o.yil || ''}`.trim() || i18n.t('admin.paymentList.noPeriod');
+}
+
+function getMonthKey(o = {}) {
+  if (o.tarih && String(o.tarih).length >= 7) return String(o.tarih).slice(0, 7);
+  const yil = Number(o.yil || o.year);
+  const ay = Number(o.ay || o.month);
+  if (yil && ay) return `${yil}-${pad2(ay)}`;
+  return '';
+}
+
+export default function PaymentListScreen() {
+  const { t } = useTranslation();
+  const navigation = useNavigation();
+  const { kullanici } = useAuth();
+  const kresId = kullanici?.kresId || kullanici?.kurumId || null;
+
+  const [odemeler, setOdemeler] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [errorText, setErrorText] = useState('');
+  const [filter, setFilter] = useState('tum');
+
+  useEffect(() => {
+    let odemelerData = {};
+    let cocuklarData = {};
+    let odemelerLoaded = false;
+    let cocuklarLoaded = false;
+    let alive = true;
+
+    function buildList() {
+      if (!alive || !odemelerLoaded || !cocuklarLoaded) return;
+      const liste = toList(odemelerData)
+        .filter((o) => {
+          if (!kresId) return true;
+          return !o.kresId || o.kresId === kresId || o.kurumId === kresId;
+        })
+        .map((o) => {
+          const cocuk = safeObject(cocuklarData[o.cocukId] || cocuklarData[o.childId]);
+          const durum = normalizeDurum(o);
+          return {
+            ...o,
+            durum,
+            cocukId: o.cocukId || o.childId || '',
+            cocukAd: getChildName(cocuk, o),
+            sinifId: cocuk.sinifId || o.sinifId || '',
+            donem: getDonem(o),
+            monthKey: getMonthKey(o),
+            tutarNumber: toNumber(o.tutar || o.amount),
+          };
+        })
+        .sort((a, b) => {
+          const dateA = Date.parse(`${a.monthKey || '1970-01'}-01`) || Number(a.createdAt || a.updatedAt || 0);
+          const dateB = Date.parse(`${b.monthKey || '1970-01'}-01`) || Number(b.createdAt || b.updatedAt || 0);
+          return dateB - dateA;
+        });
+
+      setOdemeler(liste);
+      setErrorText('');
+      setLoading(false);
+    }
+
+    const odemelerUnsub = onValue(
+      kresId
+        ? query(ref(database, 'odemeler'), orderByChild('kresId'), equalTo(kresId))
+        : ref(database, 'odemeler'),
+      (snap) => {
+        odemelerData = safeObject(snap.val());
+        odemelerLoaded = true;
+        buildList();
+      },
+      () => {
+        odemelerData = {};
+        odemelerLoaded = true;
+        setErrorText(t('admin.paymentList.readPaymentsFailed'));
+        buildList();
+      }
+    );
+
+    const cocuklarTarget = kresId
+      ? query(ref(database, 'cocuklar'), orderByChild('kresId'), equalTo(kresId))
+      : ref(database, 'cocuklar');
+
+    const cocuklarUnsub = onValue(
+      cocuklarTarget,
+      (snap) => {
+        cocuklarData = safeObject(snap.val());
+        cocuklarLoaded = true;
+        buildList();
+      },
+      () => {
+        cocuklarData = {};
+        cocuklarLoaded = true;
+        setErrorText(t('admin.paymentList.readChildrenFailed'));
+        buildList();
+      }
+    );
+
+    return () => {
+      alive = false;
+      odemelerUnsub();
+      cocuklarUnsub();
+    };
+  }, [kresId]);
+
+  const stats = useMemo(() => {
+    const buAy = currentMonthKey();
+    const bekleyenler = odemeler.filter((o) => o.durum !== 'odendi');
+    return {
+      toplam: odemeler.length,
+      odendi: odemeler.filter((o) => o.durum === 'odendi').length,
+      bekliyor: odemeler.filter((o) => o.durum === 'bekliyor').length,
+      gecikti: odemeler.filter((o) => o.durum === 'gecikti').length,
+      acikTutar: bekleyenler.reduce((sum, o) => sum + o.tutarNumber, 0),
+      buAyTutar: odemeler.filter((o) => o.monthKey === buAy).reduce((sum, o) => sum + o.tutarNumber, 0),
+    };
+  }, [odemeler]);
+
+  const filteredPayments = useMemo(() => {
+    if (filter === 'tum') return odemeler;
+    return odemeler.filter((o) => o.durum === filter);
+  }, [filter, odemeler]);
+
+  async function odendiYap(item) {
+    if (!item?.id || busyId) return;
+    setBusyId(item.id);
+    try {
+      await update(ref(database, `odemeler/${item.id}`), {
+        durum: 'odendi',
+        status: 'odendi',
+        odemeTarihi: item.odemeTarihi || todayKey(),
+        updatedAt: Date.now(),
+      });
+    } catch (e) {
+      Alert.alert(t('common.error'), t('admin.paymentList.updateFailed'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const renderItem = ({ item }) => {
+    const meta = DURUM_META[item.durum] || DURUM_META.bekliyor;
+    const busy = busyId === item.id;
+    return (
+      <View style={styles.card}>
+        <TouchableOpacity onPress={() => navigation.navigate('PaymentForm', { paymentId: item.id })} activeOpacity={0.82}>
+          <View style={styles.cardTop}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>👧</Text>
+            </View>
+            <View style={styles.cardTextBlock}>
+              <Text style={styles.cocukAd} numberOfLines={1}>{item.cocukAd}</Text>
+              <Text style={styles.baslik} numberOfLines={1}>{item.baslik || item.aciklama || item.title || t('admin.paymentList.monthlyFee')}</Text>
+              <Text style={styles.donem}>{item.donem}</Text>
+            </View>
+            <View style={[styles.durumBadge, { backgroundColor: meta.bg }]}>
+              <Text style={[styles.durumYazi, { color: meta.color }]}>{meta.icon} {t(meta.labelKey)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoRow}>
+            <View>
+              <Text style={styles.infoLabel}>{t('admin.paymentList.amount')}</Text>
+              <Text style={styles.tutar}>{formatMoney(item.tutar || item.amount)}</Text>
+            </View>
+            <View style={styles.infoRight}>
+              <Text style={styles.infoLabel}>{item.odemeTarihi ? t('admin.paymentList.paymentDate') : t('admin.paymentList.dueDate')}</Text>
+              <Text style={styles.tarih} numberOfLines={1}>{item.odemeTarihi || item.sonOdemeTarihi || '-'}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('PaymentForm', { paymentId: item.id })} activeOpacity={0.85}>
+            <Text style={styles.editBtnText}>{t('admin.paymentList.edit')}</Text>
+          </TouchableOpacity>
+          {item.durum !== 'odendi' ? (
+            <TouchableOpacity style={[styles.odendiBtn, busy && { opacity: 0.6 }]} onPress={() => odendiYap(item)} disabled={busy} activeOpacity={0.85}>
+              {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.odendiBtnText}>{t('admin.paymentList.markPaid')}</Text>}
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    );
   };
 
   if (loading) {
@@ -65,10 +316,10 @@ const DURUM_META = {
       </View>
 
       <View style={styles.summaryGrid}>
-        <SummaryBox title={t('admin.paymentList.openAmount')} value={formatMoney(stats.acikTutar)} color={THEME.red} />
-        <SummaryBox title={t('admin.paymentList.thisMonth')} value={formatMoney(stats.buAyTutar)} color={THEME.primary} />
-        <SummaryBox title={t('admin.paymentList.paid')} value={String(stats.odendi)} color={THEME.green} />
-        <SummaryBox title={t('admin.paymentList.late')} value={String(stats.gecikti)} color={THEME.red} />
+        <SummaryBox title={t("admin.paymentList.openAmount")} value={formatMoney(stats.acikTutar)} color={THEME.red} />
+        <SummaryBox title={t("admin.paymentList.thisMonth")} value={formatMoney(stats.buAyTutar)} color={THEME.primary} />
+        <SummaryBox title={t("admin.paymentList.paid")} value={String(stats.odendi)} color={THEME.green} />
+        <SummaryBox title={t("admin.paymentList.late")} value={String(stats.gecikti)} color={THEME.red} />
       </View>
 
       <View style={styles.filterRow}>
@@ -77,7 +328,7 @@ const DURUM_META = {
           const active = filter === key;
           return (
             <TouchableOpacity key={key} style={[styles.filterChip, active && { backgroundColor: meta.color, borderColor: meta.color }]} onPress={() => setFilter(key)} activeOpacity={0.8}>
-              <Text style={[styles.filterText, active && styles.filterTextActive]}>{t(meta.labelKey)}</Text>
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>{meta.label}</Text>
             </TouchableOpacity>
           );
         })}
