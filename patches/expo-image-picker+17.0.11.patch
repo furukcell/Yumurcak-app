@@ -18,7 +18,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
  import expo.modules.interfaces.permissions.PermissionsResponse
  import expo.modules.interfaces.permissions.PermissionsResponseListener
 @@ -302,6 +302,6 @@ class ImagePickerModule : Module() {
-  * Simple data structure that would be preserved after the Activity is destroyed.
+  * Simple data structure used to hold the data that has to be preserved after the Activity is destroyed.
   */
  internal data class PendingMediaPickingResult(
 -  val data: List<Pair<MediaType, Uri>>,
@@ -50,8 +50,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
  
  internal fun createOutputFile(cacheDir: File, extension: String): File {
    val filePath = FileUtilities.generateOutputPath(cacheDir, ImagePickerConstants.CACHE_DIR_NAME, extension)
-@@ -30,10 +31,30 @@ internal fun createOutputFile(cacheDir: File, uri: Uri): String =
-   }
+@@ -30,10 +31,30 @@ internal fun createOutputFile(cacheDir: File, extension: String): File {
  }
  
 -internal fun getType(contentResolver: ContentResolver, uri: Uri): String =
@@ -65,14 +64,14 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
 +        null,
 +        null,
 +        null
-+      )?.use { cursor ->
-+        if (cursor.moveToFirst()) {
++      ).use { cursor ->
++        if (cursor?.moveToFirst() == true) {
 +          val columnIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE)
 +          if (columnIndex != -1 && !cursor.isNull(columnIndex)) {
-+            return@use cursor.getString(columnIndex)
++            cursor.getString(columnIndex)
 +          }
 +        }
-+        return@use null
++        null
 +      }
 +  }
 +
@@ -99,23 +98,6 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
 +    else -> null
 +  }
 +}
-+
-+private fun getTypeFromFileUrl(url: String): String? {
-+  val extension = MimeTypeMap.getFileExtensionFromUrl(url)
-+  return extension?.let { MimeTypeMap.getSingleton().getMimeTypeFromExtension(it) }
-+}
-+
-+internal fun String.toImageFileExtension(): String = when {
-+  this.endsWith("png", ignoreCase = true) -> ".png"
-+  this.endsWith("gif", ignoreCase = true) -> ".gif"
-+  this.endsWith("bmp", ignoreCase = true) -> ".bmp"
-+  this.endsWith("webp", ignoreCase = true) -> ".webp"
-+  !this.endsWith("jpeg", ignoreCase = true) -> {
-+    Log.w(TAG, "Image file $this is of unsupported type. Falling back to JPEG instead.")
-+    ".jpeg"
-   }
-+  else -> ".jpeg"
- }
  
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/MediaHandler.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/MediaHandler.kt
 --- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/MediaHandler.kt
@@ -164,7 +146,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
 -    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
 -    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
 -    cursor.moveToFirst()
--
+-    
 -    val name: String? = cursor.getString(nameIndex)
 -    val size = cursor.getLong(sizeIndex)
 -    AdditionalFileData(
@@ -210,6 +192,8 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
 diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt
 --- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt
 +++ b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt
+--- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt
++++ b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/contracts/CropImageContract.kt
 @@ -3,6 +3,7 @@ import android.app.Activity
  import android.content.Context
  import android.content.Intent
@@ -218,7 +202,7 @@ diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/i
  import androidx.core.net.toFile
  import androidx.core.net.toUri
 @@ -27,7 +28,7 @@ internal class CropImageContract(
- ) : AppContextActivityResultContract<ImageLibraryContractOptions, ImagePickerContractResult> {
+ ) : AppContextActivityResultContract<CropImageContractOptions, ImagePickerContractResult> {
    override fun createIntent(context: Context, input: CropImageContractOptions) = Intent(context, expo.modules.imagepicker.ExpoCropImageActivity::class.java).apply {
      val mediaType = expo.modules.imagepicker.getType(context.contentResolver, input.sourceUri.toUri())
 -    val compressFormat = mediaType.toBitmapCompressFormat()
