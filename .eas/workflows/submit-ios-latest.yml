@@ -3,6 +3,11 @@ name: Submit latest iOS build to App Store Connect
 on:
   workflow_dispatch: {}
 
+defaults:
+  tools:
+    node: 22.11.0
+    yarn: '1.22.22'
+
 jobs:
   get_ios_build:
     name: Get latest production iOS build
