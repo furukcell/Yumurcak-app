@@ -268,6 +268,8 @@ export default function MessageDetailScreen() {
             userIds: receiverIds,
             baslik: `💬 ${senderName}`,
             mesaj: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean,
+            i18nKey: 'notification.message',
+            i18nParams: { senderName, message: clean.length > 80 ? `${clean.slice(0, 80)}...` : clean },
             tip: 'mesaj',
             routeName: 'MessageDetail',
             routeParams: {

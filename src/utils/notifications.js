@@ -9,6 +9,7 @@ import { ref, set, get, update } from 'firebase/database';
 import { database } from '../config/firebase';
 import { ROLLER } from '../constants';
 import { findUserIdByAuthUid } from './authHelpers';
+import i18n from '../i18n';
 
 const EXPO_PROJECT_ID = '522bbf0b-0a2c-4198-93b8-429848df9a43';
 
@@ -101,6 +102,7 @@ export async function savePushTokenToDatabase(token, userId, authUid = '') {
       pushTokenUpdatedAt: now,
       pushTokenAuthUid: authUid || null,
       pushTokenUserId: resolvedUserId,
+      dil: i18n.language,
       [`pushTokens/${tokenKey}`]: {
         token,
         platform: Platform.OS,

@@ -179,7 +179,11 @@ export default function AnnouncementFormScreen() {
               userIds: teacherIds,
               baslik,
               mesaj: title.trim(),
-              tip: 'duyuru',
+              i18nKey: 'notification.announcement',
+              i18nParams: { title: title.trim() },
+              i18nKey: 'notification.announcement',
+            i18nParams: { title: title.trim() },
+            tip: 'duyuru',
               routeName: 'TeacherAnnouncements',
               createdBy,
             });

@@ -1,5 +1,7 @@
 import { onValue, push, query, orderByChild, equalTo, ref, serverTimestamp, update } from 'firebase/database';
 import { database } from '../config/firebase';
+import i18n from '../i18n';
+import { render as renderNotificationText } from '../utils/notificationTexts';
 
 const PATH = 'bildirimler';
 
@@ -33,11 +35,13 @@ function normalizeRole(role) {
 }
 
 function item(id, data = {}) {
+  const translated = data.i18nKey ? renderNotificationText(data.i18nKey, i18n.language, data.i18nParams || {}) : null;
+
   return {
     id,
     ...data,
-    baslik: data.baslik || data.title || 'Bildirim',
-    mesaj: data.mesaj || data.aciklama || '',
+    baslik: translated?.title || data.baslik || data.title || 'Bildirim',
+    mesaj: translated?.body || data.mesaj || data.aciklama || '',
     tip: data.tip || 'genel',
     routeName: data.routeName || data.hedefEkran || '',
     routeParams: data.routeParams || {},
@@ -101,6 +105,8 @@ export async function createNotification(payload = {}) {
   const data = cleanObject({
     baslik: payload.baslik || payload.title || 'Bildirim',
     mesaj: payload.mesaj || payload.aciklama || '',
+    i18nKey: payload.i18nKey || '',
+    i18nParams: payload.i18nParams || null,
     tip: payload.tip || 'genel',
     kresId: payload.kresId || '',
     hedefRol: payload.hedefRol || '',
@@ -121,13 +127,15 @@ export async function createNotification(payload = {}) {
   return notificationRef.key;
 }
 
-export async function createRoleNotification({ kresId, role, roles, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
+export async function createRoleNotification({ kresId, role, roles, baslik, mesaj, i18nKey, i18nParams, tip, routeName, routeParams, createdBy }) {
   return createNotification({
     kresId,
     hedefRol: role,
     hedefRoller: roles,
     baslik,
     mesaj,
+    i18nKey,
+    i18nParams,
     tip,
     routeName,
     routeParams,
@@ -135,7 +143,7 @@ export async function createRoleNotification({ kresId, role, roles, baslik, mesa
   });
 }
 
-export async function createUserNotification({ kresId, userIds, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
+export async function createUserNotification({ kresId, userIds, baslik, mesaj, i18nKey, i18nParams, tip, routeName, routeParams, createdBy }) {
   const ids = arr(userIds).filter(Boolean);
   if (!ids.length) return;
 
@@ -144,6 +152,8 @@ export async function createUserNotification({ kresId, userIds, baslik, mesaj, t
     hedefUserIds: ids,
     baslik,
     mesaj,
+    i18nKey,
+    i18nParams,
     tip,
     routeName,
     routeParams,

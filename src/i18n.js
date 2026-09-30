@@ -9,6 +9,9 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nManager } from 'react-native';
+import { auth, database } from './config/firebase';
+import { ref, update } from 'firebase/database';
+import { findUserIdByAuthUid } from './utils/authHelpers';
 
 import tr from './locales/tr.json';
 import en from './locales/en.json';
@@ -82,6 +85,16 @@ export async function setAppLanguage(lng) {
     await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
   } catch (error) {
     console.warn('Dil tercihi kaydedilemedi:', error?.message || error);
+  }
+
+  try {
+    const authUid = auth.currentUser?.uid;
+    if (authUid) {
+      const userId = await findUserIdByAuthUid(authUid);
+      if (userId) await update(ref(database, `kullanicilar/${userId}`), { dil: lng });
+    }
+  } catch (error) {
+    console.warn("Kullanıcı dili Firebase'e kaydedilemedi:", error?.message || error);
   }
 
   if (willBeRTL !== wasRTL) {
