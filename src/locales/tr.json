@@ -892,6 +892,9 @@
       "restartRequiredDesc": "Dil değişikliğinin tam olarak uygulanması için uygulamanın yeniden başlatılması gerekiyor.",
       "restartNow": "Şimdi Yeniden Başlat",
       "restartLater": "Daha Sonra"
+    },
+    "navigation": {
+      "loading": "Veli bilgileri hazırlanıyor..."
     }
   },
   "teacher": {
@@ -1928,38 +1931,6 @@
     }
   },
   "admin": {
-    "navigation": {
-      "statistics": "Kurum İstatistikleri",
-      "monthlyMeal": "Aylık Yemek Listesi",
-      "monthlyStaffTasks": "Personel Görev Listesi",
-      "monthlyDutyRoster": "Nöbet Çizelgesi",
-      "service": "Servis Listesi",
-      "vehicleForm": "Servis Aracı Ekle/Düzenle",
-      "birthdayCalendar": "Doğum Günü Takvimi",
-      "institutionSettings": "Kurum Bilgileri",
-      "theme": "Tema Ayarları",
-      "subscription": "Abonelik / Ödeme",
-      "messages": "Mesajlar",
-      "classList": "Sınıflar",
-      "classForm": "Sınıf Ekle/Düzenle",
-      "childList": "Çocuklar",
-      "childForm": "Çocuk Ekle/Düzenle",
-      "childDetail": "Çocuk Detayı",
-      "teacherList": "Öğretmenler",
-      "teacherForm": "Öğretmen Ekle/Düzenle",
-      "veliList": "Veliler",
-      "veliForm": "Veli Ekle/Düzenle",
-      "announcementList": "Duyurular",
-      "announcementForm": "Duyuru Oluştur",
-      "paymentList": "Ödemeler",
-      "paymentForm": "Ödeme Ekle/Düzenle",
-      "pollManagement": "Anket Yönetimi",
-      "bell": "Kurum Zili",
-      "lessonSchedule": "Ders Programı",
-      "monthlySchedule": "Aylık Ders Programı",
-      "eventList": "Etkinlikler",
-      "eventForm": "Etkinlik Ekle/Düzenle"
-    },
     "navigation": {
       "statistics": "Kurum İstatistikleri",
       "monthlyMeal": "Aylık Yemek Listesi",
