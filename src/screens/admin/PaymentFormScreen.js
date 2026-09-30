@@ -82,7 +82,7 @@ export default function PaymentFormScreen() {
   const [seciliCocukId, setSeciliCocukId] = useState('');
   const [ay, setAy] = useState(new Date().getMonth() + 1);
   const [yil, setYil] = useState(new Date().getFullYear());
-  const [baslik, setBaslik] = useState('Aylık Kreş Ücreti');
+  const [baslik, setBaslik] = useState(t('admin.paymentForm.defaultTitle'));
   const [tutar, setTutar] = useState('');
   const [durum, setDurum] = useState('bekliyor');
   const [sonOdemeTarihi, setSonOdemeTarihi] = useState('');
@@ -134,7 +134,7 @@ export default function PaymentFormScreen() {
             setSeciliCocukId(o.cocukId || o.childId || '');
             setAy(clampMonth(o.ay || String(o.tarih || '').split('-')[1]));
             setYil(Number(o.yil || String(o.tarih || '').split('-')[0]) || new Date().getFullYear());
-            setBaslik(o.baslik || o.title || o.aciklama || 'Aylık Kreş Ücreti');
+            setBaslik(o.baslik || o.title || o.aciklama || t('admin.paymentForm.defaultTitle'));
             setTutar(o.tutar || o.amount ? String(o.tutar || o.amount) : '');
             setDurum(normalizeDurum(o.durum || o.status));
             setSonOdemeTarihi(o.sonOdemeTarihi || o.dueDate || '');
@@ -182,9 +182,9 @@ export default function PaymentFormScreen() {
         parentId: veliId,
         veliIds: finalVeliIds,
         parentIds: finalVeliIds,
-        baslik: baslik.trim() || 'Aylık Kreş Ücreti',
-        title: baslik.trim() || 'Aylık Kreş Ücreti',
-        aciklama: aciklama.trim() || baslik.trim() || 'Aylık Kreş Ücreti',
+        baslik: baslik.trim() || t('admin.paymentForm.defaultTitle'),
+        title: baslik.trim() || t('admin.paymentForm.defaultTitle'),
+        aciklama: aciklama.trim() || baslik.trim() || t('admin.paymentForm.defaultTitle'),
         ay: finalAy,
         yil: finalYil,
         donem: monthLabel(finalAy, finalYil, t),
