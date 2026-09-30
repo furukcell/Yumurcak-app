@@ -406,6 +406,8 @@ export default function AdminMonthlyScheduleScreen({ navigation }) {
         hedefSinifIds: [sinifId],
         baslik: `📅 ${t('admin.monthly.schedule.updatedTitle')}`,
         mesaj: t('admin.monthly.schedule.publishedToast', { className: sinifAd, month: monthLabel }),
+        i18nKey: 'notification.schedule.published',
+        i18nParams: { className: sinifAd, monthIndex: monthDate.getMonth() + 1, year: monthDate.getFullYear() },
         tip: 'ders_programi',
         routeName: 'ParentSummary',
         createdBy: adminId || '',
