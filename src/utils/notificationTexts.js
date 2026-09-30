@@ -49,6 +49,54 @@ const NOTIFICATION_TEXTS = {
     title: { tr: '🖼️ Galeriye yeni paylaşım', en: '🖼️ New gallery post', ru: '🖼️ Новая публикация в галерее', de: '🖼️ Neuer Galeriebeitrag', fr: '🖼️ Nouvelle publication dans la galerie', ar: '🖼️ مشاركة جديدة في المعرض' },
     body: { tr: '{{title}}: {{mediaCount}} yeni medya yüklendi.', en: '{{title}}: {{mediaCount}} new media items were uploaded.', ru: '{{title}}: загружено новых медиафайлов: {{mediaCount}}.', de: '{{title}}: {{mediaCount}} neue Medien wurden hochgeladen.', fr: '{{title}} : {{mediaCount}} nouveaux médias ont été ajoutés.', ar: '{{title}}: تم رفع {{mediaCount}} ملفات وسائط جديدة.' },
   },
+  'notification.poll': {
+    title: { tr: '🗳️ Yeni anket', en: '🗳️ New poll', ru: '🗳️ Новый опрос', de: '🗳️ Neue Umfrage', fr: '🗳️ Nouveau sondage', ar: '🗳️ استطلاع جديد' },
+    body: { tr: '{{title}}', en: '{{title}}', ru: '{{title}}', de: '{{title}}', fr: '{{title}}', ar: '{{title}}' },
+  },
+  'notification.pollReminder': {
+    title: { tr: '🗳️ Anket hatırlatması', en: '🗳️ Poll reminder', ru: '🗳️ Напоминание об опросе', de: '🗳️ Erinnerung an die Umfrage', fr: '🗳️ Rappel du sondage', ar: '🗳️ تذكير بالاستطلاع' },
+    body: { tr: '"{{title}}" anketine henüz cevap vermediniz.', en: 'You have not answered the "{{title}}" poll yet.', ru: 'Вы ещё не ответили на опрос «{{title}}».', de: 'Sie haben an der Umfrage „{{title}}“ noch nicht teilgenommen.', fr: 'Vous n’avez pas encore répondu au sondage « {{title}} ».', ar: 'لم تجب على استطلاع "{{title}}" بعد.' },
+  },
+  'notification.badge': {
+    title: { tr: '🏅 Yeni rozet', en: '🏅 New badge', ru: '🏅 Новый значок', de: '🏅 Neues Abzeichen', fr: '🏅 Nouveau badge', ar: '🏅 شارة جديدة' },
+    body: { tr: '{{childName}} bu hafta "{{badgeTitle}}" rozeti kazandı.', en: '{{childName}} earned the "{{badgeTitle}}" badge this week.', ru: '{{childName}} получил(а) значок «{{badgeTitle}}» на этой неделе.', de: '{{childName}} hat diese Woche das Abzeichen „{{badgeTitle}}“ erhalten.', fr: '{{childName}} a obtenu le badge « {{badgeTitle}} » cette semaine.', ar: 'حصل {{childName}} هذا الأسبوع على شارة "{{badgeTitle}}".' },
+  },
+  'notification.meal': {
+    title: { tr: '🍽️ Yemek listesi güncellendi', en: '🍽️ Meal list updated', ru: '🍽️ Меню обновлено', de: '🍽️ Speiseplan aktualisiert', fr: '🍽️ Menu mis à jour', ar: '🍽️ تم تحديث قائمة الطعام' },
+    body: { tr: '{{title}} yayınlandı.', en: '{{title}} was published.', ru: 'Опубликовано: {{title}}.', de: '{{title}} wurde veröffentlicht.', fr: '{{title}} a été publié.', ar: 'تم نشر {{title}}.' },
+  },
+  'notification.medical': {
+    title: { tr: '🩺 Medikal bilgi güncellendi', en: '🩺 Medical information updated', ru: '🩺 Медицинская информация обновлена', de: '🩺 Medizinische Informationen aktualisiert', fr: '🩺 Informations médicales mises à jour', ar: '🩺 تم تحديث المعلومات الطبية' },
+    body: { tr: '{{childName}} için medikal bilgiler güncellendi.', en: 'Medical information was updated for {{childName}}.', ru: 'Медицинская информация для {{childName}} обновлена.', de: 'Die medizinischen Informationen für {{childName}} wurden aktualisiert.', fr: 'Les informations médicales de {{childName}} ont été mises à jour.', ar: 'تم تحديث المعلومات الطبية لـ {{childName}}.' },
+  },
+  'notification.development': {
+    title: { tr: '📈 Gelişim kaydı eklendi', en: '📈 Development record added', ru: '📈 Добавлена запись о развитии', de: '📈 Entwicklungsdatensatz hinzugefügt', fr: '📈 Enregistrement de développement ajouté', ar: '📈 تمت إضافة سجل تطور' },
+    body: { tr: '{{childName}} için yeni fiziksel gelişim ölçümü kaydedildi.', en: 'A new physical development measurement was recorded for {{childName}}.', ru: 'Для {{childName}} добавлено новое измерение физического развития.', de: 'Für {{childName}} wurde eine neue Messung der körperlichen Entwicklung gespeichert.', fr: 'Une nouvelle mesure du développement physique de {{childName}} a été enregistrée.', ar: 'تم تسجيل قياس جديد للتطور الجسدي لـ {{childName}}.' },
+  },
+  'notification.adaptation': {
+    title: { tr: '🌱 Uyum takibi güncellendi', en: '🌱 Adaptation tracking updated', ru: '🌱 Адаптация обновлена', de: '🌱 Eingewöhnung aktualisiert', fr: '🌱 Suivi d’adaptation mis à jour', ar: '🌱 تم تحديث متابعة التكيف' },
+    body: { tr: '{{childName}} için bugünkü uyum kaydı girildi.{{scoreText}}', en: "Today's adaptation record was added for {{childName}}.{{scoreText}}", ru: 'Для {{childName}} добавлена сегодняшняя запись об адаптации.{{scoreText}}', de: 'Der heutige Eingewöhnungseintrag für {{childName}} wurde hinzugefügt.{{scoreText}}', fr: 'Le suivi d’adaptation du jour de {{childName}} a été ajouté.{{scoreText}}', ar: 'تمت إضافة سجل التكيف اليومي لـ {{childName}}.{{scoreText}}' },
+  },
+  'notification.event': {
+    title: { tr: '🎉 {{title}}', en: '🎉 {{title}}', ru: '🎉 {{title}}', de: '🎉 {{title}}', fr: '🎉 {{title}}', ar: '🎉 {{title}}' },
+    body: { tr: 'Yeni bir etkinlik eklendi{{dateLabel}}.', en: 'A new event was added{{dateLabel}}.', ru: 'Добавлено новое мероприятие{{dateLabel}}.', de: 'Eine neue Veranstaltung wurde hinzugefügt{{dateLabel}}.', fr: 'Un nouvel événement a été ajouté{{dateLabel}}.', ar: 'تمت إضافة فعالية جديدة{{dateLabel}}.' },
+  },
+  'notification.birthday.parent': {
+    title: { tr: '🎂 Doğum günü kutlu olsun!', en: '🎂 Happy birthday!', ru: '🎂 С днём рождения!', de: '🎂 Alles Gute zum Geburtstag!', fr: '🎂 Joyeux anniversaire !', ar: '🎂 عيد ميلاد سعيد!' },
+    body: { tr: '{{childName}} bugün {{age}} yaşına giriyor! 🎉', en: '{{childName}} turns {{age}} today! 🎉', ru: 'Сегодня {{childName}} исполняется {{age}} лет! 🎉', de: '{{childName}} wird heute {{age}} Jahre alt! 🎉', fr: '{{childName}} fête ses {{age}} ans aujourd’hui ! 🎉', ar: 'يُكمل {{childName}} اليوم {{age}} عامًا! 🎉' },
+  },
+  'notification.birthday.teacher': {
+    title: { tr: '🎂 Sınıfınızda doğum günü var', en: '🎂 Birthday in your class', ru: '🎂 День рождения в вашем классе', de: '🎂 Geburtstag in Ihrer Klasse', fr: '🎂 Anniversaire dans votre classe', ar: '🎂 عيد ميلاد في صفك' },
+    body: { tr: '{{childName}} bugün doğum günü kutluyor.', en: '{{childName}} is celebrating a birthday today.', ru: 'Сегодня {{childName}} празднует день рождения.', de: '{{childName}} hat heute Geburtstag.', fr: '{{childName}} fête son anniversaire aujourd’hui.', ar: 'يحتفل {{childName}} بعيد ميلاده اليوم.' },
+  },
+  'notification.medication.parent': {
+    title: { tr: '⏰ İlaç saati geldi', en: '⏰ Medication time', ru: '⏰ Время лекарства', de: '⏰ Medikamentenzeit', fr: '⏰ Heure du médicament', ar: '⏰ حان وقت الدواء' },
+    body: { tr: '{{childName}} için "{{medication}}" verilme saati ({{time}}) geldi.', en: 'It is time ({{time}}) to give "{{medication}}" to {{childName}}.', ru: 'Пришло время ({{time}}) дать {{childName}} лекарство «{{medication}}».', de: 'Es ist Zeit ({{time}}), {{childName}} „{{medication}}“ zu geben.', fr: 'Il est temps ({{time}}) de donner « {{medication}} » à {{childName}}.', ar: 'حان وقت ({{time}}) إعطاء "{{medication}}" لـ {{childName}}.' },
+  },
+  'notification.medication.teacher': {
+    title: { tr: '⏰ İlaç saati geldi', en: '⏰ Medication time', ru: '⏰ Время лекарства', de: '⏰ Medikamentenzeit', fr: '⏰ Heure du médicament', ar: '⏰ حان وقت الدواء' },
+    body: { tr: '{{childName}} için "{{medication}}" verilme zamanı geldi.', en: 'It is time to give "{{medication}}" to {{childName}}.', ru: 'Пришло время дать {{childName}} лекарство «{{medication}}».', de: 'Es ist Zeit, {{childName}} „{{medication}}“ zu geben.', fr: 'Il est temps de donner « {{medication}} » à {{childName}}.', ar: 'حان وقت إعطاء "{{medication}}" لـ {{childName}}.' },
+  },
 };
 
 function interpolate(template, params = {}) {
