@@ -209,6 +209,8 @@ export default function PaymentFormScreen() {
     userIds: finalVeliIds,
     baslik: '💳 Yeni ödeme kaydı',
     mesaj: `${childName(cocuk)} için ${monthLabel(finalAy, finalYil, t)} dönemine ait ${formatMoney(finalTutar)} ödeme kaydı oluşturuldu.`,
+    i18nKey: 'notification.payment.new',
+    i18nParams: { childName: childName(cocuk), monthIndex: finalAy, year: finalYil, amount: formatMoney(finalTutar) },
     tip: 'odeme',
     routeName: 'ParentPayments',
     createdBy: kullanici?.uid || kullanici?.id || '',
