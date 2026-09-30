@@ -118,6 +118,8 @@ export default function ParentMedicalScreen({ navigation }) {
           hedefUserIds: [form.olusturanId],
           baslik: '✅ Veli ilaç takip formunu onayladı',
           mesaj: `${getChildName(selectedChild)} için "${form.ilacAdi || 'İlaç'}" ilaç takip formu onaylandı.`,
+          i18nKey: 'notification.medform.approved',
+          i18nParams: { childName: getChildName(selectedChild), medication: form.ilacAdi || 'İlaç' },
           tip: 'ilac_takip',
           routeName: 'TeacherMedicationFormDetail',
           routeParams: { formId: form.id },
@@ -145,6 +147,8 @@ export default function ParentMedicalScreen({ navigation }) {
           hedefUserIds: [form.olusturanId],
           baslik: '❌ Veli ilaç takip formunu reddetti',
           mesaj: `${getChildName(selectedChild)} için "${form.ilacAdi || 'İlaç'}" ilaç takip formu talebi reddedildi.`,
+          i18nKey: 'notification.medform.rejected',
+          i18nParams: { childName: getChildName(selectedChild), medication: form.ilacAdi || 'İlaç' },
           tip: 'ilac_takip',
           createdBy: parentId || '',
         }).catch((error) => console.log('Öğretmen bildirimi gönderilemedi:', error));
@@ -227,6 +231,8 @@ export default function ParentMedicalScreen({ navigation }) {
           hedefSinifIds: [sinifId],
           baslik: isNew ? '💊 Veli yeni ilaç takip formu ekledi' : '💊 Veli ilaç takip formunu güncelledi',
           mesaj: `${getChildName(selectedChild)} için "${formDraft.ilacAdi.trim()}" ${isNew ? 'formu eklendi' : 'formu güncellendi'}.`,
+          i18nKey: isNew ? 'notification.medform.parentAdded' : 'notification.medform.parentUpdated',
+          i18nParams: { childName: getChildName(selectedChild), medication: formDraft.ilacAdi.trim() },
           tip: 'ilac_takip',
           createdBy: parentId || '',
         }).catch((error) => console.log('Öğretmen bildirimi gönderilemedi:', error));
