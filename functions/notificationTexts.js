@@ -1,13 +1,18 @@
 const SUPPORTED_LANGUAGES = ['tr', 'en', 'ru', 'de', 'fr', 'ar'];
 
+const MONTH_NAMES = {
+  tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  ru: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+  de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+  fr: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+  ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+};
+
 const NOTIFICATION_TEXTS = {
   'notification.message': {
     title: { tr: '💬 {{senderName}}', en: '💬 {{senderName}}', ru: '💬 {{senderName}}', de: '💬 {{senderName}}', fr: '💬 {{senderName}}', ar: '💬 {{senderName}}' },
     body: { tr: '{{message}}', en: '{{message}}', ru: '{{message}}', de: '{{message}}', fr: '{{message}}', ar: '{{message}}' },
-  },
-  'notification.announcement': {
-    title: { tr: '📢 Yeni duyuru', en: '📢 New announcement', ru: '📢 Новое объявление', de: '📢 Neue Ankündigung', fr: '📢 Nouvelle annonce', ar: '📢 إعلان جديد' },
-    body: { tr: '{{title}}', en: '{{title}}', ru: '{{title}}', de: '{{title}}', fr: '{{title}}', ar: '{{title}}' },
   },
   'notification.paymentDue': {
     title: { tr: '⚠️ Abonelik Ödemesi Bekleniyor', en: '⚠️ Subscription payment due', ru: '⚠️ Ожидается оплата подписки', de: '⚠️ Abonnementzahlung ausstehend', fr: '⚠️ Paiement de l’abonnement en attente', ar: '⚠️ دفعة الاشتراك مستحقة' },
@@ -75,7 +80,7 @@ const NOTIFICATION_TEXTS = {
   },
   'notification.adaptation': {
     title: { tr: '🌱 Uyum takibi güncellendi', en: '🌱 Adaptation tracking updated', ru: '🌱 Адаптация обновлена', de: '🌱 Eingewöhnung aktualisiert', fr: '🌱 Suivi d’adaptation mis à jour', ar: '🌱 تم تحديث متابعة التكيف' },
-    body: { tr: '{{childName}} için bugünkü uyum kaydı girildi.{{scoreText}}', en: "Today's adaptation record was added for {{childName}}.{{scoreText}}", ru: 'Для {{childName}} добавлена сегодняшняя запись об адаптации.{{scoreText}}', de: 'Der heutige Eingewöhnungseintrag für {{childName}} wurde hinzugefügt.{{scoreText}}', fr: 'Le suivi d’adaptation du jour de {{childName}} a été ajouté.{{scoreText}}', ar: 'تمت إضافة سجل التكيف اليومي لـ {{childName}}.{{scoreText}}' },
+    body: { tr: '{{childName}} için bugünkü uyum kaydı girildi.', en: "Today's adaptation record was added for {{childName}}.", ru: 'Для {{childName}} добавлена сегодняшняя запись об адаптации.', de: 'Der heutige Eingewöhnungseintrag für {{childName}} wurde hinzugefügt.', fr: 'Le suivi d’adaptation du jour de {{childName}} a été ajouté.', ar: 'تمت إضافة سجل التكيف اليومي لـ {{childName}}.' },
   },
   'notification.event': {
     title: { tr: '🎉 {{title}}', en: '🎉 {{title}}', ru: '🎉 {{title}}', de: '🎉 {{title}}', fr: '🎉 {{title}}', ar: '🎉 {{title}}' },
@@ -97,6 +102,78 @@ const NOTIFICATION_TEXTS = {
     title: { tr: '⏰ İlaç saati geldi', en: '⏰ Medication time', ru: '⏰ Время лекарства', de: '⏰ Medikamentenzeit', fr: '⏰ Heure du médicament', ar: '⏰ حان وقت الدواء' },
     body: { tr: '{{childName}} için "{{medication}}" verilme zamanı geldi.', en: 'It is time to give "{{medication}}" to {{childName}}.', ru: 'Пришло время дать {{childName}} лекарство «{{medication}}».', de: 'Es ist Zeit, {{childName}} „{{medication}}“ zu geben.', fr: 'Il est temps de donner « {{medication}} » à {{childName}}.', ar: 'حان وقت إعطاء "{{medication}}" لـ {{childName}}.' },
   },
+  'notification.adaptation.score': {
+    title: { tr: '🌱 Uyum takibi güncellendi', en: '🌱 Adaptation tracking updated', ru: '🌱 Адаптация обновлена', de: '🌱 Eingewöhnung aktualisiert', fr: '🌱 Suivi d’adaptation mis à jour', ar: '🌱 تم تحديث متابعة التكيف' },
+    body: { tr: '{{childName}} için bugünkü uyum kaydı girildi. Skor: {{score}}/100.', en: "Today's adaptation record was added for {{childName}}. Score: {{score}}/100.", ru: 'Для {{childName}} добавлена сегодняшняя запись об адаптации. Оценка: {{score}}/100.', de: 'Der heutige Eingewöhnungseintrag für {{childName}} wurde hinzugefügt. Punktzahl: {{score}}/100.', fr: 'Le suivi d’adaptation du jour de {{childName}} a été ajouté. Score : {{score}}/100.', ar: 'تمت إضافة سجل التكيف اليومي لـ {{childName}}. النتيجة: {{score}}/100.' },
+  },
+  'notification.payment.new': {
+    title: { tr: '💳 Yeni ödeme kaydı', en: '💳 New payment record', ru: '💳 Новая запись об оплате', de: '💳 Neuer Zahlungseintrag', fr: '💳 Nouveau paiement enregistré', ar: '💳 تسجيل دفعة جديدة' },
+    body: { tr: '{{childName}} için {{month}} {{year}} dönemine ait {{amount}} ödeme kaydı oluşturuldu.', en: 'A payment record of {{amount}} was created for {{childName}} for {{month}} {{year}}.', ru: 'Для {{childName}} создана запись об оплате {{amount}} за {{month}} {{year}}.', de: 'Für {{childName}} wurde ein Zahlungseintrag über {{amount}} für {{month}} {{year}} erstellt.', fr: 'Un paiement de {{amount}} a été enregistré pour {{childName}} pour {{month}} {{year}}.', ar: 'تم إنشاء سجل دفعة بقيمة {{amount}} لـ {{childName}} عن {{month}} {{year}}.' },
+  },
+  'notification.meal.published': {
+    title: { tr: '🍽️ Yemek listesi güncellendi', en: '🍽️ Meal list updated', ru: '🍽️ Меню обновлено', de: '🍽️ Speiseplan aktualisiert', fr: '🍽️ Menu mis à jour', ar: '🍽️ تم تحديث قائمة الطعام' },
+    body: { tr: '{{month}} {{year}} yemek listesi yayınlandı.', en: 'The {{month}} {{year}} meal list was published.', ru: 'Опубликовано меню на {{month}} {{year}}.', de: 'Der Speiseplan für {{month}} {{year}} wurde veröffentlicht.', fr: 'Le menu de {{month}} {{year}} a été publié.', ar: 'تم نشر قائمة الطعام لشهر {{month}} {{year}}.' },
+  },
+  'notification.schedule.published': {
+    title: { tr: '📅 Ders programı güncellendi', en: '📅 Class schedule updated', ru: '📅 Расписание обновлено', de: '📅 Stundenplan aktualisiert', fr: '📅 Emploi du temps mis à jour', ar: '📅 تم تحديث جدول الدروس' },
+    body: { tr: '{{className}} sınıfının {{month}} {{year}} ders programı yayınlandı.', en: 'The {{month}} {{year}} schedule for {{className}} was published.', ru: 'Опубликовано расписание класса {{className}} на {{month}} {{year}}.', de: 'Der Stundenplan der Klasse {{className}} für {{month}} {{year}} wurde veröffentlicht.', fr: 'L’emploi du temps de la classe {{className}} pour {{month}} {{year}} a été publié.', ar: 'تم نشر جدول دروس صف {{className}} لشهر {{month}} {{year}}.' },
+  },
+  'notification.meal.publishedClass': {
+    title: { tr: '🍽️ Yemek listesi güncellendi', en: '🍽️ Meal list updated', ru: '🍽️ Меню обновлено', de: '🍽️ Speiseplan aktualisiert', fr: '🍽️ Menu mis à jour', ar: '🍽️ تم تحديث قائمة الطعام' },
+    body: { tr: '{{className}} için {{month}} {{year}} yemek listesi yayınlandı.', en: 'The {{month}} {{year}} meal list for {{className}} was published.', ru: 'Опубликовано меню класса {{className}} на {{month}} {{year}}.', de: 'Der Speiseplan für {{className}} für {{month}} {{year}} wurde veröffentlicht.', fr: 'Le menu de {{month}} {{year}} pour {{className}} a été publié.', ar: 'تم نشر قائمة الطعام لشهر {{month}} {{year}} لـ {{className}}.' },
+  },
+  'notification.bell.coming': {
+    title: { tr: '🚗 Veli geliyor', en: '🚗 Parent is coming', ru: '🚗 Родитель едет', de: '🚗 Elternteil kommt', fr: '🚗 Le parent arrive', ar: '🚗 ولي الأمر قادم' },
+    body: { tr: '{{parentName}}, {{childName}} için kurum zili gönderdi.', en: '{{parentName}} sent an institution bell for {{childName}}.', ru: '{{parentName}} отправил(а) звонок в учреждение для {{childName}}.', de: '{{parentName}} hat für {{childName}} die Klingel der Einrichtung ausgelöst.', fr: '{{parentName}} a envoyé une alerte à l’établissement pour {{childName}}.', ar: 'أرسل {{parentName}} جرس المؤسسة لـ {{childName}}.' },
+  },
+  'notification.bell.arrived': {
+    title: { tr: '📍 Veli kapıda', en: '📍 Parent is at the door', ru: '📍 Родитель у двери', de: '📍 Elternteil ist an der Tür', fr: '📍 Le parent est à la porte', ar: '📍 ولي الأمر عند الباب' },
+    body: { tr: '{{parentName}}, {{childName}} için kurum zili gönderdi.', en: '{{parentName}} sent an institution bell for {{childName}}.', ru: '{{parentName}} отправил(а) звонок в учреждение для {{childName}}.', de: '{{parentName}} hat für {{childName}} die Klingel der Einrichtung ausgelöst.', fr: '{{parentName}} a envoyé une alerte à l’établissement pour {{childName}}.', ar: 'أرسل {{parentName}} جرس المؤسسة لـ {{childName}}.' },
+  },
+  'notification.medform.approved': {
+    title: { tr: '✅ Veli ilaç takip formunu onayladı', en: '✅ Parent approved the medication form', ru: '✅ Родитель одобрил форму лекарства', de: '✅ Elternteil hat das Medikamentenformular genehmigt', fr: '✅ Le parent a approuvé le formulaire de médicament', ar: '✅ وافق ولي الأمر على نموذج الدواء' },
+    body: { tr: '{{childName}} için "{{medication}}" ilaç takip formu onaylandı.', en: 'The medication form for {{childName}} for "{{medication}}" was approved.', ru: 'Форма лекарства «{{medication}}» для {{childName}} одобрена.', de: 'Das Medikamentenformular für {{childName}} für „{{medication}}“ wurde genehmigt.', fr: 'Le formulaire du médicament « {{medication}} » pour {{childName}} a été approuvé.', ar: 'تمت الموافقة على نموذج الدواء "{{medication}}" لـ {{childName}}.' },
+  },
+  'notification.medform.rejected': {
+    title: { tr: '❌ Veli ilaç takip formunu reddetti', en: '❌ Parent rejected the medication form', ru: '❌ Родитель отклонил форму лекарства', de: '❌ Elternteil hat das Medikamentenformular abgelehnt', fr: '❌ Le parent a refusé le formulaire de médicament', ar: '❌ رفض ولي الأمر نموذج الدواء' },
+    body: { tr: '{{childName}} için "{{medication}}" ilaç takip formu talebi reddedildi.', en: 'The medication form request for {{childName}} for "{{medication}}" was rejected.', ru: 'Запрос на форму лекарства «{{medication}}» для {{childName}} отклонён.', de: 'Die Anfrage für das Medikamentenformular für {{childName}} für „{{medication}}“ wurde abgelehnt.', fr: 'La demande de formulaire du médicament « {{medication}} » pour {{childName}} a été refusée.', ar: 'تم رفض طلب نموذج الدواء "{{medication}}" لـ {{childName}}.' },
+  },
+  'notification.medform.parentAdded': {
+    title: { tr: '💊 Veli yeni ilaç takip formu ekledi', en: '💊 Parent added a new medication form', ru: '💊 Родитель добавил новую форму лекарства', de: '💊 Elternteil hat ein neues Medikamentenformular hinzugefügt', fr: '💊 Le parent a ajouté un nouveau formulaire de médicament', ar: '💊 أضاف ولي الأمر نموذج دواء جديدًا' },
+    body: { tr: '{{childName}} için "{{medication}}" formu eklendi.', en: 'A "{{medication}}" medication form was added for {{childName}}.', ru: 'Для {{childName}} добавлена форма лекарства «{{medication}}».', de: 'Für {{childName}} wurde ein Medikamentenformular für „{{medication}}“ hinzugefügt.', fr: 'Un formulaire pour le médicament « {{medication}} » a été ajouté pour {{childName}}.', ar: 'تمت إضافة نموذج دواء "{{medication}}" لـ {{childName}}.' },
+  },
+  'notification.medform.parentUpdated': {
+    title: { tr: '💊 Veli ilaç takip formunu güncelledi', en: '💊 Parent updated the medication form', ru: '💊 Родитель обновил форму лекарства', de: '💊 Elternteil hat das Medikamentenformular aktualisiert', fr: '💊 Le parent a mis à jour le formulaire de médicament', ar: '💊 حدّث ولي الأمر نموذج الدواء' },
+    body: { tr: '{{childName}} için "{{medication}}" formu güncellendi.', en: 'The "{{medication}}" medication form for {{childName}} was updated.', ru: 'Форма лекарства «{{medication}}» для {{childName}} обновлена.', de: 'Das Medikamentenformular für {{childName}} für „{{medication}}“ wurde aktualisiert.', fr: 'Le formulaire du médicament « {{medication}} » pour {{childName}} a été mis à jour.', ar: 'تم تحديث نموذج الدواء "{{medication}}" لـ {{childName}}.' },
+  },
+  'notification.medication.given': {
+    title: { tr: '💊 İlaç uygulandı', en: '💊 Medication administered', ru: '💊 Лекарство выдано', de: '💊 Medikament verabreicht', fr: '💊 Médicament administré', ar: '💊 تم إعطاء الدواء' },
+    body: { tr: '{{childName}} için bugünkü "{{medication}}" dozu verildi.', en: 'Today’s "{{medication}}" dose was given to {{childName}}.', ru: 'Для {{childName}} сегодня была выдана доза лекарства «{{medication}}».', de: 'Die heutige Dosis „{{medication}}“ wurde {{childName}} verabreicht.', fr: 'La dose de « {{medication}} » d’aujourd’hui a été donnée à {{childName}}.', ar: 'تم إعطاء جرعة "{{medication}}" اليوم لـ {{childName}}.' },
+  },
+  'notification.medform.awaitingApproval': {
+    title: { tr: '💊 İlaç takip formu onayınızı bekliyor', en: '💊 Medication form awaiting your approval', ru: '💊 Форма лекарства ожидает вашего одобрения', de: '💊 Medikamentenformular wartet auf Ihre Genehmigung', fr: '💊 Le formulaire de médicament attend votre approbation', ar: '💊 نموذج الدواء بانتظار موافقتك' },
+    body: { tr: '{{childName}} için "{{medication}}" ilaç takip formu oluşturuldu, onayınız bekleniyor.', en: 'A "{{medication}}" medication form was created for {{childName}} and is awaiting your approval.', ru: 'Для {{childName}} создана форма лекарства «{{medication}}», ожидается ваше одобрение.', de: 'Für {{childName}} wurde ein Medikamentenformular für „{{medication}}“ erstellt, das auf Ihre Genehmigung wartet.', fr: 'Un formulaire pour le médicament « {{medication}} » a été créé pour {{childName}} et attend votre approbation.', ar: 'تم إنشاء نموذج دواء "{{medication}}" لـ {{childName}} وينتظر موافقتك.' },
+  },
+  'notification.service.pickedUp': {
+    title: { tr: '🚌 Servise alındı', en: '🚌 Picked up by the bus', ru: '🚌 Ребёнка забрали в автобус', de: '🚌 Vom Fahrdienst abgeholt', fr: '🚌 Pris en charge par le bus', ar: '🚌 تم اصطحابه بالحافلة' },
+    body: { tr: '{{name}} servise alındı.', en: '{{name}} was picked up by the bus.', ru: '{{name}} забрали в автобус.', de: '{{name}} wurde vom Fahrdienst abgeholt.', fr: '{{name}} a été pris en charge par le bus.', ar: 'تم اصطحاب {{name}} بالحافلة.' },
+  },
+  'notification.service.droppedOff': {
+    title: { tr: '🏠 Servisten bırakıldı', en: '🏠 Dropped off at home', ru: '🏠 Ребёнка доставили домой', de: '🏠 Nach Hause gebracht', fr: '🏠 Déposé à la maison', ar: '🏠 تم توصيله إلى المنزل' },
+    body: { tr: '{{name}} evine bırakıldı.', en: '{{name}} was dropped off at home.', ru: '{{name}} доставили домой.', de: '{{name}} wurde nach Hause gebracht.', fr: '{{name}} a été déposé à la maison.', ar: 'تم توصيل {{name}} إلى المنزل.' },
+  },
+  'notification.service.arrivedWithChild': {
+    title: { tr: '🏫 Servis kuruma ulaştı', en: '🏫 Bus arrived at the institution', ru: '🏫 Автобус прибыл в учреждение', de: '🏫 Fahrdienst ist in der Einrichtung angekommen', fr: '🏫 Le bus est arrivé à l’établissement', ar: '🏫 وصلت الحافلة إلى المؤسسة' },
+    body: { tr: '{{name}} ile birlikte {{serviceName}} kuruma ulaştı.', en: '{{serviceName}} arrived at the institution with {{name}}.', ru: '{{serviceName}} прибыл в учреждение вместе с {{name}}.', de: '{{serviceName}} ist mit {{name}} in der Einrichtung angekommen.', fr: '{{serviceName}} est arrivé à l’établissement avec {{name}}.', ar: 'وصل {{serviceName}} إلى المؤسسة مع {{name}}.' },
+  },
+  'notification.service.arrivedCount': {
+    title: { tr: '🏫 Servis kuruma ulaştı', en: '🏫 Bus arrived at the institution', ru: '🏫 Автобус прибыл в учреждение', de: '🏫 Fahrdienst ist in der Einrichtung angekommen', fr: '🏫 Le bus est arrivé à l’établissement', ar: '🏫 وصلت الحافلة إلى المؤسسة' },
+    body: { tr: '{{serviceName}} kuruma ulaştı — {{count}} çocuk.', en: '{{serviceName}} arrived at the institution — {{count}} children.', ru: '{{serviceName}} прибыл в учреждение — {{count}} детей.', de: '{{serviceName}} ist in der Einrichtung angekommen — {{count}} Kinder.', fr: '{{serviceName}} est arrivé à l’établissement — {{count}} enfants.', ar: 'وصل {{serviceName}} إلى المؤسسة — {{count}} أطفال.' },
+  },
+  'notification.subscription.info': {
+    title: { tr: 'Abonelik / Ödeme Bilgilendirmesi', en: 'Subscription / Payment Information', ru: 'Информация о подписке / оплате', de: 'Abonnement- / Zahlungsinformation', fr: 'Informations sur l’abonnement / le paiement', ar: 'معلومات الاشتراك / الدفع' },
+    body: { tr: '{{text}}', en: '{{text}}', ru: '{{text}}', de: '{{text}}', fr: '{{text}}', ar: '{{text}}' },
+  },
 };
 
 function interpolate(template, params = {}) {
@@ -115,9 +192,16 @@ function render(key, lang, params = {}) {
   const language = normalizeLanguage(lang);
   const entry = NOTIFICATION_TEXTS[key];
   if (!language || !entry || !entry.title?.[language] || !entry.body?.[language]) return null;
+  const renderParams = { ...params };
+  if (renderParams.monthIndex != null) {
+    const monthIndex = Number(renderParams.monthIndex);
+    if (monthIndex >= 1 && monthIndex <= 12) {
+      renderParams.month = MONTH_NAMES[language][monthIndex - 1];
+    }
+  }
   return {
-    title: interpolate(entry.title[language], params),
-    body: interpolate(entry.body[language], params),
+    title: interpolate(entry.title[language], renderParams),
+    body: interpolate(entry.body[language], renderParams),
   };
 }
 
