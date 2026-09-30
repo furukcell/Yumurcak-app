@@ -893,6 +893,10 @@
       "restartNow": "إعادة التشغيل الآن",
       "restartLater": "لاحقاً"
     }
+  ,
+    "navigation": {
+      "loading": "جارٍ تجهيز معلومات ولي الأمر..."
+    }
   },
   "teacher": {
     "dashboard": {

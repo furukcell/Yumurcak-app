@@ -893,6 +893,10 @@
       "restartNow": "Перезапустить сейчас",
       "restartLater": "Позже"
     }
+  ,
+    "navigation": {
+      "loading": "Подготавливается информация о родителе..."
+    }
   },
   "teacher": {
     "dashboard": {

@@ -72,12 +72,13 @@ function ParentTabs() {
 
 function ParentNavigatorContent() {
   const { loading } = useParentChild();
+  const { t } = useTranslation();
 
   if (loading) {
     return (
       <View style={styles.loadingRoot}>
         <ActivityIndicator size="large" color="#6C3DEB" />
-        <Text style={styles.loadingText}>Veli bilgileri hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('parent.navigation.loading')}</Text>
       </View>
     );
   }

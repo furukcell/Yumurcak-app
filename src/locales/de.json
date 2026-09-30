@@ -893,6 +893,10 @@
       "restartNow": "Jetzt neu starten",
       "restartLater": "Später"
     }
+  ,
+    "navigation": {
+      "loading": "Elterninformationen werden vorbereitet..."
+    }
   },
   "teacher": {
     "dashboard": {

@@ -893,6 +893,10 @@
       "restartNow": "Şimdi Yeniden Başlat",
       "restartLater": "Daha Sonra"
     }
+  ,
+    "navigation": {
+      "loading": "Veli bilgileri hazırlanıyor..."
+    }
   },
   "teacher": {
     "dashboard": {
