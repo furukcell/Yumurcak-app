@@ -667,16 +667,16 @@ exports.createNotificationOnAdaptationWrite = functions
     if (!childId) return null;
 
     const child = await getChild(childId);
-    const scoreText = Number.isFinite(Number(after.skor)) ? ` Skor: ${after.skor}/100.` : '';
+    const hasScore = Number.isFinite(Number(after.skor));
     await notifyChildParents({
       childId,
       fallbackChild: child,
       payload: {
         kresId: after.kresId || child.kresId || '',
         baslik: '🌱 Uyum takibi güncellendi',
-        mesaj: `${getChildName(child)} için bugünkü uyum kaydı girildi.${scoreText}`,
-        i18nKey: 'notification.adaptation',
-        i18nParams: { childName: getChildName(child), scoreText },
+        mesaj: `${getChildName(child)} için bugünkü uyum kaydı girildi.${hasScore ? ` Skor: ${after.skor}/100.` : ''}`,
+        i18nKey: hasScore ? 'notification.adaptation.score' : 'notification.adaptation',
+        i18nParams: hasScore ? { childName: getChildName(child), score: after.skor } : { childName: getChildName(child) },
         tip: 'uyum',
         routeName: 'ParentUyum',
         routeParams: { adaptationId, childId },
@@ -995,8 +995,6 @@ exports.createNotificationOnAnnouncementCreate = functions
       hedefRol: hedefUserIds ? undefined : 'veli',
       baslik: `📢 ${title}`,
       mesaj: body,
-      i18nKey: 'notification.announcement',
-      i18nParams: { title },
       tip: 'duyuru',
       routeName: 'ParentAnnouncements',
       routeParams: { announcementId },
