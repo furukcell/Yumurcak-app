@@ -892,9 +892,6 @@
       "restartRequiredDesc": "Damit die Sprachänderung vollständig wirksam wird, muss die App neu gestartet werden.",
       "restartNow": "Jetzt neu starten",
       "restartLater": "Später"
-    },
-    "navigation": {
-      "loading": "Elterninformationen werden vorbereitet..."
     }
   },
   "teacher": {
@@ -1928,9 +1925,44 @@
       "cannotOpen": "Der Bildschirm zu dieser Benachrichtigung kann gerade nicht geöffnet werden.",
       "markReadFailed": "Benachrichtigungen konnten nicht als gelesen markiert werden.",
       "noDate": "Kein Datum"
+    },
+    "navigation": {
+      "loading": "Elterninformationen werden vorbereitet..."
     }
   },
   "admin": {
+    "navigation": {
+      "statistics": "Einrichtungsstatistik",
+      "monthlyMeal": "Monatlicher Speiseplan",
+      "monthlyStaffTasks": "Aufgabenliste des Personals",
+      "monthlyDutyRoster": "Dienstplan",
+      "service": "Serviceliste",
+      "vehicleForm": "Servicefahrzeug hinzufügen/bearbeiten",
+      "birthdayCalendar": "Geburtstagskalender",
+      "institutionSettings": "Einrichtungsinformationen",
+      "theme": "Designeinstellungen",
+      "subscription": "Abonnement / Zahlung",
+      "messages": "Nachrichten",
+      "classList": "Gruppen",
+      "classForm": "Gruppe hinzufügen/bearbeiten",
+      "childList": "Kinder",
+      "childForm": "Kind hinzufügen/bearbeiten",
+      "childDetail": "Kinderdetails",
+      "teacherList": "Lehrkräfte",
+      "teacherForm": "Lehrkraft hinzufügen/bearbeiten",
+      "veliList": "Eltern",
+      "veliForm": "Elternteil hinzufügen/bearbeiten",
+      "announcementList": "Ankündigungen",
+      "announcementForm": "Ankündigung erstellen",
+      "paymentList": "Zahlungen",
+      "paymentForm": "Zahlung hinzufügen/bearbeiten",
+      "pollManagement": "Umfragen verwalten",
+      "bell": "Einrichtungsglocke",
+      "lessonSchedule": "Stundenplan",
+      "monthlySchedule": "Monatlicher Stundenplan",
+      "eventList": "Veranstaltungen",
+      "eventForm": "Veranstaltung hinzufügen/bearbeiten"
+    },
     "navigation": {
       "statistics": "Einrichtungsstatistik",
       "monthlyMeal": "Monatlicher Speiseplan",
