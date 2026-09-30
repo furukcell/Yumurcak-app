@@ -1,5 +1,6 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
+const { render: renderNotificationText } = require('./notificationTexts');
 
 admin.initializeApp();
 
@@ -107,6 +108,8 @@ async function createNotificationRecord(payload = {}) {
     pushStatus: 'pending',
     source: payload.source || 'cloud-function',
     sourceId: payload.sourceId || '',
+    i18nKey: payload.i18nKey || '',
+    i18nParams: payload.i18nParams || null,
   }).reduce((acc, [key, value]) => {
     if (value !== undefined && value !== null && value !== '') acc[key] = value;
     return acc;
@@ -164,12 +167,15 @@ async function getTargetPushTokens(payload = {}) {
     if (targetSinifIds.length && userSinifId && !targetSinifIds.includes(userSinifId)) return;
 
     const token = user.pushToken || user.expoPushToken || user.notificationToken;
-    if (token) tokens.push(String(token));
+    if (token) tokens.push({ token: String(token), language: user.dil || user.language || '' });
   });
 
-  return unique(tokens).filter((token) =>
-    token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[')
-  );
+  const seen = new Set();
+  return tokens.filter(({ token }) => {
+    if (seen.has(token)) return false;
+    seen.add(token);
+    return token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[');
+  });
 }
 
 async function sendExpoPushMessages(messages = []) {
@@ -208,10 +214,10 @@ exports.sendPushOnNotificationCreate = functions
       return null;
     }
 
-    const title = payload.baslik || payload.title || 'Yumurcak Bildirim';
-    const body = payload.mesaj || payload.aciklama || '';
+    const fallbackTitle = payload.baslik || payload.title || 'Yumurcak Bildirim';
+    const fallbackBody = payload.mesaj || payload.aciklama || '';
 
-    if (!body) {
+    if (!fallbackBody) {
       await snapshot.ref.update({
         pushStatus: 'skipped_empty_body',
         pushCheckedAt: admin.database.ServerValue.TIMESTAMP,
@@ -236,15 +242,22 @@ exports.sendPushOnNotificationCreate = functions
       routeParams: payload.routeParams || {},
     });
 
-    const messages = tokens.map((token) => ({
-      to: token,
-      sound: 'default',
-      title,
-      body,
-      data,
-      priority: 'high',
-      channelId: 'default',
-    }));
+    const messages = tokens.map(({ token, language }) => {
+      const rendered = payload.i18nKey
+        ? renderNotificationText(payload.i18nKey, language, payload.i18nParams || {})
+        : null;
+      const title = rendered?.title || fallbackTitle;
+      const body = rendered?.body || fallbackBody;
+      return {
+        to: token,
+        sound: 'default',
+        title,
+        body,
+        data,
+        priority: 'high',
+        channelId: 'default',
+      };
+    });
 
     try {
       const expoResponses = await sendExpoPushMessages(messages);
@@ -286,6 +299,8 @@ exports.createNotificationOnDailyReportCreate = functions
       hedefUserIds: parentIds,
       baslik: '📋 Günlük rapor hazır',
       mesaj: `${getChildName(child)} için bugünkü günlük rapor girildi.`,
+      i18nKey: 'notification.dailyReport',
+      i18nParams: { childName: getChildName(child) },
       tip: 'rapor',
       routeName: 'ParentReports',
       routeParams: { reportId, childId },
@@ -306,6 +321,7 @@ exports.createNotificationOnGalleryCreate = functions
     const gallery = snapshot.val() || {};
     const mediaCount = Number(gallery.mediaCount || arr(gallery.mediaItems).length || 1);
     const mediaLabel = mediaCount > 1 ? `${mediaCount} yeni medya` : (gallery.type === 'video' ? 'Yeni video' : 'Yeni fotoğraf');
+    const galleryI18nKey = mediaCount > 1 ? 'notification.gallery.multiple' : (gallery.type === 'video' ? 'notification.gallery.video' : 'notification.gallery.photo');
     const title = gallery.aciklama || gallery.hedefAdi || 'Galeri paylaşımı';
 
     const childIds = unique([
@@ -322,6 +338,8 @@ exports.createNotificationOnGalleryCreate = functions
         hedefUserIds: parentIds,
         baslik: '🖼️ Galeriye yeni paylaşım',
         mesaj: `${title}: ${mediaLabel} yüklendi.`,
+        i18nKey: galleryI18nKey,
+        i18nParams: { title, mediaCount },
         tip: 'galeri',
         routeName: 'ParentGallery',
         routeParams: { galleryId },
@@ -337,6 +355,8 @@ exports.createNotificationOnGalleryCreate = functions
       hedefRol: 'veli',
       baslik: '🖼️ Galeriye yeni paylaşım',
       mesaj: `${title}: ${mediaLabel} yüklendi.`,
+      i18nKey: galleryI18nKey,
+      i18nParams: { title, mediaCount },
       tip: 'galeri',
       routeName: 'ParentGallery',
       routeParams: { galleryId },
@@ -504,6 +524,8 @@ exports.createNotificationOnAttendanceWrite = functions
         kresId: after.kresId || child.kresId || '',
         baslik: '✅ Yoklama güncellendi',
         mesaj: `${getChildName(child)} ${statusLabel}`,
+        i18nKey: durum === 'gelmedi' ? 'notification.attendance.absent' : (durum === 'gec' ? 'notification.attendance.late' : 'notification.attendance.present'),
+        i18nParams: { childName: getChildName(child) },
         tip: 'yoklama',
         routeName: 'ParentAttendance',
         routeParams: { attendanceId, childId },
@@ -1141,6 +1163,8 @@ exports.checkOverdueSubscriptionsDaily = functions
           daysOverdue === 0
             ? 'Aboneliğinizin süresi bugün doldu. Kullanıma devam edebilirsiniz, lütfen ödemeyi tamamlayın.'
             : `Aboneliğinizin süresi ${daysOverdue} gündür geçti. Erişiminizin kesilmemesi için lütfen ödemeyi tamamlayın.`,
+        i18nKey: daysOverdue === 0 ? 'notification.paymentDue' : 'notification.paymentDue.overdue',
+        i18nParams: { daysOverdue },
         tip: 'abonelik_gecikme',
         routeName: 'AdminSubscription',
         source: 'abonelik-gecikme',
@@ -1154,6 +1178,8 @@ exports.checkOverdueSubscriptionsDaily = functions
           hedefRoller: ['superadmin'],
           baslik: '🔴 Kurum 7 Gündür Ödeme Yapmadı',
           mesaj: `${kresAdi} aboneliği 7 gündür geçmiş durumda. İncelemek ister misin?`,
+          i18nKey: 'notification.paymentDue.superadmin',
+          i18nParams: { kresAdi },
           tip: 'abonelik_gecikme_superadmin',
           routeName: 'SuperAdminSubscriptions',
           source: 'abonelik-gecikme-superadmin',
