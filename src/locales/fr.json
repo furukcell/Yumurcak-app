@@ -897,7 +897,7 @@
     "navigation": {
       "loading": "Préparation des informations du parent..."
     }
-},
+  },
   "teacher": {
     "dashboard": {
       "institutionFallback": "Établissement",
