@@ -892,9 +892,6 @@
       "restartRequiredDesc": "Чтобы изменение языка вступило в силу полностью, приложение нужно перезапустить.",
       "restartNow": "Перезапустить сейчас",
       "restartLater": "Позже"
-    },
-    "navigation": {
-      "loading": "Подготавливается информация о родителе..."
     }
   },
   "teacher": {
@@ -1928,9 +1925,44 @@
       "cannotOpen": "Экран этого уведомления сейчас недоступен.",
       "markReadFailed": "Не удалось отметить уведомления как прочитанные.",
       "noDate": "Нет даты"
+    },
+    "navigation": {
+      "loading": "Подготавливается информация о родителе..."
     }
   },
   "admin": {
+    "navigation": {
+      "statistics": "Статистика учреждения",
+      "monthlyMeal": "Ежемесячное меню",
+      "monthlyStaffTasks": "Список задач сотрудников",
+      "monthlyDutyRoster": "График дежурств",
+      "service": "Список перевозки",
+      "vehicleForm": "Добавить/изменить транспорт",
+      "birthdayCalendar": "Календарь дней рождения",
+      "institutionSettings": "Информация об учреждении",
+      "theme": "Настройки темы",
+      "subscription": "Подписка / Оплата",
+      "messages": "Сообщения",
+      "classList": "Группы",
+      "classForm": "Добавить/изменить группу",
+      "childList": "Дети",
+      "childForm": "Добавить/изменить ребёнка",
+      "childDetail": "Информация о ребёнке",
+      "teacherList": "Учителя",
+      "teacherForm": "Добавить/изменить учителя",
+      "veliList": "Родители",
+      "veliForm": "Добавить/изменить родителя",
+      "announcementList": "Объявления",
+      "announcementForm": "Создать объявление",
+      "paymentList": "Платежи",
+      "paymentForm": "Добавить/изменить платёж",
+      "pollManagement": "Управление опросами",
+      "bell": "Звонок учреждения",
+      "lessonSchedule": "Расписание занятий",
+      "monthlySchedule": "Ежемесячное расписание",
+      "eventList": "Мероприятия",
+      "eventForm": "Добавить/изменить мероприятие"
+    },
     "navigation": {
       "statistics": "Статистика учреждения",
       "monthlyMeal": "Ежемесячное меню",
