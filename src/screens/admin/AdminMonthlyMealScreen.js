@@ -318,6 +318,8 @@ export default function AdminMonthlyMealScreen({ navigation }) {
         hedefRoller: ['veli'],
         baslik: `🍽️ ${t('admin.monthly.meal.updatedTitle')}`,
         mesaj: t('admin.monthly.meal.publishedToast', { month: monthLabel }),
+        i18nKey: 'notification.meal.published',
+        i18nParams: { monthIndex: monthDate.getMonth() + 1, year: monthDate.getFullYear() },
         tip: 'yemek',
         routeName: 'ParentMeals',
         createdBy: adminId || '',
