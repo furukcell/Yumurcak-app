@@ -1,5 +1,7 @@
 import { onValue, push, query, orderByChild, equalTo, ref, serverTimestamp, update } from 'firebase/database';
 import { database } from '../config/firebase';
+import i18n from '../i18n';
+import { render as renderNotificationText } from '../utils/notificationTexts';
 
 const PATH = 'bildirimler';
 
@@ -33,11 +35,15 @@ function normalizeRole(role) {
 }
 
 function item(id, data = {}) {
+  const translated = data.i18nKey
+    ? renderNotificationText(data.i18nKey, i18n.language, data.i18nParams || {})
+    : null;
+
   return {
     id,
     ...data,
-    baslik: data.baslik || data.title || 'Bildirim',
-    mesaj: data.mesaj || data.aciklama || '',
+    baslik: translated?.title || data.baslik || data.title || 'Bildirim',
+    mesaj: translated?.body || data.mesaj || data.aciklama || '',
     tip: data.tip || 'genel',
     routeName: data.routeName || data.hedefEkran || '',
     routeParams: data.routeParams || {},
@@ -54,16 +60,12 @@ export function visibleToUser(bildirim, kullanici = {}) {
   const sinifId = kullanici?.sinifId || '';
 
   if (bildirim.kresId && kresId && bildirim.kresId !== kresId) return false;
-
   const userIds = [...arr(bildirim.hedefUserIds), ...arr(bildirim.kullaniciIds)];
   if (userIds.length) return userIds.includes(String(userKey)) || (authKey && userIds.includes(String(authKey)));
-
   const roles = [...arr(bildirim.hedefRol), ...arr(bildirim.hedefRoller)];
   if (roles.length && !roles.includes('all') && !roles.includes('herkes') && !roles.map(normalizeRole).includes(normalizeRole(role))) return false;
-
   const sinifIds = [...arr(bildirim.hedefSinifIds), ...arr(bildirim.sinifIds)];
   if (sinifIds.length && sinifId && !sinifIds.includes(String(sinifId))) return false;
-
   return true;
 }
 
@@ -73,19 +75,13 @@ export function isRead(bildirim, kullanici = {}) {
   return !!bildirim?.okunduBy?.[userKey] || (authKey ? !!bildirim?.okunduBy?.[authKey] : false);
 }
 
-// Artık tüm 'bildirimler' node'u çekilmiyor. Kullanıcının kendi kresId'sine
-// göre filtrelenmiş bir sorgu ile çekiliyor, geri kalan hedefleme
-// (rol, sınıf, kullanıcı id) client-side visibleToUser ile uygulanıyor.
 export function listenNotifications(kullanici, callback) {
   const kresId = kullanici?.kresId;
-
   if (!kresId) {
     callback([]);
     return () => {};
   }
-
   const q = query(ref(database, PATH), orderByChild('kresId'), equalTo(kresId));
-
   return onValue(q, (snap) => {
     const data = snap.val() || {};
     const list = Object.entries(data)
@@ -101,6 +97,8 @@ export async function createNotification(payload = {}) {
   const data = cleanObject({
     baslik: payload.baslik || payload.title || 'Bildirim',
     mesaj: payload.mesaj || payload.aciklama || '',
+    i18nKey: payload.i18nKey || '',
+    i18nParams: payload.i18nParams || null,
     tip: payload.tip || 'genel',
     kresId: payload.kresId || '',
     hedefRol: payload.hedefRol || '',
@@ -116,39 +114,18 @@ export async function createNotification(payload = {}) {
     okunduBy: {},
     pushStatus: 'pending',
   });
-
   const notificationRef = await push(ref(database, PATH), data);
   return notificationRef.key;
 }
 
-export async function createRoleNotification({ kresId, role, roles, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
-  return createNotification({
-    kresId,
-    hedefRol: role,
-    hedefRoller: roles,
-    baslik,
-    mesaj,
-    tip,
-    routeName,
-    routeParams,
-    createdBy,
-  });
+export async function createRoleNotification({ kresId, role, roles, baslik, mesaj, i18nKey, i18nParams, tip, routeName, routeParams, createdBy }) {
+  return createNotification({ kresId, hedefRol: role, hedefRoller: roles, baslik, mesaj, i18nKey, i18nParams, tip, routeName, routeParams, createdBy });
 }
 
-export async function createUserNotification({ kresId, userIds, baslik, mesaj, tip, routeName, routeParams, createdBy }) {
+export async function createUserNotification({ kresId, userIds, baslik, mesaj, i18nKey, i18nParams, tip, routeName, routeParams, createdBy }) {
   const ids = arr(userIds).filter(Boolean);
   if (!ids.length) return;
-
-  return createNotification({
-    kresId,
-    hedefUserIds: ids,
-    baslik,
-    mesaj,
-    tip,
-    routeName,
-    routeParams,
-    createdBy,
-  });
+  return createNotification({ kresId, hedefUserIds: ids, baslik, mesaj, i18nKey, i18nParams, tip, routeName, routeParams, createdBy });
 }
 
 export async function readNotification(id, kullanici = {}) {
@@ -161,9 +138,7 @@ export async function readAllNotifications(list = [], kullanici = {}) {
   const userKey = getUserKey(kullanici);
   if (!userKey || !list.length) return;
   const updates = {};
-  list.forEach((n) => {
-    updates[`${PATH}/${n.id}/okunduBy/${userKey}`] = true;
-  });
+  list.forEach((n) => { updates[`${PATH}/${n.id}/okunduBy/${userKey}`] = true; });
   await update(ref(database), updates);
 }
 
