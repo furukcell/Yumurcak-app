@@ -897,7 +897,7 @@
     "navigation": {
       "loading": "Veli bilgileri hazırlanıyor..."
     }
-},
+  },
   "teacher": {
     "dashboard": {
       "institutionFallback": "Kurum",
