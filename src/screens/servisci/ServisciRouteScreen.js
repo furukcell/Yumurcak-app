@@ -229,14 +229,15 @@ export default function ServisciRouteScreen({ navigation }) {
       const adSoyad = `${hedef.ad || ''} ${hedef.soyad || ''}`.trim();
       const baslik = mode === 'alindi' ? '🚌 Servise alındı' : '🏠 Servisten bırakıldı';
       const mesaj = mode === 'alindi' ? `${adSoyad} servise alındı.` : `${adSoyad} evine bırakıldı.`;
+      const i18nKey = mode === 'alindi' ? 'notification.service.pickedUp' : 'notification.service.droppedOff';
 
       if (parentIds.length > 0) {
         createNotification({
-          kresId, hedefUserIds: parentIds, hedefCocukIds: [hedef.id], baslik, mesaj, tip: 'servis', routeName: 'ParentService', createdBy: userId,
+          kresId, hedefUserIds: parentIds, hedefCocukIds: [hedef.id], baslik, mesaj, i18nKey, i18nParams: { name: adSoyad }, tip: 'servis', routeName: 'ParentService', createdBy: userId,
         }).catch((error) => console.log('Servis bildirimi (veli) gönderilemedi:', error));
       }
       createNotification({
-        kresId, hedefRoller: ['yonetici'], baslik, mesaj, tip: 'servis', routeName: 'AdminService', createdBy: userId,
+        kresId, hedefRoller: ['yonetici'], baslik, mesaj, i18nKey, i18nParams: { name: adSoyad }, tip: 'servis', routeName: 'AdminService', createdBy: userId,
       }).catch((error) => console.log('Servis bildirimi (yönetici) gönderilemedi:', error));
     } catch (error) {
       console.log(error);
@@ -261,12 +262,14 @@ export default function ServisciRouteScreen({ navigation }) {
         createNotification({
           kresId, hedefUserIds: parentIds, hedefCocukIds: [child.id],
           baslik: '🏫 Servis kuruma ulaştı', mesaj: `${adSoyad} ile birlikte ${servisAdi} kuruma ulaştı.`,
+          i18nKey: 'notification.service.arrivedWithChild', i18nParams: { name: adSoyad, serviceName: servisAdi },
           tip: 'servis', routeName: 'ParentService', createdBy: userId,
         }).catch((error) => console.log('Servis bildirimi (veli) gönderilemedi:', error));
       });
       createNotification({
         kresId, hedefRoller: ['yonetici'],
         baslik: '🏫 Servis kuruma ulaştı', mesaj: `${servisAdi} kuruma ulaştı — ${alinanCocuklar.length} çocuk.`,
+        i18nKey: 'notification.service.arrivedCount', i18nParams: { serviceName: servisAdi, count: alinanCocuklar.length },
         tip: 'servis', routeName: 'AdminService', createdBy: userId,
       }).catch((error) => console.log('Servis bildirimi (yönetici) gönderilemedi:', error));
     } catch (error) {
