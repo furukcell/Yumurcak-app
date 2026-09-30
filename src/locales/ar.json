@@ -892,11 +892,12 @@
       "restartRequiredDesc": "يجب إعادة تشغيل التطبيق ليصبح تغيير اللغة سارياً بالكامل.",
       "restartNow": "إعادة التشغيل الآن",
       "restartLater": "لاحقاً"
-    },
+    }
+  ,
     "navigation": {
       "loading": "جارٍ تجهيز معلومات ولي الأمر..."
     }
-  },
+},
   "teacher": {
     "dashboard": {
       "institutionFallback": "المؤسسة",
