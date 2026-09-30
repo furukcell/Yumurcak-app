@@ -113,18 +113,18 @@ export default function ChildFormScreen() {
 
   const handleSave = async () => {
     if (!ad.trim() || !dogumTarihi.trim() || !sinifId) {
-      Alert.alert('Hata', t('admin.childForm.required'));
+      Alert.alert(t('common.error'), t('admin.childForm.required'));
       return;
     }
 
     const normalizedBirthDate = normalizeChildBirthDate(dogumTarihi);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirthDate)) {
-      Alert.alert('Hata', t('admin.childForm.birthFormat'));
+      Alert.alert(t('common.error'), t('admin.childForm.birthFormat'));
       return;
     }
 
     if (yeniBaslayan && !/^\d{4}-\d{2}-\d{2}$/.test(uyumBaslangicTarihi)) {
-      Alert.alert('Hata', t('admin.childForm.adaptationDateFormat'));
+      Alert.alert(t('common.error'), t('admin.childForm.adaptationDateFormat'));
       return;
     }
 
@@ -198,7 +198,7 @@ export default function ChildFormScreen() {
       setSuccessToast(true);
       setTimeout(() => navigation.goBack(), 900);
     } catch (error) {
-      Alert.alert('Hata', t('admin.childForm.saveFailed'));
+      Alert.alert(t('common.error'), t('admin.childForm.saveFailed'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -217,7 +217,7 @@ export default function ChildFormScreen() {
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('admin.childForm.delete'),
           style: 'destructive',
           onPress: async () => {
             setLoading(true);
@@ -237,7 +237,7 @@ export default function ChildFormScreen() {
               navigation.goBack();
             } catch (error) {
               console.error(error);
-              Alert.alert('Hata', t('admin.childForm.deleteFailed', { error: error?.message || '' }));
+              Alert.alert(t('common.error'), t('admin.childForm.deleteFailed', { error: error?.message || '' }));
             } finally {
               setLoading(false);
             }
