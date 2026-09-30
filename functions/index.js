@@ -981,6 +981,8 @@ exports.createNotificationOnAnnouncementCreate = functions
       hedefRol: hedefUserIds ? undefined : 'veli',
       baslik: `📢 ${title}`,
       mesaj: body,
+      i18nKey: 'notification.announcement',
+      i18nParams: { title },
       tip: 'duyuru',
       routeName: 'ParentAnnouncements',
       routeParams: { announcementId },
