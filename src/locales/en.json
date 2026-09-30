@@ -893,7 +893,11 @@
       "restartNow": "Restart Now",
       "restartLater": "Later"
     }
-  },
+  ,
+    "navigation": {
+      "loading": "Preparing parent information..."
+    }
+},
   "teacher": {
     "dashboard": {
       "institutionFallback": "Institution",
@@ -1925,9 +1929,6 @@
       "cannotOpen": "The screen for this notification cannot be opened right now.",
       "markReadFailed": "Could not mark notifications as read.",
       "noDate": "No date"
-    },
-    "navigation": {
-      "loading": "Preparing parent information..."
     }
   },
   "admin": {
