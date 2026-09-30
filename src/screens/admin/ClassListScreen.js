@@ -216,7 +216,7 @@ export default function ClassListScreen() {
                 onPress={() => navigation.navigate('ClassForm')}
                 activeOpacity={0.85}
               >
-                <Text style={styles.emptyButtonText}>+ {t('admin.classList.class')} Ekle</Text>
+                <Text style={styles.emptyButtonText}>{t('admin.classList.create')}</Text>
               </TouchableOpacity>
             </View>
           }
