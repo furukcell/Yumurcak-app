@@ -278,6 +278,8 @@ export default function SuperAdminSubscriptionsScreen({ navigation }) {
         role: 'yonetici',
         baslik: 'Abonelik / Ödeme Bilgilendirmesi',
         mesaj: text,
+        i18nKey: 'notification.subscription.info',
+        i18nParams: { text },
         tip: 'abonelik',
         routeName: 'Subscription',
         createdBy: kullanici?.uid || kullanici?.id || '',
