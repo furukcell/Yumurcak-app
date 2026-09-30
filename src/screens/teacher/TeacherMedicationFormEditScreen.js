@@ -101,6 +101,8 @@ export default function TeacherMedicationFormEditScreen({ navigation }) {
           hedefCocukIds: [cocukId],
           baslik: '💊 İlaç takip formu onayınızı bekliyor',
           mesaj: `${getChildName(child)} için "${ilacAdi.trim()}" ilaç takip formu oluşturuldu, onayınız bekleniyor.`,
+          i18nKey: 'notification.medform.awaitingApproval',
+          i18nParams: { childName: getChildName(child), medication: ilacAdi.trim() },
           tip: 'ilac_takip',
           routeName: 'ParentMedical',
           createdBy: teacherId || kullanici?.uid || '',

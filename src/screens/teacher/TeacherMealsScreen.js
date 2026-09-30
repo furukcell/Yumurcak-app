@@ -426,6 +426,8 @@ export default function TeacherMealsScreen() {
         hedefRoller: ['veli'],
         baslik: '🍽️ Yemek listesi güncellendi',
         mesaj: `${currentClass.ad || 'Sınıf'} için ${monthLabel} yemek listesi yayınlandı.`,
+        i18nKey: 'notification.meal.publishedClass',
+        i18nParams: { className: currentClass.ad || 'Sınıf', monthIndex: monthDate.getMonth() + 1, year: monthDate.getFullYear() },
         tip: 'yemek',
         routeName: 'ParentMeals',
         createdBy: teacherId || '',

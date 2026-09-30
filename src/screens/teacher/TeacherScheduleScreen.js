@@ -371,7 +371,7 @@ export default function TeacherScheduleScreen() {
     setSaving(true);
     try {
       await publishMonth({ nodePath: NODE_PATH, kresId, monthKey, monthLabel, kaynak: KAYNAK, days, values, hasContent: hasScheduleContent, buildRecord: (args) => buildScheduleRecord({ ...args, sinifId }), matchExtra: forClass(sinifId) });
-      await createNotification({ kresId, hedefRoller: ['veli'], hedefSinifIds: [sinifId], baslik: `📅 ${t('admin.monthly.schedule.updatedTitle')}`, mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`, tip: 'ders_programi', routeName: 'ParentSummary', createdBy: teacherId || '' });
+      await createNotification({ kresId, hedefRoller: ['veli'], hedefSinifIds: [sinifId], baslik: `📅 ${t('admin.monthly.schedule.updatedTitle')}`, mesaj: `${sinifAd} sınıfının ${monthLabel} ders programı yayınlandı.`, i18nKey: 'notification.schedule.published', i18nParams: { className: sinifAd, monthIndex: monthDate.getMonth() + 1, year: monthDate.getFullYear() }, tip: 'ders_programi', routeName: 'ParentSummary', createdBy: teacherId || '' });
       dirtyDatesRef.current.clear();
       setSuccessMessage(t('teacher.schedule.publishedSuccess', { month: monthLabel }));
       setSuccessToast(true);

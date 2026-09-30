@@ -54,6 +54,8 @@ export default function ParentBellScreen({ navigation }) {
        roles: ['admin', 'yonetici', 'ogretmen'],
        baslik: durum === 'geliyorum' ? '🚗 Veli geliyor' : '📍 Veli kapıda',
        mesaj: `${parentName || 'Veli'}, ${childName || 'çocuğu'} için kurum zili gönderdi.`,
+       i18nKey: durum === 'geliyorum' ? 'notification.bell.coming' : 'notification.bell.arrived',
+       i18nParams: { parentName: parentName || 'Veli', childName: childName || 'çocuğu' },
        tip: 'kurum_zili',
        routeName: 'AdminBell',
        createdBy: veliId || '',

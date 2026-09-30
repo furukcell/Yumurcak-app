@@ -95,6 +95,8 @@ export default function TeacherMedicationFormDetailScreen({ navigation }) {
           hedefCocukIds: record?.cocukId ? [record.cocukId] : null,
           baslik: '💊 İlaç uygulandı',
           mesaj: `${record?.cocukAdi || 'Çocuğunuz'} için bugünkü "${record?.ilacAdi || 'ilaç'}" dozu verildi.`,
+          i18nKey: 'notification.medication.given',
+          i18nParams: { childName: record?.cocukAdi || 'Çocuğunuz', medication: record?.ilacAdi || 'ilaç' },
           tip: 'ilac_takip',
           routeName: 'ParentMedical',
           createdBy: teacherId || kullanici?.uid || '',

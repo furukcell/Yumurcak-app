@@ -184,6 +184,7 @@ export default function ServisciDashboardScreen({ navigation }) {
       const mesaj = field === 'alindi'
         ? `${adSoyad} servise alındı.`
         : `${adSoyad} evine bırakıldı.`;
+      const i18nKey = field === 'alindi' ? 'notification.service.pickedUp' : 'notification.service.droppedOff';
 
       if (parentIds.length > 0) {
         createNotification({
@@ -192,6 +193,8 @@ export default function ServisciDashboardScreen({ navigation }) {
           hedefCocukIds: [child.id],
           baslik,
           mesaj,
+          i18nKey,
+          i18nParams: { name: adSoyad },
           tip: 'servis',
           routeName: 'ParentService',
           createdBy: userId,
@@ -203,6 +206,8 @@ export default function ServisciDashboardScreen({ navigation }) {
         hedefRoller: ['yonetici'],
         baslik,
         mesaj,
+        i18nKey,
+        i18nParams: { name: adSoyad },
         tip: 'servis',
         routeName: 'AdminService',
         createdBy: userId,
@@ -244,6 +249,8 @@ export default function ServisciDashboardScreen({ navigation }) {
           hedefCocukIds: [child.id],
           baslik: '🏫 Servis kuruma ulaştı',
           mesaj: `${adSoyad} ile birlikte ${servisAdi} kuruma ulaştı.`,
+          i18nKey: 'notification.service.arrivedWithChild',
+          i18nParams: { name: adSoyad, serviceName: servisAdi },
           tip: 'servis',
           routeName: 'ParentService',
           createdBy: userId,
@@ -255,6 +262,8 @@ export default function ServisciDashboardScreen({ navigation }) {
         hedefRoller: ['yonetici'],
         baslik: '🏫 Servis kuruma ulaştı',
         mesaj: `${servisAdi} kuruma ulaştı — ${alinanCocuklar.length} çocuk.`,
+        i18nKey: 'notification.service.arrivedCount',
+        i18nParams: { serviceName: servisAdi, count: alinanCocuklar.length },
         tip: 'servis',
         routeName: 'AdminService',
         createdBy: userId,
