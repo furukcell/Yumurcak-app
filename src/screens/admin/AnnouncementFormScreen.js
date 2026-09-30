@@ -126,7 +126,7 @@ export default function AnnouncementFormScreen() {
 
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
-      Alert.alert('Hata', t('admin.announcementForm.required'));
+      Alert.alert(t('common.error'), t('admin.announcementForm.required'));
       return;
     }
 
@@ -203,7 +203,7 @@ export default function AnnouncementFormScreen() {
         navigation.goBack();
       }, 900);
     } catch (err) {
-      Alert.alert('Hata', t('admin.announcementForm.failed'));
+      Alert.alert(t('common.error'), t('admin.announcementForm.failed'));
       console.error(err);
     } finally {
       setLoading(false);
