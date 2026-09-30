@@ -26,8 +26,11 @@
   "submit": {
     "production": {
       "ios": {
+        "ascApiKeyPath": "$EXPO_ASC_API_KEY_PATH",
+        "ascApiKeyId": "$ASC_KEY_ID",
+        "ascApiKeyIssuerId": "$ASC_ISSUER_ID",
         "ascAppId": "6804193733",
-        "appleTeamId": "AFPS3YND5F"
+        "appleTeamId": "AFPS3YNDSF"
       }
     }
   }
