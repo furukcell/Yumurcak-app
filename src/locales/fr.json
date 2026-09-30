@@ -892,11 +892,12 @@
       "restartRequiredDesc": "L'application doit redémarrer pour que le changement de langue soit pleinement appliqué.",
       "restartNow": "Redémarrer maintenant",
       "restartLater": "Plus tard"
-    },
+    }
+  ,
     "navigation": {
       "loading": "Préparation des informations du parent..."
     }
-  },
+},
   "teacher": {
     "dashboard": {
       "institutionFallback": "Établissement",
