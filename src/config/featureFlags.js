@@ -10,6 +10,6 @@ export const SELF_SERVICE_PAYMENT_ENABLED = false;
 
 // Yönetici "iletişime geç" butonuna basınca açılacak WhatsApp numarası
 // (ülke kodlu, + ve boşluksuz, örn. '905xxxxxxxxx'). Boşsa buton görünmez.
-export const SUPPORT_WHATSAPP = '+90 542 152 38 05';
+export const SUPPORT_WHATSAPP = '905421523805';
 // İstersen e-posta da ekleyebilirsin. Boşsa buton görünmez.
 export const SUPPORT_EMAIL = 'destek.fkdigital@gmail.com';
