@@ -569,6 +569,45 @@ entegrasyonu, Product ID eşleştirme) 🟡 YAPILACAK — bir sonraki version il
 
 ---
 
+## 🔒 Yönetici Kendi Kendine Ödeme (Feature Flag)
+
+Kurum yöneticisinin uygulama içinden kendi aboneliğini alabilmesi (fiyatlar,
+aylık/yıllık paketler, Google Play / RevenueCat satın alma, restore,
+promosyon kodu, "1 ay ücretsiz başlat") **şu an kapalıdır.** Kod silinmedi,
+sadece gizlendi. Ödemeler IBAN ile alınır ve abonelik superadmin tarafından
+manuel tanımlanır (`kaynak: 'manuel_iban'`, "Ödeme Geldi" butonu).
+
+**Ayar dosyası:** `src/config/featureFlags.js`
+
+```js
+export const SELF_SERVICE_PAYMENT_ENABLED = false; // true yapınca eski ödeme ekranı geri gelir
+export const SUPPORT_WHATSAPP = '';                // örn. '905xxxxxxxxx' (boşsa buton çıkmaz)
+export const SUPPORT_EMAIL = '';                   // boşsa buton çıkmaz
+```
+
+| Durum | Yönetici ne görür |
+| ----- | ----------------- |
+| `false` (şu an) | Abonelik durumu, kalan gün, öğrenci kullanımı ve "Abonelik ve Ödeme / iletişime geçin" kartı. Fiyat, paket ve satın alma yok. RevenueCat başlatılmaz. |
+| `true` | Eski tam ekran: paketler, fiyatlar, Google Play satın alma, restore, promosyon kodu, demo başlatma. |
+
+### Tekrar aktif etme adımları
+
+1. `src/config/featureFlags.js` içinde `SELF_SERVICE_PAYMENT_ENABLED = true` yap.
+2. `database.rules.json` içinde yöneticinin `abonelikler/$kresId` yazma yetkisi
+   kapatıldıysa tekrar aç (RevenueCat senkronu ve promosyon için gerekir);
+   gerekiyorsa `promosyonKodlari` / `promosyonKullanimlari` yetkilerini de geri ver.
+3. RevenueCat entitlement (`YUMURCAK Pro`), Google Play ürünleri ve
+   Offering/Package tanımlarının güncel olduğunu kontrol et.
+4. Yeni build al ve gerçek cihazda satın alma + restore testi yap.
+5. Web yönetim panelinde (`yumurcak-web-panel`) Abonelik sayfası varsa orayı
+   da aynı mantıkla kontrol et.
+
+> Not: App Store / Google Play kuralları nedeniyle IBAN bilgisi ve fiyatlar
+> uygulama içinde gösterilmez; IBAN ödemesi uygulama dışında (sözleşme,
+> WhatsApp, e-posta) yürütülür.
+
+---
+
 # 🔐 Güvenlik & Gizlilik
 
 Yumurcak çocuk verileriyle çalışan bir sistem olduğu için veri izolasyonu temel mimari prensiplerden biridir.
