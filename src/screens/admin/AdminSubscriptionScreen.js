@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -20,6 +21,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { get, onValue, ref, set, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
+import { SELF_SERVICE_PAYMENT_ENABLED, SUPPORT_EMAIL, SUPPORT_WHATSAPP } from '../../config/featureFlags';
 import { useAuth } from '../../context/AuthContext';
 import {
   REVENUECAT_ENTITLEMENT_ID,
@@ -116,6 +118,11 @@ export default function AdminSubscriptionScreen() {
   }, [kresId]);
 
   useEffect(() => {
+    // Kendi kendine ödeme kapalıysa RevenueCat hiç başlatılmaz.
+    if (!SELF_SERVICE_PAYMENT_ENABLED) {
+      setRcLoading(false);
+      return undefined;
+    }
     let alive = true;
     async function loadPackages() {
       setRcLoading(true);
@@ -427,13 +434,15 @@ export default function AdminSubscriptionScreen() {
           </View>
           <Text style={[styles.usageInfo, overLimit && { color: THEME.red }]}>
             {overLimit
-              ? i18n.t('admin.subscription.overLimit')
+              ? i18n.t(SELF_SERVICE_PAYMENT_ENABLED ? 'admin.subscription.overLimit' : 'admin.subscription.overLimitContact')
               : suggestedTier
                 ? i18n.t('admin.subscription.suitablePlan', { tier: getTierTitle(suggestedTier), range: getTierRange(suggestedTier) })
                 : i18n.t('admin.subscription.specialOfferDesc')}
           </Text>
         </View>
 
+        {SELF_SERVICE_PAYMENT_ENABLED ? (
+          <>
         {!subscription ? (
           <TouchableOpacity style={styles.trialButton} onPress={startTrial} disabled={saving} activeOpacity={0.85}>
             <Text style={styles.trialText}>{i18n.t('admin.subscription.startTrial')}</Text>
@@ -493,6 +502,28 @@ export default function AdminSubscriptionScreen() {
             {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.applyText}>{i18n.t('admin.subscription.applyPromo')}</Text>}
           </TouchableOpacity>
         </View>
+          </>
+        ) : null}
+
+        {!SELF_SERVICE_PAYMENT_ENABLED ? (
+          <View style={styles.contactCard}>
+            <Text style={styles.sectionTitle}>{i18n.t('admin.subscription.contactTitle', { defaultValue: 'Abonelik ve Ödeme' })}</Text>
+            <Text style={styles.contactText}>
+              {i18n.t('admin.subscription.contactDesc', { defaultValue: 'Abonelik yenileme ve ödeme işlemleri için lütfen Yumurcak ekibiyle iletişime geçin.' })}
+            </Text>
+            {SUPPORT_WHATSAPP ? (
+              <TouchableOpacity style={styles.applyButton} onPress={() => Linking.openURL(`https://wa.me/${SUPPORT_WHATSAPP}`)} activeOpacity={0.85}>
+                <Text style={styles.applyText}>{i18n.t('admin.subscription.contactWhatsapp', { defaultValue: 'WhatsApp ile yazın' })}</Text>
+              </TouchableOpacity>
+            ) : null}
+            {SUPPORT_EMAIL ? (
+              <TouchableOpacity style={[styles.restoreButton, { marginTop: 10, marginBottom: 0 }]} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} activeOpacity={0.85}>
+                <Text style={styles.restoreText}>{i18n.t('admin.subscription.contactEmail', { defaultValue: 'E-posta gönderin' })}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
+
       </ScrollView>
      </KeyboardAvoidingView>
     </SafeAreaView>
@@ -625,6 +656,8 @@ const styles = StyleSheet.create({
   restoreButton: { backgroundColor: THEME.primarySoft, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 12 },
   restoreText: { color: THEME.primary, fontWeight: '900' },
   paymentWarning: { color: THEME.orange, fontWeight: '800', lineHeight: 18, marginBottom: 12 },
+  contactCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 12 },
+  contactText: { color: THEME.muted, fontWeight: '700', lineHeight: 20, marginBottom: 12 },
   promoCard: { backgroundColor: THEME.card, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: THEME.border },
   promoHint: { color: THEME.muted, fontWeight: '700', lineHeight: 18, marginTop: -4, marginBottom: 10 },
   input: { backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: THEME.border, paddingHorizontal: 13, paddingVertical: 12, color: THEME.text, fontWeight: '800', marginBottom: 10 },
