@@ -2528,6 +2528,11 @@
       }
     },
     "subscription": {
+      "contactTitle": "Abonnement et paiement",
+      "contactDesc": "Veuillez contacter l'équipe Yumurcak pour le renouvellement et le paiement de l'abonnement.",
+      "contactWhatsapp": "Écrire sur WhatsApp",
+      "contactEmail": "Envoyer un e-mail",
+      "overLimitContact": "Le nombre d'élèves actuel dépasse la limite du forfait. Veuillez contacter l'équipe Yumurcak pour mettre à jour votre forfait.",
       "loading": "Préparation des informations d'abonnement...",
       "title": "Abonnement / Paiement",
       "usageTitle": "Utilisation des élèves",
