@@ -2839,6 +2839,14 @@
       "deleteTeacher": "Öğretmeni Sil"
     },
     "paymentForm": {
+      "planSingle": "Tek ay",
+      "planMode": "Ödeme planı",
+      "planCount": "Taksit sayısı (ay)",
+      "planDay": "Her ayın son ödeme günü",
+      "planSummary": "{{count}} ay × {{amount}} = {{total}} · {{first}} – {{last}}",
+      "planInvalidCount": "Taksit sayısı 1 ile 12 arasında olmalı.",
+      "planInvalidDay": "Son ödeme günü 1 ile 28 arasında olmalı.",
+      "planCreated": "{{count}} aylık ödeme planı oluşturuldu",
       "error": "Hata",
       "selectChild": "Çocuk seçiniz",
       "invalidAmount": "Geçerli bir tutar giriniz",
