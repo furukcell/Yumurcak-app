@@ -110,6 +110,10 @@ const NOTIFICATION_TEXTS = {
     title: { tr: '💳 Yeni ödeme kaydı', en: '💳 New payment record', ru: '💳 Новая запись об оплате', de: '💳 Neuer Zahlungseintrag', fr: '💳 Nouveau paiement enregistré', ar: '💳 تسجيل دفعة جديدة' },
     body: { tr: '{{childName}} için {{month}} {{year}} dönemine ait {{amount}} ödeme kaydı oluşturuldu.', en: 'A payment record of {{amount}} was created for {{childName}} for {{month}} {{year}}.', ru: 'Для {{childName}} создана запись об оплате {{amount}} за {{month}} {{year}}.', de: 'Für {{childName}} wurde ein Zahlungseintrag über {{amount}} für {{month}} {{year}} erstellt.', fr: 'Un paiement de {{amount}} a été enregistré pour {{childName}} pour {{month}} {{year}}.', ar: 'تم إنشاء سجل دفعة بقيمة {{amount}} لـ {{childName}} عن {{month}} {{year}}.' },
   },
+  'notification.payment.plan': {
+    title: { tr: '💳 Ödeme planı oluşturuldu', en: '💳 Payment plan created', ru: '💳 Создан план оплаты', de: '💳 Zahlungsplan erstellt', fr: '💳 Échéancier de paiement créé', ar: '💳 تم إنشاء خطة دفع' },
+    body: { tr: '{{childName}} için {{count}} aylık, aylık {{amount}} tutarında ödeme planı oluşturuldu.', en: 'A {{count}}-month payment plan of {{amount}} per month was created for {{childName}}.', ru: 'Для {{childName}} создан план оплаты на {{count}} мес. по {{amount}} в месяц.', de: 'Für {{childName}} wurde ein Zahlungsplan über {{count}} Monate mit {{amount}} pro Monat erstellt.', fr: 'Un échéancier de {{count}} mois à {{amount}} par mois a été créé pour {{childName}}.', ar: 'تم إنشاء خطة دفع لمدة {{count}} أشهر بقيمة {{amount}} شهريًا لـ {{childName}}.' },
+  },
   'notification.meal.published': {
     title: { tr: '🍽️ Yemek listesi güncellendi', en: '🍽️ Meal list updated', ru: '🍽️ Меню обновлено', de: '🍽️ Speiseplan aktualisiert', fr: '🍽️ Menu mis à jour', ar: '🍽️ تم تحديث قائمة الطعام' },
     body: { tr: '{{month}} {{year}} yemek listesi yayınlandı.', en: 'The {{month}} {{year}} meal list was published.', ru: 'Опубликовано меню на {{month}} {{year}}.', de: 'Der Speiseplan für {{month}} {{year}} wurde veröffentlicht.', fr: 'Le menu de {{month}} {{year}} a été publié.', ar: 'تم نشر قائمة الطعام لشهر {{month}} {{year}}.' },
