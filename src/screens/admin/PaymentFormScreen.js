@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { ref, onValue, set, push, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, onValue, set, push, update, query, orderByChild, equalTo } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -64,6 +64,14 @@ function formatMoney(value) {
   const number = Number(onlyNumberText(value));
   return Number.isFinite(number) && number > 0 ? `${number.toLocaleString('tr-TR')} ₺` : '-';
 }
+function addMonths(ay, yil, plus) {
+  const index = (Number(yil) * 12) + (clampMonth(ay) - 1) + plus;
+  return { ay: (index % 12) + 1, yil: Math.floor(index / 12) };
+}
+function dueDateWithDay(yil, ay, gun) {
+  const day = Math.min(28, Math.max(1, Math.floor(Number(gun)) || 10));
+  return `${yil}-${pad2(clampMonth(ay))}-${pad2(day)}`;
+}
 function dueDateForMonth(yil, ay) {
   return `${Number(yil) || new Date().getFullYear()}-${pad2(clampMonth(ay))}-10`;
 }
@@ -86,12 +94,17 @@ export default function PaymentFormScreen() {
   const [tutar, setTutar] = useState('');
   const [durum, setDurum] = useState('bekliyor');
   const [sonOdemeTarihi, setSonOdemeTarihi] = useState('');
+  const [eskiSonOdeme, setEskiSonOdeme] = useState('');
   const [odemeTarihi, setOdemeTarihi] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [createdAt, setCreatedAt] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [successToast, setSuccessToast] = useState(false);
   const [kaydediyor, setKaydediyor] = useState(false);
+  const [planModu, setPlanModu] = useState(false);
+  const [taksitSayisi, setTaksitSayisi] = useState('12');
+  const [sonGun, setSonGun] = useState('10');
+  const [planToastAdet, setPlanToastAdet] = useState(0);
 
   useEffect(() => {
     let cocuklarLoaded = false;
@@ -138,6 +151,7 @@ export default function PaymentFormScreen() {
             setTutar(o.tutar || o.amount ? String(o.tutar || o.amount) : '');
             setDurum(normalizeDurum(o.durum || o.status));
             setSonOdemeTarihi(o.sonOdemeTarihi || o.dueDate || '');
+            setEskiSonOdeme(o.sonOdemeTarihi || o.dueDate || '');
             setOdemeTarihi(o.odemeTarihi || o.paymentDate || '');
             setAciklama(o.aciklama || o.description || '');
             setCreatedAt(o.createdAt || Date.now());
@@ -170,6 +184,78 @@ export default function PaymentFormScreen() {
     const veliIds = asArray(cocuk.veliIds || cocuk.parentIds || cocuk.veliler).filter(Boolean);
     const veliId = cocuk.veliId || cocuk.parentId || veliIds[0] || null;
     const finalVeliIds = veliIds.length ? veliIds : (veliId ? [veliId] : []);
+    // ---- Ödeme planı (taksit): tek seferde N aylık kayıt oluşturur ----
+    if (!duzenleme && planModu) {
+      const adet = Math.floor(Number(onlyNumberText(taksitSayisi)));
+      if (!Number.isFinite(adet) || adet < 1 || adet > 12) return Alert.alert(t('admin.paymentForm.error'), t('admin.paymentForm.planInvalidCount'));
+      const gun = Math.floor(Number(onlyNumberText(sonGun)));
+      if (!Number.isFinite(gun) || gun < 1 || gun > 28) return Alert.alert(t('admin.paymentForm.error'), t('admin.paymentForm.planInvalidDay'));
+
+      setKaydediyor(true);
+      try {
+        const planId = push(ref(database, 'odemeler')).key;
+        const baseTitle = baslik.trim() || t('admin.paymentForm.defaultTitle');
+        const now = Date.now();
+        const updates = {};
+        for (let i = 0; i < adet; i += 1) {
+          const m = addMonths(finalAy, finalYil, i);
+          const key = push(ref(database, 'odemeler')).key;
+          const taksitBaslik = adet > 1 ? `${baseTitle} (${i + 1}/${adet})` : baseTitle;
+          updates[key] = {
+            kresId,
+            cocukId: seciliCocukId,
+            childId: seciliCocukId,
+            veliId,
+            parentId: veliId,
+            veliIds: finalVeliIds,
+            parentIds: finalVeliIds,
+            baslik: taksitBaslik,
+            title: taksitBaslik,
+            aciklama: aciklama.trim() || taksitBaslik,
+            ay: m.ay,
+            yil: m.yil,
+            donem: monthLabel(m.ay, m.yil, t),
+            tarih: `${m.yil}-${pad2(m.ay)}`,
+            tutar: finalTutar,
+            amount: finalTutar,
+            durum: 'bekliyor',
+            status: 'bekliyor',
+            sonOdemeTarihi: dueDateWithDay(m.yil, m.ay, gun),
+            odemeTarihi: null,
+            planId,
+            taksitNo: i + 1,
+            taksitSayisi: adet,
+            createdAt: now,
+            updatedAt: now,
+          };
+        }
+        // Tek toplu yazma: ya hepsi oluşur ya hiçbiri
+        await update(ref(database, 'odemeler'), updates);
+
+        // 12 ayrı bildirim yerine tek bildirim
+        await createUserNotification({
+          kresId,
+          userIds: finalVeliIds,
+          baslik: '💳 Ödeme planı oluşturuldu',
+          mesaj: `${childName(cocuk)} için ${adet} aylık, aylık ${formatMoney(finalTutar)} tutarında ödeme planı oluşturuldu.`,
+          i18nKey: 'notification.payment.plan',
+          i18nParams: { childName: childName(cocuk), count: adet, amount: formatMoney(finalTutar) },
+          tip: 'odeme',
+          routeName: 'ParentPayments',
+          createdBy: kullanici?.uid || kullanici?.id || '',
+        });
+
+        setPlanToastAdet(adet);
+        setSuccessToast(true);
+        setTimeout(() => { navigation.goBack(); }, 900);
+      } catch (e) {
+        Alert.alert(t('admin.paymentForm.error'), t('admin.paymentForm.saveFailed'));
+      } finally {
+        setKaydediyor(false);
+      }
+      return;
+    }
+
     const finalOdemeTarihi = durum === 'odendi' ? (odemeTarihi || todayKey()) : (odemeTarihi || null);
 
     setKaydediyor(true);
@@ -200,7 +286,11 @@ export default function PaymentFormScreen() {
       };
 
       if (duzenleme) {
-  await set(ref(database, `odemeler/${paymentId}`), veri);
+  // set() kaydı tamamen değiştirir ve planId/taksitNo/hatirlatmalar gibi alanları siler;
+        // update() sadece formdaki alanları günceller. Son ödeme tarihi değiştiyse
+        // hatırlatma geçmişi sıfırlanır ki yeni tarih için hatırlatma tekrar gitsin.
+        const tarihDegisti = (sonOdemeTarihi || '') !== (eskiSonOdeme || '');
+        await update(ref(database, `odemeler/${paymentId}`), tarihDegisti ? { ...veri, hatirlatmalar: null } : veri);
 } else {
   await push(ref(database, 'odemeler'), veri);
 
@@ -244,6 +334,21 @@ export default function PaymentFormScreen() {
   }
 
   const seciliCocuk = cocuklar.find((c) => c.id === seciliCocukId) || {};
+  const planAktif = planModu && !duzenleme;
+  const planAdet = Math.floor(Number(onlyNumberText(taksitSayisi)));
+  const planTutar = Number(onlyNumberText(tutar));
+  const planOzet = planAktif && planAdet >= 1 && planAdet <= 12 && planTutar > 0
+    ? (() => {
+        const son = addMonths(ay, yil, planAdet - 1);
+        return t('admin.paymentForm.planSummary', {
+          count: planAdet,
+          amount: formatMoney(planTutar),
+          total: formatMoney(planTutar * planAdet),
+          first: monthLabel(ay, yil, t),
+          last: monthLabel(son.ay, son.yil, t),
+        });
+      })()
+    : '';
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#6C3DEB" /><Text style={s.loadingText}>{t('admin.paymentForm.loading')}</Text></View>;
 
@@ -251,7 +356,7 @@ export default function PaymentFormScreen() {
      <SafeAreaView style={s.safe}>
         <AppSuccessToast
          visible={successToast}
-         message={duzenleme ? t('admin.paymentForm.updated') : t('admin.paymentForm.created')}
+         message={duzenleme ? t('admin.paymentForm.updated') : (planToastAdet ? t('admin.paymentForm.planCreated', { count: planToastAdet }) : t('admin.paymentForm.created'))}
          onHide={() => setSuccessToast(false)}
        />
          <KeyboardAvoidingView
@@ -292,6 +397,16 @@ export default function PaymentFormScreen() {
 
         <View style={s.card}>
           <Text style={s.sectionTitle}>{t('admin.paymentForm.periodAmount')}</Text>
+          {!duzenleme && (
+            <View style={[s.secimGrubu, { marginBottom: 12 }]}>
+              <TouchableOpacity style={[s.secimBtn, !planModu && s.secimBtnAktif]} onPress={() => setPlanModu(false)} activeOpacity={0.8}>
+                <Text style={[s.secimBtnYazi, !planModu && s.secimBtnYaziAktif]}>{t('admin.paymentForm.planSingle')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.secimBtn, planModu && s.secimBtnAktif]} onPress={() => setPlanModu(true)} activeOpacity={0.8}>
+                <Text style={[s.secimBtnYazi, planModu && s.secimBtnYaziAktif]}>{t('admin.paymentForm.planMode')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={s.quickRow}>
             <TouchableOpacity style={s.quickBtn} onPress={buAyiSec}><Text style={s.quickText}>{t('admin.paymentForm.thisMonth')}</Text></TouchableOpacity>
             <TouchableOpacity style={s.quickBtn} onPress={gelecekAyiSec}><Text style={s.quickText}>{t('admin.paymentForm.nextMonth')}</Text></TouchableOpacity>
@@ -317,8 +432,20 @@ export default function PaymentFormScreen() {
 
           <Text style={s.etiket}>{t('admin.paymentForm.amountTry')} *</Text>
           <TextInput style={s.input} value={tutar} onChangeText={setTutar} keyboardType="numeric" placeholder="7500" />
+
+          {planAktif && (
+            <>
+              <Text style={s.etiket}>{t('admin.paymentForm.planCount')} *</Text>
+              <TextInput style={s.input} value={taksitSayisi} onChangeText={(v) => setTaksitSayisi(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" maxLength={2} placeholder="12" />
+
+              <Text style={s.etiket}>{t('admin.paymentForm.planDay')} *</Text>
+              <TextInput style={s.input} value={sonGun} onChangeText={(v) => setSonGun(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" maxLength={2} placeholder="10" />
+              {planOzet ? <Text style={s.helper}>{planOzet}</Text> : null}
+            </>
+          )}
         </View>
 
+        {!planAktif && (
         <View style={s.card}>
           <Text style={s.sectionTitle}>{t('admin.paymentForm.statusDates')}</Text>
           <View style={s.secimGrubu}>
@@ -336,6 +463,7 @@ export default function PaymentFormScreen() {
           <Text style={s.etiket}>{t('admin.paymentForm.paymentDate')}</Text>
           <TextInput style={s.input} value={odemeTarihi} onChangeText={setOdemeTarihi} placeholder="YYYY-AA-GG" maxLength={10} />
         </View>
+        )}
 
         <View style={s.card}>
           <Text style={s.sectionTitle}>{t('admin.paymentForm.description')}</Text>

@@ -1,6 +1,7 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const { render: renderNotificationText } = require('./notificationTexts');
+const { runPaymentReminders } = require('./paymentReminders');
 
 admin.initializeApp();
 
@@ -1212,6 +1213,29 @@ exports.checkOverdueSubscriptionsDaily = functions
     });
 
     await Promise.all(tasks);
+    return null;
+  });
+
+// ============================================================
+// Veli ödeme hatırlatmaları — her gün 09:00 (İstanbul)
+// Son ödemeye 3 gün kala / son gün / gecikmenin 1., 7., 14. günü veliye bildirim;
+// süresi geçen "bekliyor" kayıtları "gecikti" yapar. Mantık paymentReminders.js'te.
+// Aynı bildirim iki kez gitmesin diye kayda hatirlatmalar/{anahtar} yazılır.
+// ============================================================
+exports.checkParentPaymentsDaily = functions
+  .region('europe-west1')
+  .pubsub
+  .schedule('every day 09:00')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    const stats = await runPaymentReminders({
+      database: admin.database(),
+      createNotification: createNotificationRecord,
+      getChildName,
+      getParentIdsFromChild,
+      todayIso: getIstanbulNow().dateKey,
+    });
+    console.log('checkParentPaymentsDaily:', JSON.stringify(stats));
     return null;
   });
 
