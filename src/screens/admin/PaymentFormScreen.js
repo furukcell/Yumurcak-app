@@ -94,6 +94,7 @@ export default function PaymentFormScreen() {
   const [tutar, setTutar] = useState('');
   const [durum, setDurum] = useState('bekliyor');
   const [sonOdemeTarihi, setSonOdemeTarihi] = useState('');
+  const [eskiSonOdeme, setEskiSonOdeme] = useState('');
   const [odemeTarihi, setOdemeTarihi] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [createdAt, setCreatedAt] = useState(Date.now());
@@ -150,6 +151,7 @@ export default function PaymentFormScreen() {
             setTutar(o.tutar || o.amount ? String(o.tutar || o.amount) : '');
             setDurum(normalizeDurum(o.durum || o.status));
             setSonOdemeTarihi(o.sonOdemeTarihi || o.dueDate || '');
+            setEskiSonOdeme(o.sonOdemeTarihi || o.dueDate || '');
             setOdemeTarihi(o.odemeTarihi || o.paymentDate || '');
             setAciklama(o.aciklama || o.description || '');
             setCreatedAt(o.createdAt || Date.now());
@@ -284,7 +286,11 @@ export default function PaymentFormScreen() {
       };
 
       if (duzenleme) {
-  await set(ref(database, `odemeler/${paymentId}`), veri);
+  // set() kaydı tamamen değiştirir ve planId/taksitNo/hatirlatmalar gibi alanları siler;
+        // update() sadece formdaki alanları günceller. Son ödeme tarihi değiştiyse
+        // hatırlatma geçmişi sıfırlanır ki yeni tarih için hatırlatma tekrar gitsin.
+        const tarihDegisti = (sonOdemeTarihi || '') !== (eskiSonOdeme || '');
+        await update(ref(database, `odemeler/${paymentId}`), tarihDegisti ? { ...veri, hatirlatmalar: null } : veri);
 } else {
   await push(ref(database, 'odemeler'), veri);
 
