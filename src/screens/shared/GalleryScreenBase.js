@@ -780,7 +780,6 @@ export default function GalleryScreenBase({ mode = 'parent', navigation }) {
         allowsEditing: false,
         allowsMultipleSelection: true,
         selectionLimit: 10,
-        quality: 0.78,
         videoMaxDuration: 120,
         userId,
         kresId,
